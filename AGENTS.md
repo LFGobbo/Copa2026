@@ -273,7 +273,13 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v11.8 (atual — 2026-06-11)
+### v11.9 (atual — 2026-06-11)
+**Mudanças:**
+- **+86 novas fotos Wikipedia** — batch query da Wikipedia API para todos os 1248 artigos, encontrou 86 novas thumbnails (total: 951 fotos, 76% dos jogadores)
+- **Flag fallback** — `avatar-fallback` div com bandeira do time como background para jogadores sem foto (opacity .35, grayscale)
+- **photoCoverage() diagnostic** — mostra % de cobertura e top-5 times com mais faltantes no console
+
+### v11.8
 **Mudanças:**
 - **Fotos por time|número** — `FIFA_PHOTO_BY_TEAM_NUM` mapeia fotos da Squad API pela chave `"Time|99"`, sem depender de matching por nome (que falhava para muitos jogadores)
 - **getPlayerPhoto()** agora aceita `(name, team, num)` — busca primeiro em PLAYER_PHOTOS (Wikipedia), depois em FIFA_PHOTO_BY_TEAM_NUM (fallback universal)
