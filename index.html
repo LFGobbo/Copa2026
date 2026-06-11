@@ -570,17 +570,18 @@ function renderThirdPlaced(){
 }
 
 function renderBracket(){renderBracketCards();renderBracketTree()}
+function tn(t){return t==="0"?"3\u00ba lugar":t}function tf(t){return t==="0"?"":flag(t)}
 function renderBracketCards(){
   var c=document.getElementById("bracket-cards"),ko=GAMES.filter(function(g){return!g.f||!g.f.startsWith("Grupo")}),rounds={};
   ko.forEach(function(g){var r=g.f||"Mata-Mata";if(!rounds[r])rounds[r]=[];rounds[r].push(g)});
-  c.innerHTML=BRACKET_ROUNDS.map(function(rd){var gs=rounds[rd]||[];if(!gs.length)return"";var f=rd==="Final";return'<div class="bracket-round"><div class="bracket-title">'+rd+'</div>'+gs.map(function(g){var s=scores[g.n]||{},sa=s.a!==undefined?s.a:"-",sb=s.b!==undefined?s.b:"-";return'<div class="bracket-game'+(f?" final-round":"")+'"><div class="bracket-team">'+flag(g.a)+' '+g.a+'</div><div class="bracket-score">'+sa+' x '+sb+'</div><div class="bracket-team">'+flag(g.b)+' '+g.b+'</div></div>'}).join("")+'</div>'}).join("");
+  c.innerHTML=BRACKET_ROUNDS.map(function(rd){var gs=rounds[rd]||[];if(!gs.length)return"";var f=rd==="Final";return'<div class="bracket-round"><div class="bracket-title">'+rd+'</div>'+gs.map(function(g){var s=scores[g.n]||{},sa=s.a!==undefined?s.a:"-",sb=s.b!==undefined?s.b:"-";return'<div class="bracket-game'+(f?" final-round":"")+'"><div class="bracket-team">'+tf(g.a)+' '+tn(g.a)+'</div><div class="bracket-score">'+sa+' x '+sb+'</div><div class="bracket-team">'+tf(g.b)+' '+tn(g.b)+'</div></div>'}).join("")+'</div>'}).join("");
 }
 function renderBracketTree(){
   var el=document.getElementById("bracket-tree"),ko=GAMES.filter(function(g){return!g.f||!g.f.startsWith("Grupo")}),rounds={};
   ko.forEach(function(g){var r=g.f||"Mata-Mata";if(!rounds[r])rounds[r]=[];rounds[r].push(g)});
   var colors=["#4caf50","#2196f3","#ff9800","#f44336","#9c27b0","#ffdf00"],rx=130,ry=40,sw=900,sh=600,svg='<svg class="bracket-svg" viewBox="0 0 '+sw+' '+sh+'">';
   var ra=BRACKET_ROUNDS.filter(function(r){return rounds[r]&&rounds[r].length}),xs=(sw-80)/(ra.length+1);
-  ra.forEach(function(rd,ri){var gs=rounds[rd],ys=(sh-60)/(gs.length+1);gs.forEach(function(g,gi){var x=60+(ri+1)*xs-60,y=30+(gi+1)*ys-20,s=scores[g.n]||{},sa=s.a!==undefined?s.a:"-",sb=s.b!==undefined?s.b:"-";svg+='<rect x="'+x+'" y="'+y+'" width="'+rx+'" height="'+ry+'" rx="4" fill="'+colors[ri]+'" opacity="0.15" stroke="'+colors[ri]+'" stroke-width="1"/><text x="'+(x+rx/2)+'" y="'+(y+14)+'" text-anchor="middle" fill="#eee" font-size="9">'+rd+'</text><text x="'+(x+rx/2)+'" y="'+(y+28)+'" text-anchor="middle" fill="'+(g.a==="Brasil"?"#ffdf00":"#ccc")+'" font-size="10" font-weight="600">'+g.a+' '+sa+'</text><text x="'+(x+rx/2)+'" y="'+(y+38)+'" text-anchor="middle" fill="'+(g.b==="Brasil"?"#ffdf00":"#ccc")+'" font-size="10" font-weight="600">'+g.b+' '+sb+'</text>'})});
+  ra.forEach(function(rd,ri){var gs=rounds[rd],ys=(sh-60)/(gs.length+1);gs.forEach(function(g,gi){var x=60+(ri+1)*xs-60,y=30+(gi+1)*ys-20,s=scores[g.n]||{},sa=s.a!==undefined?s.a:"-",sb=s.b!==undefined?s.b:"-";svg+='<rect x="'+x+'" y="'+y+'" width="'+rx+'" height="'+ry+'" rx="4" fill="'+colors[ri]+'" opacity="0.15" stroke="'+colors[ri]+'" stroke-width="1"/><text x="'+(x+rx/2)+'" y="'+(y+14)+'" text-anchor="middle" fill="#eee" font-size="9">'+rd+'</text><text x="'+(x+rx/2)+'" y="'+(y+28)+'" text-anchor="middle" fill="'+(g.a==="Brasil"?"#ffdf00":"#ccc")+'" font-size="10" font-weight="600">'+tn(g.a)+' '+sa+'</text><text x="'+(x+rx/2)+'" y="'+(y+38)+'" text-anchor="middle" fill="'+(g.b==="Brasil"?"#ffdf00":"#ccc")+'" font-size="10" font-weight="600">'+tn(g.b)+' '+sb+'</text>'})});
   el.innerHTML=svg+'</svg>';
 }
 
