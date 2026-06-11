@@ -9507,7 +9507,7 @@ if(changed){saveState();renderGames(currentFilter);renderGroups();renderBracket(
 function initFifaMaps(){
   FIFA_MAP_READY=true;
   try{
-    var cached=localStorage.getItem('FIFA_PLAYER_MAP_CACHE');
+    var cached=localStorage.getItem('FIFA_PLAYER_MAP_CACHE_V2');
     if(cached){var parsed=JSON.parse(cached);if(parsed&&parsed.ts&&Date.now()-parsed.ts<86400000&&parsed.data){
       FIFA_PLAYER_MAP=parsed.data;
       if(parsed.photosByName){Object.keys(parsed.photosByName).forEach(function(k){if(!PLAYER_PHOTOS[k])PLAYER_PHOTOS[k]=parsed.photosByName[k]})}
@@ -9552,7 +9552,7 @@ function initFifaMaps(){
   var batch=[];
   for(var i=0;i<6;i++)batch.push(next());
   Promise.all(batch).then(function(){
-    try{localStorage.setItem('FIFA_PLAYER_MAP_CACHE',JSON.stringify({ts:Date.now(),data:FIFA_PLAYER_MAP,photosByName:fifaPhotosByName,photosByTeamNum:fifaPhotosByTeamNum}))}catch(e){}
+    try{localStorage.setItem('FIFA_PLAYER_MAP_CACHE_V2',JSON.stringify({ts:Date.now(),data:FIFA_PLAYER_MAP,photosByName:fifaPhotosByName,photosByTeamNum:fifaPhotosByTeamNum}))}catch(e){}
     var total=0,comFoto=0;Object.keys(PLAYERS).forEach(function(t){PLAYERS[t].forEach(function(p){total++;if(getPlayerPhoto(p.name,t,p.num))comFoto++})});console.log('FIFA Squad API: '+(total-comFoto)+' sem foto de '+total+' ('+Math.round(comFoto/total*100)+'%)');
     renderSquads();
   });

@@ -273,9 +273,14 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v11.7 (atual — 2026-06-11)
+### v11.8 (atual — 2026-06-11)
 **Mudanças:**
-- **Persistência de aba** — `localStorage.setItem('copa2026_tab',tab)` em cada clique; na inicialização, restaura a aba salva automaticamente
+- **Fotos por time|número** — `FIFA_PHOTO_BY_TEAM_NUM` mapeia fotos da Squad API pela chave `"Time|99"`, sem depender de matching por nome (que falhava para muitos jogadores)
+- **getPlayerPhoto()** agora aceita `(name, team, num)` — busca primeiro em PLAYER_PHOTOS (Wikipedia), depois em FIFA_PHOTO_BY_TEAM_NUM (fallback universal)
+- **Cache renovado** — salva `photosByTeamNum` e `photosByName` separadamente no localStorage; restaura ambos ao carregar do cache
+- **Diagnóstico** — console.log mostra cobertura ao final do fetch: `"FIFA Squad API: X sem foto de Y (Z%)"`
+
+### v11.7
 
 ### v11.6
 
