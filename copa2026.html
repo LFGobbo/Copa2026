@@ -9447,8 +9447,16 @@ function getPlayerPhoto(name,team,num){
     var norm=name.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""),fnk=team+'|'+norm;
     if(FIFA_PHOTO_BY_TEAM_NAME[fnk])return FIFA_PHOTO_BY_TEAM_NAME[fnk];
     var lastName=norm.split(' ').pop();
-    if(FIFA_PHOTO_BY_TEAM_NAME[team+'|'+lastName])return FIFA_PHOTO_BY_TEAM_NAME[team+'|'+lastName];
+    if(FIFA_PHOTO_BY_TEAM_NAME[team+'|'+lastName])return FIFA_PHOTO_BY_TEAM_NAME[team+'|'+lastName);
   }
+  return '';
+}
+function photoCoverage(){
+  var t=0,c=0,miss={};Object.keys(PLAYERS).forEach(function(tm){PLAYERS[tm].forEach(function(p){t++;if(getPlayerPhoto(p.name,tm,p.num))c++;else{miss[tm]=(miss[tm]||0)+1}})});
+  var pct=Math.round(c/t*100);console.log('Fotos: '+c+'/'+t+' ('+pct+'%)');
+  var bad=Object.keys(miss).sort(function(a,b){return miss[b]-miss[a]});bad.slice(0,5).forEach(function(tm){console.log('  '+tm+': '+miss[tm]+' sem foto')});
+  return pct;
+}
   return '';
 }
 var _rsTimer=null;
@@ -9525,7 +9533,7 @@ function initFifaMaps(){
       if(parsed.photosByName){Object.keys(parsed.photosByName).forEach(function(k){if(!PLAYER_PHOTOS[k])PLAYER_PHOTOS[k]=parsed.photosByName[k]})}
       if(parsed.photosByTeamNum){Object.keys(parsed.photosByTeamNum).forEach(function(k){FIFA_PHOTO_BY_TEAM_NUM[k]=parsed.photosByTeamNum[k]})}
       if(parsed.photosByTeamName){Object.keys(parsed.photosByTeamName).forEach(function(k){FIFA_PHOTO_BY_TEAM_NAME[k]=parsed.photosByTeamName[k]})}
-      var t=0,c=0;Object.keys(PLAYERS).forEach(function(tm){PLAYERS[tm].forEach(function(p){t++;if(getPlayerPhoto(p.name,tm,p.num))c++})});console.log('Cache restaurado: '+(t-c)+' sem foto de '+t+' ('+Math.round(c/t*100)+'%)');
+      photoCoverage();console.log('Cache restaurado');
       renderSquads();
       return
     }}
@@ -9576,7 +9584,7 @@ function initFifaMaps(){
     for(var i=0;i<6;i++)batch.push(next());
     Promise.all(batch).then(function(){
       try{localStorage.setItem('FIFA_PLAYER_MAP_CACHE_V2',JSON.stringify({ts:Date.now(),data:FIFA_PLAYER_MAP,photosByName:fifaPhotosByName,photosByTeamNum:fifaPhotosByTeamNum,photosByTeamName:fifaPhotosByTeamName}))}catch(e){}
-      var total=0,comFoto=0;Object.keys(PLAYERS).forEach(function(t){PLAYERS[t].forEach(function(p){total++;if(getPlayerPhoto(p.name,t,p.num))comFoto++})});console.log('FIFA Squad API: '+(total-comFoto)+' sem foto de '+total+' ('+Math.round(comFoto/total*100)+'%)');
+      photoCoverage();
       renderSquads();
     });
   }
@@ -9666,7 +9674,8 @@ var PLAYER_PHOTOS = {"Guillermo Ochoa":"https://upload.wikimedia.org/wikipedia/c
 setTimeout(function(){
   try{
     var saved=window.location.hash.replace('#','')||localStorage.getItem('copa2026_tab');
-    console.log('Tab restore: saved='+saved+', ready='+FIFA_MAP_READY+', photos='+Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length);
+    console.log('Tab restore: saved='+saved);
+    photoCoverage();
     if(saved){var tab=document.querySelector('.tab[data-tab="'+saved+'"]');if(tab){console.log('Tab restore: clicando em',saved);tab.click()}else console.log('Tab restore: elemento nao encontrado')}
   }catch(e){console.log('Tab restore error:',e)}
 },0);
