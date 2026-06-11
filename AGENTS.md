@@ -261,7 +261,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-11 — Sessão v8 (GitHub Pages + timezone + FIFA API direta + limpeza)**
+**2026-06-11 — Sessão v9 (Wikipedia squads + clubes + correção de numeração)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -273,18 +273,16 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v8 (atual — 2026-06-11)
+### v9 (atual — 2026-06-11)
 **Mudanças:**
-- **GitHub Pages** — repositório `github.com/LFGobbo/Copa2026` criado, commit e push. Site em `lfgobbo.github.io/Copa2026` (precisa ativar Settings → Pages).
-- **Caminhos relativos** — imagens mudaram de `C:\Users\...` para `./bola_t.png`, `./mascote1_t.png`, etc.
-- **FIFA API direta** — substituiu o polling do robot.ps1 por fetch direto em `api.fifa.com/api/v3/calendar/matches` com `AbortController` timeout 10s (manual) / 8s (automático).
-- **FIFA_TEAM_MAP** — mapeamento 48 códigos FIFA → português para casalar jogos.
-- **Mapeamento de estádios → fuso** — `STADIUM_TZ` com 16 estádios e offsets UTC. Função `gameUTC()` para converter horário local do estádio para UTC absoluto.
-- **Timezone corrigido** — `isGameLive()` e `updateCountdown()` agora usam `gameUTC()`, resolvendo bug de jogos pós-meia-noite (ex: jogo #5 às 01:00 em Vancouver = 05:00 BRT).
-- **Bracket "3º lugar"** — 8 jogos que tinham `b:"0"` agora mostram "3º lugar" via `tn()/tf()` helpers.
-- **Botão refresh** — mostra ⏳ durante fetch, ⚠ se falhar, texto dinâmico.
-- **Limpeza do repositório** — removidos backups `v1.1`, `v6`, `v7`, `PROGRESSO.md` do Git. Mantido apenas `copa2026.html`, `index.html` + assets.
-- **`index.html`** — cópia de `copa2026.html` para servir como default do GitHub Pages.
+- **Squads completos (48/48, 26 jogadores cada)** — todos os times com 26 convocados oficiais
+- **Números das camisas corrigidos** — extraídos da Wikipedia (2026 FIFA World Cup squads), que é a fonte oficial
+- **Clubes adicionados** — cada jogador tem `club` e `pais` (país do clube) no objeto PLAYERS
+- **Iniciais no avatar** — o squad-player agora mostra iniciais do jogador no lugar da bandeira do time
+- **Clube exibido na posição** — formato: `Goleiro / Liverpool - Inglaterra`
+- **Wesley → Éderson** — Brasil atualizado (Wesley lesionado, Éderson convocado, camisa #2)
+- **Argentina #2** — Juan Foyth adicionado (estava faltando na Wikipedia)
+- **Fonte dos dados**: Wikipedia (https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads) — contém número, nome, posição, clube de cada jogador
 
 ### v6.2
 - Correção split regex broadcast (U+00B7)
@@ -353,10 +351,11 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 
 ## Status Atual do Site
 - **Repositório**: `github.com/LFGobbo/Copa2026` (master)
-- **GitHub Pages**: NÃO ativado — precisa ir em Settings → Pages → branch `master` → `/ (root)` → Save.
+- **GitHub Pages**: ATIVADO em `https://lfgobbo.github.io/Copa2026/`
 - **FIFA API**: Fetch direto do navegador com CORS aberto (`Access-Control-Allow-Origin: *`). Timeout 10s (manual) / 8s (polling).
 - **Robô alternativo**: `robot.ps1` + `Iniciar Copa.bat` existem como fallback, mas não são mais necessários para o site.
 - **Placares ao vivo**: Funcionam apenas durante jogos reais (HomeTeamScore/AwayTeamScore = null até o jogo começar).
+- **Squads**: 1248 jogadores (48×26), dados da Wikipedia com números, clubes e países.
 
 ## Armadilhas Conhecidas (Critical Context)
 - `ConvertTo-Json` no PS 5.1 duplo-encode UTF-8 (ex: "Á" → "Ã\x81"). Solução: construir JSON manualmente com `.Replace()` e escrever via `[System.IO.StreamWriter]` com `UTF8Encoding($false)`.
@@ -371,16 +370,25 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 ## Pendências
 
 ### Pendências atuais
-1. **Ativar GitHub Pages** — Settings → Pages → branch `master` → `/ (root)` → Save.
-2. **Verificar CORS na prática** — O FIFA API tem `Access-Control-Allow-Origin: *` teoricamente. Testar no navegador real quando o site subir.
+1. **Mapear mais clubes** — 328 clubes ainda com país "Outro" (precisa de mapeamento adicional)
+2. **Argentina #2 confirmar** — Juan Foyth adicionado como filler, verificar número oficial
 3. **Auditar removeGoal + own goal** — `gl.team` salvo como `storeTeam` em `confirmGoal`, e `renderGoalBadge` usa `gl.team||st||team`. Verificar com dados reais.
 
 ### Melhorias futuras
-4. **Google Fonts offline** — embedar font Inter no HTML como fallback completo.
-5. **Octal/estatísticas** — adicionar seção de estatísticas (cartões, posse, etc) se a FIFA API fornecer.
+4. **Fotos 3x4 dos jogadores** — placeholder com iniciais implementado, fotos reais pendentes
+5. **Google Fonts offline** — embedar font Inter no HTML como fallback completo.
 6. **Service Worker** — cache do app para funcionar offline parcialmente.
 
-### Itens resolvidos nesta sessão (v8)
+### Itens resolvidos nesta sessão (v9)
+- ~~Squads incompletos (<26)~~ ✅ todos os 48 times com 26 convocados da Wikipedia
+- ~~Numeração errada~~ ✅ números reais da camisa (fonte: Wikipedia)
+- ~~Clubes dos jogadores~~ ✅ adicionado club + pais em cada jogador
+- ~~Avatar mostrava bandeira do time~~ ✅ agora mostra iniciais do jogador
+- ~~Posição mostrava só o cargo~~ ✅ agora mostra clube abaixo
+- ~~Argentina com 25~~ ✅ Juan Foyth adicionado como #2
+- ~~Wesley no Brasil~~ ✅ substituído por Éderson (camisa #2, Atalanta)
+
+### Itens resolvidos na sessão anterior (v8)
 - ~~Caminhos absolutos de imagens~~ ✅ mudado para relativo (`./bola_t.png`)
 - ~~Polling do robot.ps1~~ ✅ substituído por fetch direto na FIFA API
 - ~~Timezone de jogos (pós-meia-noite)~~ ✅ `gameUTC()` + `STADIUM_TZ` com 16 estádios
