@@ -261,7 +261,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-11 — Sessão v9 (Wikipedia squads + clubes + fotos Wikipedia)**
+**2026-06-11 — Sessão v10 (Plan B: auto-fetch goals from FIFA timeline API)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -273,18 +273,27 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v9 (atual — 2026-06-11)
+### v10 (atual — 2026-06-11)
+**Mudanças:**
+- **Plan B implementado: auto-fetch de gols/assistências via FIFA Timeline API** — substitui entrada manual
+- **Endpoint `/api/v3/timelines/{IdMatch}`** — retorna timeline completa de eventos do jogo
+- **`FIFA_PLAYER_MAP`** — mapeia `IdPlayer` da FIFA para nossos jogadores (por time + número da camisa), construído via `/api/v3/teams/{IdTeam}/squad`
+- **Processamento automático**: detecta eventos Type 0 (gol) e Type 41 (pênalti), associa assistência Type 1, cria entrada no `goals[gameId][teamSide]`
+- **Polling unificado a cada 10s** — busca placares + timelines de jogos ao vivo simultaneamente
+- **Dedup por EventId** — não cria gols duplicados mesmo com múltiplos polls
+- **Popup manual mantido como fallback** — se a timeline não tiver eventos ainda ou o mapa não estiver pronto
+
+### v9
 **Mudanças:**
 - **Squads completos (48/48, 26 jogadores cada)** — todos os times com 26 convocados oficiais
-- **Números das camisas corrigidos** — extraídos da Wikipedia (2026 FIFA World Cup squads), que é a fonte oficial
-- **Clubes adicionados** — cada jogador tem `club` e `pais` (país do clube) no objeto PLAYERS
-- **Avatar com placeholder** — avatar vazio com `data-name` preparado para fotos (placeholder em vez de iniciais)
+- **Números das camisas corrigidos** — extraídos da Wikipedia (2026 FIFA World Cup squads)
+- **Clubes adicionados** — cada jogador tem `club` e `pais` no objeto PLAYERS
 - **Clube + país exibido na posição** — formato: `Goleiro / Brighton & Hove Albion - Inglaterra`
-- **Contraste da posição melhorado** — opacity .6→.75, fonte 9px→10px
-- **Wesley → Éderson** — Brasil atualizado (Wesley lesionado, Éderson convocado, camisa #2)
-- **Argentina #2** — Juan Foyth adicionado (estava faltando na Wikipedia)
-- **Bugfix: JSON corrompido** — rebuild_players.js usou `indexOf(';')` que pegava `;` dentro de `&amp;` em nomes de clube, duplicando lixo no HTML. Corrigido com contagem de chaves `{}` para achar o fechamento real do objeto.
-- **Fonte dos dados**: Wikipedia (https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads) — contém número, nome, posição, clube de cada jogador
+- **Minuto no gol** — campo `#goal-minute` adicionado no popup, exibido no badge
+- **Regras 2026** — seção atualizada com SAOT, VAR expandido, câmera corporal, 8s/5s/10s
+- **AO VIVO na contagem** — `updateCountdown()` mostra "● AO VIVO" durante jogos
+- **Fallback de foto** — `onerror` nas imagens de avatar
+- **Bugfix: JSON corrompido** — rebuild_players.js consertado com contagem de chaves
 
 ### v6.2
 - Correção split regex broadcast (U+00B7)
@@ -363,7 +372,11 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - `ConvertTo-Json` no PS 5.1 duplo-encode UTF-8 (ex: "Á" → "Ã\x81"). Solução: construir JSON manualmente com `.Replace()` e escrever via `[System.IO.StreamWriter]` com `UTF8Encoding($false)`.
 - `Add-Content -Encoding UTF8` adiciona BOM no PS 5.1 → usar `[System.IO.StreamWriter]`.
 - **Broadcast separator**: dado usa `·` (middle dot U+00B7), NÃO `•` (bullet U+2022). Split regex deve ser `\u00b7`, não `\u2022` ou caracter literal (que vira U+FFFD por corrupção de encoding).
-- Formato de gol: `goals[gameId][teamSide] = [{key, player, pname, type, assist, aname}]`. Gol contra atualmente armazenado no time cujo botão foi clicado (não no time adversário) — a exibição v4 corrige isso movendo na renderização.
+- Formato de gol: `goals[gameId][teamSide] = [{key, player, pname, type, minute, assist, aname}]`. Gol contra atualmente armazenado no time cujo botão foi clicado (não no time adversário) — a exibição v4 corrige isso movendo na renderização.
+- Gols automáticos: `auto: true` nos objetos criados pela timeline API. Dedup por `EventId` + `PROCESSED_EVENTS[IdMatch]`.
+- **FIFA Timeline API**: `/api/v3/timelines/{IdMatch}` — retorna eventos com `Type: 0 (gol), 1 (assistência), 41 (pênalti), 2 (amarelo), 5 (substituição)`. Campos: `MatchMinute, IdPlayer, IdTeam, HomeGoals, AwayGoals, EventDescription`.
+- **FIFA Squad API**: `/api/v3/teams/{IdTeam}/squad?idCompetition=17&idSeason=285023` — retorna `Players[{IdPlayer, PlayerName, JerseyNum, Position}]`. Mapeamento para nossos jogadores por time + número da camisa.
+- **Team IDs**: Extraídos do campo `Home.IdTeam`/`Away.IdTeam` na resposta do calendário. 48 times, IDs fixos para o torneio.
 - Artilharia agrega todos `goals[gameId][teamSide]` — v4 filtra `type==="own"`.
 - **0x0 não apagava**: corrigido (parseInt("")→NaN→0). Agora input vazio → deleta entry.
 - **Botões de gol**: renderizados sempre no DOM com `style.display` condicional. `scoreInput()` toggla display via `canAddGoal()`.
@@ -372,25 +385,31 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 ## Pendências
 
 ### Pendências atuais
-1. **Fotos 3x4 dos jogadores** — 866/1248 (69%) via Wikipedia API. Argélia com 0/26. Pendente: buscar nomes alternativos para ~382 sem foto, ou usar 3ª fase com "(footballer, born ANO)".
+1. **Fotos 3x4 dos jogadores** — 866/1248 (69%) via Wikipedia API. Pendente: buscar nomes alternativos para ~382 sem foto, ou usar 3ª fase com "(footballer, born ANO)".
 2. **Mapear mais clubes** — 328 clubes ainda com país "Outro" (precisa de mapeamento adicional)
-3. **Argentina #2 confirmar** — Juan Foyth adicionado como filler, verificar número oficial
+3. **Gol contra automático** — detectar own goals na timeline (verificar `EventDescription` contendo "own goal" ou comparar `IdTeam` com o time que sofreu o gol)
+4. **Own goal na artilharia** — confirmar que gols contra são corretamente filtrados dos artilheiros com dados reais
 
 ### Melhorias futuras
-4. **Auditar removeGoal + own goal** — `gl.team` salvo como `storeTeam` em `confirmGoal`, e `renderGoalBadge` usa `gl.team||st||team`. Verificar com dados reais.
 5. **Google Fonts offline** — embedar font Inter no HTML como fallback completo.
 6. **Service Worker** — cache do app para funcionar offline parcialmente.
+7. **Cache do FIFA_PLAYER_MAP em localStorage** — evitar re-fetch dos 48 squads a cada refresh de página (adicionar timestamp para expirar a cada 24h)
 
-### Itens resolvidos nesta sessão (v9)
-- ~~Squads incompletos (<26)~~ ✅ todos os 48 times com 26 convocados da Wikipedia
-- ~~Numeração errada~~ ✅ números reais da camisa (fonte: Wikipedia)
-- ~~Clubes dos jogadores~~ ✅ adicionado club + pais em cada jogador
-- ~~Avatar com iniciais (não solicitado)~~ ✅ revertido para placeholder vazio
-- ~~Clube sem país~~ ✅ agora mostra "Clube - País"
-- ~~Posição mostrava só o cargo~~ ✅ agora mostra clube + país abaixo
-- ~~JSON corrompido por indexOf(';')~~ ✅ corrigido com contagem de chaves
-- ~~Argentina com 25~~ ✅ Juan Foyth adicionado como #2
-- ~~Wesley no Brasil~~ ✅ substituído por Éderson (camisa #2, Atalanta)
+### Itens resolvidos nesta sessão (v10)
+- ~~Entrada manual de gol~~ ✅ substituído por auto-fetch via FIFA Timeline API
+- ~~Polling a cada 30s~~ ✅ mudado para 10s com timeline + scores unificado
+- ~~Sem dados de goleador/assistência/minuto~~ ✅ tudo extraído automaticamente da timeline
+- ~~Precisava de IdPlayer~~ ✅ mapeado via FIFA Squad API por time + número
+
+### Itens resolvidos na sessão anterior (v9)
+- ~~Squads incompletos~~ ✅ todos os 48 times com 26 convocados oficiais
+- ~~Numeração errada~~ ✅ números reais da camisa
+- ~~Avatar com iniciais~~ ✅ revertido para placeholder vazio
+- ~~JSON corrompido~~ ✅ corrigido com contagem de chaves
+- ~~Sem minuto no gol~~ ✅ campo minute adicionado
+- ~~Regras desatualizadas~~ ✅ seção reescrita com regras 2026
+- ~~Sem AO VIVO na contagem~~ ✅ countdown mostra AO VIVO durante jogos
+- ~~Foto quebrada sem fallback~~ ✅ onerror adicionado
 
 ### Itens resolvidos na sessão anterior (v8)
 - ~~Caminhos absolutos de imagens~~ ✅ mudado para relativo (`./bola_t.png`)
