@@ -9183,19 +9183,21 @@ function gameUTC(g){try{var p=g.d.split(" ")[0].split("/"),tp=g.t.split(":");if(
 function flag(t){var c=FLAG_ISO[t];return c?'<img class="flag-img" src="https://flagcdn.com/24x18/'+c+'.png" alt="'+t+'" loading="lazy">':'<span style="font-size:18px">\u{1F3F3}\uFE0F</span>'}
 function broadcastBadge(br){if(!br)return'';var m={'Globo':'logo_globo.png','SporTV':'logo_sportv.png','Caz\u00e9TV':'logo_cazetv.png','SBT':'logo_sbt.png','N Sports':'logo_nsports.png'};return br.split(/\u00b7/).map(function(c){c=c.trim();if(!c)return'';var k=m[c];return k?'<span class="br-badge"><img class="br-logo" src="'+k+'" alt="'+c+'">'+c+'</span>':'<span class="br-badge">'+c+'</span>'}).filter(function(s){return s}).join('')}
 function teamRow(n,c){return'<div class="team-row"><span class="flag">'+flag(n)+'</span><span class="team-name'+c+'">'+n+'</span></div>'}
-function saveState(){localStorage.setItem(STORE_KEY,JSON.stringify({scores,goals}))}
+function saveState(){localStorage.setItem(STORE_KEY,JSON.stringify({scores:scores||{},goals:goals||{}}))}
 function tabClick(){
+  var tab=this.dataset.tab;
+  try{localStorage.setItem('copa2026_tab',tab)}catch(e){}
   document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});
   document.querySelectorAll(".content").forEach(function(c){c.classList.remove("active")});
   this.classList.add("active");
-  document.getElementById("tab-"+this.dataset.tab).classList.add("active");
-  var t=this.dataset.tab;
-  if(t==="grupos")renderGroups();
-  if(t==="mata-mata")renderBracket();
-  if(t==="artilheiros")renderScorers();
-  if(t==="convocados"){renderSquads();if(Object.keys(FIFA_PHOTO_CACHE).length<100)setTimeout(renderSquads,2000);setTimeout(renderSquads,6000)}
+  document.getElementById("tab-"+tab).classList.add("active");
+  if(tab==="grupos")renderGroups();
+  if(tab==="mata-mata")renderBracket();
+  if(tab==="artilheiros")renderScorers();
+  if(tab==="convocados"){renderSquads();if(Object.keys(FIFA_PHOTO_CACHE).length<100)setTimeout(renderSquads,2000);setTimeout(renderSquads,6000)}
 }
 document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",tabClick)});
+(function(){try{var saved=localStorage.getItem('copa2026_tab');if(saved){var tab=document.querySelector('.tab[data-tab="'+saved+'"]');if(tab)tab.click()}}catch(e){}})();
 
 function scoreInput(){
   var id=parseInt(this.dataset.game),s=this.dataset.side,v=this.value.trim();

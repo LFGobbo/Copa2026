@@ -273,11 +273,15 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v11.5 (atual — 2026-06-11)
+### v11.6 (atual — 2026-06-11)
 **Mudanças:**
-- **Inter font offline** — fonte embedada como @font-face com data:woff2 base64 (latin subset, weights 400-700, ~64KB)
-- **Service Worker** — `sw.js` cacheia HTML + assets locais (logos, bolas, mascotes) para funcionamento offline parcial
-- **Registro do SW** — inline script registra `sw.js` no `load` do navegador
+- **Seleções em ordem alfabética** — aba Convocados ordena times A-Z (era por grupo)
+- **Jogadores em ordem numérica** — dentro de cada time, ordenados por número da camisa (era alfabético)
+- **Fotos: fallback por nome** — `initFifaMaps()` agora tenta match por sobrenome se o número da camisa não bater
+- **FIFA_PHOTO_CACHE global** — cache de fotos FIFA persiste em memória, consultado via `getPlayerPhoto(name)` no render
+- **Auto re-render** — ao abrir a aba Convocados, re-renderiza após 2s e 6s para capturar fotos que carregam assincronamente
+
+### v11.5
 
 ### v11
 **Mudanças:**
