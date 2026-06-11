@@ -9194,7 +9194,7 @@ function tabClick(){
   if(tab==="grupos")renderGroups();
   if(tab==="mata-mata")renderBracket();
   if(tab==="artilheiros")renderScorers();
-  if(tab==="convocados"){renderSquads();if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100)setTimeout(renderSquads,2000);setTimeout(function(){if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100)renderSquads()},6000)}
+  if(tab==="convocados"){if(!FIFA_MAP_READY)initFifaMaps();renderSquads();if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100)setTimeout(renderSquads,2000);setTimeout(function(){if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100)renderSquads()},6000)}
 }
 document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",tabClick)});
 
@@ -9502,7 +9502,7 @@ if(h&&a&&m.IdMatch){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];if((g.a===h&&
 if(!h||!a||hs===null||as===null)return;
 for(var i=0;i<GAMES.length;i++){var g=GAMES[i];
 if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){map[g.n]={};if(g.a===h){map[g.n].a=hs;map[g.n].b=as}else{map[g.n].a=as;map[g.n].b=hs}break}}
-});if(Object.keys(FIFA_TEAM_IDS).length>0&&!FIFA_MAP_READY)initFifaMaps();return map})["catch"](function(){return null})}
+ });return map})["catch"](function(){return null})}
 
 function mergeScores(map){if(!map||Object.keys(map).length===0)return false;var changed=false;
 Object.keys(map).forEach(function(id){var s=map[id],na=parseInt(s.a),nb=parseInt(s.b);if(isNaN(na)||isNaN(nb))return;
@@ -9510,7 +9510,9 @@ if(!scores[id])scores[id]={};if(scores[id].a!==na||scores[id].b!==nb)changed=tru
 if(changed){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers()}return changed}
 
 function initFifaMaps(){
+  if(FIFA_MAP_READY){console.log('initFifaMaps: ja pronto');return}
   FIFA_MAP_READY=true;
+  console.log('initFifaMaps: iniciando');
   try{
     var cached=localStorage.getItem('FIFA_PLAYER_MAP_CACHE_V2');
     if(cached){var parsed=JSON.parse(cached);if(parsed&&parsed.ts&&Date.now()-parsed.ts<86400000&&parsed.data){
@@ -9518,54 +9520,72 @@ function initFifaMaps(){
       if(parsed.photosByName){Object.keys(parsed.photosByName).forEach(function(k){if(!PLAYER_PHOTOS[k])PLAYER_PHOTOS[k]=parsed.photosByName[k]})}
       if(parsed.photosByTeamNum){Object.keys(parsed.photosByTeamNum).forEach(function(k){FIFA_PHOTO_BY_TEAM_NUM[k]=parsed.photosByTeamNum[k]})}
       if(parsed.photosByTeamName){Object.keys(parsed.photosByTeamName).forEach(function(k){FIFA_PHOTO_BY_TEAM_NAME[k]=parsed.photosByTeamName[k]})}
+      var t=0,c=0;Object.keys(PLAYERS).forEach(function(tm){PLAYERS[tm].forEach(function(p){t++;if(getPlayerPhoto(p.name,tm,p.num))c++})});console.log('Cache restaurado: '+(t-c)+' sem foto de '+t+' ('+Math.round(c/t*100)+'%)');
+      renderSquads();
       return
     }}
   }catch(e){}
-  var ids=Object.keys(FIFA_TEAM_IDS);if(!ids.length)return;
-  var idx=0,fifaPhotosByName={},fifaPhotosByTeamNum={},fifaPhotosByTeamName={};
-  function norm(s){return s.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
-  function next(){
-    if(idx>=ids.length)return Promise.resolve();
-    var abbr=ids[idx++],id=FIFA_TEAM_IDS[abbr],teamName=FIFA_TEAM_MAP[abbr];
-    if(!teamName)return next();
-    return fetch('https://api.fifa.com/api/v3/teams/'+id+'/squad?idCompetition=17&idSeason=285023')
-      .then(function(r){return r.json()}).then(function(d){
-        if(d&&d.Players){
-          var ourSquad=PLAYERS[teamName]||[];
-          d.Players.forEach(function(p){
-            if(p.PlayerPicture&&p.PlayerPicture.PictureUrl){
-              var url=p.PlayerPicture.PictureUrl,tnk=teamName+'|'+p.JerseyNum;
-              FIFA_PHOTO_BY_TEAM_NUM[tnk]=url;fifaPhotosByTeamNum[tnk]=url;
-              if(p.PlayerName&&p.PlayerName[0]&&p.PlayerName[0].Description){
-                var fifaNorm=norm(p.PlayerName[0].Description),fnk=teamName+'|'+fifaNorm;
-                FIFA_PHOTO_BY_TEAM_NAME[fnk]=url;fifaPhotosByTeamName[fnk]=url;
+  console.log('initFifaMaps: sem cache valido, iniciando fetch');
+  function fetchSquads(){
+    var ids=Object.keys(FIFA_TEAM_IDS||{});
+    if(!ids.length){console.log('initFifaMaps: FIFA_TEAM_IDS vazio, buscando calendario primeiro');fetchCalendar().then(fetchSquads);return}
+    console.log('initFifaMaps: buscando squads de '+ids.length+' times');
+    var idx=0,fifaPhotosByName={},fifaPhotosByTeamNum={},fifaPhotosByTeamName={};
+    function norm(s){return s.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
+    function next(){
+      if(idx>=ids.length)return Promise.resolve();
+      var abbr=ids[idx++],id=FIFA_TEAM_IDS[abbr],teamName=FIFA_TEAM_MAP[abbr];
+      if(!teamName)return next();
+      return fetch('https://api.fifa.com/api/v3/teams/'+id+'/squad?idCompetition=17&idSeason=285023')
+        .then(function(r){return r.json()}).then(function(d){
+          if(d&&d.Players){
+            var ourSquad=PLAYERS[teamName]||[];
+            d.Players.forEach(function(p){
+              if(p.PlayerPicture&&p.PlayerPicture.PictureUrl){
+                var url=p.PlayerPicture.PictureUrl,tnk=teamName+'|'+p.JerseyNum;
+                FIFA_PHOTO_BY_TEAM_NUM[tnk]=url;fifaPhotosByTeamNum[tnk]=url;
+                if(p.PlayerName&&p.PlayerName[0]&&p.PlayerName[0].Description){
+                  var fifaNorm=norm(p.PlayerName[0].Description),fnk=teamName+'|'+fifaNorm;
+                  FIFA_PHOTO_BY_TEAM_NAME[fnk]=url;fifaPhotosByTeamName[fnk]=url;
+                }
               }
-            }
-            var matched=null;
-            for(var i=0;i<ourSquad.length;i++){if(ourSquad[i].num==p.JerseyNum){matched=ourSquad[i];break}}
-            if(!matched&&p.PlayerName&&p.PlayerName[0]&&p.PlayerName[0].Description){
-              var fifaName=norm(p.PlayerName[0].Description);
-              for(var i=0;i<ourSquad.length;i++){
-                var ourName=norm(ourSquad[i].name);
-                if(ourName.indexOf(fifaName.split(' ').pop())>=0||fifaName.indexOf(ourName.split(' ').pop())>=0){matched=ourSquad[i];break}
+              var matched=null;
+              for(var i=0;i<ourSquad.length;i++){if(ourSquad[i].num==p.JerseyNum){matched=ourSquad[i];break}}
+              if(!matched&&p.PlayerName&&p.PlayerName[0]&&p.PlayerName[0].Description){
+                var fifaName=norm(p.PlayerName[0].Description);
+                for(var i=0;i<ourSquad.length;i++){
+                  var ourName=norm(ourSquad[i].name);
+                  if(ourName.indexOf(fifaName.split(' ').pop())>=0||fifaName.indexOf(ourName.split(' ').pop())>=0){matched=ourSquad[i];break}
+                }
               }
-            }
-            FIFA_PLAYER_MAP[p.IdPlayer]={num:p.JerseyNum,pname:matched?matched.name:p.PlayerName[0].Description,team:teamName,abbr:abbr};
-            if(matched&&p.PlayerPicture&&p.PlayerPicture.PictureUrl){
-              if(!PLAYER_PHOTOS[matched.name])PLAYER_PHOTOS[matched.name]=p.PlayerPicture.PictureUrl;
-              fifaPhotosByName[matched.name]=p.PlayerPicture.PictureUrl;
-            }
-          });
-        }
-      }).catch(function(){}).then(next);
+              FIFA_PLAYER_MAP[p.IdPlayer]={num:p.JerseyNum,pname:matched?matched.name:p.PlayerName[0].Description,team:teamName,abbr:abbr};
+              if(matched&&p.PlayerPicture&&p.PlayerPicture.PictureUrl){
+                if(!PLAYER_PHOTOS[matched.name])PLAYER_PHOTOS[matched.name]=p.PlayerPicture.PictureUrl;
+                fifaPhotosByName[matched.name]=p.PlayerPicture.PictureUrl;
+              }
+            });
+          }
+        }).catch(function(){}).then(next);
+    }
+    var batch=[];
+    for(var i=0;i<6;i++)batch.push(next());
+    Promise.all(batch).then(function(){
+      try{localStorage.setItem('FIFA_PLAYER_MAP_CACHE_V2',JSON.stringify({ts:Date.now(),data:FIFA_PLAYER_MAP,photosByName:fifaPhotosByName,photosByTeamNum:fifaPhotosByTeamNum,photosByTeamName:fifaPhotosByTeamName}))}catch(e){}
+      var total=0,comFoto=0;Object.keys(PLAYERS).forEach(function(t){PLAYERS[t].forEach(function(p){total++;if(getPlayerPhoto(p.name,t,p.num))comFoto++})});console.log('FIFA Squad API: '+(total-comFoto)+' sem foto de '+total+' ('+Math.round(comFoto/total*100)+'%)');
+      renderSquads();
+    });
   }
-  var batch=[];
-  for(var i=0;i<6;i++)batch.push(next());
-  Promise.all(batch).then(function(){
-    try{localStorage.setItem('FIFA_PLAYER_MAP_CACHE_V2',JSON.stringify({ts:Date.now(),data:FIFA_PLAYER_MAP,photosByName:fifaPhotosByName,photosByTeamNum:fifaPhotosByTeamNum,photosByTeamName:fifaPhotosByTeamName}))}catch(e){}
-    var total=0,comFoto=0;Object.keys(PLAYERS).forEach(function(t){PLAYERS[t].forEach(function(p){total++;if(getPlayerPhoto(p.name,t,p.num))comFoto++})});console.log('FIFA Squad API: '+(total-comFoto)+' sem foto de '+total+' ('+Math.round(comFoto/total*100)+'%)');
-    renderSquads();
-  });
+  fetchSquads();
+}
+function fetchCalendar(){
+  return fetch('https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200',{cache:"no-store"})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d&&d.Results){d.Results.forEach(function(m){
+        if(m.Home&&m.Home.Abbreviation&&m.Home.IdTeam)FIFA_TEAM_IDS[m.Home.Abbreviation]=m.Home.IdTeam;
+        if(m.Away&&m.Away.Abbreviation&&m.Away.IdTeam)FIFA_TEAM_IDS[m.Away.Abbreviation]=m.Away.IdTeam;
+      })}
+      console.log('Calendar: '+Object.keys(FIFA_TEAM_IDS).length+' team IDs');
+    }).catch(function(){console.log('Calendar fetch failed')});
 }
 
 function processTimeline(idMatch,gameId){
@@ -9632,6 +9652,7 @@ document.getElementById("refresh-btn").addEventListener("click",function(){
 });
 
 // --- Polling automático da FIFA API (a cada 10s) ---
+initFifaMaps();
 (function(){fetchFifaScores(8000);setInterval(function(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length)mergeScores(m)});if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(id&&(isGameLive(g)||(MATCH_STARTED[id]&&!MATCH_ENDED[id])))processTimeline(id,g.n)})}},10000)})();
 
 
