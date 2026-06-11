@@ -169,6 +169,9 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .refresh-btn:hover{background:var(--gold-dim);border-color:var(--gold);transform:rotate(90deg)}
 .refresh-btn:active{transform:rotate(180deg)}
 .countdown-next strong{color:var(--text)}
+.squad-filter-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.squad-filter-bar input{flex:1;min-width:180px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:inherit}
+.squad-filter-bar input:focus{outline:none;border-color:var(--gold)}
 .squads-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
 .squad-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
 .squad-header{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(0,0,0,.2);border-bottom:1px solid var(--border)}
@@ -292,7 +295,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div id="bracket-tree" class="bracket-tree"></div>
 </div>
 <div class="content" id="tab-artilheiros"><div id="scorers-list"></div></div>
-<div class="content" id="tab-convocados"><div class="squads-grid" id="squads-grid"></div></div>
+<div class="content" id="tab-convocados"><div class="squad-filter-bar"><input type="text" id="squad-filter" placeholder="Buscar país ou jogador..." oninput="renderSquads()"></div><div class="squads-grid" id="squads-grid"></div></div>
 <div class="content" id="tab-regras"><div class="rules-content" id="rules-content"></div></div>
 <div class="popup-overlay" id="goal-popup">
   <div class="popup">
@@ -397,7 +400,7 @@ const PLAYERS = {
       "num": 11,
       "name": "Santiago Giménez",
       "club": "Milan",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Goleiro",
@@ -411,7 +414,7 @@ const PLAYERS = {
       "num": 13,
       "name": "Guillermo Ochoa",
       "club": "AEL Limassol",
-      "pais": "Outro"
+      "pais": "Chipre"
     },
     {
       "pos": "Atacante",
@@ -425,7 +428,7 @@ const PLAYERS = {
       "num": 15,
       "name": "Israel Reyes",
       "club": "América",
-      "pais": "Outro"
+      "pais": "México"
     },
     {
       "pos": "Atacante",
@@ -460,7 +463,7 @@ const PLAYERS = {
       "num": 20,
       "name": "Mateo Chávez",
       "club": "AZ",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Atacante",
@@ -474,7 +477,7 @@ const PLAYERS = {
       "num": 22,
       "name": "Guillermo Martínez",
       "club": "Pumas",
-      "pais": "Outro"
+      "pais": "México"
     },
     {
       "pos": "Defensor",
@@ -518,7 +521,7 @@ const PLAYERS = {
       "num": 2,
       "name": "Thabang Matuludi",
       "club": "Polokwane City",
-      "pais": "Outro"
+      "pais": "África do Sul"
     },
     {
       "pos": "Defensor",
@@ -588,14 +591,14 @@ const PLAYERS = {
       "num": 12,
       "name": "Thapelo Maseko",
       "club": "AEL Limassol",
-      "pais": "Outro"
+      "pais": "Chipre"
     },
     {
       "pos": "Meio-campista",
       "num": 13,
       "name": "Sphephelo Sithole",
       "club": "Tondela",
-      "pais": "Outro"
+      "pais": "Portugal"
     },
     {
       "pos": "Defensor",
@@ -651,14 +654,14 @@ const PLAYERS = {
       "num": 21,
       "name": "Ime Okon",
       "club": "Hannover 96",
-      "pais": "Outro"
+      "pais": "Alemanha"
     },
     {
       "pos": "Goleiro",
       "num": 22,
       "name": "Ricardo Goss",
       "club": "Siwelele",
-      "pais": "Outro"
+      "pais": "África do Sul"
     },
     {
       "pos": "Meio-campista",
@@ -709,7 +712,7 @@ const PLAYERS = {
       "num": 3,
       "name": "Lee Gi-hyuk",
       "club": "Gangwon FC",
-      "pais": "Outro"
+      "pais": "Coreia do Sul"
     },
     {
       "pos": "Defensor",
@@ -744,7 +747,7 @@ const PLAYERS = {
       "num": 8,
       "name": "Paik Seung-ho",
       "club": "Birmingham City",
-      "pais": "Outro"
+      "pais": "Inglaterra"
     },
     {
       "pos": "Atacante",
@@ -779,7 +782,7 @@ const PLAYERS = {
       "num": 13,
       "name": "Lee Tae-seok",
       "club": "Austria Wien",
-      "pais": "Outro"
+      "pais": "Áustria"
     },
     {
       "pos": "Defensor",
@@ -793,14 +796,14 @@ const PLAYERS = {
       "num": 15,
       "name": "Kim Moon-hwan",
       "club": "Daejeon Hana Citizen",
-      "pais": "Outro"
+      "pais": "Coreia do Sul"
     },
     {
       "pos": "Defensor",
       "num": 16,
       "name": "Park Jin-seob",
       "club": "Zhejiang",
-      "pais": "Outro"
+      "pais": "China"
     },
     {
       "pos": "Meio-campista",
@@ -879,7 +882,7 @@ const PLAYERS = {
       "num": 1,
       "name": "Matěj Kovář",
       "club": "PSV Eindhoven",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Defensor",
@@ -928,7 +931,7 @@ const PLAYERS = {
       "num": 8,
       "name": "Vladimír Darida",
       "club": "Hradec Králové",
-      "pais": "Outro"
+      "pais": "República Tcheca"
     },
     {
       "pos": "Atacante",
@@ -1063,28 +1066,28 @@ const PLAYERS = {
       "num": 1,
       "name": "Nikola Vasilj",
       "club": "FC St. Pauli",
-      "pais": "Outro"
+      "pais": "Alemanha"
     },
     {
       "pos": "Defensor",
       "num": 2,
       "name": "Nihad Mujakić",
       "club": "Gaziantep",
-      "pais": "Outro"
+      "pais": "Turquia"
     },
     {
       "pos": "Defensor",
       "num": 3,
       "name": "Dennis Hadžikadunić",
       "club": "Sampdoria",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Defensor",
       "num": 4,
       "name": "Tarik Muharemović",
       "club": "Sassuolo",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Defensor",
@@ -1119,7 +1122,7 @@ const PLAYERS = {
       "num": 9,
       "name": "Samed Baždar",
       "club": "Jagiellonia Białystok",
-      "pais": "Outro"
+      "pais": "Polônia"
     },
     {
       "pos": "Atacante",
@@ -1140,21 +1143,21 @@ const PLAYERS = {
       "num": 12,
       "name": "Mladen Jurkas",
       "club": "Borac Banja Luka",
-      "pais": "Outro"
+      "pais": "Bósnia"
     },
     {
       "pos": "Meio-campista",
       "num": 13,
       "name": "Ivan Bašić",
       "club": "Astana",
-      "pais": "Outro"
+      "pais": "Cazaquistão"
     },
     {
       "pos": "Meio-campista",
       "num": 14,
       "name": "Ivan Šunjić",
       "club": "Pafos",
-      "pais": "Outro"
+      "pais": "Chipre"
     },
     {
       "pos": "Meio-campista",
@@ -1168,7 +1171,7 @@ const PLAYERS = {
       "num": 16,
       "name": "Amir Hadžiahmetović",
       "club": "Hull City",
-      "pais": "Outro"
+      "pais": "Inglaterra"
     },
     {
       "pos": "Meio-campista",
@@ -1196,21 +1199,21 @@ const PLAYERS = {
       "num": 20,
       "name": "Esmir Bajraktarević",
       "club": "PSV Eindhoven",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Defensor",
       "num": 21,
       "name": "Stjepan Radeljić",
       "club": "Rijeka",
-      "pais": "Outro"
+      "pais": "Croácia"
     },
     {
       "pos": "Goleiro",
       "num": 22,
       "name": "Martin Zlomislić",
       "club": "Rijeka",
-      "pais": "Outro"
+      "pais": "Croácia"
     },
     {
       "pos": "Atacante",
@@ -1231,14 +1234,14 @@ const PLAYERS = {
       "num": 25,
       "name": "Jovo Lukić",
       "club": "Universitatea Cluj",
-      "pais": "Outro"
+      "pais": "Romênia"
     },
     {
       "pos": "Meio-campista",
       "num": 26,
       "name": "Ermin Mahmić",
       "club": "Slovan Liberec",
-      "pais": "Outro"
+      "pais": "República Tcheca"
     }
   ],
   "Canadá": [
@@ -1296,7 +1299,7 @@ const PLAYERS = {
       "num": 8,
       "name": "Ismaël Koné",
       "club": "Sassuolo",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Atacante",
@@ -1317,7 +1320,7 @@ const PLAYERS = {
       "num": 11,
       "name": "Liam Millar",
       "club": "Hull City",
-      "pais": "Outro"
+      "pais": "Inglaterra"
     },
     {
       "pos": "Atacante",
@@ -1352,7 +1355,7 @@ const PLAYERS = {
       "num": 16,
       "name": "Maxime Crépeau",
       "club": "Orlando City SC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Atacante",
@@ -1366,7 +1369,7 @@ const PLAYERS = {
       "num": 18,
       "name": "Owen Goodman",
       "club": "Barnsley",
-      "pais": "Outro"
+      "pais": "Inglaterra"
     },
     {
       "pos": "Defensor",
@@ -1431,7 +1434,7 @@ const PLAYERS = {
       "num": 1,
       "name": "Mahmud Abunada",
       "club": "Al-Rayyan",
-      "pais": "Outro"
+      "pais": "Catar"
     },
     {
       "pos": "Defensor",
@@ -1459,21 +1462,21 @@ const PLAYERS = {
       "num": 5,
       "name": "Jassem Gaber",
       "club": "Al-Rayyan",
-      "pais": "Outro"
+      "pais": "Catar"
     },
     {
       "pos": "Meio-campista",
       "num": 6,
       "name": "Abdulaziz Hatem",
       "club": "Al-Rayyan",
-      "pais": "Outro"
+      "pais": "Catar"
     },
     {
       "pos": "Atacante",
       "num": 7,
       "name": "Ahmed Alaaeldin",
       "club": "Al-Rayyan",
-      "pais": "Outro"
+      "pais": "Catar"
     },
     {
       "pos": "Atacante",
@@ -1522,7 +1525,7 @@ const PLAYERS = {
       "num": 14,
       "name": "Homam Ahmed",
       "club": "Cultural Leonesa",
-      "pais": "Outro"
+      "pais": "Espanha"
     },
     {
       "pos": "Atacante",
@@ -1706,7 +1709,7 @@ const PLAYERS = {
       "num": 14,
       "name": "Ardon Jashari",
       "club": "Milan",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Meio-campista",
@@ -1748,7 +1751,7 @@ const PLAYERS = {
       "num": 20,
       "name": "Michel Aebischer",
       "club": "Pisa",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Goleiro",
@@ -1983,7 +1986,7 @@ const PLAYERS = {
       "num": 1,
       "name": "Johny Placide",
       "club": "Bastia",
-      "pais": "Outro"
+      "pais": "França"
     },
     {
       "pos": "Defensor",
@@ -2004,7 +2007,7 @@ const PLAYERS = {
       "num": 4,
       "name": "Ricardo Adé",
       "club": "LDU Quito",
-      "pais": "Outro"
+      "pais": "Equador"
     },
     {
       "pos": "Defensor",
@@ -2018,7 +2021,7 @@ const PLAYERS = {
       "num": 6,
       "name": "Carl Sainté",
       "club": "El Paso Locomotive FC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Atacante",
@@ -2032,7 +2035,7 @@ const PLAYERS = {
       "num": 8,
       "name": "Martin Expérience",
       "club": "Nancy",
-      "pais": "Outro"
+      "pais": "França"
     },
     {
       "pos": "Atacante",
@@ -2067,21 +2070,21 @@ const PLAYERS = {
       "num": 13,
       "name": "Duke Lacroix",
       "club": "Colorado Springs Switchbacks FC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Meio-campista",
       "num": 14,
       "name": "Leverton Pierre",
       "club": "Vizela",
-      "pais": "Outro"
+      "pais": "Portugal"
     },
     {
       "pos": "Atacante",
       "num": 15,
       "name": "Ruben Providence",
       "club": "Almere City",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Atacante",
@@ -2109,14 +2112,14 @@ const PLAYERS = {
       "num": 19,
       "name": "Yassin Fortuné",
       "club": "Vizela",
-      "pais": "Outro"
+      "pais": "Portugal"
     },
     {
       "pos": "Atacante",
       "num": 20,
       "name": "Frantzdy Pierrot",
       "club": "Çaykur Rizespor",
-      "pais": "Outro"
+      "pais": "Turquia"
     },
     {
       "pos": "Atacante",
@@ -2130,35 +2133,35 @@ const PLAYERS = {
       "num": 22,
       "name": "Jean-Kévin Duverne",
       "club": "Gent",
-      "pais": "Outro"
+      "pais": "Bélgica"
     },
     {
       "pos": "Goleiro",
       "num": 23,
       "name": "Josué Duverger",
       "club": "Cosmos Koblenz",
-      "pais": "Outro"
+      "pais": "Alemanha"
     },
     {
       "pos": "Defensor",
       "num": 24,
       "name": "Wilguens Paugain",
       "club": "Zulte Waregem",
-      "pais": "Outro"
+      "pais": "Bélgica"
     },
     {
       "pos": "Meio-campista",
       "num": 25,
       "name": "Dominique Simon",
       "club": "Tatran Prešov",
-      "pais": "Outro"
+      "pais": "Eslováquia"
     },
     {
       "pos": "Meio-campista",
       "num": 26,
       "name": "Woodensky Pierre",
       "club": "Violette",
-      "pais": "Outro"
+      "pais": "Haiti"
     }
   ],
   "Marrocos": [
@@ -2223,7 +2226,7 @@ const PLAYERS = {
       "num": 9,
       "name": "Soufiane Rahimi",
       "club": "Al Ain",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Atacante",
@@ -2237,7 +2240,7 @@ const PLAYERS = {
       "num": 11,
       "name": "Ismael Saibari",
       "club": "PSV Eindhoven",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Goleiro",
@@ -2314,7 +2317,7 @@ const PLAYERS = {
       "num": 22,
       "name": "Ahmed Reda Tagnaouti",
       "club": "AS FAR",
-      "pais": "Outro"
+      "pais": "Marrocos"
     },
     {
       "pos": "Meio-campista",
@@ -2335,14 +2338,14 @@ const PLAYERS = {
       "num": 25,
       "name": "Redouane Halhal",
       "club": "Mechelen",
-      "pais": "Outro"
+      "pais": "Bélgica"
     },
     {
       "pos": "Defensor",
       "num": 26,
       "name": "Anass Salah-Eddine",
       "club": "PSV Eindhoven",
-      "pais": "Outro"
+      "pais": "Holanda"
     }
   ],
   "Escócia": [
@@ -2407,7 +2410,7 @@ const PLAYERS = {
       "num": 9,
       "name": "Lyndon Dykes",
       "club": "Charlton Athletic",
-      "pais": "Outro"
+      "pais": "Inglaterra"
     },
     {
       "pos": "Atacante",
@@ -2456,7 +2459,7 @@ const PLAYERS = {
       "num": 16,
       "name": "Dominic Hyam",
       "club": "Wrexham",
-      "pais": "Outro"
+      "pais": "País de Gales"
     },
     {
       "pos": "Atacante",
@@ -2484,14 +2487,14 @@ const PLAYERS = {
       "num": 20,
       "name": "Lawrence Shankland",
       "club": "Heart of Midlothian",
-      "pais": "Outro"
+      "pais": "Escócia"
     },
     {
       "pos": "Goleiro",
       "num": 21,
       "name": "Craig Gordon",
       "club": "Heart of Midlothian",
-      "pais": "Outro"
+      "pais": "Escócia"
     },
     {
       "pos": "Defensor",
@@ -2535,7 +2538,7 @@ const PLAYERS = {
       "num": 1,
       "name": "Mathew Ryan",
       "club": "Levante",
-      "pais": "Outro"
+      "pais": "Espanha"
     },
     {
       "pos": "Defensor",
@@ -2570,21 +2573,21 @@ const PLAYERS = {
       "num": 6,
       "name": "Jason Geria",
       "club": "Albirex Niigata",
-      "pais": "Outro"
+      "pais": "Japão"
     },
     {
       "pos": "Atacante",
       "num": 7,
       "name": "Mathew Leckie",
       "club": "Melbourne City",
-      "pais": "Outro"
+      "pais": "Austrália"
     },
     {
       "pos": "Meio-campista",
       "num": 8,
       "name": "Connor Metcalfe",
       "club": "FC St. Pauli",
-      "pais": "Outro"
+      "pais": "Alemanha"
     },
     {
       "pos": "Atacante",
@@ -2598,21 +2601,21 @@ const PLAYERS = {
       "num": 10,
       "name": "Ajdin Hrustic",
       "club": "Heracles Almelo",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Atacante",
       "num": 11,
       "name": "Awer Mabil",
       "club": "Castellón",
-      "pais": "Outro"
+      "pais": "Espanha"
     },
     {
       "pos": "Goleiro",
       "num": 12,
       "name": "Paul Izzo",
       "club": "Randers",
-      "pais": "Outro"
+      "pais": "Dinamarca"
     },
     {
       "pos": "Meio-campista",
@@ -2626,7 +2629,7 @@ const PLAYERS = {
       "num": 14,
       "name": "Cammy Devlin",
       "club": "Heart of Midlothian",
-      "pais": "Outro"
+      "pais": "Escócia"
     },
     {
       "pos": "Defensor",
@@ -2640,7 +2643,7 @@ const PLAYERS = {
       "num": 16,
       "name": "Aziz Behich",
       "club": "Melbourne City",
-      "pais": "Outro"
+      "pais": "Austrália"
     },
     {
       "pos": "Atacante",
@@ -2654,7 +2657,7 @@ const PLAYERS = {
       "num": 18,
       "name": "Patrick Beach",
       "club": "Melbourne City",
-      "pais": "Outro"
+      "pais": "Austrália"
     },
     {
       "pos": "Defensor",
@@ -2668,7 +2671,7 @@ const PLAYERS = {
       "num": 20,
       "name": "Cristian Volpato",
       "club": "Sassuolo",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Defensor",
@@ -2682,21 +2685,21 @@ const PLAYERS = {
       "num": 22,
       "name": "Jackson Irvine",
       "club": "FC St. Pauli",
-      "pais": "Outro"
+      "pais": "Alemanha"
     },
     {
       "pos": "Atacante",
       "num": 23,
       "name": "Nishan Velupillay",
       "club": "Melbourne Victory",
-      "pais": "Outro"
+      "pais": "Austrália"
     },
     {
       "pos": "Meio-campista",
       "num": 24,
       "name": "Paul Okon-Engstler",
       "club": "Sydney FC",
-      "pais": "Outro"
+      "pais": "Austrália"
     },
     {
       "pos": "Defensor",
@@ -2719,14 +2722,14 @@ const PLAYERS = {
       "num": 1,
       "name": "Gatito Fernández",
       "club": "Cerro Porteño",
-      "pais": "Outro"
+      "pais": "Paraguai"
     },
     {
       "pos": "Defensor",
       "num": 2,
       "name": "Gustavo Velázquez",
       "club": "Cerro Porteño",
-      "pais": "Outro"
+      "pais": "Paraguai"
     },
     {
       "pos": "Defensor",
@@ -2754,7 +2757,7 @@ const PLAYERS = {
       "num": 6,
       "name": "Júnior Alonso",
       "club": "Atlético Mineiro",
-      "pais": "Outro"
+      "pais": "Brasil"
     },
     {
       "pos": "Meio-campista",
@@ -2775,14 +2778,14 @@ const PLAYERS = {
       "num": 9,
       "name": "Antonio Sanabria",
       "club": "Cremonese",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Meio-campista",
       "num": 10,
       "name": "Miguel Almirón",
       "club": "Atlanta United FC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Meio-campista",
@@ -2796,21 +2799,21 @@ const PLAYERS = {
       "num": 12,
       "name": "Orlando Gill",
       "club": "San Lorenzo",
-      "pais": "Outro"
+      "pais": "Argentina"
     },
     {
       "pos": "Defensor",
       "num": 13,
       "name": "José Canale",
       "club": "Lanús",
-      "pais": "Outro"
+      "pais": "Argentina"
     },
     {
       "pos": "Meio-campista",
       "num": 14,
       "name": "Andrés Cubas",
       "club": "Vancouver Whitecaps FC",
-      "pais": "Outro"
+      "pais": "Canadá"
     },
     {
       "pos": "Defensor",
@@ -2831,14 +2834,14 @@ const PLAYERS = {
       "num": 17,
       "name": "Kaku",
       "club": "Al Ain",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Atacante",
       "num": 18,
       "name": "Álex Arce",
       "club": "Independiente Rivadavia",
-      "pais": "Outro"
+      "pais": "Argentina"
     },
     {
       "pos": "Atacante",
@@ -2852,28 +2855,28 @@ const PLAYERS = {
       "num": 20,
       "name": "Braian Ojeda",
       "club": "Orlando City SC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Atacante",
       "num": 21,
       "name": "Gabriel Ávalos",
       "club": "Independiente",
-      "pais": "Outro"
+      "pais": "Argentina"
     },
     {
       "pos": "Goleiro",
       "num": 22,
       "name": "Gastón Olveira",
       "club": "Olimpia",
-      "pais": "Outro"
+      "pais": "Paraguai"
     },
     {
       "pos": "Meio-campista",
       "num": 23,
       "name": "Matías Galarza",
       "club": "Atlanta United FC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Meio-campista",
@@ -2887,14 +2890,14 @@ const PLAYERS = {
       "num": 25,
       "name": "Isidro Pitta",
       "club": "Red Bull Bragantino",
-      "pais": "Outro"
+      "pais": "Brasil"
     },
     {
       "pos": "Defensor",
       "num": 26,
       "name": "Alexandro Maidana",
       "club": "Talleres",
-      "pais": "Outro"
+      "pais": "Argentina"
     }
   ],
   "Turquia": [
@@ -3071,7 +3074,7 @@ const PLAYERS = {
       "num": 25,
       "name": "Samet Akaydin",
       "club": "Çaykur Rizespor",
-      "pais": "Outro"
+      "pais": "Turquia"
     },
     {
       "pos": "Atacante",
@@ -3094,7 +3097,7 @@ const PLAYERS = {
       "num": 2,
       "name": "Sergiño Dest",
       "club": "PSV Eindhoven",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Defensor",
@@ -3143,14 +3146,14 @@ const PLAYERS = {
       "num": 9,
       "name": "Ricardo Pepi",
       "club": "PSV Eindhoven",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Atacante",
       "num": 10,
       "name": "Christian Pulisic",
       "club": "Milan",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Atacante",
@@ -3171,21 +3174,21 @@ const PLAYERS = {
       "num": 13,
       "name": "Tim Ream",
       "club": "Charlotte FC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Meio-campista",
       "num": 14,
       "name": "Sebastian Berhalter",
       "club": "Vancouver Whitecaps FC",
-      "pais": "Outro"
+      "pais": "Canadá"
     },
     {
       "pos": "Meio-campista",
       "num": 15,
       "name": "Cristian Roldan",
       "club": "Seattle Sounders FC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Defensor",
@@ -3262,7 +3265,7 @@ const PLAYERS = {
       "num": 26,
       "name": "Alejandro Zendejas",
       "club": "América",
-      "pais": "Outro"
+      "pais": "México"
     }
   ],
   "Curaçao": [
@@ -3271,77 +3274,77 @@ const PLAYERS = {
       "num": 1,
       "name": "Eloy Room",
       "club": "Miami FC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Defensor",
       "num": 2,
       "name": "Shurandy Sambo",
       "club": "Sparta Rotterdam",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Defensor",
       "num": 3,
       "name": "Juriën Gaari",
       "club": "Abha",
-      "pais": "Outro"
+      "pais": "Arábia Saudita"
     },
     {
       "pos": "Defensor",
       "num": 4,
       "name": "Roshon van Eijma",
       "club": "RKC Waalwijk",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Defensor",
       "num": 5,
       "name": "Sherel Floranus",
       "club": "PEC Zwolle",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Meio-campista",
       "num": 6,
       "name": "Godfried Roemeratoe",
       "club": "RKC Waalwijk",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Meio-campista",
       "num": 7,
       "name": "Juninho Bacuna",
       "club": "Volendam",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Meio-campista",
       "num": 8,
       "name": "Livano Comenencia",
       "club": "Zürich",
-      "pais": "Outro"
+      "pais": "Suíça"
     },
     {
       "pos": "Atacante",
       "num": 9,
       "name": "Jürgen Locadia",
       "club": "Miami FC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Meio-campista",
       "num": 10,
       "name": "Leandro Bacuna",
       "club": "Iğdır",
-      "pais": "Outro"
+      "pais": "Turquia"
     },
     {
       "pos": "Atacante",
       "num": 11,
       "name": "Jeremy Antonisse",
       "club": "Kifisia",
-      "pais": "Outro"
+      "pais": "Grécia"
     },
     {
       "pos": "Atacante",
@@ -3355,56 +3358,56 @@ const PLAYERS = {
       "num": 13,
       "name": "Tyrese Noslin",
       "club": "Telstar",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Atacante",
       "num": 14,
       "name": "Kenji Gorré",
       "club": "Maccabi Haifa",
-      "pais": "Outro"
+      "pais": "Israel"
     },
     {
       "pos": "Meio-campista",
       "num": 15,
       "name": "Ar'jany Martha",
       "club": "Rotherham United",
-      "pais": "Outro"
+      "pais": "Inglaterra"
     },
     {
       "pos": "Atacante",
       "num": 16,
       "name": "Jearl Margaritha",
       "club": "Beveren",
-      "pais": "Outro"
+      "pais": "Bélgica"
     },
     {
       "pos": "Atacante",
       "num": 17,
       "name": "Brandley Kuwas",
       "club": "Volendam",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Defensor",
       "num": 18,
       "name": "Armando Obispo",
       "club": "PSV Eindhoven",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Atacante",
       "num": 19,
       "name": "Gervane Kastaneer",
       "club": "Terengganu",
-      "pais": "Outro"
+      "pais": "Malásia"
     },
     {
       "pos": "Defensor",
       "num": 20,
       "name": "Joshua Brenet",
       "club": "Kayserispor",
-      "pais": "Outro"
+      "pais": "Turquia"
     },
     {
       "pos": "Meio-campista",
@@ -3418,7 +3421,7 @@ const PLAYERS = {
       "num": 22,
       "name": "Kevin Felida",
       "club": "Den Bosch",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Defensor",
@@ -3432,21 +3435,21 @@ const PLAYERS = {
       "num": 24,
       "name": "Deveron Fonville",
       "club": "NEC",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Goleiro",
       "num": 25,
       "name": "Tyrick Bodak",
       "club": "Telstar",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Goleiro",
       "num": 26,
       "name": "Trevor Doornbusch",
       "club": "VVV-Venlo",
-      "pais": "Outro"
+      "pais": "Holanda"
     }
   ],
   "Equador": [
@@ -3455,7 +3458,7 @@ const PLAYERS = {
       "num": 1,
       "name": "Hernán Galíndez",
       "club": "Huracán",
-      "pais": "Outro"
+      "pais": "Argentina"
     },
     {
       "pos": "Defensor",
@@ -3483,7 +3486,7 @@ const PLAYERS = {
       "num": 5,
       "name": "Jordy Alcívar",
       "club": "Independiente del Valle",
-      "pais": "Outro"
+      "pais": "Equador"
     },
     {
       "pos": "Defensor",
@@ -3497,7 +3500,7 @@ const PLAYERS = {
       "num": 7,
       "name": "Pervis Estupiñán",
       "club": "Milan",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Meio-campista",
@@ -3532,7 +3535,7 @@ const PLAYERS = {
       "num": 12,
       "name": "Moisés Ramírez",
       "club": "Kifisia",
-      "pais": "Outro"
+      "pais": "Grécia"
     },
     {
       "pos": "Atacante",
@@ -3546,28 +3549,28 @@ const PLAYERS = {
       "num": 14,
       "name": "Alan Minda",
       "club": "Atlético Mineiro",
-      "pais": "Outro"
+      "pais": "Brasil"
     },
     {
       "pos": "Meio-campista",
       "num": 15,
       "name": "Pedro Vite",
       "club": "Pumas",
-      "pais": "Outro"
+      "pais": "México"
     },
     {
       "pos": "Atacante",
       "num": 16,
       "name": "Jordy Caicedo",
       "club": "Huracán",
-      "pais": "Outro"
+      "pais": "Argentina"
     },
     {
       "pos": "Defensor",
       "num": 17,
       "name": "Ángelo Preciado",
       "club": "Atlético Mineiro",
-      "pais": "Outro"
+      "pais": "Brasil"
     },
     {
       "pos": "Meio-campista",
@@ -3595,14 +3598,14 @@ const PLAYERS = {
       "num": 21,
       "name": "Alan Franco",
       "club": "Atlético Mineiro",
-      "pais": "Outro"
+      "pais": "Brasil"
     },
     {
       "pos": "Goleiro",
       "num": 22,
       "name": "Gonzalo Valle",
       "club": "LDU Quito",
-      "pais": "Outro"
+      "pais": "Equador"
     },
     {
       "pos": "Meio-campista",
@@ -3823,7 +3826,7 @@ const PLAYERS = {
       "num": 1,
       "name": "Yahia Fofana",
       "club": "Çaykur Rizespor",
-      "pais": "Outro"
+      "pais": "Turquia"
     },
     {
       "pos": "Defensor",
@@ -3837,14 +3840,14 @@ const PLAYERS = {
       "num": 3,
       "name": "Ghislain Konan",
       "club": "Gil Vicente",
-      "pais": "Outro"
+      "pais": "Portugal"
     },
     {
       "pos": "Meio-campista",
       "num": 4,
       "name": "Jean Michaël Seri",
       "club": "Maribor",
-      "pais": "Outro"
+      "pais": "Eslovênia"
     },
     {
       "pos": "Defensor",
@@ -3914,7 +3917,7 @@ const PLAYERS = {
       "num": 14,
       "name": "Oumar Diakité",
       "club": "Cercle Brugge",
-      "pais": "Outro"
+      "pais": "Bélgica"
     },
     {
       "pos": "Atacante",
@@ -3928,7 +3931,7 @@ const PLAYERS = {
       "num": 16,
       "name": "Mohamed Koné",
       "club": "Charleroi",
-      "pais": "Outro"
+      "pais": "Bélgica"
     },
     {
       "pos": "Defensor",
@@ -3991,7 +3994,7 @@ const PLAYERS = {
       "num": 25,
       "name": "Parfait Guiagon",
       "club": "Charleroi",
-      "pais": "Outro"
+      "pais": "Bélgica"
     },
     {
       "pos": "Meio-campista",
@@ -4021,7 +4024,7 @@ const PLAYERS = {
       "num": 3,
       "name": "Shōgo Taniguchi",
       "club": "Sint-Truiden",
-      "pais": "Outro"
+      "pais": "Bélgica"
     },
     {
       "pos": "Defensor",
@@ -4063,7 +4066,7 @@ const PLAYERS = {
       "num": 9,
       "name": "Keisuke Gotō",
       "club": "Sint-Truiden",
-      "pais": "Outro"
+      "pais": "Bélgica"
     },
     {
       "pos": "Meio-campista",
@@ -4133,7 +4136,7 @@ const PLAYERS = {
       "num": 19,
       "name": "Kōki Ogawa",
       "club": "NEC",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Defensor",
@@ -4296,7 +4299,7 @@ const PLAYERS = {
       "num": 16,
       "name": "Guus Til",
       "club": "PSV Eindhoven",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Atacante",
@@ -4459,7 +4462,7 @@ const PLAYERS = {
       "num": 13,
       "name": "Ken Sema",
       "club": "Pafos",
-      "pais": "Outro"
+      "pais": "Chipre"
     },
     {
       "pos": "Defensor",
@@ -4508,7 +4511,7 @@ const PLAYERS = {
       "num": 20,
       "name": "Eric Smith",
       "club": "FC St. Pauli",
-      "pais": "Outro"
+      "pais": "Alemanha"
     },
     {
       "pos": "Defensor",
@@ -4536,7 +4539,7 @@ const PLAYERS = {
       "num": 24,
       "name": "Elliot Stroud",
       "club": "Mjällby AIF",
-      "pais": "Outro"
+      "pais": "Suécia"
     },
     {
       "pos": "Atacante",
@@ -4559,7 +4562,7 @@ const PLAYERS = {
       "num": 1,
       "name": "Mouhib Chamakh",
       "club": "Club Africain",
-      "pais": "Outro"
+      "pais": "Tunísia"
     },
     {
       "pos": "Defensor",
@@ -4580,7 +4583,7 @@ const PLAYERS = {
       "num": 4,
       "name": "Omar Rekik",
       "club": "Maribor",
-      "pais": "Outro"
+      "pais": "Eslovênia"
     },
     {
       "pos": "Defensor",
@@ -4608,14 +4611,14 @@ const PLAYERS = {
       "num": 8,
       "name": "Elias Saad",
       "club": "Hannover 96",
-      "pais": "Outro"
+      "pais": "Alemanha"
     },
     {
       "pos": "Atacante",
       "num": 9,
       "name": "Hazem Mastouri",
       "club": "Dynamo Makhachkala",
-      "pais": "Outro"
+      "pais": "Rússia"
     },
     {
       "pos": "Meio-campista",
@@ -4643,7 +4646,7 @@ const PLAYERS = {
       "num": 13,
       "name": "Rani Khedira",
       "club": "Union Berlin",
-      "pais": "Outro"
+      "pais": "Alemanha"
     },
     {
       "pos": "Meio-campista",
@@ -4664,7 +4667,7 @@ const PLAYERS = {
       "num": 16,
       "name": "Aymen Dahmen",
       "club": "CS Sfaxien",
-      "pais": "Outro"
+      "pais": "Tunísia"
     },
     {
       "pos": "Meio-campista",
@@ -4678,14 +4681,14 @@ const PLAYERS = {
       "num": 18,
       "name": "Rayan Elloumi",
       "club": "Vancouver Whitecaps FC",
-      "pais": "Outro"
+      "pais": "Canadá"
     },
     {
       "pos": "Atacante",
       "num": 19,
       "name": "Firas Chaouat",
       "club": "Club Africain",
-      "pais": "Outro"
+      "pais": "Tunísia"
     },
     {
       "pos": "Defensor",
@@ -4699,14 +4702,14 @@ const PLAYERS = {
       "num": 21,
       "name": "Mohamed Amine Ben Hamida",
       "club": "Espérance de Tunis",
-      "pais": "Outro"
+      "pais": "Tunísia"
     },
     {
       "pos": "Goleiro",
       "num": 22,
       "name": "Sabri Ben Hessen",
       "club": "Étoile du Sahel",
-      "pais": "Outro"
+      "pais": "Tunísia"
     },
     {
       "pos": "Defensor",
@@ -4720,7 +4723,7 @@ const PLAYERS = {
       "num": 24,
       "name": "Raed Chikhaoui",
       "club": "US Monastir",
-      "pais": "Outro"
+      "pais": "Tunísia"
     },
     {
       "pos": "Meio-campista",
@@ -4848,7 +4851,7 @@ const PLAYERS = {
       "num": 16,
       "name": "Koni De Winter",
       "club": "Milan",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Atacante",
@@ -4890,7 +4893,7 @@ const PLAYERS = {
       "num": 22,
       "name": "Alexis Saelemaekers",
       "club": "Milan",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Meio-campista",
@@ -4955,7 +4958,7 @@ const PLAYERS = {
       "num": 5,
       "name": "Ramy Rabia",
       "club": "Al Ain",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Defensor",
@@ -4983,7 +4986,7 @@ const PLAYERS = {
       "num": 9,
       "name": "Hamza Abdelkarim",
       "club": "Barcelona B",
-      "pais": "Outro"
+      "pais": "Espanha"
     },
     {
       "pos": "Atacante",
@@ -5004,7 +5007,7 @@ const PLAYERS = {
       "num": 12,
       "name": "Haissem Hassan",
       "club": "Oviedo",
-      "pais": "Outro"
+      "pais": "Espanha"
     },
     {
       "pos": "Defensor",
@@ -5046,7 +5049,7 @@ const PLAYERS = {
       "num": 18,
       "name": "Nabil Emad",
       "club": "Al-Najma",
-      "pais": "Outro"
+      "pais": "Arábia Saudita"
     },
     {
       "pos": "Meio-campista",
@@ -5067,7 +5070,7 @@ const PLAYERS = {
       "num": 21,
       "name": "Mahmoud Saber",
       "club": "ZED",
-      "pais": "Outro"
+      "pais": "Egito"
     },
     {
       "pos": "Atacante",
@@ -5088,7 +5091,7 @@ const PLAYERS = {
       "num": 24,
       "name": "Tarek Alaa",
       "club": "ZED",
-      "pais": "Outro"
+      "pais": "Egito"
     },
     {
       "pos": "Atacante",
@@ -5102,7 +5105,7 @@ const PLAYERS = {
       "num": 26,
       "name": "Mohamed Alaa",
       "club": "El Gouna",
-      "pais": "Outro"
+      "pais": "Egito"
     }
   ],
   "Irã": [
@@ -5146,7 +5149,7 @@ const PLAYERS = {
       "num": 6,
       "name": "Saeid Ezatolahi",
       "club": "Shabab Al Ahli",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Meio-campista",
@@ -5174,7 +5177,7 @@ const PLAYERS = {
       "num": 10,
       "name": "Mehdi Ghayedi",
       "club": "Al Nasr",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Atacante",
@@ -5202,7 +5205,7 @@ const PLAYERS = {
       "num": 14,
       "name": "Saman Ghoddos",
       "club": "Kalba",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Meio-campista",
@@ -5237,21 +5240,21 @@ const PLAYERS = {
       "num": 19,
       "name": "Ali Nemati",
       "club": "Foolad",
-      "pais": "Outro"
+      "pais": "Irã"
     },
     {
       "pos": "Atacante",
       "num": 20,
       "name": "Shahriyar Moghanlou",
       "club": "Kalba",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Meio-campista",
       "num": 21,
       "name": "Mohammad Ghorbani",
       "club": "Al Wahda",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Goleiro",
@@ -5265,7 +5268,7 @@ const PLAYERS = {
       "num": 23,
       "name": "Ramin Rezaeian",
       "club": "Foolad",
-      "pais": "Outro"
+      "pais": "Irã"
     },
     {
       "pos": "Atacante",
@@ -5279,7 +5282,7 @@ const PLAYERS = {
       "num": 25,
       "name": "Danial Eiri",
       "club": "Malavan",
-      "pais": "Outro"
+      "pais": "Irã"
     },
     {
       "pos": "Meio-campista",
@@ -5302,14 +5305,14 @@ const PLAYERS = {
       "num": 2,
       "name": "Tim Payne",
       "club": "Wellington Phoenix",
-      "pais": "Outro"
+      "pais": "Nova Zelândia"
     },
     {
       "pos": "Defensor",
       "num": 3,
       "name": "Francis de Vries",
       "club": "Auckland FC",
-      "pais": "Outro"
+      "pais": "Nova Zelândia"
     },
     {
       "pos": "Defensor",
@@ -5323,7 +5326,7 @@ const PLAYERS = {
       "num": 5,
       "name": "Michael Boxall",
       "club": "Minnesota United FC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Meio-campista",
@@ -5337,7 +5340,7 @@ const PLAYERS = {
       "num": 7,
       "name": "Matthew Garbett",
       "club": "Peterborough United",
-      "pais": "Outro"
+      "pais": "Inglaterra"
     },
     {
       "pos": "Meio-campista",
@@ -5358,7 +5361,7 @@ const PLAYERS = {
       "num": 10,
       "name": "Sarpreet Singh",
       "club": "Wellington Phoenix",
-      "pais": "Outro"
+      "pais": "Nova Zelândia"
     },
     {
       "pos": "Meio-campista",
@@ -5372,28 +5375,28 @@ const PLAYERS = {
       "num": 12,
       "name": "Alex Paulsen",
       "club": "Lechia Gdańsk",
-      "pais": "Outro"
+      "pais": "Polônia"
     },
     {
       "pos": "Defensor",
       "num": 13,
       "name": "Liberato Cacace",
       "club": "Wrexham",
-      "pais": "Outro"
+      "pais": "País de Gales"
     },
     {
       "pos": "Meio-campista",
       "num": 14,
       "name": "Alex Rufer",
       "club": "Wellington Phoenix",
-      "pais": "Outro"
+      "pais": "Nova Zelândia"
     },
     {
       "pos": "Defensor",
       "num": 15,
       "name": "Nando Pijnaker",
       "club": "Auckland FC",
-      "pais": "Outro"
+      "pais": "Nova Zelândia"
     },
     {
       "pos": "Defensor",
@@ -5407,14 +5410,14 @@ const PLAYERS = {
       "num": 17,
       "name": "Kosta Barbarouses",
       "club": "Western Sydney Wanderers",
-      "pais": "Outro"
+      "pais": "Austrália"
     },
     {
       "pos": "Atacante",
       "num": 18,
       "name": "Ben Waine",
       "club": "Port Vale",
-      "pais": "Outro"
+      "pais": "Inglaterra"
     },
     {
       "pos": "Meio-campista",
@@ -5428,49 +5431,49 @@ const PLAYERS = {
       "num": 20,
       "name": "Callum McCowatt",
       "club": "Silkeborg",
-      "pais": "Outro"
+      "pais": "Dinamarca"
     },
     {
       "pos": "Atacante",
       "num": 21,
       "name": "Jesse Randall",
       "club": "Auckland FC",
-      "pais": "Outro"
+      "pais": "Nova Zelândia"
     },
     {
       "pos": "Goleiro",
       "num": 22,
       "name": "Michael Woud",
       "club": "Auckland FC",
-      "pais": "Outro"
+      "pais": "Nova Zelândia"
     },
     {
       "pos": "Meio-campista",
       "num": 23,
       "name": "Ryan Thomas",
       "club": "PEC Zwolle",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Defensor",
       "num": 24,
       "name": "Callan Elliot",
       "club": "Auckland FC",
-      "pais": "Outro"
+      "pais": "Nova Zelândia"
     },
     {
       "pos": "Meio-campista",
       "num": 25,
       "name": "Lachlan Bayliss",
       "club": "Newcastle Jets",
-      "pais": "Outro"
+      "pais": "Austrália"
     },
     {
       "pos": "Defensor",
       "num": 26,
       "name": "Tommy Smith",
       "club": "Braintree Town",
-      "pais": "Outro"
+      "pais": "Inglaterra"
     }
   ],
   "Cabo Verde": [
@@ -5479,28 +5482,28 @@ const PLAYERS = {
       "num": 1,
       "name": "Vozinha",
       "club": "Chaves",
-      "pais": "Outro"
+      "pais": "Portugal"
     },
     {
       "pos": "Defensor",
       "num": 2,
       "name": "Stopira",
       "club": "Torreense",
-      "pais": "Outro"
+      "pais": "Portugal"
     },
     {
       "pos": "Defensor",
       "num": 3,
       "name": "Diney",
       "club": "Al Bataeh",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Defensor",
       "num": 4,
       "name": "Roberto Lopes",
       "club": "Shamrock Rovers",
-      "pais": "Outro"
+      "pais": "Irlanda"
     },
     {
       "pos": "Defensor",
@@ -5521,7 +5524,7 @@ const PLAYERS = {
       "num": 7,
       "name": "Jovane Cabral",
       "club": "Estrela Amadora",
-      "pais": "Outro"
+      "pais": "Portugal"
     },
     {
       "pos": "Meio-campista",
@@ -5535,28 +5538,28 @@ const PLAYERS = {
       "num": 9,
       "name": "Gilson Benchimol",
       "club": "Akron Tolyatti",
-      "pais": "Outro"
+      "pais": "Rússia"
     },
     {
       "pos": "Meio-campista",
       "num": 10,
       "name": "Jamiro Monteiro",
       "club": "PEC Zwolle",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Meio-campista",
       "num": 11,
       "name": "Garry Rodrigues",
       "club": "Apollon Limassol",
-      "pais": "Outro"
+      "pais": "Chipre"
     },
     {
       "pos": "Goleiro",
       "num": 12,
       "name": "Márcio Rosa",
       "club": "Montana",
-      "pais": "Outro"
+      "pais": "Bulgária"
     },
     {
       "pos": "Defensor",
@@ -5570,7 +5573,7 @@ const PLAYERS = {
       "num": 14,
       "name": "Deroy Duarte",
       "club": "Ludogorets Razgrad",
-      "pais": "Outro"
+      "pais": "Bulgária"
     },
     {
       "pos": "Meio-campista",
@@ -5591,14 +5594,14 @@ const PLAYERS = {
       "num": 17,
       "name": "Willy Semedo",
       "club": "Omonia",
-      "pais": "Outro"
+      "pais": "Chipre"
     },
     {
       "pos": "Meio-campista",
       "num": 18,
       "name": "Telmo Arcanjo",
       "club": "Vitória de Guimarães",
-      "pais": "Outro"
+      "pais": "Portugal"
     },
     {
       "pos": "Atacante",
@@ -5612,7 +5615,7 @@ const PLAYERS = {
       "num": 20,
       "name": "Ryan Mendes",
       "club": "Iğdır",
-      "pais": "Outro"
+      "pais": "Turquia"
     },
     {
       "pos": "Meio-campista",
@@ -5647,14 +5650,14 @@ const PLAYERS = {
       "num": 25,
       "name": "Kelvin Pires",
       "club": "SJK",
-      "pais": "Outro"
+      "pais": "Finlândia"
     },
     {
       "pos": "Meio-campista",
       "num": 26,
       "name": "Hélio Varela",
       "club": "Maccabi Tel Aviv",
-      "pais": "Outro"
+      "pais": "Israel"
     }
   ],
   "Arábia Saudita": [
@@ -5782,7 +5785,7 @@ const PLAYERS = {
       "num": 18,
       "name": "Alaa Al-Hejji",
       "club": "Neom",
-      "pais": "Outro"
+      "pais": "Arábia Saudita"
     },
     {
       "pos": "Atacante",
@@ -5803,7 +5806,7 @@ const PLAYERS = {
       "num": 21,
       "name": "Mohammed Al-Owais",
       "club": "Al-Ula",
-      "pais": "Outro"
+      "pais": "Arábia Saudita"
     },
     {
       "pos": "Goleiro",
@@ -6045,7 +6048,7 @@ const PLAYERS = {
       "num": 3,
       "name": "Sebastián Cáceres",
       "club": "América",
-      "pais": "Outro"
+      "pais": "México"
     },
     {
       "pos": "Defensor",
@@ -6122,7 +6125,7 @@ const PLAYERS = {
       "num": 14,
       "name": "Agustín Canobbio",
       "club": "Fluminense",
-      "pais": "Outro"
+      "pais": "Brasil"
     },
     {
       "pos": "Meio-campista",
@@ -6150,14 +6153,14 @@ const PLAYERS = {
       "num": 18,
       "name": "Brian Rodríguez",
       "club": "América",
-      "pais": "Outro"
+      "pais": "México"
     },
     {
       "pos": "Atacante",
       "num": 19,
       "name": "Rodrigo Aguirre",
       "club": "UANL",
-      "pais": "Outro"
+      "pais": "México"
     },
     {
       "pos": "Meio-campista",
@@ -6171,7 +6174,7 @@ const PLAYERS = {
       "num": 21,
       "name": "Federico Viñas",
       "club": "Oviedo",
-      "pais": "Outro"
+      "pais": "Espanha"
     },
     {
       "pos": "Meio-campista",
@@ -6306,7 +6309,7 @@ const PLAYERS = {
       "num": 14,
       "name": "Adrien Rabiot",
       "club": "Milan",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Defensor",
@@ -6320,7 +6323,7 @@ const PLAYERS = {
       "num": 16,
       "name": "Mike Maignan",
       "club": "Milan",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Defensor",
@@ -6399,28 +6402,28 @@ const PLAYERS = {
       "num": 1,
       "name": "Fahad Talib",
       "club": "Al-Talaba",
-      "pais": "Outro"
+      "pais": "Iraque"
     },
     {
       "pos": "Defensor",
       "num": 2,
       "name": "Rebin Sulaka",
       "club": "Port",
-      "pais": "Outro"
+      "pais": "Tailândia"
     },
     {
       "pos": "Defensor",
       "num": 3,
       "name": "Hussein Ali",
       "club": "Pogoń Szczecin",
-      "pais": "Outro"
+      "pais": "Polônia"
     },
     {
       "pos": "Defensor",
       "num": 4,
       "name": "Zaid Tahseen",
       "club": "Pakhtakor",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Defensor",
@@ -6441,14 +6444,14 @@ const PLAYERS = {
       "num": 7,
       "name": "Youssef Amyn",
       "club": "AEK Larnaca",
-      "pais": "Outro"
+      "pais": "Chipre"
     },
     {
       "pos": "Meio-campista",
       "num": 8,
       "name": "Ibrahim Bayesh",
       "club": "Al Dhafra",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Atacante",
@@ -6462,7 +6465,7 @@ const PLAYERS = {
       "num": 10,
       "name": "Mohanad Ali",
       "club": "Dibba",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Atacante",
@@ -6483,7 +6486,7 @@ const PLAYERS = {
       "num": 13,
       "name": "Ali Yousif",
       "club": "Al-Talaba",
-      "pais": "Outro"
+      "pais": "Iraque"
     },
     {
       "pos": "Meio-campista",
@@ -6497,28 +6500,28 @@ const PLAYERS = {
       "num": 15,
       "name": "Ahmed Maknzi",
       "club": "Al-Karma",
-      "pais": "Outro"
+      "pais": "Iraque"
     },
     {
       "pos": "Meio-campista",
       "num": 16,
       "name": "Amir Al-Ammari",
       "club": "Cracovia",
-      "pais": "Outro"
+      "pais": "Polônia"
     },
     {
       "pos": "Atacante",
       "num": 17,
       "name": "Ali Jasim",
       "club": "Al-Najma",
-      "pais": "Outro"
+      "pais": "Arábia Saudita"
     },
     {
       "pos": "Atacante",
       "num": 18,
       "name": "Aymen Hussein",
       "club": "Al-Karma",
-      "pais": "Outro"
+      "pais": "Iraque"
     },
     {
       "pos": "Meio-campista",
@@ -6532,7 +6535,7 @@ const PLAYERS = {
       "num": 20,
       "name": "Aimar Sher",
       "club": "Sarpsborg 08",
-      "pais": "Outro"
+      "pais": "Noruega"
     },
     {
       "pos": "Atacante",
@@ -6560,7 +6563,7 @@ const PLAYERS = {
       "num": 24,
       "name": "Zaid Ismail",
       "club": "Al-Talaba",
-      "pais": "Outro"
+      "pais": "Iraque"
     },
     {
       "pos": "Defensor",
@@ -6574,7 +6577,7 @@ const PLAYERS = {
       "num": 26,
       "name": "Frans Putros",
       "club": "Persib",
-      "pais": "Outro"
+      "pais": "Indonésia"
     }
   ],
   "Noruega": [
@@ -6590,7 +6593,7 @@ const PLAYERS = {
       "num": 2,
       "name": "Morten Thorsby",
       "club": "Cremonese",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Defensor",
@@ -6702,7 +6705,7 @@ const PLAYERS = {
       "num": 18,
       "name": "Kristian Thorstvedt",
       "club": "Sassuolo",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Meio-campista",
@@ -6788,7 +6791,7 @@ const PLAYERS = {
       "num": 4,
       "name": "Abdoulaye Seck",
       "club": "Maccabi Haifa",
-      "pais": "Outro"
+      "pais": "Israel"
     },
     {
       "pos": "Meio-campista",
@@ -6844,7 +6847,7 @@ const PLAYERS = {
       "num": 12,
       "name": "Cherif Ndiaye",
       "club": "Samsunspor",
-      "pais": "Outro"
+      "pais": "Turquia"
     },
     {
       "pos": "Atacante",
@@ -6951,7 +6954,7 @@ const PLAYERS = {
       "num": 1,
       "name": "Melvin Mastil",
       "club": "Stade Nyonnais",
-      "pais": "Outro"
+      "pais": "Suíça"
     },
     {
       "pos": "Defensor",
@@ -6965,28 +6968,28 @@ const PLAYERS = {
       "num": 3,
       "name": "Achref Abada",
       "club": "USM Alger",
-      "pais": "Outro"
+      "pais": "Argélia"
     },
     {
       "pos": "Defensor",
       "num": 4,
       "name": "Mohamed Amine Tougai",
       "club": "Espérance de Tunis",
-      "pais": "Outro"
+      "pais": "Tunísia"
     },
     {
       "pos": "Defensor",
       "num": 5,
       "name": "Zineddine Belaïd",
       "club": "JS Kabylie",
-      "pais": "Outro"
+      "pais": "Argélia"
     },
     {
       "pos": "Meio-campista",
       "num": 6,
       "name": "Ramiz Zerrouki",
       "club": "Twente",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Atacante",
@@ -7028,7 +7031,7 @@ const PLAYERS = {
       "num": 12,
       "name": "Nadhir Benbouali",
       "club": "Győri ETO",
-      "pais": "Outro"
+      "pais": "Hungria"
     },
     {
       "pos": "Defensor",
@@ -7056,14 +7059,14 @@ const PLAYERS = {
       "num": 16,
       "name": "Oussama Benbot",
       "club": "USM Alger",
-      "pais": "Outro"
+      "pais": "Argélia"
     },
     {
       "pos": "Defensor",
       "num": 17,
       "name": "Rafik Belghali",
       "club": "Hellas Verona",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Atacante",
@@ -7112,21 +7115,21 @@ const PLAYERS = {
       "num": 24,
       "name": "Yacine Titraoui",
       "club": "Charleroi",
-      "pais": "Outro"
+      "pais": "Bélgica"
     },
     {
       "pos": "Atacante",
       "num": 25,
       "name": "Farès Ghedjemis",
       "club": "Frosinone",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Defensor",
       "num": 26,
       "name": "Samir Chergui",
       "club": "Paris FC",
-      "pais": "Outro"
+      "pais": "França"
     }
   ],
   "Argentina": [
@@ -7140,9 +7143,9 @@ const PLAYERS = {
     {
       "pos": "Defensor",
       "num": 2,
-      "name": "Juan Foyth",
-      "club": "Villarreal",
-      "pais": "Espanha"
+      "name": "Leonardo Balerdi",
+      "club": "Marseille",
+      "pais": "França"
     },
     {
       "pos": "Defensor",
@@ -7480,7 +7483,7 @@ const PLAYERS = {
       "num": 24,
       "name": "Paul Wanner",
       "club": "PSV Eindhoven",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Defensor",
@@ -7494,7 +7497,7 @@ const PLAYERS = {
       "num": 26,
       "name": "Alessandro Schöpf",
       "club": "Wolfsberger AC",
-      "pais": "Outro"
+      "pais": "Áustria"
     }
   ],
   "Jordânia": [
@@ -7503,14 +7506,14 @@ const PLAYERS = {
       "num": 1,
       "name": "Yazeed Abulaila",
       "club": "Al-Hussein",
-      "pais": "Outro"
+      "pais": "Jordânia"
     },
     {
       "pos": "Defensor",
       "num": 2,
       "name": "Mohammad Abu Hashish",
       "club": "Al-Karma",
-      "pais": "Outro"
+      "pais": "Iraque"
     },
     {
       "pos": "Defensor",
@@ -7524,7 +7527,7 @@ const PLAYERS = {
       "num": 4,
       "name": "Husam Abu Dahab",
       "club": "Al-Faisaly",
-      "pais": "Outro"
+      "pais": "Jordânia"
     },
     {
       "pos": "Defensor",
@@ -7552,14 +7555,14 @@ const PLAYERS = {
       "num": 8,
       "name": "Noor Al-Rawabdeh",
       "club": "Selangor",
-      "pais": "Outro"
+      "pais": "Malásia"
     },
     {
       "pos": "Atacante",
       "num": 9,
       "name": "Ali Olwan",
       "club": "Al-Sailiya",
-      "pais": "Outro"
+      "pais": "Catar"
     },
     {
       "pos": "Atacante",
@@ -7580,56 +7583,56 @@ const PLAYERS = {
       "num": 12,
       "name": "Nour Bani Attiah",
       "club": "Al-Faisaly",
-      "pais": "Outro"
+      "pais": "Jordânia"
     },
     {
       "pos": "Atacante",
       "num": 13,
       "name": "Mahmoud Al-Mardi",
       "club": "Al-Hussein",
-      "pais": "Outro"
+      "pais": "Jordânia"
     },
     {
       "pos": "Meio-campista",
       "num": 14,
       "name": "Rajaei Ayed",
       "club": "Al-Hussein",
-      "pais": "Outro"
+      "pais": "Jordânia"
     },
     {
       "pos": "Meio-campista",
       "num": 15,
       "name": "Ibrahim Sadeh",
       "club": "Al-Karma",
-      "pais": "Outro"
+      "pais": "Iraque"
     },
     {
       "pos": "Defensor",
       "num": 16,
       "name": "Mo Abualnadi",
       "club": "Selangor",
-      "pais": "Outro"
+      "pais": "Malásia"
     },
     {
       "pos": "Defensor",
       "num": 17,
       "name": "Salim Obaid",
       "club": "Al-Hussein",
-      "pais": "Outro"
+      "pais": "Jordânia"
     },
     {
       "pos": "Defensor",
       "num": 18,
       "name": "Mohammad Taha",
       "club": "Al-Hussein",
-      "pais": "Outro"
+      "pais": "Jordânia"
     },
     {
       "pos": "Defensor",
       "num": 19,
       "name": "Saed Al-Rosan",
       "club": "Al-Hussein",
-      "pais": "Outro"
+      "pais": "Jordânia"
     },
     {
       "pos": "Meio-campista",
@@ -7643,21 +7646,21 @@ const PLAYERS = {
       "num": 21,
       "name": "Nizar Al-Rashdan",
       "club": "Qatar SC",
-      "pais": "Outro"
+      "pais": "Catar"
     },
     {
       "pos": "Goleiro",
       "num": 22,
       "name": "Abdallah Al-Fakhouri",
       "club": "Al-Wehdat",
-      "pais": "Outro"
+      "pais": "Jordânia"
     },
     {
       "pos": "Defensor",
       "num": 23,
       "name": "Ihsan Haddad",
       "club": "Al-Hussein",
-      "pais": "Outro"
+      "pais": "Jordânia"
     },
     {
       "pos": "Atacante",
@@ -7671,14 +7674,14 @@ const PLAYERS = {
       "num": 25,
       "name": "Mohammad Al-Dawoud",
       "club": "Al-Wehdat",
-      "pais": "Outro"
+      "pais": "Jordânia"
     },
     {
       "pos": "Defensor",
       "num": 26,
       "name": "Anas Badawi",
       "club": "Al-Faisaly",
-      "pais": "Outro"
+      "pais": "Jordânia"
     }
   ],
   "Colômbia": [
@@ -7687,7 +7690,7 @@ const PLAYERS = {
       "num": 1,
       "name": "David Ospina",
       "club": "Atlético Nacional",
-      "pais": "Outro"
+      "pais": "Colômbia"
     },
     {
       "pos": "Defensor",
@@ -7708,7 +7711,7 @@ const PLAYERS = {
       "num": 4,
       "name": "Santiago Arias",
       "club": "Independiente",
-      "pais": "Outro"
+      "pais": "Argentina"
     },
     {
       "pos": "Meio-campista",
@@ -7750,7 +7753,7 @@ const PLAYERS = {
       "num": 10,
       "name": "James Rodríguez",
       "club": "Minnesota United FC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Meio-campista",
@@ -7778,14 +7781,14 @@ const PLAYERS = {
       "num": 14,
       "name": "Gustavo Puerta",
       "club": "Racing Santander",
-      "pais": "Outro"
+      "pais": "Espanha"
     },
     {
       "pos": "Meio-campista",
       "num": 15,
       "name": "Juan Portilla",
       "club": "Athletico Paranaense",
-      "pais": "Outro"
+      "pais": "Brasil"
     },
     {
       "pos": "Meio-campista",
@@ -7827,7 +7830,7 @@ const PLAYERS = {
       "num": 21,
       "name": "Jaminton Campaz",
       "club": "Rosario Central",
-      "pais": "Outro"
+      "pais": "Argentina"
     },
     {
       "pos": "Defensor",
@@ -7848,7 +7851,7 @@ const PLAYERS = {
       "num": 24,
       "name": "Álvaro Montero",
       "club": "Vélez Sarsfield",
-      "pais": "Outro"
+      "pais": "Argentina"
     },
     {
       "pos": "Atacante",
@@ -7862,7 +7865,7 @@ const PLAYERS = {
       "num": 26,
       "name": "Andrés Gómez",
       "club": "Vasco da Gama",
-      "pais": "Outro"
+      "pais": "Brasil"
     }
   ],
   "RD Congo": [
@@ -7885,7 +7888,7 @@ const PLAYERS = {
       "num": 3,
       "name": "Steve Kapuadi",
       "club": "Widzew Łódź",
-      "pais": "Outro"
+      "pais": "Polônia"
     },
     {
       "pos": "Defensor",
@@ -7899,7 +7902,7 @@ const PLAYERS = {
       "num": 5,
       "name": "Dylan Batubinsika",
       "club": "AEL",
-      "pais": "Outro"
+      "pais": "Grécia"
     },
     {
       "pos": "Meio-campista",
@@ -7920,14 +7923,14 @@ const PLAYERS = {
       "num": 8,
       "name": "Samuel Moutoussamy",
       "club": "Atromitos",
-      "pais": "Outro"
+      "pais": "Grécia"
     },
     {
       "pos": "Atacante",
       "num": 9,
       "name": "Brian Cipenga",
       "club": "Castellón",
-      "pais": "Outro"
+      "pais": "Espanha"
     },
     {
       "pos": "Meio-campista",
@@ -7941,7 +7944,7 @@ const PLAYERS = {
       "num": 11,
       "name": "Gaël Kakuta",
       "club": "AEL",
-      "pais": "Outro"
+      "pais": "Grécia"
     },
     {
       "pos": "Defensor",
@@ -7976,7 +7979,7 @@ const PLAYERS = {
       "num": 16,
       "name": "Timothy Fayulu",
       "club": "Noah",
-      "pais": "Outro"
+      "pais": "Armênia"
     },
     {
       "pos": "Atacante",
@@ -8025,14 +8028,14 @@ const PLAYERS = {
       "num": 23,
       "name": "Simon Banza",
       "club": "Al Jazira",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Defensor",
       "num": 24,
       "name": "Gédéon Kalulu",
       "club": "Aris Limassol",
-      "pais": "Outro"
+      "pais": "Chipre"
     },
     {
       "pos": "Meio-campista",
@@ -8167,7 +8170,7 @@ const PLAYERS = {
       "num": 17,
       "name": "Rafael Leão",
       "club": "Milan",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Atacante",
@@ -8239,7 +8242,7 @@ const PLAYERS = {
       "num": 1,
       "name": "Utkir Yusupov",
       "club": "Navbahor Namangan",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Defensor",
@@ -8253,14 +8256,14 @@ const PLAYERS = {
       "num": 3,
       "name": "Khojiakbar Alijonov",
       "club": "Pakhtakor",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Defensor",
       "num": 4,
       "name": "Farrukh Sayfiev",
       "club": "Neftchi Fergana",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Defensor",
@@ -8274,21 +8277,21 @@ const PLAYERS = {
       "num": 6,
       "name": "Akmal Mozgovoy",
       "club": "Pakhtakor",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Meio-campista",
       "num": 7,
       "name": "Otabek Shukurov",
       "club": "Baniyas",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Meio-campista",
       "num": 8,
       "name": "Jamshid Iskanderov",
       "club": "Neftchi Fergana",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Meio-campista",
@@ -8316,14 +8319,14 @@ const PLAYERS = {
       "num": 12,
       "name": "Abduvohid Nematov",
       "club": "Nasaf",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Defensor",
       "num": 13,
       "name": "Sherzod Nasrullaev",
       "club": "Nasaf",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Atacante",
@@ -8337,42 +8340,42 @@ const PLAYERS = {
       "num": 15,
       "name": "Umar Eshmurodov",
       "club": "Nasaf",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Goleiro",
       "num": 16,
       "name": "Botirali Ergashev",
       "club": "Neftchi Fergana",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Meio-campista",
       "num": 17,
       "name": "Dostonbek Khamdamov",
       "club": "Pakhtakor",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Defensor",
       "num": 18,
       "name": "Abdulla Abdullaev",
       "club": "Dibba",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Meio-campista",
       "num": 19,
       "name": "Azizjon Ganiev",
       "club": "Al Bataeh",
-      "pais": "Outro"
+      "pais": "Emirados Árabes Unidos"
     },
     {
       "pos": "Atacante",
       "num": 20,
       "name": "Azizbek Amonov",
       "club": "Dinamo Samarqand",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Atacante",
@@ -8393,28 +8396,28 @@ const PLAYERS = {
       "num": 23,
       "name": "Sherzod Esanov",
       "club": "Bukhara",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Defensor",
       "num": 24,
       "name": "Bekhruz Karimov",
       "club": "Surkhon Termiz",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Defensor",
       "num": 25,
       "name": "Avazbek Ulmasaliev",
       "club": "AGMK",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     },
     {
       "pos": "Defensor",
       "num": 26,
       "name": "Jakhongir Urozov",
       "club": "Dinamo Samarqand",
-      "pais": "Outro"
+      "pais": "Uzbequistão"
     }
   ],
   "Croácia": [
@@ -8486,7 +8489,7 @@ const PLAYERS = {
       "num": 10,
       "name": "Luka Modrić",
       "club": "Milan",
-      "pais": "Outro"
+      "pais": "Itália"
     },
     {
       "pos": "Atacante",
@@ -8500,7 +8503,7 @@ const PLAYERS = {
       "num": 12,
       "name": "Ivor Pandur",
       "club": "Hull City",
-      "pais": "Outro"
+      "pais": "Inglaterra"
     },
     {
       "pos": "Meio-campista",
@@ -8514,7 +8517,7 @@ const PLAYERS = {
       "num": 14,
       "name": "Ivan Perišić",
       "club": "PSV Eindhoven",
-      "pais": "Outro"
+      "pais": "Holanda"
     },
     {
       "pos": "Meio-campista",
@@ -8549,7 +8552,7 @@ const PLAYERS = {
       "num": 19,
       "name": "Toni Fruk",
       "club": "Rijeka",
-      "pais": "Outro"
+      "pais": "Croácia"
     },
     {
       "pos": "Atacante",
@@ -8584,7 +8587,7 @@ const PLAYERS = {
       "num": 24,
       "name": "Marco Pašalić",
       "club": "Orlando City SC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Defensor",
@@ -8840,7 +8843,7 @@ const PLAYERS = {
       "num": 8,
       "name": "Kwasi Sibo",
       "club": "Oviedo",
-      "pais": "Outro"
+      "pais": "Espanha"
     },
     {
       "pos": "Atacante",
@@ -8868,7 +8871,7 @@ const PLAYERS = {
       "num": 12,
       "name": "Joseph Anang",
       "club": "St Patrick's Athletic",
-      "pais": "Outro"
+      "pais": "Irlanda"
     },
     {
       "pos": "Atacante",
@@ -8896,7 +8899,7 @@ const PLAYERS = {
       "num": 16,
       "name": "Benjamin Asare",
       "club": "Hearts of Oak",
-      "pais": "Outro"
+      "pais": "Gana"
     },
     {
       "pos": "Defensor",
@@ -8945,7 +8948,7 @@ const PLAYERS = {
       "num": 23,
       "name": "Derrick Luckassen",
       "club": "Pafos",
-      "pais": "Outro"
+      "pais": "Chipre"
     },
     {
       "pos": "Atacante",
@@ -8996,21 +8999,21 @@ const PLAYERS = {
       "num": 4,
       "name": "Fidel Escobar",
       "club": "Saprissa",
-      "pais": "Outro"
+      "pais": "Costa Rica"
     },
     {
       "pos": "Defensor",
       "num": 5,
       "name": "Edgardo Fariña",
       "club": "Pari Nizhny Novgorod",
-      "pais": "Outro"
+      "pais": "Rússia"
     },
     {
       "pos": "Meio-campista",
       "num": 6,
       "name": "Cristian Martínez",
       "club": "Ironi Kiryat Shmona",
-      "pais": "Outro"
+      "pais": "Israel"
     },
     {
       "pos": "Meio-campista",
@@ -9024,14 +9027,14 @@ const PLAYERS = {
       "num": 8,
       "name": "Adalberto Carrasquilla",
       "club": "UNAM",
-      "pais": "Outro"
+      "pais": "México"
     },
     {
       "pos": "Atacante",
       "num": 9,
       "name": "Tomás Rodríguez",
       "club": "Saprissa",
-      "pais": "Outro"
+      "pais": "Costa Rica"
     },
     {
       "pos": "Meio-campista",
@@ -9052,28 +9055,28 @@ const PLAYERS = {
       "num": 12,
       "name": "César Samudio",
       "club": "Marathón",
-      "pais": "Outro"
+      "pais": "Honduras"
     },
     {
       "pos": "Defensor",
       "num": 13,
       "name": "Jiovany Ramos",
       "club": "Puerto Cabello",
-      "pais": "Outro"
+      "pais": "Venezuela"
     },
     {
       "pos": "Defensor",
       "num": 14,
       "name": "Carlos Harvey",
       "club": "Minnesota United FC",
-      "pais": "Outro"
+      "pais": "Estados Unidos"
     },
     {
       "pos": "Defensor",
       "num": 15,
       "name": "Eric Davis",
       "club": "Plaza Amador",
-      "pais": "Outro"
+      "pais": "Panamá"
     },
     {
       "pos": "Defensor",
@@ -9087,21 +9090,21 @@ const PLAYERS = {
       "num": 17,
       "name": "José Fajardo",
       "club": "Universidad Católica",
-      "pais": "Outro"
+      "pais": "Chile"
     },
     {
       "pos": "Atacante",
       "num": 18,
       "name": "Cecilio Waterman",
       "club": "Universidad de Concepción",
-      "pais": "Outro"
+      "pais": "Chile"
     },
     {
       "pos": "Meio-campista",
       "num": 19,
       "name": "Alberto Quintero",
       "club": "Plaza Amador",
-      "pais": "Outro"
+      "pais": "Panamá"
     },
     {
       "pos": "Meio-campista",
@@ -9115,7 +9118,7 @@ const PLAYERS = {
       "num": 21,
       "name": "César Yanis",
       "club": "Cobresal",
-      "pais": "Outro"
+      "pais": "Chile"
     },
     {
       "pos": "Goleiro",
@@ -9136,14 +9139,14 @@ const PLAYERS = {
       "num": 24,
       "name": "Azarias Londoño",
       "club": "Universidad Católica",
-      "pais": "Outro"
+      "pais": "Chile"
     },
     {
       "pos": "Defensor",
       "num": 25,
       "name": "Roderick Miller",
       "club": "Turan Tovuz",
-      "pais": "Outro"
+      "pais": "Azerbaijão"
     },
     {
       "pos": "Defensor",
@@ -9436,7 +9439,12 @@ function renderScorers(){
 
 function renderSquads(){
   var grid=document.getElementById("squads-grid");if(!grid)return;
-  grid.innerHTML=GROUP_ORDER.map(function(letter){var teams=GROUPS[letter];if(!teams)return"";return teams.map(function(team){var ps=PLAYERS[team]||[];return'<div class="squad-card"><div class="squad-header"><span class="squad-flag">'+flag(team)+'</span><span class="squad-team">'+team+'</span><span class="squad-count">'+ps.length+' jogadores</span></div><ul class="squad-list">'+ps.map(function(p){return'<li class="squad-player"><span class="squad-num">'+p.num+'</span><div class="squad-avatar">'+(typeof PLAYER_PHOTOS !== 'undefined'&&PLAYER_PHOTOS[p.name]?'<img src="'+PLAYER_PHOTOS[p.name]+'" alt="" onerror="this.style.display=\'none\'">':'')+'</div><span class="squad-name">'+(p.name||'')+'</span><span class="squad-pos">'+(p.pos||'')+'<br><small>'+(p.club||'')+' - '+(p.pais||'')+'</small></span></li>'}).join("")+'</ul></div>'}).join("")}).join("");
+  var q=(document.getElementById("squad-filter").value||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  grid.innerHTML=GROUP_ORDER.map(function(letter){var teams=GROUPS[letter];if(!teams)return"";return teams.map(function(team){
+    var ps=PLAYERS[team]||[],qteam=team.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+    if(q&&qteam.indexOf(q)<0&&!ps.some(function(p){var pn=p.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();return pn.indexOf(q)>=0}))return"";
+    ps=ps.slice().sort(function(a,b){var na=a.name||"",nb=b.name||"";return na.localeCompare(nb,"pt-BR")});
+    return'<div class="squad-card"><div class="squad-header"><span class="squad-flag">'+flag(team)+'</span><span class="squad-team">'+team+'</span><span class="squad-count">'+ps.length+' jogadores</span></div><ul class="squad-list">'+ps.map(function(p){return'<li class="squad-player"><span class="squad-num">'+p.num+'</span><div class="squad-avatar">'+(typeof PLAYER_PHOTOS !== 'undefined'&&PLAYER_PHOTOS[p.name]?'<img src="'+PLAYER_PHOTOS[p.name]+'" alt="" onerror="this.style.display=\'none\'">':'')+'</div><span class="squad-name">'+(p.name||'')+'</span><span class="squad-pos">'+(p.pos||'')+'<br><small>'+(p.club||'')+' - '+(p.pais||'')+'</small></span></li>'}).join("")+'</ul></div>'}).join("")}).join("");
 }
 
 document.querySelectorAll(".bview-btn").forEach(function(b){b.addEventListener("click",function(){
@@ -9492,11 +9500,14 @@ function initFifaMaps(){
   // Try localStorage cache
   try{
     var cached=localStorage.getItem('FIFA_PLAYER_MAP_CACHE');
-    if(cached){var parsed=JSON.parse(cached);if(parsed&&parsed.ts&&Date.now()-parsed.ts<86400000&&parsed.data){FIFA_PLAYER_MAP=parsed.data;return}}
+    if(cached){var parsed=JSON.parse(cached);if(parsed&&parsed.ts&&Date.now()-parsed.ts<86400000&&parsed.data){
+      FIFA_PLAYER_MAP=parsed.data;
+      if(parsed.photos){Object.keys(parsed.photos).forEach(function(k){if(!PLAYER_PHOTOS[k])PLAYER_PHOTOS[k]=parsed.photos[k]})}
+      return
+    }}
   }catch(e){}
   var ids=Object.keys(FIFA_TEAM_IDS);if(!ids.length)return;
-  // Fetch with concurrency limit of 6
-  var results=[],idx=0;
+  var idx=0,fifaPhotos={};
   function next(){
     if(idx>=ids.length)return Promise.resolve();
     var abbr=ids[idx++],id=FIFA_TEAM_IDS[abbr],teamName=FIFA_TEAM_MAP[abbr];
@@ -9509,6 +9520,10 @@ function initFifaMaps(){
             var matched=null;
             for(var i=0;i<ourSquad.length;i++){if(ourSquad[i].num==p.JerseyNum){matched=ourSquad[i];break}}
             FIFA_PLAYER_MAP[p.IdPlayer]={num:p.JerseyNum,pname:matched?matched.name:p.PlayerName[0].Description,team:teamName,abbr:abbr};
+            if(matched&&!PLAYER_PHOTOS[matched.name]&&p.PlayerPicture&&p.PlayerPicture.PictureUrl){
+              PLAYER_PHOTOS[matched.name]=p.PlayerPicture.PictureUrl;
+              fifaPhotos[matched.name]=p.PlayerPicture.PictureUrl;
+            }
           });
         }
       }).catch(function(){}).then(next);
@@ -9516,7 +9531,7 @@ function initFifaMaps(){
   var batch=[];
   for(var i=0;i<6;i++)batch.push(next());
   Promise.all(batch).then(function(){
-    try{localStorage.setItem('FIFA_PLAYER_MAP_CACHE',JSON.stringify({ts:Date.now(),data:FIFA_PLAYER_MAP}))}catch(e){}
+    try{localStorage.setItem('FIFA_PLAYER_MAP_CACHE',JSON.stringify({ts:Date.now(),data:FIFA_PLAYER_MAP,photos:fifaPhotos}))}catch(e){}
   });
 }
 

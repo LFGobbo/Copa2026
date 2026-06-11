@@ -261,7 +261,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-11 — Sessão v10 (Plan B: auto-fetch goals from FIFA timeline API)**
+**2026-06-11 — Sessão v11 (squad filter, ordem alfabética, fotos FIFA, Argentina corrigida)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -273,7 +273,16 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v10 (atual — 2026-06-11)
+### v11 (atual — 2026-06-11)
+**Mudanças:**
+- **Busca na aba Convocados** — input de texto filtra países e jogadores em tempo real (normalização UTF-8 + acentos)
+- **Ordem alfabética dos jogadores** — dentro de cada card de time, jogadores ordenados por nome (locale pt-BR)
+- **Fotos FIFA digitalhub** — `initFifaMaps()` agora extrai `PlayerPicture.PictureUrl` da Squad API e popula `PLAYER_PHOTOS` para jogadores sem foto Wikipedia (~382 a menos)
+- **Cache de fotos no localStorage** — fotos FIFA são salvas junto com `FIFA_PLAYER_MAP_CACHE` (expira 24h)
+- **Argentina #2 corrigida** — Juan Foyth → Leonardo Balerdi (Marseille)
+- **Club country mapping completo** — 205 clubes com país "Outro" mapeados (328 entries corrigidas); zero "Outro" restantes
+
+### v10
 **Mudanças:**
 - **Plan B implementado: auto-fetch de gols/assistências via FIFA Timeline API** — substitui entrada manual
 - **Endpoint `/api/v3/timelines/{IdMatch}`** — retorna timeline completa de eventos do jogo
@@ -385,21 +394,15 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 ## Pendências
 
 ### Pendências atuais
-1. **Fotos 3x4 dos jogadores** — 866/1248 (69%) via Wikipedia API. Pendente: buscar nomes alternativos para ~382 sem foto, ou usar 3ª fase com "(footballer, born ANO)".
-2. **Mapear mais clubes** — 328 clubes ainda com país "Outro" (precisa de mapeamento adicional)
-3. **Gol contra automático** — detectar own goals na timeline (verificar `EventDescription` contendo "own goal" ou comparar `IdTeam` com o time que sofreu o gol)
-4. **Own goal na artilharia** — confirmar que gols contra são corretamente filtrados dos artilheiros com dados reais
+1. **Google Fonts offline** — embedar font Inter no HTML como fallback completo.
+2. **Service Worker** — cache do app para funcionar offline parcialmente.
 
-### Melhorias futuras
-5. **Google Fonts offline** — embedar font Inter no HTML como fallback completo.
-6. **Service Worker** — cache do app para funcionar offline parcialmente.
-7. **Cache do FIFA_PLAYER_MAP em localStorage** — evitar re-fetch dos 48 squads a cada refresh de página (adicionar timestamp para expirar a cada 24h)
-
-### Itens resolvidos nesta sessão (v10)
-- ~~Entrada manual de gol~~ ✅ substituído por auto-fetch via FIFA Timeline API
-- ~~Polling a cada 30s~~ ✅ mudado para 10s com timeline + scores unificado
-- ~~Sem dados de goleador/assistência/minuto~~ ✅ tudo extraído automaticamente da timeline
-- ~~Precisava de IdPlayer~~ ✅ mapeado via FIFA Squad API por time + número
+### Itens resolvidos nesta sessão (v11)
+- ~~Convocados sem filtro~~ ✅ barra de busca com filtro em tempo real (país + jogador)
+- ~~Ordem aleatória dos jogadores~~ ✅ ordem alfabética A-Z dentro de cada time
+- ~~382 jogadores sem foto~~ ✅ fallback automático via FIFA digitalhub (`PlayerPicture.PictureUrl`)
+- ~~Juan Foyth #2~~ ✅ substituído por Leonardo Balerdi (Marseille)
+- ~~205 clubes com país "Outro"~~ ✅ todos mapeados (328 entries corrigidas)
 
 ### Itens resolvidos na sessão anterior (v9)
 - ~~Squads incompletos~~ ✅ todos os 48 times com 26 convocados oficiais
@@ -424,12 +427,12 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - **Com robô**: mandar a pasta inteira (`copa2026.html` + `robot.ps1` + `Iniciar Copa.bat` + logos). Amigo dá duplo clique no `.bat`.
 - **Sem robô (só placar manual)**: mandar só `copa2026.html`. Abre no navegador direto, funciona 100% offline, placar é digitado manualmente.
 
-## Arquivos Relevantes (2026-06-10)
-- `copa2026.html` — app final (v7, o que vai no WhatsApp)
+## Arquivos Relevantes (2026-06-11)
+- `copa2026.html` — app final (v11, o que vai no WhatsApp)
 - `copa2026_v7.html` — backup v7
 - `copa2026_v6.html` — backup v6
 - `copa2026_v5.html`, `v4`, `v3`, `v2`, `v2_semiestrutura`, `v1` — backups históricos
-- `copa2026_v3.html` — **arquivo ativo de edição** (sempre editar este, depois copiar para copa2026.html)
+- `copa2026.html` — **arquivo ativo de edição** (editar este, depois copiar para index.html)
 - `robot.ps1` — servidor HTTP + proxy FIFA (NÃO TESTADO)
 - `Iniciar Copa.bat` — atalho para robot.ps1
 - `logo_globo.png`, `logo_sportv.png`, `logo_cazetv.png`, `logo_sbt.png`, `logo_nsports.png` — logos broadcast
