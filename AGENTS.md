@@ -261,7 +261,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-11 — Sessão GitHub Pages (fetch direto FIFA API + site hospedado)**
+**2026-06-11 — Sessão v8 (GitHub Pages + timezone + FIFA API direta + limpeza)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -273,17 +273,18 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v7 (atual — 2026-06-10)
+### v8 (atual — 2026-06-11)
 **Mudanças:**
-- **0x0 não apagava** — `scoreInput()`: antes `v=parseInt(this.value)||0;` (parseInt("")→NaN→0, zero voltava). Agora se input vazio, deleta o score entry.
-- **Botões de gol sempre no DOM** — `renderGameCard()`: agora renderiza os botões `+Gol` sempre com `style.display` condicional, em vez de omiti-los do HTML quando `hasScore===false`.
-- **Own goal storage fix** (importado da v1.1) — `confirmGoal()`: calcula `storeTeam = (type==='own') ? adversario : currentTeam`. Gol contra é salvo no time adversário, resolvendo a pendência #3.
-- **NaN guard no polling/refresh** (importado da v1.1) — refresh button e polling agora fazem `parseInt()` + `isNaN()` antes de mesclar, evitando NaN na estrutura `scores`.
-- **Botão refresh (⟳)** no countdown-bar — fetch manual em `/livescores` com feedback visual (gira, fica vermelho se falhar).
-- **Polling automático** — IIFE que fetch `/livescores` a cada 10s, mescla, `saveState()`, re-renderiza se mudou.
-- **robot.ps1** criado mas **HttpListener não respondeu** nos testes (firewall/permissão — pendência #1).
-- **Iniciar Copa.bat** — duplo clique que chama robot.ps1 com ExecutionPolicy Bypass.
-- Salvou `copa2026_v7.html` + sobrescreveu `copa2026.html`
+- **GitHub Pages** — repositório `github.com/LFGobbo/Copa2026` criado, commit e push. Site em `lfgobbo.github.io/Copa2026` (precisa ativar Settings → Pages).
+- **Caminhos relativos** — imagens mudaram de `C:\Users\...` para `./bola_t.png`, `./mascote1_t.png`, etc.
+- **FIFA API direta** — substituiu o polling do robot.ps1 por fetch direto em `api.fifa.com/api/v3/calendar/matches` com `AbortController` timeout 10s (manual) / 8s (automático).
+- **FIFA_TEAM_MAP** — mapeamento 48 códigos FIFA → português para casalar jogos.
+- **Mapeamento de estádios → fuso** — `STADIUM_TZ` com 16 estádios e offsets UTC. Função `gameUTC()` para converter horário local do estádio para UTC absoluto.
+- **Timezone corrigido** — `isGameLive()` e `updateCountdown()` agora usam `gameUTC()`, resolvendo bug de jogos pós-meia-noite (ex: jogo #5 às 01:00 em Vancouver = 05:00 BRT).
+- **Bracket "3º lugar"** — 8 jogos que tinham `b:"0"` agora mostram "3º lugar" via `tn()/tf()` helpers.
+- **Botão refresh** — mostra ⏳ durante fetch, ⚠ se falhar, texto dinâmico.
+- **Limpeza do repositório** — removidos backups `v1.1`, `v6`, `v7`, `PROGRESSO.md` do Git. Mantido apenas `copa2026.html`, `index.html` + assets.
+- **`index.html`** — cópia de `copa2026.html` para servir como default do GitHub Pages.
 
 ### v6.2
 - Correção split regex broadcast (U+00B7)
@@ -350,15 +351,12 @@ copa2026.html (no navegador)
 ### Mapeamento de times (48)
 FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap` com todos os 48. Casamento é feito por nome completo (português) entre FIFA traduzido e GAMES do HTML.
 
-## Status Atual do Robô
-- **Script criado**: robot.ps1 (completo, com polling, mapeamento, servidor HTTP)
-- **Iniciador criado**: Iniciar Copa.bat
-- **Teste**: HttpListener não respondeu. Hipóteses:
-  1. Firewall do Windows bloqueando a porta
-  2. HttpListener precisa de permissão elevada em algumas configs
-  3. Algo no PS 5.1 impedindo o listener de aceitar conexões
-  4. Porta 9999 já em uso
-- **Para testar amanhã**: Executar PowerShell como Admin, testar com `Test-NetConnection localhost:9999`, verificar `Get-NetTCPConnection`, ou tentar porta diferente (ex: 8080)
+## Status Atual do Site
+- **Repositório**: `github.com/LFGobbo/Copa2026` (master)
+- **GitHub Pages**: NÃO ativado — precisa ir em Settings → Pages → branch `master` → `/ (root)` → Save.
+- **FIFA API**: Fetch direto do navegador com CORS aberto (`Access-Control-Allow-Origin: *`). Timeout 10s (manual) / 8s (polling).
+- **Robô alternativo**: `robot.ps1` + `Iniciar Copa.bat` existem como fallback, mas não são mais necessários para o site.
+- **Placares ao vivo**: Funcionam apenas durante jogos reais (HomeTeamScore/AwayTeamScore = null até o jogo começar).
 
 ## Armadilhas Conhecidas (Critical Context)
 - `ConvertTo-Json` no PS 5.1 duplo-encode UTF-8 (ex: "Á" → "Ã\x81"). Solução: construir JSON manualmente com `.Replace()` e escrever via `[System.IO.StreamWriter]` com `UTF8Encoding($false)`.
@@ -370,30 +368,26 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - **Botões de gol**: renderizados sempre no DOM com `style.display` condicional. `scoreInput()` toggla display via `canAddGoal()`.
 - **Polling**: IIFE no final do HTML, `fetch /livescores` a cada 10s. Se robô desligado, falha silenciosa (não afeta uso manual).
 
-## Pendências (amanhã - ordem sugerida)
+## Pendências
 
-### Alta prioridade
-1. **Debug robot.ps1** — HttpListener não conecta. Testar como Admin, firewall (`New-NetFirewallRule`), porta alternativa (8080), ou trocar abordagem (ex: `netcat`/`python -m http.server` se disponível).
-2. **Dados do mata-mata corrompidos** — 8 jogos (#74,77,79,80,81,82,85,87) têm `b:"0"` no GAMES. O time B é literalmente "0". Veio do Excel com célula vazia → zero no PS. Precisa reextrair ou corrigir manualmente no JSON.
-3. **Auditar removeGoal + own goal** — Claude alertou que após o fix do own goal, `removeGoal` pode receber `team` errado. **Análise prévia**: `gl.team` é salvo como `storeTeam` no `confirmGoal`, e `renderGoalBadge` usa `gl.team||st||team`. Parece correto, mas verificar com dados reais de own goal no localStorage.
+### Pendências atuais
+1. **Ativar GitHub Pages** — Settings → Pages → branch `master` → `/ (root)` → Save.
+2. **Verificar CORS na prática** — O FIFA API tem `Access-Control-Allow-Origin: *` teoricamente. Testar no navegador real quando o site subir.
+3. **Auditar removeGoal + own goal** — `gl.team` salvo como `storeTeam` em `confirmGoal`, e `renderGoalBadge` usa `gl.team||st||team`. Verificar com dados reais.
 
-### Média prioridade
-4. **Contagem regressiva errada para jogos pós-meia-noite** — Jogo #5 (Turquia x Austrália) 13/06 01:00. O código trata como 01h do dia 13, mas é madrugada do dia 14 no Brasil. Afeta detecção "ao vivo" e "próximo jogo". Precisa tratar horário como UTC-3 ou verificar fuso por jogo.
-5. **Imagens dos mascotes com caminho absoluto** — `C:\Users\Gobbo\Downloads\...` não existe em outro PC. Embedar base64 no HTML ou usar caminho relativo.
+### Melhorias futuras
+4. **Google Fonts offline** — embedar font Inter no HTML como fallback completo.
+5. **Octal/estatísticas** — adicionar seção de estatísticas (cartões, posse, etc) se a FIFA API fornecer.
+6. **Service Worker** — cache do app para funcionar offline parcialmente.
 
-### Baixa prioridade
-6. **localStorage conflito robô vs manual** — Polling sobrescreve `scores[id]` sem checar se usuário editou manualmente.
-7. **Mascotes com caminho absoluto** — embedar base64 ou caminho relativo.
-8. **Google Fonts offline** — cai para system-ui. Aceitável, mas poderia embedar.
-
-### Itens resolvidos nesta sessão
-- ~~0x0 não apagava~~ ✅ corrigido
-- ~~Botões de gol sumiam~~ ✅ renderizados sempre no DOM
-- ~~Own goal storage~~ ✅ `confirmGoal` agora salva no time adversário via `storeTeam`
-- ~~NaN guard no polling/refresh~~ ✅ `parseInt` + `isNaN` antes de merge
-- ~~Janela "ao vivo" 2h~~ ✅ aumentada para 3h (10800000ms)
-- ~~renderThirdPlaced V/E/D quebrado~~ ✅ agora acumula `w/d/l` igual `renderGroups`
-- ~~Documentação AGENTS.md~~ ✅ atualizada com todos os itens
+### Itens resolvidos nesta sessão (v8)
+- ~~Caminhos absolutos de imagens~~ ✅ mudado para relativo (`./bola_t.png`)
+- ~~Polling do robot.ps1~~ ✅ substituído por fetch direto na FIFA API
+- ~~Timezone de jogos (pós-meia-noite)~~ ✅ `gameUTC()` + `STADIUM_TZ` com 16 estádios
+- ~~Bracket mostrava "0"~~ ✅ `tn()/tf()` substituem por "3º lugar"
+- ~~Backups velhos no repo~~ ✅ removidos do Git
+- ~~Sem timeout no fetch~~ ✅ AbortController com 10s/8s
+- ~~Sem feedback visual no refresh~~ ✅ mostra ⏳/⚠/⟳ dinamicamente
 
 ## Como compartilhar com amigos
 - **Com robô**: mandar a pasta inteira (`copa2026.html` + `robot.ps1` + `Iniciar Copa.bat` + logos). Amigo dá duplo clique no `.bat`.
