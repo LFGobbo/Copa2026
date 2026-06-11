@@ -1,4 +1,14 @@
-﻿# Modo de Trabalho
+﻿# 🚨 REGRA OBRIGATÓRIA: DOCUMENTAÇÃO CONTÍNUA
+
+Sempre que editar qualquer arquivo do projeto (HTML, JS, CSS, SW, config), ATUALIZE IMEDIATAMENTE este arquivo:
+1. Na seção da versão atual (vXX.XX), adicione o que mudou, onde e por quê
+2. Na seção Pendências, mova o item de "pendente" para "resolvido" se aplicável
+3. Na seção Última atualização, atualize a data
+4. Na seção Arquivos Relevantes, atualize se necessário
+
+Nunca termine uma sessão sem o AGENTS.md refletir exatamente o estado atual do projeto.
+
+# Modo de Trabalho
 
 Meu objetivo não é obter respostas rápidas. Meu objetivo é obter respostas corretas, robustas e bem fundamentadas.
 
@@ -261,7 +271,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-11 — Sessão v11 (squad filter, ordem alfabética, fotos FIFA, Argentina corrigida)**
+**2026-06-11 — Sessão v11.10 (correção grupos I/J, cross-browser, SW, live detection)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -273,7 +283,30 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v11.9 (atual — 2026-06-11)
+### v11.10 (atual — 2026-06-11)
+**Mudanças:**
+- **Correção grupos I/J** — dados de GAMES e GROUPS estavam com times trocados entre grupos I e J (Argentina, Argélia, Áustria, Jordânia no I; França, Iraque, Noruega, Senegal no J). Jogo #20 movido de G para I. 11 jogos afetados (#17-#72). Todas as tabelas de classificação agora estão corretas
+- **window.event eliminado** — `setFilter()`, `selectPlayer()`, `selectAssist()`, `selectGoalType()` agora aceitam parâmetro `e` explícito. Funciona no Firefox/Safari (não dependem mais de `window.event` legado do Chrome)
+- **saveState() com try/catch** — se localStorage estourar cota, não quebra mais a execução do app
+- **isGameLive() com verificação MATCH_ENDED** — se a timeline API marcou o jogo como encerrado (Type 26), o badge AO VIVO desaparece mesmo dentro da janela de 3h
+- **updateCountdown() reescrito** — mostra múltiplos jogos ao vivo simultaneamente (pipe separado). Após a abertura, mostra contagem regressiva para o próximo jogo com horário local
+- **Horário local** — todos os cards de jogo exibem "(horário local)" após o horário
+- **Match minute global replace** — `MatchMinute.replace(/'/g,"")` em vez de `replace("'","")` (só 1ª ocorrência)
+- **SW cache assets corrigido** — `url.endsWith('./bola_t.png')` nunca funcionava (URL absoluta). Cache version bump v4→v11
+- **<link preconnect> removido** — Google Fonts embedada, preconnect desnecessário
+- **Race condition timers** — `tabClick` limpa `_rsTimer` antes de criar novos timeouts
+- **alt text nas fotos** — 1248 imagens com `alt="Nome do Jogador"`
+- **Critérios de desempate** — head-to-head completo nos grupos (6 critérios: pontos → GD → GF → H2H pontos → H2H GD → H2H GF). Goals scored como 3º critério nos 3º colocados
+- **XSS escape** — `esc()` function aplicada em nomes de jogadores, times, e dados da API FIFA
+- **Polling com backoff** — 10s com jogos ao vivo, 60s sem
+- **Object.values polyfill** — compatibilidade com browsers antigos
+- **console.error/warn** — adicionado em todos os catches silenciosos (timeline, squad, cache)
+- **Meta tags OG** — og:title, og:description, og:image, og:url para compartilhamento WhatsApp
+- **Refresh button** — feedback textual no countdown-next: ✓ atualizado / ⚠ erro / ℹ sem mudanças
+- **Dead data limpo** — `sa`/`sb` do jogo #1 (México 1x0 África do Sul) nunca eram lidos, removidos
+- **Cartões amarelo/vermelho (FEATURE)** — dados salvos em localStorage, processamento automático via timeline API (Type 2=amarelo, Type 3=vermelho), exibição no game card como badges coloridas, entrada manual via popup com toggle Gol/Cartão, botão "+Cartão" em cada time no card do jogo
+
+### v11.9
 **Mudanças:**
 - **+86 novas fotos Wikipedia** — batch query da Wikipedia API para todos os 1248 artigos, encontrou 86 novas thumbnails (total: 951 fotos, 76% dos jogadores)
 - **Flag fallback** — `avatar-fallback` div com bandeira do time como background para jogadores sem foto (opacity .35, grayscale)
@@ -392,7 +425,7 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - **Repositório**: `github.com/LFGobbo/Copa2026` (master)
 - **GitHub Pages**: ATIVADO em `https://lfgobbo.github.io/Copa2026/`
 - **FIFA API**: Fetch direto do navegador com CORS aberto (`Access-Control-Allow-Origin: *`). Timeout 10s (manual) / 8s (polling).
-- **Robô alternativo**: `robot.ps1` + `Iniciar Copa.bat` existem como fallback, mas não são mais necessários para o site.
+- **Robô alternativo**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API com polling a cada 10s.
 - **Placares ao vivo**: Funcionam apenas durante jogos reais (HomeTeamScore/AwayTeamScore = null até o jogo começar).
 - **Squads**: 1248 jogadores (48×26), dados da Wikipedia com números, clubes e países.
 
@@ -413,7 +446,22 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 ## Pendências
 
 ### Pendências atuais
-(nenhuma — todas resolvidas)
+- ~~Grupos I/J com dados trocados~~ ✅ corrigido na v11.10
+- ~~window.event em 4 funções~~ ✅ parâmetro e explícito
+- ~~saveState sem try/catch~~ ✅ adicionado catch
+- ~~SW cache assets quebrado~~ ✅ url.endsWith sem ./
+- ~~AO VIVO falso positivo~~ ✅ isGameLive checa MATCH_ENDED
+- ~~alt text vazio nas fotos~~ ✅ adicionado nome do jogador
+- ~~Critérios de desempate incompletos~~ ✅ head-to-head + GF
+- ~~XSS sem escape~~ ✅ esc() function adicionada
+- ~~Polling sem backoff~~ ✅ 10s/60s adaptativo
+- ~~Cartões amarelo/vermelho~~ ✅ implementado v11.10
+- ~~Meta tags OG~~ ✅ adicionadas v11.10
+- ~~Dead data sa/sb~~ ✅ removido v11.10
+- Bracket com propagação automática de vencedores (lógica complexa de chaveamento)
+- Virtualização da lista de convocados (renderSquads bloqueia thread com 1248+ elementos)
+- Extrair PLAYERS + PLAYER_PHOTOS + GAMES para JSON externo
+- Adicionar suporte a Type 41/42/43 da timeline (vermelho 2º amarelo)
 
 ### Itens resolvidos nesta sessão (v11 + v11.5)
 - ~~Convocados sem filtro~~ ✅ barra de busca com filtro em tempo real (país + jogador)
@@ -444,20 +492,16 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Sem feedback visual no refresh~~ ✅ mostra ⏳/⚠/⟳ dinamicamente
 
 ## Como compartilhar com amigos
-- **Com robô**: mandar a pasta inteira (`copa2026.html` + `robot.ps1` + `Iniciar Copa.bat` + logos). Amigo dá duplo clique no `.bat`.
-- **Sem robô (só placar manual)**: mandar só `copa2026.html`. Abre no navegador direto, funciona 100% offline, placar é digitado manualmente.
+- **Compartilhar**: mandar o link `https://lfgobbo.github.io/Copa2026/` ou o arquivo `copa2026.html`. Abre no navegador, funciona 100% offline (com Service Worker), placar pode ser digitado manualmente ou via FIFA API ao vivo.
+- **Nota**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API.
 
 ## Arquivos Relevantes (2026-06-11)
-- `copa2026.html` — app final (v11, o que vai no WhatsApp)
-- `copa2026_v7.html` — backup v7
-- `copa2026_v6.html` — backup v6
-- `copa2026_v5.html`, `v4`, `v3`, `v2`, `v2_semiestrutura`, `v1` — backups históricos
-- `copa2026.html` — **arquivo ativo de edição** (editar este, depois copiar para index.html)
-- `robot.ps1` — servidor HTTP + proxy FIFA (NÃO TESTADO)
-- `Iniciar Copa.bat` — atalho para robot.ps1
+- `index.html` — app principal (v11.10, deploy GitHub Pages)
+- `copa2026.html` — cópia de index.html (mantido por compatibilidade, não editar separadamente)
+- `Iniciar Copa.bat` — atalho para robot.ps1 (NÃO FUNCIONAL — robot.ps1 não existe)
+- `sw.js` — Service Worker (cache offline, rede primeiro com fallback cache)
+- `opencode.json` — configuração OpenCode (aponta para AGENTS.md)
+- `.gitignore` — git ignore rules
 - `logo_globo.png`, `logo_sportv.png`, `logo_cazetv.png`, `logo_sbt.png`, `logo_nsports.png` — logos broadcast
-- `$env:USERPROFILE\Downloads\bola_t.png`, `mascote1_t.png`, `mascote2_t.png`, `mascote3_t.png` — assets visuais
-- `$env:USERPROFILE\Downloads\Copa_2026_Completa.xlsx` — dados fonte (Excel)
-- `$env:TEMP\_games_v3.json`, `_groups_v3.json`, `_players_v3.json` — dados extraídos
-- `PROGRESSO.md` — log do projeto
+- `bola_t.png`, `mascote1_t.png`, `mascote2_t.png`, `mascote3_t.png` — assets visuais
 - `AGENTS.md` — documentação mestra (este arquivo)
