@@ -9193,7 +9193,7 @@ function tabClick(){
   if(t==="grupos")renderGroups();
   if(t==="mata-mata")renderBracket();
   if(t==="artilheiros")renderScorers();
-  if(t==="convocados")renderSquads();
+  if(t==="convocados"){renderSquads();if(Object.keys(FIFA_PHOTO_CACHE).length<100)setTimeout(renderSquads,2000);setTimeout(renderSquads,6000)}
 }
 document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",tabClick)});
 
@@ -9437,14 +9437,20 @@ function renderScorers(){
   el.innerHTML=sorted.length?'<table class="scorers-table"><tr><th>#</th><th>Jogador</th><th style="text-align:center">Gols</th></tr>'+sorted.map(function(s,i){return'<tr><td class="rank '+(medals[i]||"")+'">'+(i+1)+'</td><td>'+s.name+'</td><td style="text-align:center;font-weight:700;font-size:14px">'+s.goals+'</td></tr>'}).join("")+'</table>':'<p style="text-align:center;color:#555;padding:40px">Nenhum gol registrado ainda. Adicione placares nos Jogos!</p>';
 }
 
+function getPlayerPhoto(name){
+  if(typeof PLAYER_PHOTOS!=='undefined'&&PLAYER_PHOTOS[name])return PLAYER_PHOTOS[name];
+  if(FIFA_PHOTO_CACHE&&FIFA_PHOTO_CACHE[name])return FIFA_PHOTO_CACHE[name];
+  return '';
+}
 function renderSquads(){
   var grid=document.getElementById("squads-grid");if(!grid)return;
   var q=(document.getElementById("squad-filter").value||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-  grid.innerHTML=GROUP_ORDER.map(function(letter){var teams=GROUPS[letter];if(!teams)return"";return teams.map(function(team){
+  var allTeams=Object.keys(PLAYERS).sort(function(a,b){return a.localeCompare(b,"pt-BR")});
+  grid.innerHTML=allTeams.map(function(team){
     var ps=PLAYERS[team]||[],qteam=team.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
     if(q&&qteam.indexOf(q)<0&&!ps.some(function(p){var pn=p.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();return pn.indexOf(q)>=0}))return"";
-    ps=ps.slice().sort(function(a,b){var na=a.name||"",nb=b.name||"";return na.localeCompare(nb,"pt-BR")});
-    return'<div class="squad-card"><div class="squad-header"><span class="squad-flag">'+flag(team)+'</span><span class="squad-team">'+team+'</span><span class="squad-count">'+ps.length+' jogadores</span></div><ul class="squad-list">'+ps.map(function(p){return'<li class="squad-player"><span class="squad-num">'+p.num+'</span><div class="squad-avatar">'+(typeof PLAYER_PHOTOS !== 'undefined'&&PLAYER_PHOTOS[p.name]?'<img src="'+PLAYER_PHOTOS[p.name]+'" alt="" onerror="this.style.display=\'none\'">':'')+'</div><span class="squad-name">'+(p.name||'')+'</span><span class="squad-pos">'+(p.pos||'')+'<br><small>'+(p.club||'')+' - '+(p.pais||'')+'</small></span></li>'}).join("")+'</ul></div>'}).join("")}).join("");
+    ps=ps.slice().sort(function(a,b){return (a.num||0)-(b.num||0)});
+    return'<div class="squad-card"><div class="squad-header"><span class="squad-flag">'+flag(team)+'</span><span class="squad-team">'+team+'</span><span class="squad-count">'+ps.length+' jogadores</span></div><ul class="squad-list">'+ps.map(function(p){var pu=getPlayerPhoto(p.name);return'<li class="squad-player"><span class="squad-num">'+p.num+'</span><div class="squad-avatar">'+(pu?'<img src="'+pu+'" alt="" onerror="this.style.display=\'none\'">':'')+'</div><span class="squad-name">'+(p.name||'')+'</span><span class="squad-pos">'+(p.pos||'')+'<br><small>'+(p.club||'')+' - '+(p.pais||'')+'</small></span></li>'}).join("")+'</ul></div>'}).join("");
 }
 
 document.querySelectorAll(".bview-btn").forEach(function(b){b.addEventListener("click",function(){
@@ -9475,7 +9481,7 @@ var FIFA_TEAM_MAP={
 };
 var FIFA_URL="https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200";
 
-var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},MATCH_STARTED={},MATCH_ENDED={},FIFA_MAP_READY=false,FIFA_TEAM_REV={};
+var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},MATCH_STARTED={},MATCH_ENDED={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_CACHE={};
 for(var abbr in FIFA_TEAM_MAP)FIFA_TEAM_REV[FIFA_TEAM_MAP[abbr]]=abbr;
 
 function fetchFifaScores(t){var ac=new AbortController(),to=setTimeout(function(){ac.abort()},t||10000);
@@ -9519,10 +9525,19 @@ function initFifaMaps(){
           d.Players.forEach(function(p){
             var matched=null;
             for(var i=0;i<ourSquad.length;i++){if(ourSquad[i].num==p.JerseyNum){matched=ourSquad[i];break}}
+            if(!matched&&p.PlayerName&&p.PlayerName[0]&&p.PlayerName[0].Description){
+              var fifaName=p.PlayerName[0].Description.toUpperCase().trim();
+              for(var i=0;i<ourSquad.length;i++){
+                var ourName=ourSquad[i].name.toUpperCase().trim();
+                if(ourName.indexOf(fifaName.split(' ').pop())>=0||fifaName.indexOf(ourName.split(' ').pop())>=0){matched=ourSquad[i];break}
+              }
+            }
             FIFA_PLAYER_MAP[p.IdPlayer]={num:p.JerseyNum,pname:matched?matched.name:p.PlayerName[0].Description,team:teamName,abbr:abbr};
-            if(matched&&!PLAYER_PHOTOS[matched.name]&&p.PlayerPicture&&p.PlayerPicture.PictureUrl){
-              PLAYER_PHOTOS[matched.name]=p.PlayerPicture.PictureUrl;
-              fifaPhotos[matched.name]=p.PlayerPicture.PictureUrl;
+            if(matched&&p.PlayerPicture&&p.PlayerPicture.PictureUrl){
+              var pname=matched.name;
+              if(!PLAYER_PHOTOS[pname])PLAYER_PHOTOS[pname]=p.PlayerPicture.PictureUrl;
+              if(!FIFA_PHOTO_CACHE[pname])FIFA_PHOTO_CACHE[pname]=p.PlayerPicture.PictureUrl;
+              fifaPhotos[pname]=p.PlayerPicture.PictureUrl;
             }
           });
         }
@@ -9532,6 +9547,7 @@ function initFifaMaps(){
   for(var i=0;i<6;i++)batch.push(next());
   Promise.all(batch).then(function(){
     try{localStorage.setItem('FIFA_PLAYER_MAP_CACHE',JSON.stringify({ts:Date.now(),data:FIFA_PLAYER_MAP,photos:fifaPhotos}))}catch(e){}
+    renderSquads();
   });
 }
 

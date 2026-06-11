@@ -273,7 +273,13 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v11 (atual — 2026-06-11)
+### v11.5 (atual — 2026-06-11)
+**Mudanças:**
+- **Inter font offline** — fonte embedada como @font-face com data:woff2 base64 (latin subset, weights 400-700, ~64KB)
+- **Service Worker** — `sw.js` cacheia HTML + assets locais (logos, bolas, mascotes) para funcionamento offline parcial
+- **Registro do SW** — inline script registra `sw.js` no `load` do navegador
+
+### v11
 **Mudanças:**
 - **Busca na aba Convocados** — input de texto filtra países e jogadores em tempo real (normalização UTF-8 + acentos)
 - **Ordem alfabética dos jogadores** — dentro de cada card de time, jogadores ordenados por nome (locale pt-BR)
@@ -394,15 +400,16 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 ## Pendências
 
 ### Pendências atuais
-1. **Google Fonts offline** — embedar font Inter no HTML como fallback completo.
-2. **Service Worker** — cache do app para funcionar offline parcialmente.
+(nenhuma — todas resolvidas)
 
-### Itens resolvidos nesta sessão (v11)
+### Itens resolvidos nesta sessão (v11 + v11.5)
 - ~~Convocados sem filtro~~ ✅ barra de busca com filtro em tempo real (país + jogador)
 - ~~Ordem aleatória dos jogadores~~ ✅ ordem alfabética A-Z dentro de cada time
 - ~~382 jogadores sem foto~~ ✅ fallback automático via FIFA digitalhub (`PlayerPicture.PictureUrl`)
 - ~~Juan Foyth #2~~ ✅ substituído por Leonardo Balerdi (Marseille)
 - ~~205 clubes com país "Outro"~~ ✅ todos mapeados (328 entries corrigidas)
+- ~~Google Fonts dependente de rede~~ ✅ Inter font embedada como base64/data-uri (64KB, latin subset, weights 400-700)
+- ~~Sem cache offline~~ ✅ Service Worker (`sw.js`) registrado, cacheia HTML + assets locais
 
 ### Itens resolvidos na sessão anterior (v9)
 - ~~Squads incompletos~~ ✅ todos os 48 times com 26 convocados oficiais
