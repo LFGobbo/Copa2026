@@ -273,13 +273,11 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v11.6 (atual — 2026-06-11)
+### v11.7 (atual — 2026-06-11)
 **Mudanças:**
-- **Seleções em ordem alfabética** — aba Convocados ordena times A-Z (era por grupo)
-- **Jogadores em ordem numérica** — dentro de cada time, ordenados por número da camisa (era alfabético)
-- **Fotos: fallback por nome** — `initFifaMaps()` agora tenta match por sobrenome se o número da camisa não bater
-- **FIFA_PHOTO_CACHE global** — cache de fotos FIFA persiste em memória, consultado via `getPlayerPhoto(name)` no render
-- **Auto re-render** — ao abrir a aba Convocados, re-renderiza após 2s e 6s para capturar fotos que carregam assincronamente
+- **Persistência de aba** — `localStorage.setItem('copa2026_tab',tab)` em cada clique; na inicialização, restaura a aba salva automaticamente
+
+### v11.6
 
 ### v11.5
 
