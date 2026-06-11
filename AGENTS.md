@@ -261,7 +261,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-11 — Sessão v9 (Wikipedia squads + clubes + correção de numeração)**
+**2026-06-11 — Sessão v9 (Wikipedia squads + clubes + fotos Wikipedia)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -278,10 +278,12 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 - **Squads completos (48/48, 26 jogadores cada)** — todos os times com 26 convocados oficiais
 - **Números das camisas corrigidos** — extraídos da Wikipedia (2026 FIFA World Cup squads), que é a fonte oficial
 - **Clubes adicionados** — cada jogador tem `club` e `pais` (país do clube) no objeto PLAYERS
-- **Iniciais no avatar** — o squad-player agora mostra iniciais do jogador no lugar da bandeira do time
-- **Clube exibido na posição** — formato: `Goleiro / Liverpool - Inglaterra`
+- **Avatar com placeholder** — avatar vazio com `data-name` preparado para fotos (placeholder em vez de iniciais)
+- **Clube + país exibido na posição** — formato: `Goleiro / Brighton & Hove Albion - Inglaterra`
+- **Contraste da posição melhorado** — opacity .6→.75, fonte 9px→10px
 - **Wesley → Éderson** — Brasil atualizado (Wesley lesionado, Éderson convocado, camisa #2)
 - **Argentina #2** — Juan Foyth adicionado (estava faltando na Wikipedia)
+- **Bugfix: JSON corrompido** — rebuild_players.js usou `indexOf(';')` que pegava `;` dentro de `&amp;` em nomes de clube, duplicando lixo no HTML. Corrigido com contagem de chaves `{}` para achar o fechamento real do objeto.
 - **Fonte dos dados**: Wikipedia (https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads) — contém número, nome, posição, clube de cada jogador
 
 ### v6.2
@@ -370,12 +372,12 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 ## Pendências
 
 ### Pendências atuais
-1. **Mapear mais clubes** — 328 clubes ainda com país "Outro" (precisa de mapeamento adicional)
-2. **Argentina #2 confirmar** — Juan Foyth adicionado como filler, verificar número oficial
-3. **Auditar removeGoal + own goal** — `gl.team` salvo como `storeTeam` em `confirmGoal`, e `renderGoalBadge` usa `gl.team||st||team`. Verificar com dados reais.
+1. **Fotos 3x4 dos jogadores** — 866/1248 (69%) via Wikipedia API. Argélia com 0/26. Pendente: buscar nomes alternativos para ~382 sem foto, ou usar 3ª fase com "(footballer, born ANO)".
+2. **Mapear mais clubes** — 328 clubes ainda com país "Outro" (precisa de mapeamento adicional)
+3. **Argentina #2 confirmar** — Juan Foyth adicionado como filler, verificar número oficial
 
 ### Melhorias futuras
-4. **Fotos 3x4 dos jogadores** — placeholder com iniciais implementado, fotos reais pendentes
+4. **Auditar removeGoal + own goal** — `gl.team` salvo como `storeTeam` em `confirmGoal`, e `renderGoalBadge` usa `gl.team||st||team`. Verificar com dados reais.
 5. **Google Fonts offline** — embedar font Inter no HTML como fallback completo.
 6. **Service Worker** — cache do app para funcionar offline parcialmente.
 
@@ -383,8 +385,10 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Squads incompletos (<26)~~ ✅ todos os 48 times com 26 convocados da Wikipedia
 - ~~Numeração errada~~ ✅ números reais da camisa (fonte: Wikipedia)
 - ~~Clubes dos jogadores~~ ✅ adicionado club + pais em cada jogador
-- ~~Avatar mostrava bandeira do time~~ ✅ agora mostra iniciais do jogador
-- ~~Posição mostrava só o cargo~~ ✅ agora mostra clube abaixo
+- ~~Avatar com iniciais (não solicitado)~~ ✅ revertido para placeholder vazio
+- ~~Clube sem país~~ ✅ agora mostra "Clube - País"
+- ~~Posição mostrava só o cargo~~ ✅ agora mostra clube + país abaixo
+- ~~JSON corrompido por indexOf(';')~~ ✅ corrigido com contagem de chaves
 - ~~Argentina com 25~~ ✅ Juan Foyth adicionado como #2
 - ~~Wesley no Brasil~~ ✅ substituído por Éderson (camisa #2, Atalanta)
 
