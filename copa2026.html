@@ -9297,7 +9297,7 @@ function renderGameCard(g){
   var allGoals=[];
   gaA.forEach(function(gl){allGoals.push({gl:gl,team:'a',display:gl.type==='own'?'b':'a',st:'a'})});
   gaB.forEach(function(gl){allGoals.push({gl:gl,team:'b',display:gl.type==='own'?'a':'b',st:'b'})});
-  allGoals.sort(function(x,y){var a=parseInt((x.gl.key||'0_0_0_0').split('_').pop())||0,b=parseInt((y.gl.key||'0_0_0_0').split('_').pop())||0;return a-b});
+  allGoals.sort(function(x,y){return(parseInt(x.gl.minute)||0)-(parseInt(y.gl.minute)||0)});
   var isGroup=g.f&&g.f.startsWith("Grupo"),isFinal=g.f==="Final";
   var grpL=isGroup?g.f.split(' ')[1]:'';
   var phaseClass=isFinal?"final":isGroup?"group group-"+grpL:"knockout";
@@ -9467,7 +9467,8 @@ var FIFA_TEAM_MAP={
 };
 var FIFA_URL="https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200";
 
-var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},FIFA_MAP_READY=false;
+var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},MATCH_STARTED={},MATCH_ENDED={},FIFA_MAP_READY=false,FIFA_TEAM_REV={};
+for(var abbr in FIFA_TEAM_MAP)FIFA_TEAM_REV[FIFA_TEAM_MAP[abbr]]=abbr;
 
 function fetchFifaScores(t){var ac=new AbortController(),to=setTimeout(function(){ac.abort()},t||10000);
 return fetch(FIFA_URL,{cache:"no-store",signal:ac.signal}).then(function(r){clearTimeout(to);return r.json()}).then(function(d){
@@ -9475,7 +9476,7 @@ var map={};if(!d||!d.Results)return map;
 d.Results.forEach(function(m){var h=FIFA_TEAM_MAP[m.Home.Abbreviation],a=FIFA_TEAM_MAP[m.Away.Abbreviation],hs=m.HomeTeamScore,as=m.AwayTeamScore;
 if(!FIFA_MAP_READY&&m.Home&&m.Home.Abbreviation&&m.Home.IdTeam)FIFA_TEAM_IDS[m.Home.Abbreviation]=m.Home.IdTeam;
 if(!FIFA_MAP_READY&&m.Away&&m.Away.Abbreviation&&m.Away.IdTeam)FIFA_TEAM_IDS[m.Away.Abbreviation]=m.Away.IdTeam;
-if(h&&a&&m.IdMatch){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){if(!FIFA_MATCH_IDS[g.n])FIFA_MATCH_IDS[g.n]=m.IdMatch;break}}}
+if(h&&a&&m.IdMatch){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){if(!FIFA_MATCH_IDS[g.n]){FIFA_MATCH_IDS[g.n]=m.IdMatch;FIFA_MATCH_META[g.n]={id:m.IdMatch,homeId:m.Home.IdTeam,awayId:m.Away.IdTeam}}break}}}
 if(!h||!a||hs===null||as===null)return;
 for(var i=0;i<GAMES.length;i++){var g=GAMES[i];
 if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){map[g.n]={};if(g.a===h){map[g.n].a=hs;map[g.n].b=as}else{map[g.n].a=as;map[g.n].b=hs}break}}
@@ -9488,24 +9489,35 @@ if(changed){saveState();renderGames(currentFilter);renderGroups();renderBracket(
 
 function initFifaMaps(){
   FIFA_MAP_READY=true;
-  var ids=Object.keys(FIFA_TEAM_IDS);
-  if(!ids.length)return;
-  Promise.all(ids.map(function(abbr){
-    var id=FIFA_TEAM_IDS[abbr],teamName=FIFA_TEAM_MAP[abbr];
-    if(!teamName)return Promise.resolve();
+  // Try localStorage cache
+  try{
+    var cached=localStorage.getItem('FIFA_PLAYER_MAP_CACHE');
+    if(cached){var parsed=JSON.parse(cached);if(parsed&&parsed.ts&&Date.now()-parsed.ts<86400000&&parsed.data){FIFA_PLAYER_MAP=parsed.data;return}}
+  }catch(e){}
+  var ids=Object.keys(FIFA_TEAM_IDS);if(!ids.length)return;
+  // Fetch with concurrency limit of 6
+  var results=[],idx=0;
+  function next(){
+    if(idx>=ids.length)return Promise.resolve();
+    var abbr=ids[idx++],id=FIFA_TEAM_IDS[abbr],teamName=FIFA_TEAM_MAP[abbr];
+    if(!teamName)return next();
     return fetch('https://api.fifa.com/api/v3/teams/'+id+'/squad?idCompetition=17&idSeason=285023')
-      .then(function(r){return r.json()})
-      .then(function(d){
-        if(!d||!d.Players)return;
-        var ourSquad=PLAYERS[teamName]||[];
-        d.Players.forEach(function(p){
-          var matched=null;
-          for(var i=0;i<ourSquad.length;i++){if(ourSquad[i].num==p.JerseyNum){matched=ourSquad[i];break}}
-          FIFA_PLAYER_MAP[p.IdPlayer]={num:p.JerseyNum,pname:matched?matched.name:p.PlayerName[0].Description,team:teamName,abbr:abbr};
-        });
-      })
-      .catch(function(){});
-  }));
+      .then(function(r){return r.json()}).then(function(d){
+        if(d&&d.Players){
+          var ourSquad=PLAYERS[teamName]||[];
+          d.Players.forEach(function(p){
+            var matched=null;
+            for(var i=0;i<ourSquad.length;i++){if(ourSquad[i].num==p.JerseyNum){matched=ourSquad[i];break}}
+            FIFA_PLAYER_MAP[p.IdPlayer]={num:p.JerseyNum,pname:matched?matched.name:p.PlayerName[0].Description,team:teamName,abbr:abbr};
+          });
+        }
+      }).catch(function(){}).then(next);
+  }
+  var batch=[];
+  for(var i=0;i<6;i++)batch.push(next());
+  Promise.all(batch).then(function(){
+    try{localStorage.setItem('FIFA_PLAYER_MAP_CACHE',JSON.stringify({ts:Date.now(),data:FIFA_PLAYER_MAP}))}catch(e){}
+  });
 }
 
 function processTimeline(idMatch,gameId){
@@ -9517,18 +9529,46 @@ function processTimeline(idMatch,gameId){
       var newEvents=d.Event.filter(function(e){return parseInt(e.EventId)>lastId});
       if(!newEvents.length)return;
       var maxId=0;newEvents.forEach(function(e){var id=parseInt(e.EventId);if(id>maxId)maxId=id});PROCESSED_EVENTS[idMatch]=maxId;
+      // Track match state
+      newEvents.forEach(function(e){if(e.Type===7)MATCH_STARTED[idMatch]=true;if(e.Type===26)MATCH_ENDED[idMatch]=true});
       var changed=false,game=GAMES.find(function(g){return g.n==gameId});if(!game)return;
+      var meta=FIFA_MATCH_META[gameId]||{},prevHome=0,prevAway=0;
       newEvents.forEach(function(e,idx){
-        if(e.Type!==0&&e.Type!==41)return;
-        var info=FIFA_PLAYER_MAP[e.IdPlayer];if(!info)return;
-        var teamSide=(info.team===game.a)?'a':'b',goalType=(e.Type===41)?'pen':'gol',min=e.MatchMinute.replace("'","");
-        var aNum=null,aName=null;
-        for(var j=idx-1;j>=0;j--){if(newEvents[j].Type===1){var ai=FIFA_PLAYER_MAP[newEvents[j].IdPlayer];if(ai){aNum=ai.num;aName=ai.pname}break}}
-        if(goals[gameId]&&goals[gameId][teamSide]){var dup=false;for(var k=0;k<goals[gameId][teamSide].length;k++){var g=goals[gameId][teamSide][k];if(g.player==info.num&&g.minute==min){dup=true;break}}if(dup)return}
-        var key=gameId+'_'+teamSide+'_'+info.num+'_'+Date.now();
-        if(!goals[gameId])goals[gameId]={};if(!goals[gameId][teamSide])goals[gameId][teamSide]=[];
-        goals[gameId][teamSide].push({key:key,player:info.num,pname:info.pname,type:goalType,minute:min,assist:aNum,aname:aName,team:teamSide,auto:true});
-        changed=true;
+        if(e.HomeGoals!==undefined&&e.AwayGoals!==undefined){
+          // Detect own goal: if score increased for team that is NOT the event's team
+          if(e.Type===0||e.Type===41){
+            var homeId=meta.homeId,awayId=meta.awayId;
+            var scoredForHome=e.HomeGoals>prevHome,scoredForAway=e.AwayGoals>prevAway;
+            var isOwn=scoredForHome&&e.IdTeam&&e.IdTeam!==homeId||scoredForAway&&e.IdTeam&&e.IdTeam!==awayId;
+            var info=FIFA_PLAYER_MAP[e.IdPlayer];
+            // Fallback: parse name from EventDescription if IdPlayer not in map
+            if(!info&&e.EventDescription&&e.EventDescription[0]){
+              var desc=e.EventDescription[0].Description||'';
+              var nameMatch=desc.match(/^(.+?) \(/);
+              if(nameMatch){
+                var parsedName=nameMatch[1].trim();
+                if(parsedName){
+                  var ourSquad=PLAYERS[scoredForHome?game.a:game.b]||[];
+                  for(var pi=0;pi<ourSquad.length;pi++){
+                    if(ourSquad[pi].name.toUpperCase().indexOf(parsedName.split(' ').pop())>=0){info={num:ourSquad[pi].num,pname:ourSquad[pi].name,team:scoredForHome?game.a:game.b};break}
+                  }
+                }
+              }
+            }
+            if(!info){prevHome=e.HomeGoals;prevAway=e.AwayGoals;return}
+            var teamSide=(scoredForHome?'a':'b'),goalType=(e.Type===41)?'pen':'gol',min=e.MatchMinute.replace("'","");
+            // Store own goal on the conceding team's side
+            var storeSide=isOwn?(teamSide==='a'?'b':'a'):teamSide;
+            var aNum=null,aName=null;
+            for(var j=idx-1;j>=0;j--){if(newEvents[j].Type===1){var ai=FIFA_PLAYER_MAP[newEvents[j].IdPlayer];if(ai){aNum=ai.num;aName=ai.pname}break}}
+            if(goals[gameId]&&goals[gameId][storeSide]){var dup=false;for(var k=0;k<goals[gameId][storeSide].length;k++){var g=goals[gameId][storeSide][k];if(g.player==info.num&&g.minute==min){dup=true;break}}if(dup){prevHome=e.HomeGoals;prevAway=e.AwayGoals;return}}
+            var key=gameId+'_'+storeSide+'_'+info.num+'_'+Date.now();
+            if(!goals[gameId])goals[gameId]={};if(!goals[gameId][storeSide])goals[gameId][storeSide]=[];
+            goals[gameId][storeSide].push({key:key,player:info.num,pname:info.pname,type:isOwn?'own':goalType,minute:min,assist:aNum,aname:aName,team:storeSide,auto:true});
+            changed=true;
+          }
+          prevHome=e.HomeGoals;prevAway=e.AwayGoals;
+        }
       });
       if(changed){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers()}
     })
@@ -9544,7 +9584,7 @@ document.getElementById("refresh-btn").addEventListener("click",function(){
 });
 
 // --- Polling automático da FIFA API (a cada 10s) ---
-(function(){fetchFifaScores(8000);setInterval(function(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length)mergeScores(m)});if(FIFA_MAP_READY){GAMES.forEach(function(g){if(isGameLive(g)&&FIFA_MATCH_IDS[g.n])processTimeline(FIFA_MATCH_IDS[g.n],g.n)})}},10000)})();
+(function(){fetchFifaScores(8000);setInterval(function(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length)mergeScores(m)});if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(id&&(isGameLive(g)||(MATCH_STARTED[id]&&!MATCH_ENDED[id])))processTimeline(id,g.n)})}},10000)})();
 
 
 
