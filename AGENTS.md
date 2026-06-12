@@ -271,7 +271,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-11 — Sessão v12 (JSON externo, virtualização, bracket automático, SW refinado)**
+**2026-06-11 — Sessão v13 (árbitro funcional, ordem cronológica, flickering resolvido, regras de suspensão)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -283,7 +283,15 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v12 (atual — 2026-06-11)
+### v13 (atual — 2026-06-11)
+**Mudanças:**
+- **Árbitro funcional** — Wikipedia scraper trocado de `action=query&prop=extracts` (que NÃO retorna dados de infobox) para `action=parse` (HTML completo). Regex ajustado para `<a>Nome</a> (<a>País</a>)`. Agora exibe corretamente o árbitro no card do jogo
+- **Ordem cronológica gols+cartões** — `renderGameCard()` merge goals e cards em único array `events`, ordenado por minuto
+- **Flickering resolvido** — CSS `.dyn-content` com `opacity:0` + `body.render-ready` evita flash inicial. Re-renders usam `requestAnimationFrame` para fade-out/in suave
+- **Regras de cartões/suspensões** — nova seção na aba Regras explicando: 2 amarelos = suspensão, pendurado (1 amarelo), vermelho direto, zeragem após quartas de final
+- **Botão remover cartão removido** — cartões agora são apenas automáticos (via timeline API), sem botão × para remover (economiza espaço)
+
+### v12 (2026-06-11)
 **Mudanças:**
 - **JSON externo** — PLAYERS (48 times, 1248 jogadores) e PLAYER_PHOTOS (951 fotos) extraídos para `players.json` (116KB) e `photos.json` (174KB). HTML caiu de 499KB para 170KB (−66%). Carregamento via XMLHttpRequest com graceful degradation
 - **Virtualização com IntersectionObserver** — `renderSquads()` gera 1248 placeholders com shimmer, hidrata sob demanda com rootMargin 200px
@@ -476,10 +484,16 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Placar via timeline (não calendário)~~ ✅ v12
 - ~~Artilheiros lado a lado~~ ✅ v12
 - ~~gameUTC com fuso correto (BRT)~~ ✅ v12
-- Juiz/árbitro nos jogos (sem fonte de dados — FIFA API retorna Officials: [] vazio)
+- ~~Árbitro do Wikipedia~~ ✅ v13
+- ~~Ordem cronológica gols+cartões~~ ✅ v13
+- ~~Flickering na página~~ ✅ v13
+- ~~Regras de cartões/suspensões~~ ✅ v13
+- Transmissões TV (getv, globoplay, etc.) — hardcoded no campo `br` do GAMES. Esperando usuário informar dados atualizados
 - Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão
 - `parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)
 - Hash change causa scroll indesejado em mobile
+- Broadcast separator `·` corrompido em algumas entradas (ex: `Globo�SporTV�Caz�TV`) — possivelmente encoding issue
+- Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
 
 ### Itens resolvidos nesta sessão (v11 + v11.5)
 - ~~Convocados sem filtro~~ ✅ barra de busca com filtro em tempo real (país + jogador)
@@ -513,8 +527,8 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - **Compartilhar**: mandar o link `https://lfgobbo.github.io/Copa2026/` ou o arquivo `copa2026.html`. Abre no navegador, funciona 100% offline (com Service Worker), placar pode ser digitado manualmente ou via FIFA API ao vivo.
 - **Nota**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API.
 
-## Arquivos Relevantes (2026-06-11)
-- `index.html` — app principal (v12, deploy GitHub Pages, 170KB)
+## Arquivos Relevantes (2026-06-11 v13)
+- `index.html` — app principal (v13, deploy GitHub Pages, ~170KB)
 - `players.json` — dados dos 1248 jogadores (116KB)
 - `photos.json` — URLs das fotos dos jogadores (174KB)
 - `copa2026.html` — cópia de index.html (mantido por compatibilidade)
