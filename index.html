@@ -860,7 +860,7 @@ function renderGames(filter){
   else if(filter!=="all")games=games.filter(function(g){return g.f===GROUP_NAMES[filter]||g.f===filter});
   games.sort(function(a,b){return a.n-b.n});
   if(filter==="all"){dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""));if(games.length){setTimeout(function(){var first=null;for(var i=0;i<games.length;i++){if(!gameIsPast(games[i])){first=games[i];break}}if(first){var el=document.getElementById('g-'+first.n);if(el)el.scrollIntoView({behavior:'smooth',block:'center'})}},100)}}else{dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""))}
-     document.querySelectorAll(".score-input").forEach(function(i){i.readOnly=true;i.style.cursor='default'});
+     document.querySelectorAll(".score-input").forEach(function(i){i.addEventListener("input",scoreInput)});
 }
 function toggleGameCard(btn){
   var card=btn.closest('.game-card');
