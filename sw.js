@@ -1,5 +1,5 @@
 var C='copa2026-v19';
-var STATIC=['bola_t.png','mascote1_t.png','mascote2_t.png','mascote3_t.png','logo_globo.png','logo_sportv.png','logo_cazetv.png','logo_sbt.png','logo_nsports.png','logo_globoplay.png','logo_getv.png','index.html'];
+var STATIC=['bola_t.png','mascote1_t.png','mascote2_t.png','mascote3_t.png','logo_globo.png','logo_sportv.png','logo_cazetv.png','logo_sbt.png','logo_nsports.png','logo_globoplay.png','logo_getv.png'];
 var DATA=['players.json','photos.json'];
 
 // Install: pré-cachear assets estáticos
@@ -14,7 +14,7 @@ self.addEventListener('activate',function(e){
   e.waitUntil(
     caches.keys().then(function(ks){
       return Promise.all(ks.filter(function(k){return k!==C;}).map(function(k){return caches.delete(k);}));
-    }).then(function(){return self.clients.claim();})
+    }).then(function(){return self.clients.claim();}).then(function(){return self.clients.matchAll().then(function(clients){clients.forEach(function(c){c.postMessage({type:'SW_UPDATED'})})})})
   );
 });
 
