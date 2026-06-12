@@ -956,7 +956,7 @@ function renderGameCard(g){
   var phaseClass=isFinal?"final":isGroup?"group group-"+grpL:"knockout";
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
-  var liveElapsed=live?(FIFA_MATCH_IDS[gn]&&MATCH_MINUTE[FIFA_MATCH_IDS[gn]]?MATCH_MINUTE[FIFA_MATCH_IDS[gn]]:function(){var gd=gameUTC(g);return gd?Math.floor((new Date()-gd)/60000):0}()):0;
+  var liveElapsed=live?(function(){var id=FIFA_MATCH_IDS[gn];if(id&&MATCH_MINUTE[id])return MATCH_MINUTE[id];if(id&&MATCH_STARTED_AT[id])return Math.floor((Date.now()-MATCH_STARTED_AT[id])/60000);var gd=gameUTC(g);return gd?Math.floor((new Date()-gd)/60000):0})():0;
   var past=currentFilter==="all"&&gameIsPast(g);
    return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score">'+(live?'<span class="live-clock">\u23F1 '+(liveElapsed>0?liveElapsed+"'":"0'")+'</span>':'')+'<input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-" readonly><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-" readonly></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
     if(x.type==='goal'){
@@ -975,6 +975,7 @@ function isGameLive(g){
     var now=new Date(),gd=gameUTC(g);if(!gd)return false;
     var id=FIFA_MATCH_IDS[g.n];
     if(id&&MATCH_ENDED[id])return false;
+    if(id&&MATCH_STARTED[id]&&!MATCH_ENDED[id])return true;
     return now>=gd&&now<=new Date(gd.getTime()+10800000);
   }catch(e){return false}
 }
@@ -1569,7 +1570,7 @@ var FIFA_TEAM_MAP={
 };
 var FIFA_URL="https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200";
 
-var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},MATCH_STARTED={},MATCH_ENDED={},MATCH_MINUTE={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={};
+var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},MATCH_STARTED={},MATCH_STARTED_AT={},MATCH_ENDED={},MATCH_MINUTE={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={};
 for(var abbr in FIFA_TEAM_MAP)FIFA_TEAM_REV[FIFA_TEAM_MAP[abbr]]=abbr;
 
 function fetchFifaScores(t){var ac=new AbortController(),to=setTimeout(function(){ac.abort()},t||10000);
@@ -1722,7 +1723,7 @@ function processTimeline(idMatch,gameId){
       var maxId=0;newEvents.forEach(function(e){var id=parseInt(e.EventId,10);if(id>maxId)maxId=id});PROCESSED_EVENTS[idMatch]=maxId;
       // Track match state and minute
       newEvents.forEach(function(e){
-        if(e.Type===7)MATCH_STARTED[idMatch]=true;
+        if(e.Type===7){MATCH_STARTED[idMatch]=true;if(!MATCH_STARTED_AT[idMatch])MATCH_STARTED_AT[idMatch]=Date.now()}
         if(e.Type===26)MATCH_ENDED[idMatch]=true;
         if(e.MatchMinute){
           var m=parseInt(e.MatchMinute.replace(/'/g,''),10);
