@@ -855,16 +855,22 @@ function liveMinute(g){
   try{
     var now=new Date();
     var id=FIFA_MATCH_IDS[g.n];
+    if(id&&MATCH_ENDED[id])return '';
+    if(id&&MATCH_HALFTIME[id]&&!SECOND_HALF_KICKOFF[id])return 'Int.';
+    if(id&&SECOND_HALF_KICKOFF[id]){
+      var ko2=SECOND_HALF_KICKOFF[id];
+      var elapsed2=Math.floor((now-ko2)/60000);
+      if(elapsed2<0)return 'Int.';
+      if(elapsed2>53)return '90+'+Math.min(elapsed2-45,15)+"'";
+      return (45+Math.min(elapsed2,45))+(elapsed2>45?'+'+(elapsed2-45):'')+"'";
+    }
     var kickoff=id&&MATCH_KICKOFF[id]?MATCH_KICKOFF[id]:gameUTC(g);
     if(!kickoff)return '';
     var elapsed=Math.floor((now-kickoff)/60000);
     if(elapsed<0)return '';
-    if(elapsed>=45&&elapsed<=47)return 'Int.';
-    if(elapsed<45)return elapsed+"'";
-    var st=elapsed-47;
-    if(st<0)return 'Int.';
-    if(st>45)return '90+'+Math.min(st-45,15)+"'";
-    return (45+st)+"'";
+    if(elapsed>53)return 'Int.';
+    if(elapsed>45)return '45+'+(elapsed-45)+"'";
+    return elapsed+"'";
   }catch(e){return ''}
 }
 function isGameLive(g){
@@ -873,7 +879,9 @@ function isGameLive(g){
     var id=FIFA_MATCH_IDS[g.n];
     if(id&&MATCH_ENDED[id])return false;
     var kickoff=id&&MATCH_KICKOFF[id]?MATCH_KICKOFF[id]:gd;
-    return now>=kickoff&&now<=new Date(kickoff.getTime()+10800000);
+    if(now<kickoff)return false;
+    if(id&&(MATCH_STARTED[id]||MATCH_HALFTIME[id]||SECOND_HALF_KICKOFF[id]))return true;
+    return now<=new Date(kickoff.getTime()+10800000);
   }catch(e){return false}
 }
 function renderGames(filter){
@@ -1595,7 +1603,7 @@ var FIFA_TEAM_MAP={
 };
 var FIFA_URL="https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200";
 
-var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},MATCH_STARTED={},MATCH_ENDED={},MATCH_KICKOFF={},MATCH_MINUTE={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={};
+var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},MATCH_STARTED={},MATCH_ENDED={},MATCH_KICKOFF={},MATCH_HALFTIME={},SECOND_HALF_KICKOFF={},MATCH_MINUTE={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={};
 for(var abbr in FIFA_TEAM_MAP)FIFA_TEAM_REV[FIFA_TEAM_MAP[abbr]]=abbr;
 
 function fetchFifaScores(t){var ac=new AbortController(),to=setTimeout(function(){ac.abort()},t||10000);
@@ -1748,7 +1756,18 @@ function processTimeline(idMatch,gameId){
       var maxId=0;newEvents.forEach(function(e){var id=parseInt(e.EventId,10);if(id>maxId)maxId=id});PROCESSED_EVENTS[idMatch]=maxId;
       // Track match state and minute
       newEvents.forEach(function(e){
-        if(e.Type===7){MATCH_STARTED[idMatch]=true;if(e.UTC&&!MATCH_KICKOFF[idMatch])MATCH_KICKOFF[idMatch]=new Date(e.UTC)}
+        if(e.Type===7){
+          if(e.Period===1||(!e.Period&&!MATCH_KICKOFF[idMatch])){
+            MATCH_STARTED[idMatch]=true;
+            if(e.UTC&&!MATCH_KICKOFF[idMatch])MATCH_KICKOFF[idMatch]=new Date(e.UTC);
+          }
+          if(e.Period===2&&e.UTC&&!SECOND_HALF_KICKOFF[idMatch]){
+            SECOND_HALF_KICKOFF[idMatch]=new Date(e.UTC);
+            MATCH_HALFTIME[idMatch]=false;
+          }
+        }
+        if(e.Type===30)MATCH_HALFTIME[idMatch]=true;
+        if(e.Type===6&&e.Period===1)MATCH_HALFTIME[idMatch]=true;
         if(e.Type===26)MATCH_ENDED[idMatch]=true;
         if(e.MatchMinute){
           var m=parseInt(e.MatchMinute.replace(/'/g,''),10);
