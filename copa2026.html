@@ -1973,7 +1973,10 @@ function _bolaoTopScorer(){
 }
 function _bolaoGetScore(gameN){
   if(gameN<BOLAO_FIRST){var s=scores[gameN];return(s&&s.a!==undefined&&s.b!==undefined)?{a:s.a,b:s.b}:null}
-  var p=_bolaoMyPicks[gameN];return(p&&p.a!==undefined&&p.b!==undefined)?{a:p.a,b:p.b}:null
+  var p=_bolaoMyPicks[gameN];
+  if(p&&p.a!==undefined&&p.b!==undefined)return{a:p.a,b:p.b};
+  var s=scores[gameN];
+  return(s&&s.a!==undefined&&s.b!==undefined)?{a:s.a,b:s.b}:null
 }
 function _bolaoGroupStandings(letter){
   var teams=GROUPS[letter]||[],pts={},gp={},gf={},ga={};
@@ -2151,6 +2154,7 @@ async function bolaoSavePick(gameN){
     await _supaFetch('picks?on_conflict=participant_id,game_n','POST',body);
     _bolaoMyPicks[gameN]={a:vA,b:vB};
     if(saved){saved.style.color='#4ade80';saved.textContent='Salvo';}
+    bolaoRenderPicksGrid();
   }catch(e){if(saved){saved.style.color='var(--red)';saved.textContent='Erro';}}
 }
 function bolaoPopulateSpecials(){
