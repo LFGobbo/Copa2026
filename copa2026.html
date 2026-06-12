@@ -103,8 +103,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .game-broadcast{font-size:var(--fs-xs);color:var(--muted);opacity:.4;display:flex;flex-wrap:wrap;gap:3px}
 .game-referee{font-size:var(--fs-xs);color:var(--muted);opacity:.5;margin-top:2px}
 .br-badge{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:var(--fs-xs);font-weight:600;line-height:1.4}
-.br-logo{display:inline-block;width:16px;height:11px;background-size:contain;background-repeat:no-repeat;background-position:center;border-radius:2px;flex-shrink:0;vertical-align:middle}
-.br-logo.caze{width:24px;height:20px}
+.br-logo{height:11px;width:auto;border-radius:2px}
+.br-logo.caze{height:20px}
 .game-score{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.35);padding:4px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);justify-content:center}
 .score-input{width:clamp(22px,4vw,30px);height:clamp(24px,4vw,30px);text-align:center;background:transparent;border:none;color:#fff;font-size:var(--fs-body);font-weight:700;outline:none;-moz-appearance:textfield;font-family:inherit;transition:var(--transition);border-radius:4px}
 .score-input:focus{background:rgba(255,255,255,.05);box-shadow:0 0 0 1px var(--gold)}
@@ -116,7 +116,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .team-row{display:flex;align-items:center;gap:6px;justify-content:center}
 .team-pending{font-style:italic;opacity:.6}
 .flag{font-size:clamp(14px,2.5vw,20px);line-height:1;display:inline-flex;align-items:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
-.flag-bg,.flag-fallback{display:inline-block;width:24px;height:18px;border-radius:2px;vertical-align:middle;flex-shrink:0}.flag-bg{background-size:cover;background-position:center}
+.flag-fallback{display:inline-block;width:24px;height:18px;border-radius:2px;vertical-align:middle;flex-shrink:0}
 .team-name{font-weight:500;color:var(--text);font-size:clamp(11px,1.7vw,15px)}
 .team-name.brazil{color:var(--gold);font-weight:700}
 .goal-events{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:3px;padding:6px 0 0;border-top:1px solid rgba(255,255,255,.04);margin-top:2px}
@@ -472,8 +472,8 @@ const BRACKET_ROUNDS = ["Rodada de 32","Oitavas de Final","Quartas de Final","Se
 function gameUTC(g){try{var p=g.d.split(" ")[0].split("/"),tp=g.t.split(":");if(p.length<2||tp.length<2)return null;return new Date(Date.UTC(2026,parseInt(p[1],10)-1,parseInt(p[0],10),parseInt(tp[0],10)+3,parseInt(tp[1],10)))}catch(e){return null}}
 function toBRT(g){try{var gd=gameUTC(g);if(!gd)return'';var br=new Date(gd-10800000);return br.getUTCHours().toString().padStart(2,'0')+':'+br.getUTCMinutes().toString().padStart(2,'0')}catch(e){return''}}
 
-function flag(t){var c=FLAG_ISO[t];return c?'<div class="flag-bg" style="background-image:url(https://flagcdn.com/24x18/'+c+'.png)" title="'+t+'"></div>':'<span class="flag-fallback" style="font-size:18px">\u{1F3F3}\uFE0F</span>'}
-function broadcastBadge(br){if(!br)return'';var m={'Globo':'logo_globo.png','SporTV':'logo_sportv.png','Caz\u00e9TV':'logo_cazetv.png','SBT':'logo_sbt.png','N Sports':'logo_nsports.png','Globoplay':'logo_globoplay.png','Ge TV':'logo_getv.png'};return br.split(/\u00b7/).map(function(c){c=c.trim();if(!c)return'';var k=m[c];var cls=c==='Caz\u00e9TV'?' caze':'';return k?'<span class="br-badge"><span class="br-logo'+cls+'" style="background-image:url('+k+')"></span>'+c+'</span>':'<span class="br-badge">'+c+'</span>'}).filter(function(s){return s}).join('')}
+function flag(t){var c=FLAG_ISO[t];return c?'<span>'+String.fromCodePoint(0x1F1E6+c.charCodeAt(0)-97,0x1F1E6+c.charCodeAt(1)-97)+'</span>':'<span class="flag-fallback">\u{1F3F3}\uFE0F</span>'}
+function broadcastBadge(br){if(!br)return'';var m={'Globo':'logo_globo.png','SporTV':'logo_sportv.png','Caz\u00e9TV':'logo_cazetv.png','SBT':'logo_sbt.png','N Sports':'logo_nsports.png','Globoplay':'logo_globoplay.png','Ge TV':'logo_getv.png'};return br.split(/\u00b7/).map(function(c){c=c.trim();if(!c)return'';var k=m[c];var cls=c==='Caz\u00e9TV'?' caze':'';return k?'<span class="br-badge"><img class="br-logo'+cls+'" src="'+k+'" alt="'+c+'" loading="lazy" decoding="async">'+c+'</span>':'<span class="br-badge">'+c+'</span>'}).filter(function(s){return s}).join('')}
 function teamRow(n,c){return'<div class="team-row"><span class="flag">'+flag(n)+'</span><span class="team-name'+c+'">'+esc(n)+'</span></div>'}
 function _resolvedTeamRow(placeholder,gameNum,side){
   var r=resolveTeam(placeholder,gameNum);
@@ -723,6 +723,7 @@ function toggleGameCard(btn){
   }
 }
 function dynRender(el, html){
+  if(el.innerHTML===html)return;
   el.innerHTML = html;
 }
 function renderGameCard(g){
