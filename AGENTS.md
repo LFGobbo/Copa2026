@@ -304,7 +304,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-12 — Sessão v16.2 (suspension indicator + broadcast encoding fix + performance)**
+**2026-06-12 — Sessão v19 (Bolão com Supabase + todos os fixes anteriores)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -316,7 +316,19 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v16.2 (atual — 2026-06-12)
+### v19 (atual — 2026-06-12)
+**Mudanças (Bolão com Supabase + todos os fixes anteriores):**
+- **Bolão integrado** — nova aba `data-tab="bolao"` com:
+  - Login/cadastro com SHA-256 via `crypto.subtle`
+  - Palpites por jogo (grid de inputs, trava 2h antes)
+  - Palpites especiais (campeão +50pts, artilheiro +20/+10)
+  - Confirmação geral de palpites (bloqueia edição)
+  - Ranking com medalhas, pontos, desempate, detalhes expansíveis
+- **Supabase** — `https://etbezmraylbvlnycltha.supabase.co` com tabelas `participants`, `picks`, `special_picks`
+- **Admin unlock** — `bolaoAdminUnlock('Nome')` no console do DevTools
+- Todas as melhorias do v16.2 mantidas (suspension, responsive, performance, etc.)
+
+### v16.2 (2026-06-12)
 **Mudanças (suspension indicator + broadcast encoding fix + performance):**
 - **Indicador de jogadores suspensos nos cards** — `getSuspensions()` escaneia todos os `cards[]` e agrega por time: 2 cartões amarelos ou 1 vermelho = suspenso. Exibe badge `⚠ N` ao lado do nome do time no card, com tooltip listando os jogadores. CSS: `.sus-badge` laranja com fundo translúcido
 - **Correção de encoding dos broadcasts** — arquivo estava duplamente codificado em UTF-8 (`·` virou bytes C3 82 C2 B7 em vez de C2 B7). Corrigido via restauração binária do git checkout. Globoplay e Ge TV agora aparecem corretamente (adicionados via script pós-carga linhas 1657-1658)
@@ -645,16 +657,21 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - **Compartilhar**: mandar o link `https://lfgobbo.github.io/Copa2026/` ou o arquivo `copa2026.html`. Abre no navegador, funciona 100% offline (com Service Worker), placar pode ser digitado manualmente ou via FIFA API ao vivo.
 - **Nota**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API.
 
-## Arquivos Relevantes (2026-06-12 v16.2)
-- `index.html` — app principal (v16.2, deploy GitHub Pages, ~198KB)
+## Arquivos Relevantes (2026-06-12 v19)
+- `index.html` — app principal (v19, deploy GitHub Pages, ~220KB)
 - `players.json` — dados dos 1248 jogadores (116KB)
 - `photos.json` — URLs das fotos dos jogadores (174KB)
 - `copa2026.html` — cópia de index.html (mantido por compatibilidade)
-- `Iniciar Copa.bat` — atalho para robot.ps1 (NÃO FUNCIONAL)
-- `sw.js` — Service Worker v19 (cache bump, skipWaiting, postMessage SW_UPDATED)
+- `sw.js` — Service Worker v20 (cache bump, skipWaiting, postMessage SW_UPDATED)
 - `opencode.json` — configuração OpenCode (aponta para AGENTS.md)
 - `.gitignore` — git ignore rules
 - `logo_globo.png`, `logo_sportv.png`, `logo_cazetv.png`, `logo_sbt.png`, `logo_nsports.png`, `logo_globoplay.png`, `logo_getv.png` — logos broadcast
-- `bola_t.png`, `mascote1_t.png`, `mascote2_t.png`, `mascote3_t.png` — assets visuais
+- `bola_t.png`, `mascote1_t.png`, `mascote2_t.png`, `mascote3_t.png` — assets visuais (redimensionados, total 155KB)
 - `AGENTS.md` — documentação mestra (este arquivo)
-- `LEVANTAMENTO_TECNICO.md` — análise completa linha a linha, 4 bugs ativos, 11 melhorias de qualidade, 6 UX, plano de execução até Fase 3
+- `LEVANTAMENTO_TECNICO.md` — análise detalhada
+
+## Supabase — Bolão
+- **Projeto**: copa2026 (Free tier)
+- **URL**: https://etbezmraylbvlnycltha.supabase.co
+- **Tabelas**: participants (id, name, password SHA-256, confirmed), picks (participant_id, game_n, goals_a, goals_b), special_picks (participant_id, champion, top_scorer)
+- **Admin unlock**: console do browser → `bolaoAdminUnlock('Nome do Participante')`
