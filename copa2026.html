@@ -105,12 +105,12 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .br-badge{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:var(--fs-xs);font-weight:600;line-height:1.4}
 .br-logo{height:11px;width:auto;border-radius:2px}
 .br-logo.caze{height:20px}
-.game-score{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.35);padding:4px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);justify-content:center}
+.game-score{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:rgba(0,0,0,.35);padding:4px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);justify-content:center}
 .score-input{width:clamp(22px,4vw,30px);height:clamp(24px,4vw,30px);text-align:center;background:transparent;border:none;color:#fff;font-size:var(--fs-body);font-weight:700;outline:none;-moz-appearance:textfield;font-family:inherit;transition:var(--transition);border-radius:4px}
 .score-input:focus{background:rgba(255,255,255,.05);box-shadow:0 0 0 1px var(--gold)}
 .score-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .score-x{color:var(--muted);font-weight:300}
-.live-clock{display:block;font-size:10px;color:var(--gold);text-align:center;margin-bottom:2px;font-weight:700}
+.live-clock{width:100%;text-align:center;font-size:10px;color:var(--gold);font-weight:700;margin-bottom:2px}
 .goal-btn{background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:11px;font-weight:500;padding:3px 8px;border-radius:var(--radius-sm);transition:var(--transition);font-family:inherit}
 .goal-btn:hover{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
 .team-col{font-size:var(--fs-sm);text-align:center}
@@ -850,6 +850,12 @@ function gameIsPast(g){
     return s&&s.a!==undefined&&s.b!==undefined;
   }catch(e){return false}
 }
+function _mm(gn,g){
+  var id=FIFA_MATCH_IDS[gn];
+  if(id&&MATCH_MINUTE[id])return MATCH_MINUTE[id];
+  var gd=gameUTC(g);
+  return gd?Math.floor((new Date()-gd)/60000):0;
+}
 function renderGames(filter){
   var el=document.getElementById("games-list");
   if(!document.querySelector(".filters").children.length){
@@ -955,9 +961,9 @@ function renderGameCard(g){
   var phaseClass=isFinal?"final":isGroup?"group group-"+grpL:"knockout";
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
-  var liveElapsed=live?Math.floor((new Date()-gameUTC(g))/60000):0;
+  var matchMin=_mm(gn,g);
   var past=currentFilter==="all"&&gameIsPast(g);
-   return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score">'+(live?'<span class="live-clock">\u23F1 '+(liveElapsed>0?liveElapsed+"'":"0'")+'</span>':'')+'<input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
+   return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score">'+(live?'<span class="live-clock">\u23F1 '+(matchMin>0?matchMin+"'":"0'")+'</span>':'')+'<input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
     if(x.type==='goal'){
       var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
       var tn=x.display==='a'?g.a:g.b;
