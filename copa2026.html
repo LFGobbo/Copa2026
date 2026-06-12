@@ -503,12 +503,14 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       <div class="bolao-special-grid">
         <div class="bolao-special-card">
           <label>Campe&atilde;o da Copa (+50 pts)</label>
-          <select id="bolao-champion"><option value="">Selecione...</option></select>
+          <input type="text" id="bolao-champion" list="bolao-champion-list" placeholder="Digite o nome do time..." autocomplete="off">
+          <datalist id="bolao-champion-list"></datalist>
           <div class="bolao-pick-saved" id="bolao-champion-saved"></div>
         </div>
         <div class="bolao-special-card">
           <label>Artilheiro (+20 pts / +10 se empatado)</label>
-          <select id="bolao-scorer"><option value="">Selecione...</option></select>
+          <input type="text" id="bolao-scorer" list="bolao-scorer-list" placeholder="Digite o nome do jogador..." autocomplete="off">
+          <datalist id="bolao-scorer-list"></datalist>
           <div class="bolao-pick-saved" id="bolao-scorer-saved"></div>
         </div>
       </div>
@@ -852,7 +854,7 @@ function renderGames(filter){
   else if(filter!=="all")games=games.filter(function(g){return g.f===GROUP_NAMES[filter]||g.f===filter});
   games.sort(function(a,b){return a.n-b.n});
   if(filter==="all"){dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""));if(games.length){setTimeout(function(){var first=null;for(var i=0;i<games.length;i++){if(!gameIsPast(games[i])){first=games[i];break}}if(first){var el=document.getElementById('g-'+first.n);if(el)el.scrollIntoView({behavior:'smooth',block:'center'})}},100)}}else{dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""))}
-  document.querySelectorAll(".score-input").forEach(function(i){i.addEventListener("input",scoreInput)});
+     document.querySelectorAll(".score-input").forEach(function(i){i.readOnly=true;i.style.cursor='default'});
 }
 function toggleGameCard(btn){
   var card=btn.closest('.game-card');
@@ -1907,6 +1909,7 @@ function _bolaoTopScorer(){
   if(tied.length===1)return{name:tied[0][0],exact:true};
   return{name:null,exact:false,tied:tied.map(function(x){return x[0]})};
 }
+function _pn(g){function rt(p){var r=resolveTeam(p,g.n);return r.pending?r.name:r.name}return esc(rt(g.a))+' vs '+esc(rt(g.b))}
 function bolaoCalcPickPts(pA,pB,rA,rB){
   if(pA===null||pA===undefined||pB===null||pB===undefined)return -1;
   if(rA===null||rA===undefined||rB===null||rB===undefined)return -1;
@@ -1972,7 +1975,7 @@ function bolaoRenderDetail(pid){
     var pickStr=hasPick?(pick.a+'x'+pick.b):'?x?',realStr=hasReal?(real.a+'x'+real.b):'';
     var ptsStr=pts>=0?(pts+(bonus?'+'+bonus:''))+' pts':'';
     if(!hasReal)pickStr='<span style="filter:blur(3px)">'+pickStr+'</span>';
-    items.push('<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">#'+g.n+' '+esc(g.a)+' vs '+esc(g.b)+'</div><div><span class="bolao-pick-score">'+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">'+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>');
+    items.push('<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">#'+g.n+' '+_pn(g)+'</div><div><span class="bolao-pick-score">'+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">'+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>');
   });
   if(!items.length)return '<p style="color:var(--muted);font-size:13px">Nenhum palpite ainda</p>';
   return '<div class="bolao-detail-grid">'+items.join('')+'</div>';
@@ -1997,7 +2000,7 @@ function bolaoRenderPicksGrid(){
     var inputLocked=isLocked||_bolaoConfirmed;
     html+='<div class="bolao-pick-input-card'+(inputLocked?' locked':'')+'">'
       +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">'+esc(g.f)+'</div>'
-      +'<div class="game-teams">'+esc(g.a)+' vs '+esc(g.b)+'</div>'
+      +'<div class="game-teams">'+_pn(g)+'</div>'
       +'<div class="game-date">'+g.d+' '+g.t+(timeLeft?' <span style="color:var(--gold);font-weight:600">'+timeLeft+'</span>':'')+'</div>'
       +'<div class="bolao-score-row">'
       +'<input class="bolao-score-input" type="number" min="0" max="20" data-game="'+g.n+'" data-side="a" value="'+(pick.a!==undefined?pick.a:'')+'" placeholder="-"'+(inputLocked?' readonly':' onchange="bolaoSavePick('+g.n+')"')+'>'
@@ -2031,11 +2034,14 @@ function bolaoPopulateSpecials(){
   var teams=[];Object.keys(GROUPS||{}).forEach(function(k){(GROUPS[k]||[]).forEach(function(t){teams.push(t)})});
   teams.sort();
   var myChamp=_bolaoMySpecial&&_bolaoMySpecial.champion,myScorer=_bolaoMySpecial&&_bolaoMySpecial.top_scorer;
-  champSel.innerHTML='<option value="">Selecione o campe&atilde;o...</option>'+teams.map(function(t){return'<option value="'+esc(t)+'"'+(myChamp===t?' selected':'')+'>'+esc(t)+'</option>'}).join('');
+  var listA=document.getElementById('bolao-champion-list'),listB=document.getElementById('bolao-scorer-list');
+  if(listA)listA.innerHTML=teams.map(function(t){return'<option value="'+esc(t)+'">'}).join('');
   var players=[];Object.keys(PLAYERS||{}).forEach(function(team){(PLAYERS[team]||[]).forEach(function(p){players.push(p.name)})});
   players.sort();
-  scorerSel.innerHTML='<option value="">Selecione o artilheiro...</option>'+players.map(function(p){return'<option value="'+esc(p)+'"'+(myScorer===p?' selected':'')+'>'+esc(p)+'</option>'}).join('');
-  if(locked){champSel.disabled=true;scorerSel.disabled=true;var btn=document.getElementById('bolao-special-btn');if(btn){btn.disabled=true;btn.textContent='Bloqueado \u2014 inscri\u00e7\u00f5es encerradas'}}
+  if(listB)listB.innerHTML=players.map(function(p){return'<option value="'+esc(p)+'">'}).join('');
+  if(myChamp)champSel.value=myChamp;
+  if(myScorer)scorerSel.value=myScorer;
+  if(locked){champSel.readOnly=true;scorerSel.readOnly=true;var btn=document.getElementById('bolao-special-btn');if(btn){btn.disabled=true;btn.textContent='Bloqueado \u2014 inscri\u00e7\u00f5es encerradas'}}
   if(myChamp)document.getElementById('bolao-champion-saved').textContent=myChamp;
   if(myScorer)document.getElementById('bolao-scorer-saved').textContent=myScorer;
 }
