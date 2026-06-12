@@ -195,6 +195,9 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .squad-list{list-style:none}
 .squad-player{display:flex;align-items:center;gap:6px;padding:4px 10px;border-bottom:1px solid rgba(255,255,255,.02);font-size:11px}
 .squad-player:hover{background:rgba(255,255,255,.02)}
+.squad-player-match{background:rgba(255,215,0,.08);border-left:2px solid var(--gold)}
+.squad-player-match .squad-name{color:var(--gold);font-weight:600}
+.squad-team-match{border-color:var(--gold);box-shadow:0 0 12px rgba(255,215,0,.15)}
 .squad-num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:rgba(255,255,255,.05);border-radius:3px;font-weight:700;font-size:10px;color:var(--gold);flex-shrink:0}
 .squad-avatar{width:26px;height:34px;border-radius:3px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)) no-repeat center/cover;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold);flex-shrink:0;border:1px solid rgba(255,255,255,.1);overflow:hidden;letter-spacing:.5px;text-shadow:0 1px 2px rgba(0,0,0,.5)}.squad-avatar img{width:100%;height:100%;object-fit:cover;display:block}.avatar-fallback{width:100%;height:100%;background-size:cover;background-position:center;opacity:.35;filter:grayscale(.3)}
 .squad-name{font-weight:500;color:var(--text);flex:1}
@@ -1095,13 +1098,14 @@ function renderSquads(){
     if(q&&qteam.indexOf(q)<0&&!ps.some(function(p){
       return(p.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().indexOf(q)>=0;
     }))return null;
-    return{team:team,players:ps.slice().sort(function(a,b){return(a.num||0)-(b.num||0)})};
+    var tMatch=q?qteam.indexOf(q)>=0:false;
+    return{team:team,tMatch:tMatch,players:ps.slice().sort(function(a,b){return(a.num||0)-(b.num||0)})};
   }).filter(Boolean);
 
   // innerHTML síncrono — observer precisa do DOM já populado
   grid.innerHTML=cards.map(function(card){
-    var team=card.team,ps=card.players;
-    return'<div class="squad-card" data-team="'+esc(team)+'">'
+    var team=card.team,ps=card.players,tMatch=card.tMatch;
+    return'<div class="squad-card'+(q&&tMatch?' squad-team-match':'')+'" data-team="'+esc(team)+'">'
       +'<div class="squad-header">'
         +'<span class="squad-flag">'+flag(team)+'</span>'
         +'<span class="squad-team">'+esc(team)+'</span>'
@@ -1109,7 +1113,8 @@ function renderSquads(){
       +'</div>'
       +'<ul class="squad-list">'
       +ps.map(function(p,idx){
-        return'<li class="squad-player squad-ph" data-team="'+esc(team)+'" data-idx="'+idx+'"></li>';
+        var pMatch=q?((p.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().indexOf(q)>=0):false;
+        return'<li class="squad-player squad-ph" data-team="'+esc(team)+'" data-idx="'+idx+'"'+(pMatch?' data-match="1"':'')+'></li>';
       }).join('')
       +'</ul></div>';
   }).join('');
@@ -1124,6 +1129,7 @@ function renderSquads(){
       var p=ps.slice().sort(function(a,b){return(a.num||0)-(b.num||0)})[idx];
       if(!p)return;
       li.classList.remove('squad-ph');
+      if(li.dataset.match)li.classList.add('squad-player-match');
       obs.unobserve(li);
       var pu=getPlayerPhoto(p.name,team,p.num);
       li.innerHTML='<span class="squad-num">'+p.num+'</span>'

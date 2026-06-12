@@ -23,6 +23,24 @@ Nunca termine uma sessão sem o AGENTS.md refletir exatamente o estado atual do 
 
 Se qualquer verificação falhar, NÃO commitar. Corrigir primeiro.
 
+# 🚨 REGRA OBRIGATÓRIA: VERIFICAÇÃO DE REGRESSÃO
+
+**Toda melhoria precisa ser acompanhada de verificação de que nada existente foi quebrado. Regressão é inaceitável.**
+
+Antes de implementar qualquer melhoria:
+1. Identifique quais funções e fluxos existentes podem ser afetados pela mudança
+2. Após implementar, teste manualmente os fluxos existentes que TOQUEM a mesma área de código
+3. Verifique que dados previamente funcionais continuam íntegros (ex: jogos com gols/cartões já inseridos)
+4. Execute o balanço de chaves e a verificação de funções críticas (regra anterior)
+5. Se a melhoria alterar persistência de dados, verifique se o saveState() continua íntegro e sem exceções
+
+**⚠ Histórico de regressões causadas por falta desta verificação:**
+- Melhorias na timeline quebraram reconciliação de gols anulados (v15)
+- Melhorias no bracket quebraram exibição de 3ºs colocados (v14)
+- Reescrita de persistência requeriu verificação extra de saveState()
+
+Se houver qualquer dúvida sobre compatibilidade, abortar a melhoria e reavaliar.
+
 # Modo de Trabalho
 
 Meu objetivo não é obter respostas rápidas. Meu objetivo é obter respostas corretas, robustas e bem fundamentadas.
@@ -305,6 +323,7 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 - **Async enhance** — `setTimeout` 200ms carrega dados do IndexedDB e mergeia nos objetos globais se ausentes, recuperando dados mesmo que localStorage tenha sido limpo
 - `saveState()` salva em IndexedDB + 3 localStorage keys
 - **Seed dados reais (FIFA Timeline API)** — Jogo 1 (México 2×0 África do Sul) e Jogo 2 (Coreia do Sul 2×1 Rep. Tcheca) com gols, assistências e cartões extraídos da FIFA API manualmente e injetados como seed inicial. Só aplica se localStorage vazio. 5 gols, 7 cartões no total
+- **Destaque na busca de convocados** — Quando há filtro ativo, jogadores que correspondem à busca recebem classe `squad-player-match` (background dourado sutil + borda esquerda + nome em negrito). Times com nome correspondente recebem `squad-team-match` (borda dourada + glow). Apenas times com ao menos um match continuam visíveis
 
 ### v15 (2026-06-12)
 **Mudanças (verificação e refinamento das 4 melhorias + anti-flicker final):**
@@ -547,6 +566,7 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Gol anulado não removido dos eventos~~ ✅ v15 — `if(!scoredForHome&&!scoredForAway)` skip + reconciliação `goals[].length` vs placar final
 - ~~Persistência localStorage com ponto único de falha~~ ✅ v16 — IndexedDB + 3 localStorage keys: `copa2026_data`, `copa2026_bak1`, `copa2026_bak2`
 - ~~Seed inicial sem dados dos primeiros jogos~~ ✅ v16 — FIFA Timeline API: México 2×0 África do Sul, Coreia do Sul 2×1 Rep. Tcheca. 5 gols, 7 cartões injetados
+- ~~Busca em convocados sem destaque visual~~ ✅ v16 — jogador correspondente ganha background dourado + borda + nome negrito; time correspondente ganha borda dourada + glow
 - Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
 - Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão
 - `parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)
