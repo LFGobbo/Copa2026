@@ -557,13 +557,7 @@ function renderGames(filter){
   document.querySelectorAll(".score-input").forEach(function(i){i.addEventListener("input",scoreInput)});
 }
 function dynRender(el, html){
-  el.style.transition='opacity .12s ease';
-  el.style.opacity='0';
-  var t=parseFloat(getComputedStyle(el).transitionDuration||'0')*1000||120;
-  setTimeout(function(){
-    el.innerHTML=html;
-    el.style.opacity='1';
-  },t);
+  el.innerHTML = html;
 }
 function renderGameCard(g){
   var gn=g.n,s=scores[gn]||{},sa=s.a!==undefined?s.a:"",sb=s.b!==undefined?s.b:"";
