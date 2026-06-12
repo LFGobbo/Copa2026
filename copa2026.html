@@ -353,6 +353,60 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .pen-btn{flex:1;padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:11px;font-weight:600;transition:var(--transition);font-family:inherit;text-align:center}
 .pen-btn.active{border-color:var(--gold);background:var(--gold-dim);color:var(--gold)}
 .pen-btn:hover:not(.active){border-color:var(--text);color:var(--text)}
+
+/* ========== BOLÃO ========== */
+.bolao-section{margin-bottom:24px}
+.bolao-section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:12px}
+.bolao-login{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.bolao-login label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+.bolao-login input{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;width:160px;font-family:inherit}
+.bolao-login input:focus{outline:none;border-color:var(--gold)}
+.bolao-login input[readonly],.bolao-login input[disabled]{opacity:.6;cursor:not-allowed}
+.bolao-login-status{font-size:12px;align-self:center;min-width:120px}
+.bolao-login-status.ok{color:#4ade80}.bolao-login-status.err{color:var(--red)}
+.bolao-deadline{font-size:11px;color:var(--muted);width:100%;margin-top:6px}
+.bolao-rank-table{width:100%;border-collapse:collapse;background:var(--card);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.bolao-rank-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);background:rgba(0,0,0,.3)}
+.bolao-rank-row td{padding:10px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;vertical-align:middle;cursor:pointer;transition:background .15s}
+.bolao-rank-row:hover td{background:rgba(255,255,255,.03)}
+.bolao-rank-pos{font-weight:700;color:var(--muted);width:36px}
+.bolao-rank-name{font-weight:600;color:var(--text)}
+.bolao-rank-pts{font-weight:800;color:var(--gold);font-size:15px;text-align:right}
+.bolao-rank-sub{font-size:11px;color:var(--muted)}
+.bolao-detail{display:none;background:rgba(0,0,0,.2)}
+.bolao-detail.open{display:table-row}
+.bolao-detail-inner{padding:12px 10px}
+.bolao-detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
+.bolao-pick-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:11px}
+.bolao-pick-card.exact{border-color:rgba(255,223,0,.4);background:rgba(255,223,0,.05)}
+.bolao-pick-card.result{border-color:rgba(100,200,100,.3)}
+.bolao-pick-card.wrong{opacity:.5}
+.bolao-pick-teams{font-weight:600;color:var(--text);margin-bottom:2px}
+.bolao-pick-score{color:var(--gold);font-weight:700}
+.bolao-pick-real{color:var(--muted)}
+.bolao-pick-pts{float:right;font-weight:700}
+.bolao-picks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.bolao-pick-input-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px}
+.bolao-pick-input-card.locked{opacity:.65}
+.bolao-pick-input-card .game-teams{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.bolao-pick-input-card .game-date{font-size:11px;color:var(--muted);margin-bottom:8px}
+.bolao-score-row{display:flex;align-items:center;gap:8px;justify-content:center}
+.bolao-score-input{width:48px;text-align:center;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px;color:var(--text);font-size:16px;font-weight:700;font-family:inherit}
+.bolao-score-input:focus{outline:none;border-color:var(--gold)}
+.bolao-score-input[readonly]{opacity:.6;cursor:not-allowed}
+.bolao-score-sep{color:var(--muted);font-weight:700}
+.bolao-pick-saved{font-size:11px;color:#4ade80;text-align:center;margin-top:6px;min-height:16px}
+.bolao-pick-result{font-size:11px;text-align:center;margin-top:4px}
+.bolao-special-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bolao-special-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px}
+.bolao-special-card label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:8px}
+.bolao-special-card select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit}
+.bolao-special-card select:focus{outline:none;border-color:var(--gold)}
+.bolao-special-card select[disabled]{opacity:.6;cursor:not-allowed}
+.bolao-save-btn{width:100%;margin-top:10px;padding:10px;background:var(--gold);color:#000;border:none;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;transition:opacity .15s;font-family:inherit}
+.bolao-save-btn:hover{opacity:.85}
+.bolao-save-btn:disabled{opacity:.4;cursor:not-allowed}
+.bolao-confirm-banner{padding:12px 16px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);border-radius:6px;margin-top:16px;font-size:13px;color:#4ade80;display:none}
 </style>
 </head>
 <body>
@@ -372,6 +426,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="tab" data-tab="artilheiros"><span class="tab-icon">🥇</span><span class="tab-label">Artilheiros</span></div>
   <div class="tab" data-tab="convocados"><span class="tab-icon">👥</span><span class="tab-label">Convocados</span></div>
   <div class="tab" data-tab="regras"><span class="tab-icon">📖</span><span class="tab-label">Regras</span></div>
+  <div class="tab" data-tab="bolao"><span class="tab-icon">🎯</span><span class="tab-label">Bolão</span></div>
 </div>
 <div class="content active" id="tab-jogos">
   <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">&#9201; Pr&oacute;ximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados" style="display:none"></span></div>
@@ -398,6 +453,56 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 <div class="content" id="tab-artilheiros"><div id="scorers-list" class="dyn-content"></div></div>
 <div class="content" id="tab-convocados"><div class="squad-filter-bar"><input type="text" id="squad-filter" placeholder="Buscar país ou jogador..." oninput="renderSquads()"></div><div class="squads-grid dyn-content" id="squads-grid"></div></div>
 <div class="content" id="tab-regras"><div class="rules-content" id="rules-content"></div></div>
+<div class="content" id="tab-bolao">
+  <div class="bolao-section">
+    <div class="bolao-section-title">Entrar no bol&atilde;o</div>
+    <div class="bolao-login">
+      <div><label>Seu nome</label><input type="text" id="bolao-name" placeholder="Nome" autocomplete="off"></div>
+      <div><label>Senha</label><input type="password" id="bolao-pass" placeholder="Senha" autocomplete="off"></div>
+      <button class="btn" onclick="bolaoLogin()" style="height:36px;padding:0 18px;font-size:13px">Entrar</button>
+      <span class="bolao-login-status" id="bolao-login-status"></span>
+      <span class="bolao-deadline" id="bolao-deadline-info"></span>
+    </div>
+  </div>
+  <div id="bolao-logged-area" style="display:none">
+    <div class="bolao-section">
+      <div class="bolao-section-title">Palpites especiais &mdash; bloqueiam 2h antes do jogo #7</div>
+      <div class="bolao-special-grid">
+        <div class="bolao-special-card">
+          <label>Campe&atilde;o da Copa (+50 pts)</label>
+          <select id="bolao-champion"><option value="">Selecione...</option></select>
+          <div class="bolao-pick-saved" id="bolao-champion-saved"></div>
+        </div>
+        <div class="bolao-special-card">
+          <label>Artilheiro (+20 pts / +10 se empatado)</label>
+          <select id="bolao-scorer"><option value="">Selecione...</option></select>
+          <div class="bolao-pick-saved" id="bolao-scorer-saved"></div>
+        </div>
+      </div>
+      <button class="bolao-save-btn" id="bolao-special-btn" onclick="bolaoSaveSpecial()">Salvar palpites especiais</button>
+    </div>
+    <div class="bolao-section">
+      <div class="bolao-section-title">Meus palpites</div>
+      <div class="bolao-picks-grid" id="bolao-picks-grid"></div>
+      <div id="bolao-confirm-area" style="margin-top:16px;display:none">
+        <button class="bolao-save-btn" id="bolao-confirm-btn" onclick="bolaoConfirmAll()" style="background:var(--red);max-width:400px">Confirmar todos os palpites &mdash; n&atilde;o poder&aacute; editar depois</button>
+        <div class="bolao-pick-saved" id="bolao-confirm-status" style="text-align:left;margin-top:8px"></div>
+      </div>
+      <div id="bolao-confirmed-banner" class="bolao-confirm-banner">Seus palpites est&atilde;o confirmados e n&atilde;o podem mais ser alterados.</div>
+    </div>
+  </div>
+  <div class="bolao-section">
+    <div class="bolao-section-title">Ranking geral</div>
+    <table class="bolao-rank-table">
+      <thead><tr>
+        <th>#</th><th>Participante</th><th>Especiais</th><th>Exatos</th><th>Resultados</th><th>Pontos</th>
+      </tr></thead>
+      <tbody id="bolao-rank-body">
+        <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 <div class="popup-overlay" id="goal-popup">
   <div class="popup">
     <div class="popup-header"><h3 id="popup-title">⚽ Adicionar Gol</h3><button class="popup-close" onclick="closeGoalPopup()">&times;</button></div>
@@ -559,6 +664,7 @@ function tabClick(){
   if(tab==="grupos")renderGroups();
   if(tab==="mata-mata")renderBracket();
   if(tab==="artilheiros")renderScorers();
+  if(tab==="bolao")bolaoInit();
   if(tab==="convocados"){if(!FIFA_MAP_READY)initFifaMaps();renderSquads();if(_rsTimer)clearTimeout(_rsTimer);if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100){_rsTimer=setTimeout(function(){renderSquads();if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100)_rsTimer=setTimeout(renderSquads,4000)},2000)}}
 }
 document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",tabClick)});
@@ -1672,7 +1778,7 @@ initFifaMaps();
 
 
 var PLAYER_PHOTOS = {};
-var VALID_TABS=['jogos','grupos','mata-mata','artilheiros','convocados','regras'];
+var VALID_TABS=['jogos','grupos','mata-mata','artilheiros','convocados','regras','bolao'];
 setTimeout(function(){
   try{
     var saved=window.location.hash.replace('#','')||localStorage.getItem('copa2026_tab');
@@ -1731,6 +1837,279 @@ GAMES.forEach(function(g){
   }
   setTimeout(dailyMaintenance,SIX_H);
 })();
+
+// ========== BOLÃO ==========
+var SUPA_URL='https://etbezmraylbvlnycltha.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0YmV6bXJheWxidmxueWNsdGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNzQxNDAsImV4cCI6MjA5Njg1MDE0MH0.SC_k3ztY-uSyQAB60ctJvb1iAMGkJJYlG5qy7RJhuqY';
+var BOLAO_FIRST=7,BOLAO_FINAL=104,BOLAO_SIGNUP_GAME=32,BOLAO_TWO_H=7200000;
+var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
+var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoGameLocked={},_bolaoConfirmed=false;
+function _supaFetch(path,method,body){
+  var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+  if(method==='POST')h['Prefer']='resolution=merge-duplicates,return=representation';
+  if(method==='PATCH')h['Prefer']='return=representation';
+  var opts={method:method||'GET',headers:h};
+  if(body)opts.body=JSON.stringify(body);
+  return fetch(SUPA_URL+'/rest/v1/'+path,opts).then(function(r){
+    if(!r.ok)return r.json().then(function(e){throw new Error(e.message||r.status)});
+    var ct=r.headers.get('content-type')||'';
+    return ct.indexOf('json')>=0?r.json():null;
+  });
+}
+async function _hash(str){var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0')}).join('')}
+function _bolaoDeadline(gameN){var g=GAMES.find(function(x){return x.n===gameN});if(!g)return null;var gd=gameUTC(g);return gd?new Date(gd.getTime()-BOLAO_TWO_H):null}
+function _bolaoFinalChampion(){return _winnerOf(BOLAO_FINAL)}
+function _bolaoTopScorer(){
+  var m={};Object.keys(goals||{}).forEach(function(gid){Object.keys(goals[gid]).forEach(function(t){goals[gid][t].forEach(function(gl){if(gl.type==='own')return;if(!m[gl.pname])m[gl.pname]=0;m[gl.pname]++})})});
+  var sorted=Object.entries(m).sort(function(a,b){return b[1]-a[1]});if(!sorted.length)return null;
+  var maxG=sorted[0][1],tied=sorted.filter(function(x){return x[1]===maxG});
+  if(tied.length===1)return{name:tied[0][0],exact:true};
+  return{name:null,exact:false,tied:tied.map(function(x){return x[0]})};
+}
+function bolaoCalcPickPts(pA,pB,rA,rB){
+  if(pA===null||pA===undefined||pB===null||pB===undefined)return -1;
+  if(rA===null||rA===undefined||rB===null||rB===undefined)return -1;
+  if(pA===rA&&pB===rB)return 10;
+  var pr=Math.sign(pA-pB),rr=Math.sign(rA-rB);
+  if(pr!==rr)return 0;
+  if(Math.max(pA,pB)===Math.max(rA,rB))return 6;
+  if(Math.min(pA,pB)===Math.min(rA,rB))return 4;
+  return 2;
+}
+function bolaoCalcTotal(participantId){
+  var myPicks=_bolaoAllPicks[participantId]||{},sp=_bolaoAllSpecials[participantId];
+  var total=0,exactCount=0,resultCount=0,bonusCount=0;
+  GAMES.forEach(function(g){
+    if(g.n<BOLAO_FIRST)return;
+    var pick=myPicks[g.n],real=scores[g.n];
+    if(!real||real.a===undefined||real.b===undefined||!pick||pick.a===undefined)return;
+    var pts=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);if(pts<0)return;
+    var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
+    total+=pts+bonus;
+    if(pts===10)exactCount++;
+    if(pts>=2)resultCount++;
+    if(bonus>0)bonusCount++;
+  });
+  var champion=_bolaoFinalChampion(),topScorer=_bolaoTopScorer();
+  if(sp&&sp.champion&&champion&&sp.champion===champion){total+=50;bonusCount++;}
+  if(sp&&sp.top_scorer&&topScorer){
+    if(topScorer.exact&&sp.top_scorer===topScorer.name){total+=20;bonusCount++;}
+    else if(!topScorer.exact&&topScorer.tied&&topScorer.tied.indexOf(sp.top_scorer)>=0){total+=10;bonusCount++;}
+  }
+  return{total:total,exactCount:exactCount,resultCount:resultCount,bonusCount:bonusCount};
+}
+function bolaoRenderRanking(){
+  var ids=Object.keys(_bolaoParticipants);
+  var rows=ids.map(function(id){var r=bolaoCalcTotal(id);return{id:id,name:_bolaoParticipants[id],total:r.total,exactCount:r.exactCount,resultCount:r.resultCount,bonusCount:r.bonusCount};});
+  rows.sort(function(a,b){if(b.total!==a.total)return b.total-a.total;if(b.exactCount!==a.exactCount)return b.exactCount-a.exactCount;if(b.resultCount!==a.resultCount)return b.resultCount-a.resultCount;if(b.bonusCount!==a.bonusCount)return b.bonusCount-a.bonusCount;return 0});
+  var medalEmoji=['&#127942;','&#129352;','&#129353;'];
+  var tb=document.getElementById('bolao-rank-body');
+  if(!tb)return;
+  if(!rows.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Nenhum participante ainda</td></tr>';return;}
+  tb.innerHTML=rows.map(function(r,i){
+    var medal=i<3?medalEmoji[i]:'',sp=_bolaoAllSpecials[r.id];
+    var spText=sp?((sp.champion||'?')+' / '+(sp.top_scorer||'?')):'&mdash;';
+    return '<tr class="bolao-rank-row" onclick="bolaoToggleDetail(\''+r.id+'\')">'
+      +'<td class="bolao-rank-pos">'+medal+' '+(i+1)+'</td>'
+      +'<td class="bolao-rank-name">'+esc(r.name)+'</td>'
+      +'<td style="font-size:11px;color:var(--muted)">'+esc(spText)+'</td>'
+      +'<td class="bolao-rank-sub">'+r.exactCount+'</td>'
+      +'<td class="bolao-rank-sub">'+r.resultCount+'</td>'
+      +'<td class="bolao-rank-pts">'+r.total+'</td></tr>'
+      +'<tr class="bolao-detail" id="bolao-detail-'+r.id+'"><td colspan="6"><div class="bolao-detail-inner">'+bolaoRenderDetail(r.id)+'</div></td></tr>';
+  }).join('');
+}
+function bolaoToggleDetail(id){var el=document.getElementById('bolao-detail-'+id);if(el)el.classList.toggle('open')}
+function bolaoRenderDetail(pid){
+  var picks=_bolaoAllPicks[pid]||{},items=[];
+  GAMES.forEach(function(g){
+    if(g.n<BOLAO_FIRST)return;
+    var real=scores[g.n],pick=picks[g.n],hasReal=real&&real.a!==undefined&&real.b!==undefined,hasPick=pick&&pick.a!==undefined&&pick.b!==undefined;
+    if(!hasPick&&!hasReal)return;
+    var pts=hasPick&&hasReal?bolaoCalcPickPts(pick.a,pick.b,real.a,real.b):-1,bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
+    var cls=!hasReal?'future':pts===10?'exact':pts>=2?'result':pts===0?'wrong':'future';
+    var pickStr=hasPick?(pick.a+'x'+pick.b):'?x?',realStr=hasReal?(real.a+'x'+real.b):'';
+    var ptsStr=pts>=0?(pts+(bonus?'+'+bonus:''))+' pts':'';
+    if(!hasReal)pickStr='<span style="filter:blur(3px)">'+pickStr+'</span>';
+    items.push('<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">#'+g.n+' '+esc(g.a)+' vs '+esc(g.b)+'</div><div><span class="bolao-pick-score">'+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">'+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>');
+  });
+  if(!items.length)return '<p style="color:var(--muted);font-size:13px">Nenhum palpite ainda</p>';
+  return '<div class="bolao-detail-grid">'+items.join('')+'</div>';
+}
+function bolaoRenderPicksGrid(){
+  var grid=document.getElementById('bolao-picks-grid');
+  if(!grid||!_bolaoParticipantId)return;
+  var now=new Date(),html='',anyVisible=false;
+  GAMES.forEach(function(g){
+    if(g.n<BOLAO_FIRST)return;
+    var gd=gameUTC(g);if(!gd)return;
+    var lockTime=new Date(gd.getTime()-BOLAO_TWO_H),isLocked=now>=lockTime;
+    var pick=_bolaoMyPicks[g.n]||{},hasPick=pick.a!==undefined&&pick.b!==undefined;
+    if(isLocked&&!hasPick)return;
+    anyVisible=true;_bolaoGameLocked[g.n]=isLocked;
+    var real=scores[g.n],hasReal=real&&real.a!==undefined&&real.b!==undefined;
+    var pts=isLocked&&hasReal&&hasPick?bolaoCalcPickPts(pick.a,pick.b,real.a,real.b):-1,bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
+    var ptsColor=pts===10?'var(--gold)':pts>=2?'#4ade80':'var(--red)';
+    var ptsHtml=pts>=0?('<div class="bolao-pick-result" style="color:'+ptsColor+'">'+pts+(bonus?'+'+bonus:'')+' pts</div>'):'';
+    var timeLeft='';
+    if(!isLocked){var diff=lockTime-now,h=Math.floor(diff/3600000),mmin=Math.floor((diff%3600000)/60000);if(h>0)timeLeft=h+'h '+mmin+'m';else if(mmin>0)timeLeft=mmin+'m';else timeLeft='<1 min'}
+    var inputLocked=isLocked||_bolaoConfirmed;
+    html+='<div class="bolao-pick-input-card'+(inputLocked?' locked':'')+'">'
+      +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">'+esc(g.f)+'</div>'
+      +'<div class="game-teams">'+esc(g.a)+' vs '+esc(g.b)+'</div>'
+      +'<div class="game-date">'+g.d+' '+g.t+(timeLeft?' <span style="color:var(--gold);font-weight:600">'+timeLeft+'</span>':'')+'</div>'
+      +'<div class="bolao-score-row">'
+      +'<input class="bolao-score-input" type="number" min="0" max="20" data-game="'+g.n+'" data-side="a" value="'+(pick.a!==undefined?pick.a:'')+'" placeholder="-"'+(inputLocked?' readonly':' onchange="bolaoSavePick('+g.n+')"')+'>'
+      +'<span class="bolao-score-sep">×</span>'
+      +'<input class="bolao-score-input" type="number" min="0" max="20" data-game="'+g.n+'" data-side="b" value="'+(pick.b!==undefined?pick.b:'')+'" placeholder="-"'+(inputLocked?' readonly':' onchange="bolaoSavePick('+g.n+')"')+'>'
+      +'</div>'
+      +'<div class="bolao-pick-saved" id="bolao-saved-'+g.n+'">'+(isLocked&&hasPick?'Registrado':(_bolaoConfirmed&&hasPick?'Confirmado':''))+'</div>'
+      +ptsHtml+'</div>';
+  });
+  grid.innerHTML=anyVisible?html:'<p style="color:var(--muted);font-size:13px;text-align:center;padding:24px">Nenhum jogo dispon&iacute;vel para palpite agora.</p>';
+}
+async function bolaoSavePick(gameN){
+  if(!_bolaoParticipantId||_bolaoGameLocked[gameN]||_bolaoConfirmed)return;
+  var inA=document.querySelector('.bolao-score-input[data-game="'+gameN+'"][data-side="a"]');
+  var inB=document.querySelector('.bolao-score-input[data-game="'+gameN+'"][data-side="b"]');
+  if(!inA||!inB)return;
+  var vA=parseInt(inA.value,10),vB=parseInt(inB.value,10);
+  if(isNaN(vA)||isNaN(vB))return;
+  var saved=document.getElementById('bolao-saved-'+gameN);
+  if(saved){saved.style.color='var(--muted)';saved.textContent='Salvando...';}
+  try{
+    await _supaFetch('picks?on_conflict=participant_id,game_n','POST',{participant_id:_bolaoParticipantId,game_n:gameN,goals_a:vA,goals_b:vB});
+    _bolaoMyPicks[gameN]={a:vA,b:vB};
+    if(saved){saved.style.color='#4ade80';saved.textContent='Salvo';}
+  }catch(e){if(saved){saved.style.color='var(--red)';saved.textContent='Erro';}}
+}
+function bolaoPopulateSpecials(){
+  var champSel=document.getElementById('bolao-champion'),scorerSel=document.getElementById('bolao-scorer');
+  if(!champSel||!scorerSel)return;
+  var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME),locked=deadline&&new Date()>=deadline;
+  var teams=[];Object.keys(GROUPS||{}).forEach(function(k){(GROUPS[k]||[]).forEach(function(t){teams.push(t)})});
+  teams.sort();
+  var myChamp=_bolaoMySpecial&&_bolaoMySpecial.champion,myScorer=_bolaoMySpecial&&_bolaoMySpecial.top_scorer;
+  champSel.innerHTML='<option value="">Selecione o campe&atilde;o...</option>'+teams.map(function(t){return'<option value="'+esc(t)+'"'+(myChamp===t?' selected':'')+'>'+esc(t)+'</option>'}).join('');
+  var players=[];Object.keys(PLAYERS||{}).forEach(function(team){(PLAYERS[team]||[]).forEach(function(p){players.push(p.name)})});
+  players.sort();
+  scorerSel.innerHTML='<option value="">Selecione o artilheiro...</option>'+players.map(function(p){return'<option value="'+esc(p)+'"'+(myScorer===p?' selected':'')+'>'+esc(p)+'</option>'}).join('');
+  if(locked){champSel.disabled=true;scorerSel.disabled=true;var btn=document.getElementById('bolao-special-btn');if(btn){btn.disabled=true;btn.textContent='Bloqueado &mdash; inscri&ccedil;&otilde;es encerradas'}}
+  if(myChamp)document.getElementById('bolao-champion-saved').textContent=myChamp;
+  if(myScorer)document.getElementById('bolao-scorer-saved').textContent=myScorer;
+}
+async function bolaoSaveSpecial(){
+  if(!_bolaoParticipantId||_bolaoConfirmed)return;
+  var champion=document.getElementById('bolao-champion').value,topScorer=document.getElementById('bolao-scorer').value;
+  var btn=document.getElementById('bolao-special-btn');btn.disabled=true;btn.textContent='Salvando...';
+  try{
+    await _supaFetch('special_picks?on_conflict=participant_id','POST',{participant_id:_bolaoParticipantId,champion:champion,top_scorer:topScorer});
+    _bolaoMySpecial={champion:champion,top_scorer:topScorer};
+    if(champion)document.getElementById('bolao-champion-saved').textContent=champion;
+    if(topScorer)document.getElementById('bolao-scorer-saved').textContent=topScorer;
+    btn.disabled=false;btn.textContent='Salvo com sucesso';
+    setTimeout(function(){btn.textContent='Salvar palpites especiais';btn.disabled=false},2000);
+  }catch(e){btn.disabled=false;btn.textContent='Erro &mdash; tente novamente'}
+}
+async function bolaoConfirmAll(){
+  if(!_bolaoParticipantId||_bolaoConfirmed)return;
+  var btn=document.getElementById('bolao-confirm-btn'),st=document.getElementById('bolao-confirm-status');
+  var now=new Date(),missing=[];
+  GAMES.forEach(function(g){
+    if(g.n<BOLAO_FIRST)return;
+    var gd=gameUTC(g);if(!gd)return;
+    if(now>=new Date(gd.getTime()-BOLAO_TWO_H))return;
+    var pick=_bolaoMyPicks[g.n];if(!pick||pick.a===undefined||pick.b===undefined)missing.push('#'+g.n+' '+g.a+' vs '+g.b);
+  });
+  if(missing.length&&!confirm('Faltam '+missing.length+' palpites:\n'+missing.slice(0,5).join('\n')+(missing.length>5?'\n...e mais '+(missing.length-5):'')+'\n\nConfirmar assim mesmo?'))return;
+  btn.disabled=true;btn.textContent='Confirmando...';
+  try{
+    await _supaFetch('participants?id=eq.'+_bolaoParticipantId,'PATCH',{confirmed:true});
+    _bolaoConfirmed=true;
+    document.getElementById('bolao-confirm-area').style.display='none';
+    document.getElementById('bolao-confirmed-banner').style.display='block';
+    if(st)st.textContent='';
+    bolaoRenderPicksGrid();bolaoPopulateSpecials();
+  }catch(e){btn.disabled=false;btn.textContent='Confirmar todos os palpites';if(st){st.style.color='var(--red)';st.textContent='Erro ao confirmar: '+e.message}}
+}
+function bolaoShowConfirmButton(){if(_bolaoConfirmed)return;var area=document.getElementById('bolao-confirm-area');if(area)area.style.display='block'}
+async function bolaoAdminUnlock(name){
+  try{
+    var parts=await _supaFetch('participants?name=eq.'+encodeURIComponent(name)+'&select=id,name,confirmed');
+    if(!parts||!parts.length){console.log('Participante n&atilde;o encontrado: '+name);return}
+    var p=parts[0];console.log('Participante: '+p.name+' | confirmed: '+p.confirmed);
+    await _supaFetch('participants?id=eq.'+p.id,'PATCH',{confirmed:false});
+    console.log('Desbloqueado com sucesso. Pe&ccedil;a para o participante recarregar a p&aacute;gina.');
+    if(_bolaoParticipantId===p.id){_bolaoConfirmed=false;bolaoRenderPicksGrid();bolaoShowConfirmButton();console.log('Status local atualizado.')}
+  }catch(e){console.error('Erro ao desbloquear:',e)}
+}
+async function bolaoLoadMyData(){
+  if(!_bolaoParticipantId)return;
+  var picks=await _supaFetch('picks?participant_id=eq.'+_bolaoParticipantId+'&select=game_n,goals_a,goals_b');
+  _bolaoMyPicks={};(picks||[]).forEach(function(p){_bolaoMyPicks[p.game_n]={a:p.goals_a,b:p.goals_b}});
+  var sp=await _supaFetch('special_picks?participant_id=eq.'+_bolaoParticipantId+'&select=champion,top_scorer,locked');
+  _bolaoMySpecial=(sp&&sp.length)?sp[0]:null;
+  var part=await _supaFetch('participants?id=eq.'+_bolaoParticipantId+'&select=confirmed');
+  _bolaoConfirmed=!!(part&&part.length&&part[0].confirmed);
+}
+async function bolaoLoadRanking(){
+  try{
+    var parts=await _supaFetch('participants?select=id,name');
+    var allPicks=await _supaFetch('picks?select=participant_id,game_n,goals_a,goals_b&limit=10000');
+    var allSp=await _supaFetch('special_picks?select=participant_id,champion,top_scorer');
+    _bolaoParticipants={};(parts||[]).forEach(function(p){_bolaoParticipants[p.id]=p.name});
+    _bolaoAllPicks={};(allPicks||[]).forEach(function(p){if(!_bolaoAllPicks[p.participant_id])_bolaoAllPicks[p.participant_id]={};_bolaoAllPicks[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b}});
+    _bolaoAllSpecials={};(allSp||[]).forEach(function(p){_bolaoAllSpecials[p.participant_id]=p});
+    bolaoRenderRanking();
+  }catch(e){}
+}
+async function bolaoLogin(){
+  var name=(document.getElementById('bolao-name').value||'').trim();
+  var pass=(document.getElementById('bolao-pass').value||'').trim();
+  var st=document.getElementById('bolao-login-status');
+  if(!name||!pass){st.className='bolao-login-status err';st.textContent='Preencha nome e senha';return}
+  st.className='bolao-login-status';st.textContent='Verificando...';
+  try{
+    var hash=await _hash(pass);
+    var existing=await _supaFetch('participants?name=eq.'+encodeURIComponent(name)+'&select=id,name,password');
+    var isNew=!existing||!existing.length;
+    if(isNew){
+      var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);
+      if(deadline&&new Date()>=deadline){st.className='bolao-login-status err';st.textContent='Inscri&ccedil;&otilde;es encerradas (2h antes do 2&ordm; jogo do Brasil)';return}
+      await _supaFetch('participants','POST',{name:name,password:hash});
+      var np=await _supaFetch('participants?name=eq.'+encodeURIComponent(name)+'&select=id,name');
+      _bolaoParticipantId=np[0].id;_bolaoName=name;
+    }else{
+      if(existing[0].password!==hash){st.className='bolao-login-status err';st.textContent='Senha incorreta';return}
+      _bolaoParticipantId=existing[0].id;_bolaoName=name;
+    }
+    document.getElementById('bolao-name').readOnly=true;
+    document.getElementById('bolao-pass').readOnly=true;
+    st.className='bolao-login-status ok';st.textContent='Ol&aacute;, '+name+'!';
+    document.getElementById('bolao-logged-area').style.display='block';
+    await bolaoLoadMyData();
+    bolaoRenderPicksGrid();
+    bolaoPopulateSpecials();
+    await bolaoLoadRanking();
+    if(_bolaoConfirmed)document.getElementById('bolao-confirmed-banner').style.display='block';
+    else bolaoShowConfirmButton();
+  }catch(e){st.className='bolao-login-status err';st.textContent='Erro: '+e.message}
+}
+function bolaoInit(){
+  bolaoLoadRanking();
+  var el=document.getElementById('bolao-deadline-info');if(!el)return;
+  var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);if(!deadline){el.textContent='';return}
+  var now=new Date();
+  if(now>=deadline){
+    el.textContent='Inscri&ccedil;&otilde;es encerradas.';el.style.color='var(--red)';
+    if(!_bolaoParticipantId){var ni=document.getElementById('bolao-name'),pi=document.getElementById('bolao-pass');if(ni)ni.disabled=true;if(pi)pi.disabled=true}
+  }else{
+    var diff=deadline-now,days=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),mmin=Math.floor((diff%3600000)/60000);
+    el.textContent=days>0?'Inscri&ccedil;&otilde;es abertas &mdash; encerram em '+days+'d '+h+'h':h>0?'Inscri&ccedil;&otilde;es abertas &mdash; encerram em '+h+'h '+mmin+'m':'Inscri&ccedil;&otilde;es encerram em menos de 1 hora!';
+  }
+}
+// ========== FIM BOLÃO ==========
+
 var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED'&&!_refreshing){_refreshing=true;window.location.reload()}})}
 </script>
 </body>
