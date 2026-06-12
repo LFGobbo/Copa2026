@@ -1957,15 +1957,10 @@ function _pn(g,picks){
   return esc(g.a)+' vs '+esc(g.b)}
 function _tp(g,side){
   var p=side==='a'?g.a:g.b;
+  if(g.n<73)return esc(p);
   var brk=_bolaoGetBracket(_bolaoMyPicks);
   var resolved=brk&&brk[g.n]?brk[g.n][side]:null;
-  if(resolved&&!resolved.pending)return esc(resolved.name);
-  if(resolved&&resolved.pending){
-    var pick=_bolaoTeamPicks[g.n]&&_bolaoTeamPicks[g.n][side];
-    return '<span style="color:var(--muted);font-size:10px">'+esc(resolved.name||p)+'</span> <input class="bolao-team-pick" list="bolao-all-teams" placeholder="Quem passa?" value="'+(pick||'')+'" data-game="'+g.n+'" data-side="'+side+'" onchange="bolaoTeamPick(this)">';
-  }
-  var pick=_bolaoTeamPicks[g.n]&&_bolaoTeamPicks[g.n][side];
-  return '<span style="color:var(--muted);font-size:10px">'+esc(p)+'</span> <input class="bolao-team-pick" list="bolao-all-teams" placeholder="Quem passa?" value="'+(pick||'')+'" data-game="'+g.n+'" data-side="'+side+'" onchange="bolaoTeamPick(this)">';
+  return resolved?esc(resolved.name||'?'):esc(p);
 }
 function bolaoTeamPick(el){
   var gn=parseInt(el.getAttribute('data-game'),10),side=el.getAttribute('data-side');
