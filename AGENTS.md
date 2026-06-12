@@ -304,7 +304,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-12 — Sessão v16 (countdown redesign + cleanup + SW v19)**
+**2026-06-12 — Sessão v16.1 (third-place ranking position + team name)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -316,7 +316,14 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v16 (atual — 2026-06-12)
+### v16.1 (atual — 2026-06-12)
+**Mudanças (third-place ranking position + team name):**
+- **`_resolvedTeamRow()` passa `gameNum` para `resolveTeam()`** — `_resolvedTeamRow(placeholder,gameNum,side)` chamava `resolveTeam(placeholder)` sem segundo argumento. O `resolveTeam()` usa `arguments[1]` para mapear o slot de 3º colocado via `_THIRD_SLOTS`. Sem o `gameNum`, `arguments[1]` era `undefined` → `_THIRD_SLOTS.indexOf(undefined)` = -1 → caía no fallback `"3º colocado"`. Agora chama `resolveTeam(placeholder,gameNum)`, resolvendo o time correto do ranking de terceiros
+- **Ranking position label** — placeholder de 3º colocado agora mostra `#1`, `#2`, etc. indicando a posição no ranking de melhores terceiros (ex: `"#1 3º África do Sul"`)
+- **Nome do time, não do grupo** — quando o grupo não terminou, mostra o TIME atual na posição (ex: `"#1 3º África do Sul"`) em vez de `"#1 3º Grupo A"`. Quando o grupo termina, mostra apenas o nome do time com bandeira sem pending
+- **Network icon**: o HTML já usa `&#10227;` (⟳) e o JS usa `\u27F3` via texto Unicode — ambos corretos. O ícone some após 3s no catch handler. Se o usuário ainda vê texto literal, é cache do SW anterior
+
+### v16 (2026-06-12)
 **Mudanças (persistência redundante + seed dados reais + correções do patch):**
 - **Persistência bulletproof** — `BAK_KEYS=['copa2026_data','copa2026_bak1','copa2026_bak2']`: `_loadPersistent()` tenta as 3 chaves e replica dados entre elas. `saveState()` escreve nas 3 simultaneamente
 - **IndexedDB adicionado** — `_openDB()`, `_idbSave()`, `_idbLoad()` para armazenamento persistente que sobrevive a limpeza de localStorage. Store separado por tipo (`s`=scores, `g`=goals, `c`=cards)

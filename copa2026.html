@@ -994,7 +994,7 @@ function resolveTeam(placeholder){
     }
     if(slotIdx>=0&&thirds[slotIdx]){
       var t=thirds[slotIdx].team;
-      return{name:posLabel+'3\u00ba '+t,flag:'',pending:true};
+      return{name:posLabel+'3\u00ba '+t,flag:flag(t),pending:!thirds[slotIdx].finished};
     }
     return{name:posLabel+'3\u00ba colocado',flag:'',pending:true};
   }
