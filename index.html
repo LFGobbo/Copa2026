@@ -555,7 +555,7 @@ function renderGameCard(g){
   var phaseClass=isFinal?"final":isGroup?"group group-"+grpL:"knockout";
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
-  return'<div class="game-card'+(live?" live":"")+'" id="g-'+gn+'"><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span><div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+teamRow(g.a,g.a==="Brasil"?" brazil":"")+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+teamRow(g.b,g.b==="Brasil"?" brazil":"")+'</div><div class="goal-events">'+allGoals.map(function(x,i){return renderGoalBadge(x.gl,gn,x.display,x.st,i+1)}).join('')+cardsHTML+'<button class="goal-btn" style="display:'+(hasScore?"":"none")+'" onclick="addGoalUI('+gn+',\'a\')">+Gol '+g.a.split(" ")[0]+'</button><button class="goal-btn" style="display:'+(hasScore?"":"none")+'" onclick="addGoalUI('+gn+',\'b\')">+Gol '+g.b.split(" ")[0]+'</button><button class="goal-btn" onclick="addCardUI('+gn+',\'a\')">+Cart\u00e3o '+g.a.split(" ")[0]+'</button><button class="goal-btn" onclick="addCardUI('+gn+',\'b\')">+Cart\u00e3o '+g.b.split(" ")[0]+'</button></div></div>';
+  return'<div class="game-card'+(live?" live":"")+'" id="g-'+gn+'"><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span><div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+teamRow(g.a,g.a==="Brasil"?" brazil":"")+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+teamRow(g.b,g.b==="Brasil"?" brazil":"")+'</div><div class="goal-events">'+allGoals.map(function(x,i){return renderGoalBadge(x.gl,gn,x.display,x.st,i+1)}).join('')+cardsHTML+'</div></div>';
 }
 function renderGoalBadge(gl,gn,team,st,pos){
   var tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
@@ -750,9 +750,10 @@ function resolveTeam(placeholder){
   if(mGrp){
     var pos=parseInt(mGrp[1],10)-1, letter=mGrp[2];
     var st=_groupStandings(letter);
-    if(st.finished&&st.teams.length>pos){
+    var anyPlayed=Object.keys(st.gp||{}).some(function(k){return st.gp[k]>0});
+    if(anyPlayed&&st.teams.length>pos){
       var t=st.teams[pos];
-      return{name:t,flag:flag(t),pending:false};
+      return{name:t,flag:flag(t),pending:!st.finished};
     }
     return{name:placeholder,flag:'',pending:true};
   }
