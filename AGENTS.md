@@ -271,7 +271,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-11 — Sessão v14 (re-aplicação incremental após revert: 3ºs lugares, árbitro, eventos merge, flickering, live enfático, countdown simultâneo, broadcasts)**
+**2026-06-11 — Sessão v15 (dynRender fade suave, convocados bugfix file://, bracket SVG reescrito, resolveTeam anyPlayed)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -283,7 +283,14 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v14 (atual — 2026-06-11)
+### v15 (atual — 2026-06-11)
+**Mudanças (verificação e refinamento das 4 melhorias):**
+- **Flickering resolvido na raiz** — `dynRender(el, html)` com fade-out suave → troca de innerHTML no momento de menor visibilidade → fade-in. `style.opacity` + `setTimeout` calculado pela duração real da transição CSS. `.dyn-content` começa com `opacity: 1` (sem flash inicial)
+- **Convocados — bug file:// corrigido** — `renderSquads()` agora usa `grid.innerHTML` direto (síncrono) em vez de `dynRender()` assíncrono. O `IntersectionObserver` é montado **depois** que o DOM já está populado com os placeholders, garantindo que `querySelectorAll('li.squad-ph')` encontre todos os elementos. `rootMargin` aumentado de 200px para 300px. Layout mais leve: avatar 24×32, padding 4px, skeleton 36px, gap 6px
+- **Árvore do mata-mata reescrita** — SVG 1050×640+ com: título uma vez por coluna no topo com sublinhado colorido por rodada; conectores Bézier ligando jogos; vencedor em branco brilhante com `filter=url(#glow-gold)`; perdedor em cinza escuro; Brasil sempre em dourado; placar à direita; pendente com ponto discreto; `vs` some quando há placar; cards proporcionais à altura total; scrollbar fina
+- **resolveTeam() com anyPlayed** — time aparece com nome e bandeira assim que tem qualquer jogo jogado (anyPlayed), com `pending: !st.finished` para indicador sutil quando grupo em andamento. Sem bandeira enganosa para times que podem mudar
+
+### v14 (2026-06-11)
 **Mudanças (re-aplicação incremental após revert total):**
 - **3ºs lugares no bracket corrigidos** — `resolveTeam()` para placeholder `"0"`: quando o time é conhecido (finished), mostra apenas o nome do time com bandeira (sem `(3° Grupo X)` redundante). Quando pendente, mostra `"3° Grupo X"` sem bandeira (evita bandeira enganosa de time que pode mudar)
 - **Árbitro via Wikipedia action=parse** — trocado de `action=query&prop=extracts` para `action=parse&prop=text`. Regex `/Referee:\s*<a[^>]*>([^<]+)<\/a>\s*\(<a[^>]*>([^<]+)<\/a>/gi` (formato `<div>Referee: <a>Nome</a> (<a>País</a>)</div>`, NÃO `<th><td>`)
@@ -545,13 +552,13 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - **Compartilhar**: mandar o link `https://lfgobbo.github.io/Copa2026/` ou o arquivo `copa2026.html`. Abre no navegador, funciona 100% offline (com Service Worker), placar pode ser digitado manualmente ou via FIFA API ao vivo.
 - **Nota**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API.
 
-## Arquivos Relevantes (2026-06-11 v14)
-- `index.html` — app principal (v13, deploy GitHub Pages, ~170KB)
+## Arquivos Relevantes (2026-06-11 v15)
+- `index.html` — app principal (v15, deploy GitHub Pages, ~170KB)
 - `players.json` — dados dos 1248 jogadores (116KB)
 - `photos.json` — URLs das fotos dos jogadores (174KB)
 - `copa2026.html` — cópia de index.html (mantido por compatibilidade)
 - `Iniciar Copa.bat` — atalho para robot.ps1 (NÃO FUNCIONAL)
-- `sw.js` — Service Worker v13 (cache bump v12→v13 pra forçar refresh após BOM fix)
+- `sw.js` — Service Worker v16 (cache bump v15→v16 forçar refresh)
 - `opencode.json` — configuração OpenCode (aponta para AGENTS.md)
 - `.gitignore` — git ignore rules
 - `logo_globo.png`, `logo_sportv.png`, `logo_cazetv.png`, `logo_sbt.png`, `logo_nsports.png` — logos broadcast
