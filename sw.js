@@ -1,4 +1,4 @@
-var C='copa2026-v12';
+var C='copa2026-v13';
 var STATIC=['bola_t.png','mascote1_t.png','mascote2_t.png','mascote3_t.png','logo_globo.png','logo_sportv.png','logo_cazetv.png','logo_sbt.png','logo_nsports.png','index.html'];
 var DATA=['players.json','photos.json'];
 

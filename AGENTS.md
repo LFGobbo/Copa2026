@@ -534,7 +534,7 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - `photos.json` — URLs das fotos dos jogadores (174KB)
 - `copa2026.html` — cópia de index.html (mantido por compatibilidade)
 - `Iniciar Copa.bat` — atalho para robot.ps1 (NÃO FUNCIONAL)
-- `sw.js` — Service Worker v12 (cache-first assets, stale-while-revalidate JSONs, network-first HTML)
+- `sw.js` — Service Worker v13 (cache bump v12→v13 pra forçar refresh após BOM fix)
 - `opencode.json` — configuração OpenCode (aponta para AGENTS.md)
 - `.gitignore` — git ignore rules
 - `logo_globo.png`, `logo_sportv.png`, `logo_cazetv.png`, `logo_sbt.png`, `logo_nsports.png` — logos broadcast
