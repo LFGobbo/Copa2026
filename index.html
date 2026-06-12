@@ -115,7 +115,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .team-col{font-size:13px;text-align:center}
 .team-row{display:flex;align-items:center;gap:6px;justify-content:center}
 .flag{font-size:18px;line-height:1;display:inline-flex;align-items:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
-.flag-img,.flag-fallback{width:24px;height:18px;border-radius:2px;object-fit:cover;display:inline-block;vertical-align:middle}
+.flag-bg,.flag-fallback{display:inline-block;width:24px;height:18px;border-radius:2px;vertical-align:middle;flex-shrink:0}.flag-bg{background-size:cover;background-position:center}
 .team-name{font-weight:500;color:var(--text)}
 .team-name.brazil{color:var(--gold);font-weight:700}
 .goal-events{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:3px;padding:6px 0 0;border-top:1px solid rgba(255,255,255,.04);margin-top:2px}
@@ -452,7 +452,7 @@ const BRACKET_ROUNDS = ["Rodada de 32","Oitavas de Final","Quartas de Final","Se
 function gameUTC(g){try{var p=g.d.split(" ")[0].split("/"),tp=g.t.split(":");if(p.length<2||tp.length<2)return null;return new Date(Date.UTC(2026,parseInt(p[1],10)-1,parseInt(p[0],10),parseInt(tp[0],10)+3,parseInt(tp[1],10)))}catch(e){return null}}
 function toBRT(g){try{var gd=gameUTC(g);if(!gd)return'';var br=new Date(gd-10800000);return br.getUTCHours().toString().padStart(2,'0')+':'+br.getUTCMinutes().toString().padStart(2,'0')}catch(e){return''}}
 
-function flag(t){var c=FLAG_ISO[t];return c?'<img class="flag-img" src="https://flagcdn.com/24x18/'+c+'.png" alt="'+t+'" loading="lazy" onerror="this.outerHTML=\'<span class=flag-fallback>\u{1F3F3}\uFE0F</span>\'" width="24" height="18">':'<span class="flag-fallback" style="font-size:18px">\u{1F3F3}\uFE0F</span>'}
+function flag(t){var c=FLAG_ISO[t];return c?'<div class="flag-bg" style="background-image:url(https://flagcdn.com/24x18/'+c+'.png)" title="'+t+'"></div>':'<span class="flag-fallback" style="font-size:18px">\u{1F3F3}\uFE0F</span>'}
 function broadcastBadge(br){if(!br)return'';var m={'Globo':'logo_globo.png','SporTV':'logo_sportv.png','Caz\u00e9TV':'logo_cazetv.png','SBT':'logo_sbt.png','N Sports':'logo_nsports.png','Globoplay':'logo_globoplay.png','Ge TV':'logo_getv.png'};return br.split(/\u00b7/).map(function(c){c=c.trim();if(!c)return'';var k=m[c];var cls=c==='Caz\u00e9TV'?' caze':'';return k?'<span class="br-badge"><img class="br-logo'+cls+'" src="'+k+'" alt="'+c+'">'+c+'</span>':'<span class="br-badge">'+c+'</span>'}).filter(function(s){return s}).join('')}
 function teamRow(n,c){return'<div class="team-row"><span class="flag">'+flag(n)+'</span><span class="team-name'+c+'">'+esc(n)+'</span></div>'}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
@@ -678,11 +678,8 @@ function renderGames(filter){
   if(filter==="ko")games=games.filter(function(g){return g.f&&!g.f.startsWith("Grupo")});
   else if(filter!=="all")games=games.filter(function(g){return g.f===GROUP_NAMES[filter]||g.f===filter});
   games.sort(function(a,b){return a.n-b.n});
-  var past=[],next=[];
-  games.forEach(function(g){if(gameIsPast(g))past.push(g);else next.push(g)});
-  dynRender(el, next.map(function(g){return renderGameCard(g)}).join("")+past.map(function(g){return renderGameCard(g)}).join(""));
+  if(filter==="all"){var past=[],next=[];games.forEach(function(g){if(gameIsPast(g))past.push(g);else next.push(g)});dynRender(el, next.map(function(g){return renderGameCard(g)}).join("")+past.map(function(g){return renderGameCard(g)}).join(""));if(next.length){setTimeout(function(){var el=document.getElementById('g-'+next[0].n);if(el)el.scrollIntoView({behavior:'smooth',block:'center'})},100)}}else{dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""))}
   document.querySelectorAll(".score-input").forEach(function(i){i.addEventListener("input",scoreInput)});
-  if(next.length){setTimeout(function(){var el=document.getElementById('g-'+next[0].n);if(el)el.scrollIntoView({behavior:'smooth',block:'center'})},100)}
 }
 function toggleGameCard(btn){
   var card=btn.closest('.game-card');
@@ -716,7 +713,7 @@ function renderGameCard(g){
   var phaseClass=isFinal?"final":isGroup?"group group-"+grpL:"knockout";
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
-  var past=gameIsPast(g);
+  var past=currentFilter==="all"&&gameIsPast(g);
   return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+teamRow(g.a,g.a==="Brasil"?" brazil":"")+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="team-col">'+teamRow(g.b,g.b==="Brasil"?" brazil":"")+'</div><div class="goal-events">'+events.map(function(x){
     if(x.type==='goal'){
       var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
