@@ -105,12 +105,12 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .br-badge{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:var(--fs-xs);font-weight:600;line-height:1.4}
 .br-logo{height:11px;width:auto;border-radius:2px}
 .br-logo.caze{height:20px}
-.game-score{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.35);padding:4px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);justify-content:center}
+.game-score{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:rgba(0,0,0,.35);padding:4px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);justify-content:center}
 .score-input{width:clamp(22px,4vw,30px);height:clamp(24px,4vw,30px);text-align:center;background:transparent;border:none;color:#fff;font-size:var(--fs-body);font-weight:700;outline:none;-moz-appearance:textfield;font-family:inherit;transition:var(--transition);border-radius:4px}
 .score-input:focus{background:rgba(255,255,255,.05);box-shadow:0 0 0 1px var(--gold)}
 .score-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .score-x{color:var(--muted);font-weight:300}
-.live-clock{display:block;font-size:10px;color:var(--gold);text-align:center;margin-bottom:2px;font-weight:700}
+.live-clock{width:100%;text-align:center;font-size:10px;color:var(--gold);font-weight:700;margin-bottom:2px}
 .goal-btn{background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:11px;font-weight:500;padding:3px 8px;border-radius:var(--radius-sm);transition:var(--transition);font-family:inherit}
 .goal-btn:hover{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
 .team-col{font-size:var(--fs-sm);text-align:center}
