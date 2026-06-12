@@ -1570,7 +1570,7 @@ var FIFA_TEAM_MAP={
 };
 var FIFA_URL="https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200";
 
-var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},MATCH_STARTED={},MATCH_STARTED_AT={},MATCH_ENDED={},MATCH_MINUTE={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={};
+var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},MATCH_STARTED={},MATCH_ENDED={},MATCH_KICKOFF={},MATCH_MINUTE={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={};
 for(var abbr in FIFA_TEAM_MAP)FIFA_TEAM_REV[FIFA_TEAM_MAP[abbr]]=abbr;
 
 function fetchFifaScores(t){var ac=new AbortController(),to=setTimeout(function(){ac.abort()},t||10000);
@@ -1723,7 +1723,7 @@ function processTimeline(idMatch,gameId){
       var maxId=0;newEvents.forEach(function(e){var id=parseInt(e.EventId,10);if(id>maxId)maxId=id});PROCESSED_EVENTS[idMatch]=maxId;
       // Track match state and minute
       newEvents.forEach(function(e){
-        if(e.Type===7){MATCH_STARTED[idMatch]=true;if(!MATCH_STARTED_AT[idMatch])MATCH_STARTED_AT[idMatch]=Date.now()}
+        if(e.Type===7){MATCH_STARTED[idMatch]=true;if(e.UTC&&!MATCH_KICKOFF[idMatch])MATCH_KICKOFF[idMatch]=new Date(e.UTC)}
         if(e.Type===26)MATCH_ENDED[idMatch]=true;
         if(e.MatchMinute){
           var m=parseInt(e.MatchMinute.replace(/'/g,''),10);
@@ -2224,6 +2224,12 @@ function bolaoSimular(){
   renderBracket();
   renderScorers();
   console.log('Simula\u00e7\u00e3o carregada. Use bolaoLimpar() para limpar.');
+}
+function bolaoReseta(){
+  ['copa2026_data','copa2026_bak1','copa2026_bak2','copa2026_teampicks'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
+  GAMES.forEach(function(g){delete scores[g.n]});
+  console.log('Dados locais limpos. Recarregando...');
+  window.location.reload();
 }
 function bolaoLimpar(){
   GAMES.forEach(function(g){delete scores[g.n]});
