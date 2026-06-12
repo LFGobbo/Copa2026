@@ -1193,6 +1193,7 @@ function processTimeline(idMatch,gameId){
             }
           }
         }
+      });
       newEvents.forEach(function(e,idx){
         if(e.HomeGoals!==undefined&&e.AwayGoals!==undefined){
           // Detect own goal: if score increased for team that is NOT the event's team
