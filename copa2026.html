@@ -303,6 +303,13 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .squad-card{font-size:10px}
   .squad-header{padding:8px}
   .refresh-btn{width:28px;height:28px;font-size:15px}
+  .countdown-bar{padding:6px 8px;gap:6px;min-height:36px}
+  .countdown-label{font-size:8px}
+  .countdown-time{font-size:14px}
+  .countdown-event{padding:2px 5px;gap:3px}
+  .countdown-event-teams{font-size:10px}
+  .countdown-event-time{font-size:10px}
+  .countdown-event-date{display:none}
 }
 
 
@@ -329,7 +336,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes squad-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.pen-result{display:flex;gap:6px;justify-content:center;padding:4px 8px}
+.pen-result{display:flex;gap:6px;justify-content:center;padding:4px 8px;grid-column:1/-1}
 .pen-btn{flex:1;padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:11px;font-weight:600;transition:var(--transition);font-family:inherit;text-align:center}
 .pen-btn.active{border-color:var(--gold);background:var(--gold-dim);color:var(--gold)}
 .pen-btn:hover:not(.active){border-color:var(--text);color:var(--text)}
@@ -354,7 +361,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="tab" data-tab="regras"><span class="tab-icon">📖</span><span class="tab-label">Regras</span></div>
 </div>
 <div class="content active" id="tab-jogos">
-  <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">\u23F1 Pr\u00f3ximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">\u27F3</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados">\u22EF</span></div>
+  <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">\u23F1 Pr\u00f3ximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados">\u22EF</span></div>
   <div class="filters" id="filter-bar"></div>
   <div id="games-list" class="dyn-content"></div>
 </div>
@@ -715,7 +722,7 @@ function renderGameCard(g){
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
   var past=currentFilter==="all"&&gameIsPast(g);
-  return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+teamRow(g.a,g.a==="Brasil"?" brazil":"")+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="team-col">'+teamRow(g.b,g.b==="Brasil"?" brazil":"")+'</div><div class="goal-events">'+events.map(function(x){
+  return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+teamRow(g.a,g.a==="Brasil"?" brazil":"")+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+teamRow(g.b,g.b==="Brasil"?" brazil":"")+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
     if(x.type==='goal'){
       var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
       var tn=x.display==='a'?g.a:g.b;
@@ -1603,6 +1610,10 @@ function loadAllReferees(){
   });
 }
 loadAllReferees();
+GAMES.forEach(function(g){
+  if(g.br&&g.br.indexOf('Globo')>=0&&g.br.indexOf('Globoplay')<0)g.br+=' \u00b7 Globoplay';
+  if(g.br&&g.br.indexOf('SBT')>=0&&g.br.indexOf('Ge TV')<0)g.br+=' \u00b7 Ge TV';
+});
 (function dailyMaintenance(){
   var SIX_H=21600000;
   try{
