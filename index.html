@@ -71,7 +71,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .filter-btn.group-K:hover,.filter-btn.group-K.active{background:rgba(121,85,72,.18);border-color:#8D6E63;color:#8D6E63}
 .filter-btn.group-L{background:rgba(96,125,139,.06)}
 .filter-btn.group-L:hover,.filter-btn.group-L.active{background:rgba(96,125,139,.18);border-color:#78909C;color:#78909C}
-.game-card{background:var(--card);border-radius:var(--radius);padding:12px 14px;margin-bottom:6px;display:grid;grid-template-columns:28px 1fr 1fr auto 1fr;gap:4px;align-items:center;border:1px solid var(--border);transition:var(--transition);animation:slideUp .25s ease both;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+.game-card{background:var(--card);border-radius:var(--radius);padding:12px 14px;margin-bottom:6px;display:grid;grid-template-columns:28px 1fr 1fr auto 1fr;gap:4px;align-items:center;border:1px solid var(--border);transition:var(--transition);box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
 .game-card.live{border-color:var(--green);box-shadow:0 0 24px rgba(0,200,83,.25),inset 0 0 40px rgba(0,200,83,.06);border-width:2px}
 .game-card.live::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--green);animation:pulse .8s infinite}
 .game-card.live .live-dot{width:12px;height:12px;box-shadow:0 0 8px rgba(255,23,68,.6)}
@@ -100,7 +100,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .game-referee{font-size:10px;color:var(--muted);opacity:.5;margin-top:2px}
 .br-badge{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;line-height:1.4}
 .br-logo{height:11px;width:auto;border-radius:2px}
-.br-logo.caze{height:14px}
+.br-logo.caze{height:20px}
 .game-score{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.35);padding:4px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);justify-content:center}
 .score-input{width:24px;height:26px;text-align:center;background:transparent;border:none;color:#fff;font-size:15px;font-weight:700;outline:none;-moz-appearance:textfield;font-family:inherit;transition:var(--transition);border-radius:4px}
 .score-input:focus{background:rgba(255,255,255,.05);box-shadow:0 0 0 1px var(--gold)}
@@ -558,7 +558,7 @@ function renderGames(filter){
   document.querySelectorAll(".score-input").forEach(function(i){i.addEventListener("input",scoreInput)});
 }
 function dynRender(el, html){
-  requestAnimationFrame(function(){el.innerHTML = html});
+  el.innerHTML = html;
 }
 function renderGameCard(g){
   var gn=g.n,s=scores[gn]||{},sa=s.a!==undefined?s.a:"",sb=s.b!==undefined?s.b:"";
