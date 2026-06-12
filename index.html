@@ -2251,9 +2251,13 @@ function bolaoSimular(){
   console.log('Simula\u00e7\u00e3o carregada. Use bolaoLimpar() para limpar.');
 }
 function bolaoReseta(){
+  var key=SUPA_KEY,h={'apikey':key,'Authorization':'Bearer '+key};
+  fetch(SUPA_URL+'/rest/v1/picks',{headers:h,method:'DELETE'}).catch(function(){});
+  fetch(SUPA_URL+'/rest/v1/special_picks',{headers:h,method:'DELETE'}).catch(function(){});
+  fetch(SUPA_URL+'/rest/v1/participants',{headers:h,method:'DELETE'}).catch(function(){});
   ['copa2026_data','copa2026_bak1','copa2026_bak2','copa2026_teampicks'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
   GAMES.forEach(function(g){delete scores[g.n]});
-  console.log('Dados locais limpos. Recarregando...');
+  console.log('Tudo limpo. Recarregando...');
   window.location.reload();
 }
 function bolaoLimpar(){
