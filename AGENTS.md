@@ -587,3 +587,4 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - `logo_globo.png`, `logo_sportv.png`, `logo_cazetv.png`, `logo_sbt.png`, `logo_nsports.png` — logos broadcast
 - `bola_t.png`, `mascote1_t.png`, `mascote2_t.png`, `mascote3_t.png` — assets visuais
 - `AGENTS.md` — documentação mestra (este arquivo)
+- `LEVANTAMENTO_TECNICO.md` — análise completa linha a linha, 4 bugs ativos, 11 melhorias de qualidade, 6 UX, plano de execução até Fase 3
