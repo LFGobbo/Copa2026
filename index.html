@@ -466,7 +466,7 @@ function flag(t){var c=FLAG_ISO[t];return c?'<div class="flag-bg" style="backgro
 function broadcastBadge(br){if(!br)return'';var m={'Globo':'logo_globo.png','SporTV':'logo_sportv.png','Caz\u00e9TV':'logo_cazetv.png','SBT':'logo_sbt.png','N Sports':'logo_nsports.png','Globoplay':'logo_globoplay.png','Ge TV':'logo_getv.png'};return br.split(/\u00b7/).map(function(c){c=c.trim();if(!c)return'';var k=m[c];var cls=c==='Caz\u00e9TV'?' caze':'';return k?'<span class="br-badge"><img class="br-logo'+cls+'" src="'+k+'" alt="'+c+'">'+c+'</span>':'<span class="br-badge">'+c+'</span>'}).filter(function(s){return s}).join('')}
 function teamRow(n,c){return'<div class="team-row"><span class="flag">'+flag(n)+'</span><span class="team-name'+c+'">'+esc(n)+'</span></div>'}
 function _resolvedTeamRow(placeholder,gameNum,side){
-  var r=resolveTeam(placeholder);
+  var r=resolveTeam(placeholder,gameNum);
   var isBrasil=r.name==='Brasil';
   var cls=isBrasil?' brazil':'';
   if(r.pending)cls+=' team-pending';
