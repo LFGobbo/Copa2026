@@ -290,6 +290,7 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 - **Bracket com propagação automática** — `resolveTeam()` resolve placeholders: `"1°/2° Grupo X"` via `_groupStandings(letter)` com H2H; `"V. Jogo N"` via `_winnerOf(N)` pelo placar; `"Perd. Jogo N"` via `_loserOf(N)`; `"0"` (vaga 3º colocado) via `_rankedThirds()` com 8 melhores em 7 critérios. SVG reescrito (1050×640) com legendas, cores por fase, vencedor em dourado
 - **SW reescrito (v12)** — `STATIC` e `DATA` separados. Assets estáticos: cache-first. JSONs (`players.json`, `photos.json`): stale-while-revalidate (serve do cache imediatamente, atualiza em background). HTML: network-first com cache fallback (não fica preso em versão antiga). Demais requests (FIFA API, imagens externas): network-first.
 - **Bugfix: `forEach` aninhado** — `processTimeline()` tinha dois `newEvents.forEach` (cartões + gols) mas o primeiro não era fechado com `});` antes do segundo começar, deixando o segundo aninhado dentro do primeiro. Isso impedia o JavaScript inteiro de executar — o site ficava completamente branco/dead. Corrigido na v12.
+- **Horário de Brasília** — cards de jogos e countdown exibem `HH:MM local / HH:MM Brasília`. Função `toBRT()` calcula a conversão (UTC-3).
 
 ### v11.10**
 - **Correção grupos I/J** — dados de GAMES e GROUPS estavam com times trocados entre grupos I e J (Argentina, Argélia, Áustria, Jordânia no I; França, Iraque, Noruega, Senegal no J). Jogo #20 movido de G para I. 11 jogos afetados (#17-#72). Todas as tabelas de classificação agora estão corretas
