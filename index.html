@@ -95,6 +95,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .game-phase.group-L{background:rgba(96,125,139,.15);color:#78909C}
 .game-stadium{font-size:11px;color:var(--muted);opacity:.7}
 .game-broadcast{font-size:10px;color:var(--muted);opacity:.4;display:flex;flex-wrap:wrap;gap:3px}
+.game-referee{font-size:10px;color:var(--muted);opacity:.5;margin-top:2px}
 .br-badge{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;line-height:1.4}
 .br-logo{height:11px;width:auto;border-radius:2px}
 .game-score{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.35);padding:4px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);justify-content:center}
@@ -364,6 +365,7 @@ try { savedData = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){
 let scores = savedData.scores || {};
 let goals = savedData.goals || {};
 let cards = savedData.cards || {};
+var REFEREES={};
 const FLAG_ISO = {
 "Alemanha":"de","Ar\u00e1bia Saudita":"sa","Argentina":"ar","Austr\u00e1lia":"au","\u00c1ustria":"at",
 "B\u00e9lgica":"be","B\u00f3snia":"ba","Brasil":"br","Cabo Verde":"cv","Canad\u00e1":"ca",
@@ -553,7 +555,7 @@ function renderGameCard(g){
   var phaseClass=isFinal?"final":isGroup?"group group-"+grpL:"knockout";
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
-  return'<div class="game-card'+(live?" live":"")+'" id="g-'+gn+'"><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span><div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div><div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+teamRow(g.a,g.a==="Brasil"?" brazil":"")+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+teamRow(g.b,g.b==="Brasil"?" brazil":"")+'</div><div class="goal-events">'+allGoals.map(function(x,i){return renderGoalBadge(x.gl,gn,x.display,x.st,i+1)}).join('')+cardsHTML+'<button class="goal-btn" style="display:'+(hasScore?"":"none")+'" onclick="addGoalUI('+gn+',\'a\')">+Gol '+g.a.split(" ")[0]+'</button><button class="goal-btn" style="display:'+(hasScore?"":"none")+'" onclick="addGoalUI('+gn+',\'b\')">+Gol '+g.b.split(" ")[0]+'</button><button class="goal-btn" onclick="addCardUI('+gn+',\'a\')">+Cart\u00e3o '+g.a.split(" ")[0]+'</button><button class="goal-btn" onclick="addCardUI('+gn+',\'b\')">+Cart\u00e3o '+g.b.split(" ")[0]+'</button></div></div>';
+  return'<div class="game-card'+(live?" live":"")+'" id="g-'+gn+'"><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span><div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+teamRow(g.a,g.a==="Brasil"?" brazil":"")+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+teamRow(g.b,g.b==="Brasil"?" brazil":"")+'</div><div class="goal-events">'+allGoals.map(function(x,i){return renderGoalBadge(x.gl,gn,x.display,x.st,i+1)}).join('')+cardsHTML+'<button class="goal-btn" style="display:'+(hasScore?"":"none")+'" onclick="addGoalUI('+gn+',\'a\')">+Gol '+g.a.split(" ")[0]+'</button><button class="goal-btn" style="display:'+(hasScore?"":"none")+'" onclick="addGoalUI('+gn+',\'b\')">+Gol '+g.b.split(" ")[0]+'</button><button class="goal-btn" onclick="addCardUI('+gn+',\'a\')">+Cart\u00e3o '+g.a.split(" ")[0]+'</button><button class="goal-btn" onclick="addCardUI('+gn+',\'b\')">+Cart\u00e3o '+g.b.split(" ")[0]+'</button></div></div>';
 }
 function renderGoalBadge(gl,gn,team,st,pos){
   var tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
@@ -1261,9 +1263,9 @@ document.getElementById("refresh-btn").addEventListener("click",function(){
   .catch(function(e){btn.style.transform="";btn.style.color="var(--red)";ne.innerHTML='\u26A0 Erro ao conectar na FIFA API';setTimeout(function(){btn.style.color=""},2000);btn.textContent="\u26A0"})
 });
 
-// --- Polling automático da FIFA API (a cada 10s) ---
+// --- Polling automático da FIFA API ---
 initFifaMaps();
-(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length)mergeScores(m)});var hasLive=false;if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(id&&(isGameLive(g)||(MATCH_STARTED[id]&&!MATCH_ENDED[id]))){processTimeline(id,g.n);hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
+(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length)mergeScores(m)});var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+10800000);var recent=now<=new Date(gd.getTime()+21600000);var noScore=!scores[g.n]||scores[g.n].a===undefined;if(live||(recent&&noScore)){processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
 
 
 
@@ -1276,6 +1278,19 @@ setTimeout(function(){
     if(saved){var tab=document.querySelector('.tab[data-tab="'+saved+'"]');if(tab){console.log('Tab restore: clicando em',saved);tab.click()}else console.log('Tab restore: elemento nao encontrado')}
   }catch(e){console.log('Tab restore error:',e)}
 },0);
+function _fetchWikiRefs(letter){
+  var grp=GAMES.filter(function(g){return g.f==='Grupo '+letter}).sort(function(a,b){return a.n-b.n});
+  fetch('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&titles=2026_FIFA_World_Cup_Group_'+letter+'&prop=extracts&explaintext=1')
+    .then(function(r){return r.json()}).then(function(d){
+      var pages=d.query.pages,id=Object.keys(pages)[0],txt=pages[id].extract||'';
+      var refs=[],m=txt.match(/Referee:\s*(.+?)\s*\(/g);
+      if(m)m.forEach(function(r){var n=r.match(/Referee:\s*(.+?)\s*\(/);if(n&&n[1])refs.push(n[1].trim())});
+      for(var i=0;i<refs.length&&i<grp.length;i++)REFEREES[grp[i].n]=refs[i];
+      renderGames(currentFilter);
+    }).catch(function(){});
+}
+function loadAllReferees(){GROUP_ORDER.forEach(function(l){setTimeout(function(){_fetchWikiRefs(l)},600*GROUP_ORDER.indexOf(l))})}
+loadAllReferees();
 var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()})}
 </script>
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'})</script>
