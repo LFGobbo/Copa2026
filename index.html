@@ -380,7 +380,7 @@ const GROUP_NAMES = {"A":"Grupo A","B":"Grupo B","C":"Grupo C","D":"Grupo D","E"
 const GROUP_ORDER = ["A","B","C","D","E","F","G","H","I","J","K","L"];
 const BRACKET_ROUNDS = ["Rodada de 32","Oitavas de Final","Quartas de Final","Semifinal","3\u00ba Lugar","Final"];
 var STADIUM_TZ={"Azteca":-5,"Akron":-5,"BBVA":-5,"SoFi":-7,"Levi's":-7,"Lumen":-7,"BC Place":-7,"NRG":-5,"AT&T":-5,"Arrowhead":-5,"MetLife":-4,"Gillette":-4,"Lincoln Fin.":-4,"Hard Rock":-4,"Mercedes-Benz":-4,"BMO Field":-4};
-function gameUTC(g){try{var p=g.d.split(" ")[0].split("/"),tp=g.t.split(":");if(p.length<2||tp.length<2)return null;var stad=g.s.split(" – ")[0],off=STADIUM_TZ[stad];if(off===undefined)off=-3;var utcH=parseInt(tp[0])-off;return new Date(Date.UTC(2026,parseInt(p[1])-1,parseInt(p[0]),utcH,parseInt(tp[1])))}catch(e){return null}}
+function gameUTC(g){try{var p=g.d.split(" ")[0].split("/"),tp=g.t.split(":");if(p.length<2||tp.length<2)return null;return new Date(Date.UTC(2026,parseInt(p[1])-1,parseInt(p[0]),parseInt(tp[0])+3,parseInt(tp[1])))}catch(e){return null}}
 function toBRT(g){try{var gd=gameUTC(g);if(!gd)return'';var br=new Date(gd-10800000);return br.getUTCHours().toString().padStart(2,'0')+':'+br.getUTCMinutes().toString().padStart(2,'0')}catch(e){return''}}
 
 function flag(t){var c=FLAG_ISO[t];return c?'<img class="flag-img" src="https://flagcdn.com/24x18/'+c+'.png" alt="'+t+'" loading="lazy">':'<span style="font-size:18px">\u{1F3F3}\uFE0F</span>'}
@@ -553,7 +553,7 @@ function renderGameCard(g){
   var phaseClass=isFinal?"final":isGroup?"group group-"+grpL:"knockout";
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
-  return'<div class="game-card'+(live?" live":"")+'" id="g-'+gn+'"><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span><div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' local / '+toBRT(g)+' Bras\u00edlia</div><div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+teamRow(g.a,g.a==="Brasil"?" brazil":"")+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+teamRow(g.b,g.b==="Brasil"?" brazil":"")+'</div><div class="goal-events">'+allGoals.map(function(x,i){return renderGoalBadge(x.gl,gn,x.display,x.st,i+1)}).join('')+cardsHTML+'<button class="goal-btn" style="display:'+(hasScore?"":"none")+'" onclick="addGoalUI('+gn+',\'a\')">+Gol '+g.a.split(" ")[0]+'</button><button class="goal-btn" style="display:'+(hasScore?"":"none")+'" onclick="addGoalUI('+gn+',\'b\')">+Gol '+g.b.split(" ")[0]+'</button><button class="goal-btn" onclick="addCardUI('+gn+',\'a\')">+Cart\u00e3o '+g.a.split(" ")[0]+'</button><button class="goal-btn" onclick="addCardUI('+gn+',\'b\')">+Cart\u00e3o '+g.b.split(" ")[0]+'</button></div></div>';
+  return'<div class="game-card'+(live?" live":"")+'" id="g-'+gn+'"><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span><div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div><div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+teamRow(g.a,g.a==="Brasil"?" brazil":"")+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+teamRow(g.b,g.b==="Brasil"?" brazil":"")+'</div><div class="goal-events">'+allGoals.map(function(x,i){return renderGoalBadge(x.gl,gn,x.display,x.st,i+1)}).join('')+cardsHTML+'<button class="goal-btn" style="display:'+(hasScore?"":"none")+'" onclick="addGoalUI('+gn+',\'a\')">+Gol '+g.a.split(" ")[0]+'</button><button class="goal-btn" style="display:'+(hasScore?"":"none")+'" onclick="addGoalUI('+gn+',\'b\')">+Gol '+g.b.split(" ")[0]+'</button><button class="goal-btn" onclick="addCardUI('+gn+',\'a\')">+Cart\u00e3o '+g.a.split(" ")[0]+'</button><button class="goal-btn" onclick="addCardUI('+gn+',\'b\')">+Cart\u00e3o '+g.b.split(" ")[0]+'</button></div></div>';
 }
 function renderGoalBadge(gl,gn,team,st,pos){
   var tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
@@ -605,9 +605,7 @@ function updateCountdown(){
     var ng=upcoming[0],gd=ng.time,d=gd-now;
     if(d>0){
       el.textContent=Math.floor(d/86400000).toString().padStart(2,"0")+"d "+Math.floor((d%86400000)/3600000).toString().padStart(2,"0")+"h "+Math.floor((d%3600000)/60000).toString().padStart(2,"0")+"m "+Math.floor((d%60000)/1000).toString().padStart(2,"0")+"s";
-      var stadTz=ng.game.s.split(" – ")[0],off=STADIUM_TZ[stadTz]||-3;
-      var brH=parseInt(ng.game.t.split(":")[0])-off+3;
-      ne.innerHTML='Pr\u00f3ximo: <strong>#'+ng.game.n+' '+ng.game.a+' vs '+ng.game.b+'</strong> ('+ng.game.d+' '+ng.game.t+' local / '+toBRT(ng.game)+' Bras\u00edlia)';
+      ne.innerHTML='Pr\u00f3ximo: <strong>#'+ng.game.n+' '+ng.game.a+' vs '+ng.game.b+'</strong> ('+ng.game.d+' '+ng.game.t+' Bras\u00edlia)';
     }
   }else{el.textContent="\u{1F3C6} Copa encerrada!";ne.textContent="Brasil campe\u00e3o! \u{1F947}"}
 }
