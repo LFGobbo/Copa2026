@@ -528,12 +528,18 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     <div class="bolao-section-title">Ranking geral</div>
     <table class="bolao-rank-table">
       <thead><tr>
-        <th>#</th><th>Participante</th><th>Especiais</th><th>Exatos</th><th>Resultados</th><th>Pontos</th>
+        <th>#</th><th>Participante</th><th>Especiais</th><th>Exatos</th><th>Jogos</th><th>Pontos</th>
       </tr></thead>
       <tbody id="bolao-rank-body">
         <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Carregando...</td></tr>
       </tbody>
     </table>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center">
+      <span><strong style="color:var(--gold)">Especiais</strong>: b&ocirc;nus campe&atilde;o (+50) / artilheiro (+20/+10)</span>
+      <span><strong style="color:var(--gold)">Exatos</strong>: placar exato (10 pts)</span>
+      <span><strong style="color:var(--gold)">Jogos</strong>: partidas que pontuou (2 a 6 pts)</span>
+      <span><strong style="color:var(--gold)">Pontos</strong>: total geral</span>
+    </div>
   </div>
 </div>
 <div class="popup-overlay" id="goal-popup">
@@ -945,7 +951,7 @@ function renderGameCard(g){
     if(x.type==='goal'){
       var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
       var tn=x.display==='a'?g.a:g.b;
-      return'<div class="goal-badge" title="'+esc(gl.pname)+' (#'+gl.player+')"><span class="goal-pos"></span>'+flag(tn)+' <span class="type-badge '+tc+'">'+tl+'</span> '+(gl.minute?gl.minute+"' ":"")+esc(gl.pname)+(gl.aname?' <span class="assist-label">\uD83C\uDD70 '+esc(gl.aname)+'</span>':"")+'<span class="remove-goal" onclick="removeGoal('+gn+',\''+(gl.team||x.st||x.team)+'\',\''+gl.key+'\')">\u00d7</span></div>';
+      return'<div class="goal-badge" title="'+esc(gl.pname)+' (#'+gl.player+')"><span class="goal-pos"></span>'+flag(tn)+' <span class="type-badge '+tc+'">'+tl+'</span> '+(gl.minute?gl.minute+"' ":"")+esc(gl.pname)+(gl.aname?' <span class="assist-label">\uD83D\uDC5F '+esc(gl.aname)+'</span>':"")+'<span class="remove-goal" onclick="removeGoal('+gn+',\''+(gl.team||x.st||x.team)+'\',\''+gl.key+'\')">\u00d7</span></div>';
     }
     var cr=x.data.type==='red'?'red':'yellow';
     return'<span class="card-badge card-'+cr+'">'+(cr==='red'?'\uD83D\uDFE5':'\uD83D\uDFE8')+' '+flag(x.tn)+esc(x.tn)+' '+x.data.minute+"' "+esc(x.data.pname)+'<span class="remove-goal" onclick="removeCard('+gn+',\''+x.team+'\',\''+x.data.key+'\')">\u00d7</span></span>';
@@ -1362,7 +1368,7 @@ function renderScorers(){
   var ast=Object.values(m).filter(function(p){return p.assists>0}).sort(function(a,b){return b.assists-a.assists});
   var medals=["rank-gold","rank-silver","rank-bronze"];
   function tbl(title,icon,data,k){if(!data.length)return'';return'<div style="flex:1;min-width:260px"><h3 style="color:var(--gold);margin-bottom:8px;text-align:center">'+icon+' '+title+'</h3><table class="scorers-table"><tr><th>#</th><th>Jogador</th><th style="text-align:center">'+title+'</th></tr>'+data.map(function(s,i){return'<tr><td class="rank '+(medals[i]||"")+'">'+(i+1)+'</td><td>'+s.name+'</td><td style="text-align:center;font-weight:700;font-size:14px">'+s[k]+'</td></tr>'}).join("")+'</table></div>'}
-  var t=tbl('Artilheiros','\u26BD',gls,'goals')+tbl('Assist\u00eancias','\uD83C\uDFC7',ast,'assists');
+  var t=tbl('Artilheiros','\u26BD',gls,'goals')+tbl('Assist\u00eancias','\uD83D\uDC5F',ast,'assists');
   dynRender(el, t?'<div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center">'+t+'</div>':'<p style="text-align:center;color:#555;padding:40px">Nenhum gol registrado ainda. Adicione placares nos Jogos!</p>');
 }
 
