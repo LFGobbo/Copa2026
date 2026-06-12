@@ -1,8 +1,8 @@
-var C='copa2026-v19';
+﻿var C='copa2026-v20';
 var STATIC=['bola_t.png','mascote1_t.png','mascote2_t.png','mascote3_t.png','logo_globo.png','logo_sportv.png','logo_cazetv.png','logo_sbt.png','logo_nsports.png','logo_globoplay.png','logo_getv.png'];
 var DATA=['players.json','photos.json'];
 
-// Install: pré-cachear assets estáticos
+// Install: prÃ©-cachear assets estÃ¡ticos
 self.addEventListener('install',function(e){
   e.waitUntil(
     caches.open(C).then(function(c){return c.addAll(STATIC);}).then(function(){return self.skipWaiting();})
@@ -50,3 +50,4 @@ self.addEventListener('fetch',function(e){
     fetch(e.request).catch(function(){return caches.match('index.html');})
   );
 });
+

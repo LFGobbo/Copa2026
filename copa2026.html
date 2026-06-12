@@ -727,17 +727,22 @@ function dynRender(el, html){
   if(el.innerHTML===html)return;
   el.innerHTML = html;
 }
-function getSuspensions(){
+function getSuspensions(forGame){
   var acc={};
-  Object.keys(cards).forEach(function(gn){
-    var g=GAMES.find(function(x){return x.n===parseInt(gn,10)});if(!g)return;
+  GAMES.forEach(function(g){
+    var gn=g.n;
+    // Só cartões de jogos ANTERIORES a este
+    if(gn>=forGame)return;
+    // Reset após quartas (jogo 100): para jogos 101+, só conta cartões 101+
+    if(forGame>100&&gn<=100)return;
+    var c=cards[gn];if(!c)return;
     ['a','b'].forEach(function(side){
-      var tn=side==='a'?g.a:g.b,list=cards[gn][side];if(!list)return;
-      list.forEach(function(c){
+      var tn=side==='a'?g.a:g.b,list=c[side];if(!list)return;
+      list.forEach(function(card){
         if(!acc[tn])acc[tn]={};
-        if(!acc[tn][c.pname])acc[tn][c.pname]={y:0,r:0};
-        if(c.type==='yellow')acc[tn][c.pname].y++;
-        if(c.type==='red')acc[tn][c.pname].r++;
+        if(!acc[tn][card.pname])acc[tn][card.pname]={y:0,r:0};
+        if(card.type==='yellow')acc[tn][card.pname].y++;
+        if(card.type==='red')acc[tn][card.pname].r++;
       });
     });
   });
@@ -745,15 +750,14 @@ function getSuspensions(){
   Object.keys(acc).forEach(function(tn){
     out[tn]=[];
     Object.keys(acc[tn]).forEach(function(pn){
-      var s=acc[tn][pn];
-      if(s.r>0||s.y>=2)out[tn].push(pn);
+      if(acc[tn][pn].r>0||acc[tn][pn].y>=2)out[tn].push(pn);
     });
   });
   return out;
 }
 function renderGameCard(g){
   var gn=g.n,s=scores[gn]||{},sa=s.a!==undefined?s.a:"",sb=s.b!==undefined?s.b:"";
-  var sus=getSuspensions(),susA=sus[g.a]||[],susB=sus[g.b]||[];
+  var sus=getSuspensions(gn),susA=sus[g.a]||[],susB=sus[g.b]||[];
   var susBadgeA=susA.length?'<span class="sus-badge" title="Suspensos: '+esc(susA.join(', '))+'">\u26A0 '+susA.length+'</span>':'';
   var susBadgeB=susB.length?'<span class="sus-badge" title="Suspensos: '+esc(susB.join(', '))+'">\u26A0 '+susB.length+'</span>':'';
   var gaA=goals[gn]&&goals[gn].a?goals[gn].a:[],gaB=goals[gn]&&goals[gn].b?goals[gn].b:[];
