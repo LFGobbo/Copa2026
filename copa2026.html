@@ -1951,16 +1951,14 @@ function _bolaoTopScorer(){
   if(tied.length===1)return{name:tied[0][0],exact:true};
   return{name:null,exact:false,tied:tied.map(function(x){return x[0]})};
 }
-function _pn(g,picks){
-  var brk=picks?_bolaoGetBracket(picks):null;
-  if(brk&&brk[g.n])return esc(brk[g.n].a.name||'?')+' vs '+esc(brk[g.n].b.name||'?');
+function _pn(g,brk){
+  if(brk&&brk[g.n]&&!brk[g.n].a.pending&&!brk[g.n].b.pending)return esc(brk[g.n].a.name)+' vs '+esc(brk[g.n].b.name);
   return esc(g.a)+' vs '+esc(g.b)}
-function _tp(g,side){
+function _tp(g,side,brk){
   var p=side==='a'?g.a:g.b;
-  if(g.n<73)return esc(p);
-  var brk=_bolaoGetBracket(_bolaoMyPicks);
-  var resolved=brk&&brk[g.n]?brk[g.n][side]:null;
-  return resolved?esc(resolved.name||'?'):esc(p);
+  if(g.n<73||!brk)return esc(p);
+  var r=brk[g.n]?brk[g.n][side]:null;
+  return r&&!r.pending?esc(r.name):esc(p);
 }
 function bolaoTeamPick(el){
   var gn=parseInt(el.getAttribute('data-game'),10),side=el.getAttribute('data-side');
@@ -2046,6 +2044,7 @@ function bolaoRenderRanking(){
 function bolaoToggleDetail(id){var el=document.getElementById('bolao-detail-'+id);if(el)el.classList.toggle('open')}
 function bolaoRenderDetail(pid){
   var picks=_bolaoAllPicks[pid]||{},items=[];
+  var brk=_bolaoGetBracket(picks);
   GAMES.forEach(function(g){
     if(g.n<BOLAO_FIRST)return;
     var real=scores[g.n],pick=picks[g.n],hasReal=real&&real.a!==undefined&&real.b!==undefined,hasPick=pick&&pick.a!==undefined&&pick.b!==undefined;
@@ -2055,13 +2054,14 @@ function bolaoRenderDetail(pid){
     var pickStr=hasPick?(pick.a+'x'+pick.b):'?x?',realStr=hasReal?(real.a+'x'+real.b):'';
     var ptsStr=pts>=0?(pts+(bonus?'+'+bonus:''))+' pts':'';
     if(!hasReal)pickStr='<span style="filter:blur(3px)">'+pickStr+'</span>';
-    items.push('<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">#'+g.n+' '+_pn(g,picks)+'</div><div><span class="bolao-pick-score">'+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">'+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>');
+    items.push('<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">#'+g.n+' '+_pn(g,brk)+'</div><div><span class="bolao-pick-score">'+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">'+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>');
   });
   if(!items.length)return '<p style="color:var(--muted);font-size:13px">Nenhum palpite ainda</p>';
   return '<div class="bolao-detail-grid">'+items.join('')+'</div>';
 }
 function bolaoRenderPicksGrid(){
   _loadTeamPicks();
+  var brk=_bolaoGetBracket(_bolaoMyPicks);
   var grid=document.getElementById('bolao-picks-grid');
   if(!grid||!_bolaoParticipantId)return;
   var now=new Date(),html='',anyVisible=false;
@@ -2081,7 +2081,7 @@ function bolaoRenderPicksGrid(){
     var inputLocked=isLocked||_bolaoConfirmed;
     html+='<div class="bolao-pick-input-card'+(inputLocked?' locked':'')+'">'
       +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">'+esc(g.f)+'</div>'
-      +'<div class="game-teams">'+_tp(g,'a')+' vs '+_tp(g,'b')+'</div>'
+      +'<div class="game-teams">'+_tp(g,'a',brk)+' vs '+_tp(g,'b',brk)+'</div>'
       +'<div class="game-date">'+g.d+' '+g.t+(timeLeft?' <span style="color:var(--gold);font-weight:600">'+timeLeft+'</span>':'')+'</div>'
       +'<div class="bolao-score-row">'
       +'<input class="bolao-score-input" type="number" min="0" max="20" data-game="'+g.n+'" data-side="a" value="'+(pick.a!==undefined?pick.a:'')+'" placeholder="-"'+(inputLocked?' readonly':' onchange="bolaoSavePick('+g.n+')"')+'>'
