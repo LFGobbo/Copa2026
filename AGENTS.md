@@ -536,6 +536,7 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Logos Globoplay e Ge TV faltando~~ ✅ v14 — logos baixados e adicionados ao SW
 - ~~Animação goalFlash removida~~ ✅ v15
 - ~~Cartões sem identificação de time~~ ✅ v15 — card-badge agora mostra bandeira+nome
+- ~~Gol anulado não removido dos eventos~~ ✅ v15 — `if(!scoredForHome&&!scoredForAway)` skip + reconciliação `goals[].length` vs placar final
 - Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
 - Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão
 - `parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)

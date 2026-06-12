@@ -1303,6 +1303,7 @@ function processTimeline(idMatch,gameId){
             var homeId=meta.homeId,awayId=meta.awayId;
             var scoredForHome=e.HomeGoals>prevHome,scoredForAway=e.AwayGoals>prevAway;
             var isOwn=scoredForHome&&e.IdTeam&&e.IdTeam!==homeId||scoredForAway&&e.IdTeam&&e.IdTeam!==awayId;
+            if(!scoredForHome&&!scoredForAway){prevHome=e.HomeGoals;prevAway=e.AwayGoals;return}
             var info=FIFA_PLAYER_MAP[e.IdPlayer];
             // Fallback: parse name from EventDescription if IdPlayer not in map
             if(!info&&e.EventDescription&&e.EventDescription[0]){
@@ -1334,6 +1335,8 @@ function processTimeline(idMatch,gameId){
         }
       });
       if(!scores[gameId])scores[gameId]={};if(scores[gameId].a!==prevHome||scores[gameId].b!==prevAway){scores[gameId].a=prevHome;scores[gameId].b=prevAway;changed=true;}
+      // Reconcile goals array with actual score (remove disallowed goals)
+      if(goals[gameId]){var _ga=goals[gameId].a,_gb=goals[gameId].b;if(_ga&&_ga.length>prevHome)_ga.length=prevHome;if(_gb&&_gb.length>prevAway)_gb.length=prevAway;if(_ga&&!_ga.length)delete goals[gameId].a;if(_gb&&!_gb.length)delete goals[gameId].b}
       if(changed){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers()}
     })
     .catch(function(e){console.warn('Timeline fetch failed:',e?e.message:'')});
