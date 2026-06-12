@@ -175,11 +175,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .third-table td{padding:5px 8px;text-align:center;border-bottom:1px solid rgba(255,255,255,.025);font-size:11px}
 .third-qualify{color:var(--green);font-weight:700}
 .third-elim{color:var(--red);opacity:.5}
-.countdown-bar{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
-.countdown-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.countdown-time{font-size:20px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
-.countdown-unit{font-size:10px;color:var(--muted);font-weight:400;margin-left:2px}
-.countdown-next{font-size:11px;color:var(--muted)}
+.countdown-bar{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;min-height:44px;overflow:hidden}
+.countdown-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;flex-shrink:0}
+.countdown-time{font-size:16px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0;letter-spacing:.5px}
+.countdown-next{display:none}
 .refresh-btn{background:var(--card);border:1px solid var(--border);color:var(--gold);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:var(--transition);font-family:inherit;flex-shrink:0;line-height:1}
 .refresh-btn:hover{background:var(--gold-dim);border-color:var(--gold);transform:rotate(90deg)}
 .refresh-btn:active{transform:rotate(180deg)}
@@ -188,10 +187,19 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .audit-badge.warn{color:#fbbf24;background:rgba(251,191,36,.1)}
 .audit-badge.err{color:#f87171;background:rgba(248,113,113,.1)}
 .countdown-next strong{color:var(--text)}
-.countdown-status{font-size:10px;color:var(--muted);display:block;min-height:14px}
+.countdown-status{display:none}
 .countdown-live{color:var(--red);font-weight:800;font-size:13px;animation:pulse 1s infinite}
 .countdown-sep{color:var(--border-light);margin:0 8px}
-.countdown-games{font-size:12px;color:var(--text)}
+.countdown-events{display:flex;align-items:center;gap:6px;overflow-x:auto;flex:1;scrollbar-width:none;-ms-overflow-style:none}
+.countdown-events::-webkit-scrollbar{display:none}
+.countdown-event{display:flex;align-items:center;gap:5px;white-space:nowrap;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:rgba(255,255,255,.03);flex-shrink:0}
+.countdown-event.next-up{border-color:rgba(255,223,0,.3);background:rgba(255,223,0,.07)}
+.countdown-event-num{font-size:10px;color:var(--muted)}
+.countdown-event-teams{font-size:12px;color:var(--text);font-weight:500}
+.countdown-event-time{font-size:11px;color:var(--gold);font-weight:700;font-variant-numeric:tabular-nums}
+.countdown-event-date{font-size:10px;color:var(--muted)}
+.countdown-event-live{font-size:10px;color:var(--red);font-weight:700;animation:pulse 1s infinite}
+.countdown-sep-v{width:1px;height:18px;background:var(--border);flex-shrink:0}
 .dyn-content{opacity:1}
 .squad-filter-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .squad-filter-bar input{flex:1;min-width:180px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:inherit}
@@ -346,14 +354,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="tab" data-tab="regras"><span class="tab-icon">📖</span><span class="tab-label">Regras</span></div>
 </div>
 <div class="content active" id="tab-jogos">
-  <div class="countdown-bar" id="countdown-bar">
-    <span class="countdown-label">⏱ Contagem Regressiva</span>
-    <span class="countdown-time" id="countdown-display">--d --h --m --s</span>
-    <span class="countdown-next" id="countdown-next">Até o início da Copa</span>
-    <span class="countdown-status" id="countdown-status"></span>
-    <button class="refresh-btn" id="refresh-btn" title="Atualizar placares">⟳</button>
-    <span class="audit-badge" id="audit-badge" title="Integridade dos dados">⋯</span>
-  </div>
+  <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">\u23F1 Pr\u00f3ximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">\u27F3</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados">\u22EF</span></div>
   <div class="filters" id="filter-bar"></div>
   <div id="games-list" class="dyn-content"></div>
 </div>
@@ -520,7 +521,7 @@ setTimeout(function(){
 },200);
 function tabClick(){
   var tab=this.dataset.tab;
-  try{localStorage.setItem('copa2026_tab',tab);console.log('Tab salva:',tab)}catch(e){}
+  try{localStorage.setItem('copa2026_tab',tab)}catch(e){}
   if(window.location.hash!=='#'+tab)window.location.hash=tab;
   document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});
   document.querySelectorAll(".content").forEach(function(c){c.classList.remove("active")});
@@ -736,37 +737,55 @@ function isGameLive(g){
 }
 
 function updateCountdown(){
-  var el=document.getElementById("countdown-display"),ne=document.getElementById("countdown-next");
-  if(!el)return;
+  var disp=document.getElementById("countdown-display"),evts=document.getElementById("countdown-events");
+  if(!disp)return;
   var now=new Date();
+  var WINDOW=86400000;
   var opening=GAMES.find(function(g){return g.n===1});
   var cs=opening?gameUTC(opening):new Date(Date.UTC(2026,5,11,21,0,0));
   if(now<cs){
     var d=cs-now;
-    el.textContent=Math.floor(d/86400000).toString().padStart(2,"0")+"d "+Math.floor((d%86400000)/3600000).toString().padStart(2,"0")+"h "+Math.floor((d%3600000)/60000).toString().padStart(2,"0")+"m "+Math.floor((d%60000)/1000).toString().padStart(2,"0")+"s";
-    ne.textContent="At\u00e9 o in\u00edcio da Copa do Mundo 2026!";return;
+    disp.textContent=Math.floor(d/86400000).toString().padStart(2,"0")+"d "+Math.floor((d%86400000)/3600000).toString().padStart(2,"0")+"h "+Math.floor((d%3600000)/60000).toString().padStart(2,"0")+"m "+Math.floor((d%60000)/1000).toString().padStart(2,"0")+"s";
+    if(evts)evts.innerHTML='<div class="countdown-event next-up"><span class="countdown-event-teams">Copa do Mundo 2026</span></div>';
+    return;
   }
-  // Find live games AND next upcoming simultaneously
-  var liveGames=[];
-  var upcoming=null;
+  var liveGames=[],upcoming=[];
   for(var i=0;i<GAMES.length;i++){
     try{
-      var g=GAMES[i],gd=gameUTC(g);
-      if(gd&&isGameLive(g))liveGames.push(g);
-      if(gd&&gd>now&&!upcoming)upcoming={game:g,time:gd};
+      var g=GAMES[i],gd=gameUTC(g);if(!gd)continue;
+      if(isGameLive(g)){liveGames.push({game:g,time:gd});}
+      else if(gd>now&&gd-now<=WINDOW){upcoming.push({game:g,time:gd});}
     }catch(e){}
   }
+  upcoming.sort(function(a,b){return a.time-b.time});
+  var nextGame=upcoming.length?upcoming[0]:null;
   if(liveGames.length){
-    el.innerHTML='<span class="countdown-live">\u25cf AO VIVO</span><span class="countdown-sep">|</span><span class="countdown-games">'+liveGames.map(function(g){return '<strong>#'+g.n+' '+g.a+' vs '+g.b+'</strong>'}).join(' &nbsp; ')+'</span>';
+    disp.innerHTML='<span class="countdown-live">\u25cf AO VIVO</span>';
+  }else if(nextGame){
+    var d=nextGame.time-now;
+    var hh=Math.floor(d/3600000),mm=Math.floor((d%3600000)/60000),ss=Math.floor((d%60000)/1000);
+    disp.textContent=hh.toString().padStart(2,"0")+"h "+mm.toString().padStart(2,"0")+"m "+ss.toString().padStart(2,"0")+"s";
   }else{
-    el.textContent="\u2014 \u2014 \u2014";
+    disp.textContent="\u{1F3C6}";
   }
-  if(upcoming){
-    var ng=upcoming,gd=ng.time,d=gd-now;
-    if(d>0){
-      ne.innerHTML='Pr\u00f3ximo: <strong>#'+ng.game.n+' '+ng.game.a+' vs '+ng.game.b+'</strong> <span class="countdown-time" style="font-size:14px">'+Math.floor(d/86400000).toString().padStart(2,"0")+'d '+Math.floor((d%86400000)/3600000).toString().padStart(2,"0")+'h '+Math.floor((d%3600000)/60000).toString().padStart(2,"0")+'m '+Math.floor((d%60000)/1000).toString().padStart(2,"0")+'s</span> ('+ng.game.d+' '+ng.game.t+' Bras\u00edlia)';
-    }
-  }else if(!liveGames.length){el.textContent="\u{1F3C6} Copa encerrada!";ne.textContent="Brasil campe\u00e3o! \u{1F947}"}
+  if(!evts)return;
+  var cards=[];
+  liveGames.forEach(function(x){
+    var g=x.game,s=scores[g.n]||{};
+    var sc=s.a!==undefined&&s.b!==undefined?s.a+"-"+s.b:"AO VIVO";
+    cards.push('<div class="countdown-event"><span class="countdown-event-live">\u25cf</span><span class="countdown-event-num">#'+g.n+'</span><span class="countdown-event-teams">'+g.a+" vs "+g.b+'</span><span class="countdown-event-time">'+sc+'</span></div>');
+  });
+  upcoming.forEach(function(x,idx){
+    var g=x.game,d=x.time-now;
+    var hh=Math.floor(d/3600000),mm=Math.floor((d%3600000)/60000);
+    var timeStr=hh+"h "+mm.toString().padStart(2,"0")+"m";
+    cards.push('<div class="countdown-event'+(idx===0?' next-up':'')+'">'+(idx===0?'<span class="countdown-event-num" style="color:var(--gold)">\u25ba</span>':'<span class="countdown-event-num">#'+g.n+'</span>')+'<span class="countdown-event-teams">'+g.a+" vs "+g.b+'</span><span class="countdown-event-time">'+timeStr+'</span><span class="countdown-event-date">'+g.t+' Bras.</span></div>');
+  });
+  if(!cards.length&&!liveGames.length){
+    evts.innerHTML='<div class="countdown-event"><span class="countdown-event-teams">\u{1F3C6} Copa encerrada \u2014 obrigado por acompanhar!</span></div>';
+  }else{
+    evts.innerHTML=cards.join("");
+  }
 }
 setInterval(updateCountdown,1000);
 
@@ -1584,10 +1603,6 @@ function loadAllReferees(){
   });
 }
 loadAllReferees();
-GAMES.forEach(function(g){
-  if(g.br&&g.br.indexOf('Globo')>=0&&g.br.indexOf('Globoplay')<0)g.br+=' \u00b7 Globoplay';
-  if(g.br&&g.br.indexOf('SBT')>=0&&g.br.indexOf('Ge TV')<0)g.br+=' \u00b7 Ge TV';
-});
 (function dailyMaintenance(){
   var SIX_H=21600000;
   try{
