@@ -457,7 +457,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="bolao-section">
     <div class="bolao-section-title">Entrar no bol&atilde;o</div>
     <div class="bolao-login">
-      <div><label>Seu nome</label><input type="text" id="bolao-name" placeholder="Nome" autocomplete="off"></div>
+      <div><label>Seu nome</label><input type="text" id="bolao-name" placeholder="Nome e Sobrenome" autocomplete="off"></div>
       <div><label>Senha</label><input type="password" id="bolao-pass" placeholder="Senha" autocomplete="off"></div>
       <button class="btn" onclick="bolaoLogin()" style="height:36px;padding:0 18px;font-size:13px">Entrar</button>
       <span class="bolao-login-status" id="bolao-login-status"></span>
@@ -912,7 +912,7 @@ function renderGameCard(g){
     if(x.type==='goal'){
       var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
       var tn=x.display==='a'?g.a:g.b;
-      return'<div class="goal-badge" title="'+esc(gl.pname)+' (#'+gl.player+')"><span class="goal-pos"></span>'+flag(tn)+' <span class="type-badge '+tc+'">'+tl+'</span> '+(gl.minute?gl.minute+"' ":"")+esc(gl.pname)+(gl.aname?' <span class="assist-label">\uD83D\uDC5F '+esc(gl.aname)+'</span>':"")+'<span class="remove-goal" onclick="removeGoal('+gn+',\''+(gl.team||x.st||x.team)+'\',\''+gl.key+'\')">\u00d7</span></div>';
+      return'<div class="goal-badge" title="'+esc(gl.pname)+' (#'+gl.player+')"><span class="goal-pos"></span>'+flag(tn)+' <span class="type-badge '+tc+'">'+tl+'</span> '+(gl.minute?gl.minute+"' ":"")+esc(gl.pname)+(gl.aname?' <span class="assist-label">\uD83C\uDD70 '+esc(gl.aname)+'</span>':"")+'<span class="remove-goal" onclick="removeGoal('+gn+',\''+(gl.team||x.st||x.team)+'\',\''+gl.key+'\')">\u00d7</span></div>';
     }
     var cr=x.data.type==='red'?'red':'yellow';
     return'<span class="card-badge card-'+cr+'">'+(cr==='red'?'\uD83D\uDFE5':'\uD83D\uDFE8')+' '+flag(x.tn)+esc(x.tn)+' '+x.data.minute+"' "+esc(x.data.pname)+'<span class="remove-goal" onclick="removeCard('+gn+',\''+x.team+'\',\''+x.data.key+'\')">\u00d7</span></span>';
@@ -966,7 +966,9 @@ function updateCountdown(){
   liveGames.forEach(function(x){
     var g=x.game,s=scores[g.n]||{};
     var sc=s.a!==undefined&&s.b!==undefined?s.a+"-"+s.b:"AO VIVO";
-    cards.push('<div class="countdown-event"><span class="countdown-event-live">\u25cf</span><span class="countdown-event-num">#'+g.n+'</span><span class="countdown-event-teams">'+g.a+" vs "+g.b+'</span><span class="countdown-event-time">'+sc+'</span></div>');
+    var elapsed=Math.floor((now-x.time)/60000);
+    var timeStr=elapsed>0?elapsed+"'":"0'";
+    cards.push('<div class="countdown-event"><span class="countdown-event-live">\u25cf</span><span class="countdown-event-num">#'+g.n+'</span><span class="countdown-event-teams">'+g.a+" vs "+g.b+'</span><span class="countdown-event-time">'+sc+'</span><span class="countdown-event-date">'+timeStr+'</span></div>');
   });
   upcoming.forEach(function(x,idx){
     var g=x.game,d=x.time-now;
@@ -1994,7 +1996,7 @@ function bolaoPopulateSpecials(){
   var players=[];Object.keys(PLAYERS||{}).forEach(function(team){(PLAYERS[team]||[]).forEach(function(p){players.push(p.name)})});
   players.sort();
   scorerSel.innerHTML='<option value="">Selecione o artilheiro...</option>'+players.map(function(p){return'<option value="'+esc(p)+'"'+(myScorer===p?' selected':'')+'>'+esc(p)+'</option>'}).join('');
-  if(locked){champSel.disabled=true;scorerSel.disabled=true;var btn=document.getElementById('bolao-special-btn');if(btn){btn.disabled=true;btn.textContent='Bloqueado &mdash; inscri&ccedil;&otilde;es encerradas'}}
+  if(locked){champSel.disabled=true;scorerSel.disabled=true;var btn=document.getElementById('bolao-special-btn');if(btn){btn.disabled=true;btn.textContent='Bloqueado \u2014 inscri\u00e7\u00f5es encerradas'}}
   if(myChamp)document.getElementById('bolao-champion-saved').textContent=myChamp;
   if(myScorer)document.getElementById('bolao-scorer-saved').textContent=myScorer;
 }
@@ -2009,7 +2011,7 @@ async function bolaoSaveSpecial(){
     if(topScorer)document.getElementById('bolao-scorer-saved').textContent=topScorer;
     btn.disabled=false;btn.textContent='Salvo com sucesso';
     setTimeout(function(){btn.textContent='Salvar palpites especiais';btn.disabled=false},2000);
-  }catch(e){btn.disabled=false;btn.textContent='Erro &mdash; tente novamente'}
+  }catch(e){btn.disabled=false;btn.textContent='Erro \u2014 tente novamente'}
 }
 async function bolaoConfirmAll(){
   if(!_bolaoParticipantId||_bolaoConfirmed)return;
@@ -2036,10 +2038,10 @@ function bolaoShowConfirmButton(){if(_bolaoConfirmed)return;var area=document.ge
 async function bolaoAdminUnlock(name){
   try{
     var parts=await _supaFetch('participants?name=eq.'+encodeURIComponent(name)+'&select=id,name,confirmed');
-    if(!parts||!parts.length){console.log('Participante n&atilde;o encontrado: '+name);return}
+    if(!parts||!parts.length){console.log('Participante n\u00e3o encontrado: '+name);return}
     var p=parts[0];console.log('Participante: '+p.name+' | confirmed: '+p.confirmed);
     await _supaFetch('participants?id=eq.'+p.id,'PATCH',{confirmed:false});
-    console.log('Desbloqueado com sucesso. Pe&ccedil;a para o participante recarregar a p&aacute;gina.');
+    console.log('Desbloqueado com sucesso. Pe\u00e7a para o participante recarregar a p\u00e1gina.');
     if(_bolaoParticipantId===p.id){_bolaoConfirmed=false;bolaoRenderPicksGrid();bolaoShowConfirmButton();console.log('Status local atualizado.')}
   }catch(e){console.error('Erro ao desbloquear:',e)}
 }
@@ -2075,7 +2077,7 @@ async function bolaoLogin(){
     var isNew=!existing||!existing.length;
     if(isNew){
       var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);
-      if(deadline&&new Date()>=deadline){st.className='bolao-login-status err';st.textContent='Inscri&ccedil;&otilde;es encerradas (2h antes do 2&ordm; jogo do Brasil)';return}
+      if(deadline&&new Date()>=deadline){st.className='bolao-login-status err';st.textContent='Inscri\u00e7\u00f5es encerradas (2h antes do 2\u00ba jogo do Brasil)';return}
       await _supaFetch('participants','POST',{name:name,password:hash});
       var np=await _supaFetch('participants?name=eq.'+encodeURIComponent(name)+'&select=id,name');
       _bolaoParticipantId=np[0].id;_bolaoName=name;
@@ -2085,7 +2087,7 @@ async function bolaoLogin(){
     }
     document.getElementById('bolao-name').readOnly=true;
     document.getElementById('bolao-pass').readOnly=true;
-    st.className='bolao-login-status ok';st.textContent='Ol&aacute;, '+name+'!';
+    st.className='bolao-login-status ok';st.textContent='Ol\u00e1, '+name+'!';
     document.getElementById('bolao-logged-area').style.display='block';
     await bolaoLoadMyData();
     bolaoRenderPicksGrid();
@@ -2101,11 +2103,11 @@ function bolaoInit(){
   var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);if(!deadline){el.textContent='';return}
   var now=new Date();
   if(now>=deadline){
-    el.textContent='Inscri&ccedil;&otilde;es encerradas.';el.style.color='var(--red)';
+    el.textContent='Inscri\u00e7\u00f5es encerradas.';el.style.color='var(--red)';
     if(!_bolaoParticipantId){var ni=document.getElementById('bolao-name'),pi=document.getElementById('bolao-pass');if(ni)ni.disabled=true;if(pi)pi.disabled=true}
   }else{
     var diff=deadline-now,days=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),mmin=Math.floor((diff%3600000)/60000);
-    el.textContent=days>0?'Inscri&ccedil;&otilde;es abertas &mdash; encerram em '+days+'d '+h+'h':h>0?'Inscri&ccedil;&otilde;es abertas &mdash; encerram em '+h+'h '+mmin+'m':'Inscri&ccedil;&otilde;es encerram em menos de 1 hora!';
+    el.textContent=days>0?'Inscri\u00e7\u00f5es abertas \u2014 encerram em '+days+'d '+h+'h':h>0?'Inscri\u00e7\u00f5es abertas \u2014 encerram em '+h+'h '+mmin+'m':'Inscri\u00e7\u00f5es encerram em menos de 1 hora!';
   }
 }
 // --- Simulação: bolaoSimular() no console ---
