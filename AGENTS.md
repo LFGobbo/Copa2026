@@ -286,19 +286,26 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-12 — Sessão v15 (gol anulado removido, reconciliação goals[] vs placar real da timeline)**
+**2026-06-12 — Sessão v16 (persistência redundante: IndexedDB + localStorage x3)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
 
 ## Restrições
-- HTML principal (~170KB) com dados essenciais inline (GAMES, GROUPS); dados pesados (PLAYERS, PLAYER_PHOTOS) em JSON externo
+- HTML principal (~180KB) com dados essenciais inline (GAMES, GROUPS); dados pesados (PLAYERS, PLAYER_PHOTOS) em JSON externo
 - Zero build tools, sem Node.js/Python — HTML puro + JSON + SW
 - Dados de `Copa_2026_Completa.xlsx` (3 sheets: Jogos, Grupos & Chaveamento, _Dados)
 
 ## Versões
 
-### v15 (atual — 2026-06-12)
+### v16 (atual — 2026-06-12)
+**Mudanças (persistência redundante: IndexedDB + localStorage x3):**
+- **Persistência bulletproof** — `BAK_KEYS=['copa2026_data','copa2026_bak1','copa2026_bak2']`: `_loadPersistent()` tenta as 3 chaves e replica dados entre elas. `saveState()` escreve nas 3 simultaneamente
+- **IndexedDB adicionado** — `_openDB()`, `_idbSave()`, `_idbLoad()` para armazenamento persistente que sobrevive a limpeza de localStorage. Store separado por tipo (`s`=scores, `g`=goals, `c`=cards)
+- **Async enhance** — `setTimeout` 200ms carrega dados do IndexedDB e mergeia nos objetos globais se ausentes, recuperando dados mesmo que localStorage tenha sido limpo
+- `saveState()` salva em IndexedDB + 3 localStorage keys
+
+### v15 (2026-06-12)
 **Mudanças (verificação e refinamento das 4 melhorias + anti-flicker final):**
 - **Flickering resolvido na raiz** — `dynRender(el, html)` com fade-out suave → troca de innerHTML no momento de menor visibilidade → fade-in. `style.opacity` + `setTimeout` calculado pela duração real da transição CSS. `.dyn-content` começa com `opacity: 1` (sem flash inicial)
 - **Convocados — bug file:// corrigido** — `renderSquads()` agora usa `grid.innerHTML` direto (síncrono) em vez de `dynRender()` assíncrono. O `IntersectionObserver` é montado **depois** que o DOM já está populado com os placeholders, garantindo que `querySelectorAll('li.squad-ph')` encontre todos os elementos. `rootMargin` aumentado de 200px para 300px. Layout mais leve: avatar 24×32, padding 4px, skeleton 36px, gap 6px
@@ -537,6 +544,7 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Animação goalFlash removida~~ ✅ v15
 - ~~Cartões sem identificação de time~~ ✅ v15 — card-badge agora mostra bandeira+nome
 - ~~Gol anulado não removido dos eventos~~ ✅ v15 — `if(!scoredForHome&&!scoredForAway)` skip + reconciliação `goals[].length` vs placar final
+- ~~Persistência localStorage com ponto único de falha~~ ✅ v16 — IndexedDB + 3 localStorage keys: `copa2026_data`, `copa2026_bak1`, `copa2026_bak2`
 - Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
 - Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão
 - `parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)
@@ -575,8 +583,8 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - **Compartilhar**: mandar o link `https://lfgobbo.github.io/Copa2026/` ou o arquivo `copa2026.html`. Abre no navegador, funciona 100% offline (com Service Worker), placar pode ser digitado manualmente ou via FIFA API ao vivo.
 - **Nota**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API.
 
-## Arquivos Relevantes (2026-06-11 v15)
-- `index.html` — app principal (v15, deploy GitHub Pages, ~170KB)
+## Arquivos Relevantes (2026-06-12 v16)
+- `index.html` — app principal (v16, deploy GitHub Pages, ~180KB)
 - `players.json` — dados dos 1248 jogadores (116KB)
 - `photos.json` — URLs das fotos dos jogadores (174KB)
 - `copa2026.html` — cópia de index.html (mantido por compatibilidade)

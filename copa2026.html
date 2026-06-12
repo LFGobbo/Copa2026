@@ -377,12 +377,21 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 const GROUPS = {"A":["África do Sul","Coreia do Sul","México","República Tcheca"],"B":["Bósnia","Canadá","Catar","Suíça"],"C":["Brasil","Escócia","Haiti","Marrocos"],"D":["Austrália","Estados Unidos","Paraguai","Turquia"],"E":["Alemanha","Costa do Marfim","Curaçao","Equador"],"F":["Holanda","Japão","Suécia","Tunísia"],"G":["Bélgica","Egito","Irã","Nova Zelândia"],"H":["Arábia Saudita","Cabo Verde","Espanha","Uruguai"],"I":["Argentina","Argélia","Áustria","Jordânia"],"J":["França","Iraque","Noruega","Senegal"],"K":["Colômbia","Portugal","RD Congo","Uzbequistão"],"L":["Croácia","Gana","Inglaterra","Panamá"]}
 ;
 const PLAYERS = {};
-const STORE_KEY = "copa2026_data";
-let savedData = {};
-try { savedData = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){}
-let scores = savedData.scores || {};
-let goals = savedData.goals || {};
-let cards = savedData.cards || {};
+var BAK_KEYS=['copa2026_data','copa2026_bak1','copa2026_bak2'];
+function _loadPersistent(){
+  for(var i=0;i<BAK_KEYS.length;i++)try{
+    var raw=localStorage.getItem(BAK_KEYS[i]);
+    if(raw){var p=JSON.parse(raw);if(p&&(p.scores||p.goals||p.cards)){
+      for(var j=0;j<BAK_KEYS.length;j++)if(j!==i)try{localStorage.setItem(BAK_KEYS[j],raw);}catch(e){}
+      return p;
+    }}
+  }catch(e){}
+  return null;
+}
+var _savedData=_loadPersistent()||{};
+let scores=_savedData.scores||{};
+let goals=_savedData.goals||{};
+let cards=_savedData.cards||{};
 var REFEREES={};
 const FLAG_ISO = {
 "Alemanha":"de","Ar\u00e1bia Saudita":"sa","Argentina":"ar","Austr\u00e1lia":"au","\u00c1ustria":"at",
@@ -408,7 +417,67 @@ function broadcastBadge(br){if(!br)return'';var m={'Globo':'logo_globo.png','Spo
 function teamRow(n,c){return'<div class="team-row"><span class="flag">'+flag(n)+'</span><span class="team-name'+c+'">'+esc(n)+'</span></div>'}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 if(!Object.values)Object.values=function(o){return Object.keys(o).map(function(k){return o[k]})};
-function saveState(){try{localStorage.setItem(STORE_KEY,JSON.stringify({scores:scores||{},goals:goals||{},cards:cards||{}}))}catch(e){console.warn('Falha ao salvar:',e)}}
+// === Persistencia redundante: IndexedDB + localStorage x3 ===
+var _db=null,_dbReady=false,_idbQueue=[];
+function _openDB(){
+  return new Promise(function(resolve,reject){
+    if(_db)return resolve(_db);
+    var req=indexedDB.open('copa2026',1);
+    req.onupgradeneeded=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('d'))db.createObjectStore('d');};
+    req.onsuccess=function(e){_db=e.target.result;_dbReady=true;_idbQueue.forEach(function(fn){fn()});_idbQueue=[];resolve(_db);};
+    req.onerror=function(){_dbReady=true;resolve(null);};
+  });
+}
+function _idbSave(key,val){
+  if(!_db)return _openDB().then(function(db){if(db)_putVal(db,key,val);});
+  _putVal(_db,key,val);
+}
+function _putVal(db,key,val){
+  try{db.transaction('d','readwrite').objectStore('d').put(JSON.parse(JSON.stringify(val)),key);}catch(e){}
+}
+function _idbLoad(key){
+  return _openDB().then(function(db){
+    if(!db)return null;
+    return new Promise(function(resolve){
+      var tx=db.transaction('d','readonly');
+      var req=tx.objectStore('d').get(key);
+      req.onsuccess=function(){resolve(req.result);};
+      req.onerror=function(){resolve(null);};
+    });
+  }).catch(function(){return null;});
+}
+_openDB();
+function saveState(){
+  try{
+    var data=JSON.stringify({scores:scores||{},goals:goals||{},cards:cards||{}});
+    BAK_KEYS.forEach(function(k){try{localStorage.setItem(k,data);}catch(e){}});
+    _idbSave('s',scores||{});
+    _idbSave('g',goals||{});
+    _idbSave('c',cards||{});
+  }catch(e){console.warn('Falha ao salvar:',e);}
+}
+// Tenta IndexedDB em background (nao bloqueia o render)
+setTimeout(function(){
+  _openDB().then(function(db){
+    if(!db)return;
+    Promise.all([_idbLoad('s'),_idbLoad('g'),_idbLoad('c')]).then(function(r){
+      var idbS=r[0],idbG=r[1],idbC=r[2],changed=false;
+      if(idbS&&typeof idbS==='object'){
+        Object.keys(idbS).forEach(function(k){if(!scores[k]){scores[k]=idbS[k];changed=true;}});
+      }
+      if(idbG&&typeof idbG==='object'){
+        Object.keys(idbG).forEach(function(k){if(!goals[k]){goals[k]=idbG[k];changed=true;}});
+      }
+      if(idbC&&typeof idbC==='object'){
+        Object.keys(idbC).forEach(function(k){if(!cards[k]){cards[k]=idbC[k];changed=true;}});
+      }
+      if(changed){
+        saveState();
+        if(typeof renderGames==='function'&&typeof currentFilter!=='undefined'){renderGames(currentFilter);renderGroups();renderBracket();renderScorers();}
+      }
+    });
+  });
+},200);
 function tabClick(){
   var tab=this.dataset.tab;
   try{localStorage.setItem('copa2026_tab',tab);console.log('Tab salva:',tab)}catch(e){}
