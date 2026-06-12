@@ -2325,39 +2325,38 @@ function bolaoRenderPicksGrid(){
       +'</div>';
   });
   grid.innerHTML=any?html:'<p style="color:var(--muted);font-size:13px;text-align:center;padding:24px">Nenhum jogo dispon\u00edvel para palpite agora.</p>';
-  // Adicionar listeners de blur nos inputs (não onchange para não disparar a cada tecla)
-  if(!inputLocked){
-    grid.querySelectorAll('.bsp-input:not([readonly])').forEach(function(el){
-      el.addEventListener('blur',function(){
-        var gn=parseInt(el.getAttribute('data-game'),10);
-        bolaoSavePick(gn);
-      });
-    });
-  }
+  // Event delegation: um único listener captura blur de todos os inputs
+  if(grid._bolaoBlurHandler)grid.removeEventListener('blur',grid._bolaoBlurHandler,true);
+  grid._bolaoBlurHandler=function(e){
+    var el=e.target;
+    if(!el.classList||!el.classList.contains('bsp-input')||el.readOnly)return;
+    var gn=parseInt(el.getAttribute('data-game'),10);
+    if(!isNaN(gn))bolaoSavePick(gn);
+  };
+  grid.addEventListener('blur',grid._bolaoBlurHandler,true);
 }
-async function bolaoSavePick(gameN){
-  if(!_bolaoParticipantId||_bolaoGameLocked[gameN]||_bolaoConfirmed)return;
+function bolaoSavePick(gameN){
+  if(!_bolaoParticipantId||_bolaoConfirmed)return;
+  var g=GAMES.find(function(x){return x.n===gameN;});
+  if(g){var gd=gameUTC(g);if(gd&&new Date()>=new Date(gd.getTime()-BOLAO_TWO_H))return;}
   var inA=document.querySelector('.bsp-input[data-game="'+gameN+'"][data-side="a"]');
   var inB=document.querySelector('.bsp-input[data-game="'+gameN+'"][data-side="b"]');
   if(!inA||!inB)return;
-  // Validar: só números, 0-99
-  var raw=inA.value.replace(/[^0-9]/g,'').slice(0,2);
+  var rawA=inA.value.replace(/[^0-9]/g,'').slice(0,2);
   var rawB=inB.value.replace(/[^0-9]/g,'').slice(0,2);
-  inA.value=raw; inB.value=rawB;
-  if(raw===''||rawB==='')return; // Campo vazio: não salvar, não pontuar
-  var vA=parseInt(raw,10),vB=parseInt(rawB,10);
+  inA.value=rawA; inB.value=rawB;
+  if(rawA===''||rawB==='')return;
+  var vA=parseInt(rawA,10),vB=parseInt(rawB,10);
   if(isNaN(vA)||isNaN(vB))return;
   var saved=document.getElementById('bsp-status-'+gameN);
   if(saved){saved.style.color='var(--muted)';saved.textContent='...';}
   var koVal=_bolaoKOPicks[gameN]||null;
   if(vA!==vB&&_bolaoKOPicks[gameN]){delete _bolaoKOPicks[gameN];koVal=null;}
+  _bolaoMyPicks[gameN]={a:vA,b:vB};
+  _bolaoRefreshTeams();
   _supaFetch('picks?on_conflict=participant_id,game_n','POST',
     {participant_id:_bolaoParticipantId,game_n:gameN,goals_a:vA,goals_b:vB,ko_pick:koVal})
-  .then(function(){
-    _bolaoMyPicks[gameN]={a:vA,b:vB};
-    if(saved){saved.style.color='#4ade80';saved.textContent='Salvo';}
-    _bolaoRefreshTeams();
-  })
+  .then(function(){if(saved){saved.style.color='#4ade80';saved.textContent='Salvo';}})
   .catch(function(){if(saved){saved.style.color='var(--red)';saved.textContent='Erro';}});
 }
 function bolaoPopulateSpecials(){
