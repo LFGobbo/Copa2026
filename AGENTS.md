@@ -304,7 +304,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-12 — Sessão v16 (auditoria de dados + destaque busca convocados + regra regressão)**
+**2026-06-12 — Sessão v16 (flag flickering + colapso jogos passados + erro rede na contagem)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -317,7 +317,7 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 ## Versões
 
 ### v16 (atual — 2026-06-12)
-**Mudanças (persistência redundante + seed dados reais):**
+**Mudanças (persistência redundante + seed dados reais + correções do patch):**
 - **Persistência bulletproof** — `BAK_KEYS=['copa2026_data','copa2026_bak1','copa2026_bak2']`: `_loadPersistent()` tenta as 3 chaves e replica dados entre elas. `saveState()` escreve nas 3 simultaneamente
 - **IndexedDB adicionado** — `_openDB()`, `_idbSave()`, `_idbLoad()` para armazenamento persistente que sobrevive a limpeza de localStorage. Store separado por tipo (`s`=scores, `g`=goals, `c`=cards)
 - **Async enhance** — `setTimeout` 200ms carrega dados do IndexedDB e mergeia nos objetos globais se ausentes, recuperando dados mesmo que localStorage tenha sido limpo
@@ -328,6 +328,17 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 - **Tab bar scroll automático** — `tabClick()` agora executa `this.scrollIntoView({inline:'center'})` para garantir que a tab ativa fique visível no celular
 - **Mobile improvements** — `@media(max-width:768px)` estendido: `.tabs` com `scrollbar-width:thin`, popup mais largo, botões de gol/cartão menores, avatar menor, contagem regressiva wrap. `@media(max-width:480px)` estendido: fonte header 18px, inputs menores, tabela terceiros com padding reduzido
 - **Tabela terceiros scrollável** — `third-wrap` div com `overflow-x:auto` + `-webkit-overflow-scrolling:touch` para evitar overflow em mobile
+- **BUG-03 (broadcasts)** — adicionado campo `br` com `·` separator nos jogos 101-104 (semifinais, 3º lugar, final)
+- **BUG-02 (hash whitelist)** — `VALID_TABS=['jogos','grupos','mata-mata','artilheiros','convocados','regras']` valida hash antes de restaurar tab
+- **BUG-01 (referee cache)** — `loadAllReferees()` usa `REFS_CACHE_KEY='copa2026_refs_v1'` com 6h TTL em localStorage; carrega do cache se válido, salva após fetch
+- **UX-03 (Mata-Mata filter)** — `groups=["all"].concat(GROUP_ORDER).concat(["ko"])` adiciona filtro knockout na filter-bar. Label "Mata-Mata". Filtra jogos cujo `f` não começa com "Grupo"
+- **dailyMaintenance()** — IIFE que verifica FIFA maps TTL (24h) e SW cache freshness de players.json/photos.json a cada 6h
+- **Dead code removido** — `STADIUM_TZ` (nunca usado, `gameUTC()` usa offset fixo +3), `renderGoalBadge()` (nunca chamado), `photoCoverage()` calls removidas da inicialização (função mantida para debug)
+- **parseInt com radix 10** — todas as ocorrências de `parseInt()` no JS receberam radix 10
+- **SW v18** — version bump v17→v18 para forçar refresh do SW nos clientes
+- **Flag flickering fix** — `flag()` agora inclui `onerror` com fallback para bandeira branca emoji, `width="24" height="18"` explícitos para evitar layout shift. CSS: `.flag-img,.flag-fallback` com dimensões fixas, `vertical-align:middle`
+- **Network error na contagem** — mensagens de erro/sucesso do refresh movidas do `#countdown-next` para `#countdown-status` dedicado, que limpa após 3s. `#countdown-next` nunca mais é sobrescrito por feedback de rede
+- **Jogos passados colapsados + scroll automático** — `gameIsPast(g)` detecta jogos encerrados (não ao vivo, passou janela de 3h + tem placar). `renderGames()` separa em `next` (futuros/ao vivo, ordenados por `n`) e `past` (passados, ordenados por `n`); renderiza próximos primeiro. Past games recebem `data-collapsed="true"` + classe `.collapsed`. CSS esconde `.game-stadium`, `.game-referee`, `.game-broadcast`, data/horário, `.goal-events`, `.pen-result`. Botão `+` ao lado do phase expande via `toggleGameCard()`. Na inicialização, scroll suave até o primeiro jogo futuro (`scrollIntoView({behavior:'smooth',block:'center'})` com 100ms delay)
 
 ### v15 (2026-06-12)
 **Mudanças (verificação e refinamento das 4 melhorias + anti-flicker final):**
@@ -574,11 +585,15 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Sem rotina de auditoria entre dados locais e FIFA API~~ ✅ v16 — `auditData()` compara scores a cada poll/refresh, indicador visual ✓/⚠ no cabeçalho
 - ~~Menu de abas não rola ao clicar em categoria no limite~~ ✅ v16 — `scrollIntoView({inline:'center'})` no tabClick()
 - ~~Compatibilidade mobile insuficiente~~ ✅ v16 — media queries estendidas (768px e 480px), tabela terceiros scrollável, tabs com scrollbar fina
+- ~~Falta indicador visual de jogador pendurado/suspenso nos cards de jogo~~ ✅ v16 — `setPen` + `_winnerOf` com pen field, buttons aparecem automaticamente em KO games com empate
+- ~~Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão~~ ✅ v16 — onerror com outerHTML substitui imagem quebrada por emoji, evitando fallback carregado
+- ~~`parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)~~ ✅ v16 — todas as ocorrências corrigidas com radix 10
+- ~~Hash change causa scroll indesejado em mobile~~ ✅ v16 — scrollIntoView center no tabClick sincronizado
+- ~~Broadcast separator `·` corrompido em algumas entradas (ex: `Globo�SporTV�Caz�TV`) — possivelmente encoding issue~~ ✅ v16 — separadores normalizados nos dados inline, U+00B7 usado consistentemente
+- ~~Bandeiras piscando em mobile~~ ✅ v16 — flag() com onerror fallback (bandeira branca emoji), CSS com width/height explícitos, contain:layout no .game-card
+- ~~Erro de rede aparecendo na contagem regressiva~~ ✅ v16 — mensagens de erro separadas para #countdown-status, não sobrescrevem #countdown-next
+- ~~Jogos passados ocupam espaço sem necessidade~~ ✅ v16 — jogos passados ficam colapsados por padrão (só placar + grupo), expandem com clique no botão +. Próximo jogo aparece primeiro e recebe scroll automático
 - Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
-- Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão
-- `parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)
-- Hash change causa scroll indesejado em mobile
-- Broadcast separator `·` corrompido em algumas entradas (ex: `Globo�SporTV�Caz�TV`) — possivelmente encoding issue
 
 ### Itens resolvidos nesta sessão (v11 + v11.5)
 - ~~Convocados sem filtro~~ ✅ barra de busca com filtro em tempo real (país + jogador)
@@ -613,12 +628,12 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - **Nota**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API.
 
 ## Arquivos Relevantes (2026-06-12 v16)
-- `index.html` — app principal (v16, deploy GitHub Pages, ~182KB)
+- `index.html` — app principal (v16, deploy GitHub Pages, ~192KB)
 - `players.json` — dados dos 1248 jogadores (116KB)
 - `photos.json` — URLs das fotos dos jogadores (174KB)
 - `copa2026.html` — cópia de index.html (mantido por compatibilidade)
 - `Iniciar Copa.bat` — atalho para robot.ps1 (NÃO FUNCIONAL)
-- `sw.js` — Service Worker v16 (cache bump v15→v16 forçar refresh)
+- `sw.js` — Service Worker v18 (cache bump v17→v18 forçar refresh)
 - `opencode.json` — configuração OpenCode (aponta para AGENTS.md)
 - `.gitignore` — git ignore rules
 - `logo_globo.png`, `logo_sportv.png`, `logo_cazetv.png`, `logo_sbt.png`, `logo_nsports.png` — logos broadcast
