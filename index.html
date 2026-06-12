@@ -115,6 +115,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .team-col{font-size:var(--fs-sm);text-align:center}
 .team-row{display:flex;align-items:center;gap:6px;justify-content:center}
 .team-pending{font-style:italic;opacity:.6}
+.sus-badge{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;color:#ff9100;background:rgba(255,145,0,.12);padding:1px 5px;border-radius:4px;margin-left:4px;cursor:help;line-height:1.4}
 .flag{font-size:clamp(14px,2.5vw,20px);line-height:1;display:inline-flex;align-items:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
 .flag-bg,.flag-fallback{display:inline-block;width:24px;height:18px;border-radius:2px;vertical-align:middle;flex-shrink:0}
 .team-name{font-weight:500;color:var(--text);font-size:clamp(11px,1.7vw,15px)}
@@ -726,8 +727,35 @@ function dynRender(el, html){
   if(el.innerHTML===html)return;
   el.innerHTML = html;
 }
+function getSuspensions(){
+  var acc={};
+  Object.keys(cards).forEach(function(gn){
+    var g=GAMES.find(function(x){return x.n===parseInt(gn,10)});if(!g)return;
+    ['a','b'].forEach(function(side){
+      var tn=side==='a'?g.a:g.b,list=cards[gn][side];if(!list)return;
+      list.forEach(function(c){
+        if(!acc[tn])acc[tn]={};
+        if(!acc[tn][c.pname])acc[tn][c.pname]={y:0,r:0};
+        if(c.type==='yellow')acc[tn][c.pname].y++;
+        if(c.type==='red')acc[tn][c.pname].r++;
+      });
+    });
+  });
+  var out={};
+  Object.keys(acc).forEach(function(tn){
+    out[tn]=[];
+    Object.keys(acc[tn]).forEach(function(pn){
+      var s=acc[tn][pn];
+      if(s.r>0||s.y>=2)out[tn].push(pn);
+    });
+  });
+  return out;
+}
 function renderGameCard(g){
   var gn=g.n,s=scores[gn]||{},sa=s.a!==undefined?s.a:"",sb=s.b!==undefined?s.b:"";
+  var sus=getSuspensions(),susA=sus[g.a]||[],susB=sus[g.b]||[];
+  var susBadgeA=susA.length?'<span class="sus-badge" title="Suspensos: '+esc(susA.join(', '))+'">\u26A0 '+susA.length+'</span>':'';
+  var susBadgeB=susB.length?'<span class="sus-badge" title="Suspensos: '+esc(susB.join(', '))+'">\u26A0 '+susB.length+'</span>':'';
   var gaA=goals[gn]&&goals[gn].a?goals[gn].a:[],gaB=goals[gn]&&goals[gn].b?goals[gn].b:[];
   var caA=cards[gn]&&cards[gn].a?cards[gn].a:[],caB=cards[gn]&&cards[gn].b?cards[gn].b:[];
   var events=[];
@@ -742,7 +770,7 @@ function renderGameCard(g){
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
   var past=currentFilter==="all"&&gameIsPast(g);
-  return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
+   return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
     if(x.type==='goal'){
       var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
       var tn=x.display==='a'?g.a:g.b;

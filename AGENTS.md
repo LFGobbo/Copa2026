@@ -592,8 +592,6 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Sem rotina de auditoria entre dados locais e FIFA API~~ ✅ v16 — `auditData()` compara scores a cada poll/refresh, indicador visual ✓/⚠ no cabeçalho
 - ~~Menu de abas não rola ao clicar em categoria no limite~~ ✅ v16 — `scrollIntoView({inline:'center'})` no tabClick()
 - ~~Compatibilidade mobile insuficiente~~ ✅ v16 — media queries estendidas (768px e 480px), tabela terceiros scrollável, tabs com scrollbar fina
-- ~~Falta indicador visual de jogador pendurado/suspenso nos cards de jogo~~ ✅ v16 — `setPen` + `_winnerOf` com pen field, buttons aparecem automaticamente em KO games com empate
-- ~~Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão~~ ✅ v16 — onerror com outerHTML substitui imagem quebrada por emoji, evitando fallback carregado
 - ~~`parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)~~ ✅ v16 — todas as ocorrências corrigidas com radix 10
 - ~~Hash change causa scroll indesejado em mobile~~ ✅ v16 — scrollIntoView center no tabClick sincronizado
 - ~~Broadcast separator `·` corrompido em algumas entradas (ex: `Globo�SporTV�Caz�TV`) — possivelmente encoding issue~~ ✅ v16 — separadores normalizados nos dados inline, U+00B7 usado consistentemente
