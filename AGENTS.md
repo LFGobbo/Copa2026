@@ -731,3 +731,60 @@ ALTER TABLE participants ADD COLUMN IF NOT EXISTS confirmed boolean DEFAULT fals
 3. Digitar `bolaoSimular()` e Enter
 4. Ir na aba "Bolão" — ranking com 9 participantes aparece
 5. Para logar: usar um dos nomes (ex: "Maria Santos") com senha "sim123"
+
+---
+
+## Sessão 2026-06-12 — Bolão v2 (reescrita completa)
+
+### Estado do bolão após reescrita
+
+#### Fluxo completo
+1. Usuário abre aba Bolão → lê regras obrigatórias → clica "Participar"
+2. Faz login (nome + senha). Primeira vez: cria conta. Senha armazenada como SHA-256
+3. Preenche palpites especiais (campeão + artilheiro) — bloqueiam 2h antes do jogo #32
+4. Preenche placares de cada jogo (campo vazio = sem palpite, sem pontos)
+5. Conforme preenche, os confrontos do mata-mata atualizam automaticamente
+6. Empate em KO → dois botões aparecem → clica no time que passa → propaga a cascata
+7. Clica "Confirmar tudo" → tudo trava, não pode mais editar
+8. Acompanha ranking em tempo real
+
+#### Inputs do bolão
+- `type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2"`
+- Validação no blur: remove não-numéricos, limita a 2 dígitos (0-99)
+- Campo vazio = sem palpite (não salva, não pontua — nunca assume empate)
+- Salva no Supabase via `.then()` (não async/await para compatibilidade com blur listener)
+
+#### Simulação do bracket
+- `_bolaoGetScore(n)`: jogo < #7 → resultado real (`scores[n]`); jogo >= #7 → palpite (`_bolaoMyPicks[n]`); campo vazio → null
+- `_bolaoGroupStandings(letra)`: classificação do grupo pelos palpites (mesmos critérios do app: pts → SG → GF → H2H)
+- `_bolaoRankedThirds()`: 8 melhores 3ºs pelos palpites
+- `_bolaoWinnerOf(n)`: vencedor do KO — maior placar, ou `_bolaoKOPicks[n]` se empate
+- `_bolaoResolveTeam(placeholder, gameN)`: resolve "1° Grupo F", "V. Jogo 73", "0" usando simulação
+- `_bolaoTp(g, side)`: retorna HTML com nome/bandeira resolvido, ou placeholder em muted se ainda indeterminado
+
+#### Atualização dinâmica
+- `_bolaoKOHtml(g, pick, inputLocked)`: HTML dos botões de empate KO (extraída para reuso)
+- `_bolaoRefreshTeams()`: atualiza só os divs `#bolao-teams-{n}` e `#bolao-ko-{n}` sem recriar inputs
+- Chamada após cada `bolaoSavePick` e após `bolaoKOPick`
+
+#### Banco (Supabase)
+- Tabela `picks`: colunas `game_n, goals_a, goals_b, ko_pick` (ko_pick = 'a'|'b'|null)
+- SQL necessário se ainda não rodado:
+  ```sql
+  ALTER TABLE picks ADD COLUMN IF NOT EXISTS ko_pick text;
+  ```
+- Tabela `participants`: coluna `confirmed` (boolean, default false)
+  ```sql
+  ALTER TABLE participants ADD COLUMN IF NOT EXISTS confirmed boolean DEFAULT false;
+  ```
+
+#### Admin unlock (ofuscado)
+- Função: `_bAdm('SENHA', 'Nome do Participante')` no console DevTools
+- Senha está neste AGENTS.md na seção Supabase — Bolão
+- Não aparece no HTML de forma óbvia
+
+#### CSS
+- Classes antigas `bolao-*` mantidas para ranking e regras
+- Novas classes `bsp-*` para os cards de palpite (bsp-card, bsp-input, bsp-score-row, etc.)
+
+---
