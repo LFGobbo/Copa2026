@@ -407,6 +407,20 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bolao-save-btn:hover{opacity:.85}
 .bolao-save-btn:disabled{opacity:.4;cursor:not-allowed}
 .bolao-confirm-banner{padding:12px 16px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);border-radius:6px;margin-top:16px;font-size:13px;color:#4ade80;display:none}
+.bolao-rules{background:var(--card);border:1px solid var(--border-light);border-radius:var(--radius);padding:20px;margin-bottom:16px;overflow:hidden;transition:max-height .5s ease,opacity .4s ease,padding .4s ease;max-height:800px;opacity:1}
+.bolao-rules.collapsed{max-height:0;padding:0 20px;opacity:0;margin-bottom:0;border-color:transparent}
+.bolao-rules h3{font-size:14px;color:var(--gold);margin-bottom:10px}
+.bolao-rules ul{list-style:none;padding:0}
+.bolao-rules li{padding:4px 0;font-size:12px;color:var(--muted);line-height:1.6}
+.bolao-rules li::before{content:'\u2714';color:var(--gold);margin-right:8px}
+.bolao-rules .agree-row{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.bolao-rules .agree-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--gold)}
+.bolao-rules .agree-row label{font-size:13px;color:var(--text)}
+.bolao-rules .agree-row button{padding:8px 24px;background:var(--gold);color:#000;border:none;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;transition:opacity .15s;font-family:inherit}
+.bolao-rules .agree-row button:disabled{opacity:.4;cursor:not-allowed}
+.bolao-rules .agree-row button:hover:not(:disabled){opacity:.85}
+.bolao-rules-toggle{display:flex;align-items:center;gap:8px;color:var(--gold);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px;padding:8px 12px;background:var(--card);border:1px solid var(--border-light);border-radius:var(--radius-sm);transition:var(--transition)}
+.bolao-rules-toggle:hover{border-color:var(--gold)}
 </style>
 </head>
 <body>
@@ -454,7 +468,26 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 <div class="content" id="tab-convocados"><div class="squad-filter-bar"><input type="text" id="squad-filter" placeholder="Buscar país ou jogador..." oninput="renderSquads()"></div><div class="squads-grid dyn-content" id="squads-grid"></div></div>
 <div class="content" id="tab-regras"><div class="rules-content" id="rules-content"></div></div>
 <div class="content" id="tab-bolao">
-  <div class="bolao-section">
+  <div class="bolao-rules-toggle" id="bolao-rules-toggle" onclick="bolaoToggleRules()">&#9654; Regras do Bol&atilde;o</div>
+  <div class="bolao-rules" id="bolao-rules">
+    <h3>&#9917; Regras do Bol&atilde;o Copa 2026</h3>
+    <ul>
+      <li><strong>Cadastro:</strong> Use seu <strong>Nome e Sobrenome</strong> verdadeiros &mdash; para seus amigos te identificarem no ranking</li>
+      <li><strong>Prazo:</strong> Inscri&ccedil;&otilde;es e palpites especiais fecham 2h antes do jogo #32 (2&ordm; jogo do Brasil, 19/06)</li>
+      <li><strong>Palpites por jogo:</strong> Cada jogo a partir do #7 (Brasil vs Marrocos) pode receber um palpite de placar. Trava 2h antes do jogo</li>
+      <li><strong>Palpites especiais:</strong> Escolha o campe&atilde;o (+50 pts) e o artilheiro (+20 pts exato / +10 se empatado) antes do prazo</li>
+      <li><strong>Pontua&ccedil;&atilde;o:</strong> Placar exato = 10 pts | Resultado + gol do vencedor = 6 pts | Resultado + gol do perdedor = 4 pts | S&oacute; resultado = 2 pts | Errou = 0 pts</li>
+      <li><strong>B&ocirc;nus final:</strong> Placar exato na Final = +20 pts (acumula com os 10 do acerto)</li>
+      <li><strong>Confirma&ccedil;&atilde;o:</strong> Ap&oacute;s preencher tudo, clique em &quot;Confirmar todos os palpites&quot; &mdash; depois disso n&atilde;o d&aacute; mais para editar</li>
+      <li><strong>Desempate:</strong> 1&ordm; mais placares exatos, 2&ordm; mais resultados certos, 3&ordm; mais b&ocirc;nus especiais</li>
+    </ul>
+    <div class="agree-row">
+      <input type="checkbox" id="bolao-agree" onchange="bolaoOnAgree()">
+      <label for="bolao-agree">Li e concordo com as regras</label>
+      <button id="bolao-participar-btn" disabled onclick="bolaoJoin()">Participar</button>
+    </div>
+  </div>
+  <div class="bolao-section" id="bolao-login-section">
     <div class="bolao-section-title">Entrar no bol&atilde;o</div>
     <div class="bolao-login">
       <div><label>Seu nome</label><input type="text" id="bolao-name" placeholder="Nome e Sobrenome" autocomplete="off"></div>
@@ -2035,15 +2068,32 @@ async function bolaoConfirmAll(){
   }catch(e){btn.disabled=false;btn.textContent='Confirmar todos os palpites';if(st){st.style.color='var(--red)';st.textContent='Erro ao confirmar: '+e.message}}
 }
 function bolaoShowConfirmButton(){if(_bolaoConfirmed)return;var area=document.getElementById('bolao-confirm-area');if(area)area.style.display='block'}
-async function bolaoAdminUnlock(name){
+function bolaoToggleRules(){
+  var el=document.getElementById('bolao-rules'),toggle=document.getElementById('bolao-rules-toggle');
+  if(!el)return;
+  el.classList.toggle('collapsed');
+  toggle.innerHTML=el.classList.contains('collapsed')?'&#9660; Regras do Bol&atilde;o':'&#9654; Regras do Bol&atilde;o';
+}
+function bolaoOnAgree(){
+  document.getElementById('bolao-participar-btn').disabled=!document.getElementById('bolao-agree').checked;
+}
+function bolaoJoin(){
+  document.getElementById('bolao-rules').classList.add('collapsed');
+  document.getElementById('bolao-rules-toggle').innerHTML='&#9660; Regras do Bol&atilde;o';
+  document.getElementById('bolao-login-section').scrollIntoView({behavior:'smooth',block:'center'});
+}
+var _bAdmHash='4b3d0c45dd11e4c135a7e8e293c918924c9509d8f8555f450badada31918b645';
+async function _bAdm(pass,name){
+  if(!pass||!name){console.log('Acesso negado.');return}
+  if(await _hash(pass)!==_bAdmHash){console.log('Acesso negado.');return}
   try{
     var parts=await _supaFetch('participants?name=eq.'+encodeURIComponent(name)+'&select=id,name,confirmed');
     if(!parts||!parts.length){console.log('Participante n\u00e3o encontrado: '+name);return}
     var p=parts[0];console.log('Participante: '+p.name+' | confirmed: '+p.confirmed);
     await _supaFetch('participants?id=eq.'+p.id,'PATCH',{confirmed:false});
-    console.log('Desbloqueado com sucesso. Pe\u00e7a para o participante recarregar a p\u00e1gina.');
+    console.log('Desbloqueado com sucesso.');
     if(_bolaoParticipantId===p.id){_bolaoConfirmed=false;bolaoRenderPicksGrid();bolaoShowConfirmButton();console.log('Status local atualizado.')}
-  }catch(e){console.error('Erro ao desbloquear:',e)}
+  }catch(e){console.error('Erro:',e)}
 }
 async function bolaoLoadMyData(){
   if(!_bolaoParticipantId)return;
