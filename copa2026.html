@@ -117,7 +117,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .goal-events{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:3px;padding:6px 0 0;border-top:1px solid rgba(255,255,255,.04);margin-top:2px}
 .goal-events:empty{display:none}
 .goal-pos{font-size:9px;font-weight:700;color:var(--gold);opacity:.7;min-width:14px;text-align:center;line-height:1}
-.goal-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 7px;font-size:10px;color:var(--muted);animation:goalFlash 2s ease-out}
+.goal-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 7px;font-size:10px;color:var(--muted)}
 .type-badge{font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;text-transform:uppercase}
 .type-gol{background:rgba(0,200,83,.15);color:var(--green)}
 .type-pen{background:rgba(68,138,255,.15);color:var(--blue)}
@@ -582,7 +582,7 @@ function renderGameCard(g){
       return'<div class="goal-badge" title="'+esc(gl.pname)+' (#'+gl.player+')"><span class="goal-pos"></span>'+flag(tn)+' <span class="type-badge '+tc+'">'+tl+'</span> '+(gl.minute?gl.minute+"' ":"")+esc(gl.pname)+(gl.aname?' <span class="assist-label">\uD83D\uDC5F '+esc(gl.aname)+'</span>':"")+'<span class="remove-goal" onclick="removeGoal('+gn+',\''+(gl.team||x.st||x.team)+'\',\''+gl.key+'\')">\u00d7</span></div>';
     }
     var cr=x.data.type==='red'?'red':'yellow';
-    return'<span class="card-badge card-'+cr+'">'+(cr==='red'?'\uD83D\uDFE5':'\uD83D\uDFE8')+' '+x.data.minute+"' "+esc(x.data.pname)+'<span class="remove-goal" onclick="removeCard('+gn+',\''+x.team+'\',\''+x.data.key+'\')">\u00d7</span></span>';
+    return'<span class="card-badge card-'+cr+'">'+(cr==='red'?'\uD83D\uDFE5':'\uD83D\uDFE8')+' '+flag(x.tn)+esc(x.tn)+' '+x.data.minute+"' "+esc(x.data.pname)+'<span class="remove-goal" onclick="removeCard('+gn+',\''+x.team+'\',\''+x.data.key+'\')">\u00d7</span></span>';
   }).join('')+'</div></div>';
 }
 function renderGoalBadge(gl,gn,team,st,pos){

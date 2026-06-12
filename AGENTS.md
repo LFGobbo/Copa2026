@@ -286,7 +286,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-12 — Sessão v15 (dynRender fade suave, convocados bugfix file://, bracket SVG reescrito, resolveTeam anyPlayed, +2 hotfixes)**
+**2026-06-12 — Sessão v15 (slideUp removido, goalFlash removido, cartões com bandeira, CazéTV 20px, dynRender síncrono)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -299,13 +299,16 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 ## Versões
 
 ### v15 (atual — 2026-06-12)
-**Mudanças (verificação e refinamento das 4 melhorias):**
+**Mudanças (verificação e refinamento das 4 melhorias + anti-flicker final):**
 - **Flickering resolvido na raiz** — `dynRender(el, html)` com fade-out suave → troca de innerHTML no momento de menor visibilidade → fade-in. `style.opacity` + `setTimeout` calculado pela duração real da transição CSS. `.dyn-content` começa com `opacity: 1` (sem flash inicial)
 - **Convocados — bug file:// corrigido** — `renderSquads()` agora usa `grid.innerHTML` direto (síncrono) em vez de `dynRender()` assíncrono. O `IntersectionObserver` é montado **depois** que o DOM já está populado com os placeholders, garantindo que `querySelectorAll('li.squad-ph')` encontre todos os elementos. `rootMargin` aumentado de 200px para 300px. Layout mais leve: avatar 24×32, padding 4px, skeleton 36px, gap 6px
 - **Árvore do mata-mata reescrita** — SVG 1050×640+ com: título uma vez por coluna no topo com sublinhado colorido por rodada; conectores Bézier ligando jogos; vencedor em branco brilhante com `filter=url(#glow-gold)`; perdedor em cinza escuro; Brasil sempre em dourado; placar à direita; pendente com ponto discreto; `vs` some quando há placar; cards proporcionais à altura total; scrollbar fina
 - **resolveTeam() com anyPlayed** — time aparece com nome e bandeira assim que tem qualquer jogo jogado (anyPlayed), com `pending: !st.finished` para indicador sutil quando grupo em andamento. Sem bandeira enganosa para times que podem mudar
 - **Hotfix 1 — `onerror` sem escape** (`35639ee`): `onerror="this.style.display='none'"` tinha aspas simples soltas dentro de string JS delimitada por `'` → `SyntaxError`. Corrigido para `onerror="this.style.display=\'none\'"`
 - **Hotfix 2 — `id="assist-opts"` engolido** (`dd532a2`): o `str_replace` da sessão anterior removeu o fechamento do atributo `id`, resultando em `id="assist-const GAMES = [{"br":...`. O `"` que fecharia o atributo `id` acabou fechando numa string JSON, corrompendo a estrutura HTML e impedindo a tag `<script>const GAMES` de ser reconhecida. Corrigido restaurando `id="assist-opts"><button...`
+- **Flicker final eliminado** — removida `animation:slideUp .25s ease both` dos `.game-card` (104+ cards animando causavam "piscando por alguns segundos"). `dynRender` simplificado para `el.innerHTML = html` síncrono (sem rAF, sem delay de frame). CazéTV aumentado para 20px
+- **Animação goalFlash removida** — `.goal-badge` sem `animation:goalFlash 2s ease-out`
+- **Time identificado nos cartões** — card-badge agora mostra `🟨🇧🇷Brasil 45' Nome` com `flag(x.tn)` + nome do time
 
 ### v14 (2026-06-11)
 **Mudanças (re-aplicação incremental após revert total):**
@@ -523,14 +526,16 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~gameUTC com fuso correto (BRT)~~ ✅ v12
 - ~~Árbitro do Wikipedia~~ ✅ v14
 - ~~Ordem cronológica gols+cartões~~ ✅ v14
-- ~~Flickering na página~~ ✅ v14
+- ~~Flickering na página~~ ✅ v15 — `slideUp` removido, dynRender síncrono
 - ~~Transmissões TV (getv, globoplay, etc.)~~ ✅ v14 — Globoplay e Ge TV adicionados via script em todos os GAMES<br>
 - ~~3ºs lugares no bracket com formatação errada (bandeira + escrita)~~ ✅ v14 — resolveTeam corrigido: time conhecido mostra só nome+bandeira, pendente mostra "3º X" sem bandeira
 - ~~AO VIVO + countdown simultâneo~~ ✅ v14 — countdown mostra live games e próximo jogo lado a lado
 - ~~Live game pouco enfático~~ ✅ v14 — borda 2px, glow maior, dot 12px com glow, label maior
 - ~~Árbitro não aparecendo~~ ✅ v14 — regex corrigido para formato real `<div>Referee: <a>Nome</a>`
-- ~~Flickering ao atualizar~~ ✅ v14 — dynRender simplificado com rAF puro
+- ~~Flickering ao atualizar~~ ✅ v15 — slideUp removido, dynRender síncrono
 - ~~Logos Globoplay e Ge TV faltando~~ ✅ v14 — logos baixados e adicionados ao SW
+- ~~Animação goalFlash removida~~ ✅ v15
+- ~~Cartões sem identificação de time~~ ✅ v15 — card-badge agora mostra bandeira+nome
 - Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
 - Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão
 - `parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)
