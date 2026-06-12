@@ -528,34 +528,40 @@ function setFilter(f,e){
   currentFilter=f;renderGames(f);
 }
 function renderGames(filter){
-  var el=document.getElementById("games-list");
-  if(!document.querySelector(".filters").children.length){
+  var el=document.getElementById("games-list"),fl=document.querySelector(".filters");
+  if(!fl.children.length){
     var groups=["all"].concat(GROUP_ORDER);
-    document.querySelector(".filters").innerHTML=groups.map(function(g){return'<button class="filter-btn'+(g===filter?' active':'')+(g!=='all'?' group-'+g:'')+'" onclick="setFilter(\''+g+'\',event)">'+(g==="all"?"Todas":GROUP_NAMES[g]||g)+'</button>'}).join("");
+    fl.innerHTML=groups.map(function(g){return'<button class="filter-btn'+(g===filter?' active':'')+(g!=='all'?' group-'+g:'')+'" onclick="setFilter(\''+g+'\',event)">'+(g==="all"?"Todas":GROUP_NAMES[g]||g)+'</button>'}).join("");
   }
   var games=GAMES;
   if(filter!=="all")games=games.filter(function(g){return g.f===GROUP_NAMES[filter]||g.f===filter});
   games.sort(function(a,b){return a.n-b.n});
+  el.style.opacity='0.5';el.style.transition='opacity .15s';
   el.innerHTML=games.map(function(g){return renderGameCard(g)}).join("");
+  el.style.opacity='';
   document.querySelectorAll(".score-input").forEach(function(i){i.addEventListener("input",scoreInput)});
 }
 function renderGameCard(g){
   var gn=g.n,s=scores[gn]||{},sa=s.a!==undefined?s.a:"",sb=s.b!==undefined?s.b:"";
   var gaA=goals[gn]&&goals[gn].a?goals[gn].a:[],gaB=goals[gn]&&goals[gn].b?goals[gn].b:[];
   var caA=cards[gn]&&cards[gn].a?cards[gn].a:[],caB=cards[gn]&&cards[gn].b?cards[gn].b:[];
-  var allGoals=[];
-  gaA.forEach(function(gl){allGoals.push({gl:gl,team:'a',display:gl.type==='own'?'b':'a',st:'a'})});
-  gaB.forEach(function(gl){allGoals.push({gl:gl,team:'b',display:gl.type==='own'?'a':'b',st:'b'})});
-  allGoals.sort(function(x,y){return(parseInt(x.gl.minute)||0)-(parseInt(y.gl.minute)||0)});
-  var allCards=[];caA.forEach(function(c){allCards.push({card:c,team:'a',tn:g.a})});caB.forEach(function(c){allCards.push({card:c,team:'b',tn:g.b})});
-  allCards.sort(function(x,y){return(parseInt(x.card.minute)||0)-(parseInt(y.card.minute)||0)});
-  var cardsHTML=allCards.map(function(x){var cr=x.card.type==='red'?'red':'yellow';return'<span class="card-badge card-'+cr+'">'+(cr==='red'?'\uD83D\uDFE5':'\uD83D\uDFE8')+' '+x.card.minute+"' "+esc(x.card.pname)+'<span class="remove-goal" onclick="removeCard('+gn+',\''+x.team+'\',\''+x.card.key+'\')">\u00d7</span></span>'}).join('');
+  var events=[];
+  gaA.forEach(function(gl){events.push({t:'g',gl:gl,team:'a',display:gl.type==='own'?'b':'a',st:'a'})});
+  gaB.forEach(function(gl){events.push({t:'g',gl:gl,team:'b',display:gl.type==='own'?'a':'b',st:'b'})});
+  caA.forEach(function(c){events.push({t:'c',card:c,team:'a',tn:g.a})});
+  caB.forEach(function(c){events.push({t:'c',card:c,team:'b',tn:g.b})});
+  events.sort(function(x,y){var a=x.t==='g'?x.gl.minute:x.card.minute,b=y.t==='g'?y.gl.minute:y.card.minute;return(parseInt(a)||0)-(parseInt(b)||0)});
+  var evHTML=events.map(function(ev){
+    if(ev.t==='g'){var gl=ev.gl;return renderGoalBadge(gl,gn,ev.display,ev.st,0)}
+    var c=ev.card,cr=c.type==='red'?'red':'yellow';
+    return'<span class="card-badge card-'+cr+'">'+(cr==='red'?'\uD83D\uDFE5':'\uD83D\uDFE8')+' '+c.minute+"' "+esc(c.pname)+'</span>';
+  }).join('');
   var isGroup=g.f&&g.f.startsWith("Grupo"),isFinal=g.f==="Final";
   var grpL=isGroup?g.f.split(' ')[1]:'';
   var phaseClass=isFinal?"final":isGroup?"group group-"+grpL:"knockout";
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
-  return'<div class="game-card'+(live?" live":"")+'" id="g-'+gn+'"><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span><div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+teamRow(g.a,g.a==="Brasil"?" brazil":"")+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+teamRow(g.b,g.b==="Brasil"?" brazil":"")+'</div><div class="goal-events">'+allGoals.map(function(x,i){return renderGoalBadge(x.gl,gn,x.display,x.st,i+1)}).join('')+cardsHTML+'</div></div>';
+  return'<div class="game-card'+(live?" live":"")+'" id="g-'+gn+'"><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span><div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+teamRow(g.a,g.a==="Brasil"?" brazil":"")+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+teamRow(g.b,g.b==="Brasil"?" brazil":"")+'</div><div class="goal-events">'+evHTML+'</div></div>';
 }
 function renderGoalBadge(gl,gn,team,st,pos){
   var tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
@@ -1281,14 +1287,13 @@ setTimeout(function(){
 },0);
 function _fetchWikiRefs(letter){
   var grp=GAMES.filter(function(g){return g.f==='Grupo '+letter}).sort(function(a,b){return a.n-b.n});
-  fetch('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&titles=2026_FIFA_World_Cup_Group_'+letter+'&prop=extracts&explaintext=1')
+  fetch('https://en.wikipedia.org/w/api.php?action=parse&format=json&origin=*&page=2026_FIFA_World_Cup_Group_'+letter+'&prop=text')
     .then(function(r){return r.json()}).then(function(d){
-      var pages=d.query.pages,id=Object.keys(pages)[0],txt=pages[id].extract||'';
-      var refs=[],m=txt.match(/Referee:\s*(.+?)\s*\(/g);
-      if(m)m.forEach(function(r){var n=r.match(/Referee:\s*(.+?)\s*\(/);if(n&&n[1])refs.push(n[1].trim())});
+      var html=d.parse.text['*']||'';
+      var refs=[];html.replace(/Referee:\s*<a[^>]*>([^<]+)<\/a>\s*\(<a[^>]*>([^<]+)<\/a>\)/g,function(m,n,c){refs.push(n+' ('+c+')')});
       for(var i=0;i<refs.length&&i<grp.length;i++)REFEREES[grp[i].n]=refs[i];
       renderGames(currentFilter);
-    }).catch(function(){});
+    }).catch(function(e){console.warn('Wiki refs failed:',e?e.message:'')});
 }
 function loadAllReferees(){GROUP_ORDER.forEach(function(l){setTimeout(function(){_fetchWikiRefs(l)},600*GROUP_ORDER.indexOf(l))})}
 loadAllReferees();
