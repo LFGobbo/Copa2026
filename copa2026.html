@@ -165,6 +165,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .rank-bronze{color:#cd7f32}
 .third-container{max-width:650px;margin:20px auto 0}
 .third-title{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:10px;text-align:center}
+.third-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius)}
 .third-table{width:100%;border-collapse:collapse;font-size:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
 .third-table th{background:rgba(0,0,0,.35);padding:6px 8px;text-align:center;color:var(--muted);font-size:9px;text-transform:uppercase;font-weight:600;letter-spacing:.5px}
 .third-table td{padding:5px 8px;text-align:center;border-bottom:1px solid rgba(255,255,255,.025);font-size:11px}
@@ -257,6 +258,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .header-left,.header-mascots{display:none}
   .header-content{padding:14px 16px}
   .header h1{font-size:22px}
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
   .tab{padding:12px 14px;font-size:12px}
   .game-card{grid-template-columns:1fr auto;gap:4px 6px;padding:10px}
   .game-info{grid-column:1/-1}
@@ -266,13 +268,28 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .groups-grid,.squads-grid{grid-template-columns:1fr}
   .bracket-round{min-width:130px}
   .content{padding:12px}
+  .popup{padding:16px;width:96%}
+  .goal-btn,.card-btn{font-size:10px;padding:3px 6px}
+  .squad-player{font-size:10px;padding:3px 6px}
+  .squad-avatar{width:22px;height:28px}
+  .countdown-bar{gap:4px;flex-wrap:wrap}
+  .countdown-label{font-size:10px}
+  .countdown-time{font-size:13px}
 }
 @media(max-width:480px){
   .header h1{font-size:18px}
-  .content{padding:10px}
-  .game-card{padding:8px}
-  .score-input{width:24px;height:26px;font-size:14px}
-  .filter-btn{padding:4px 10px;font-size:11px}
+  .header-content{padding:10px}
+  .content{padding:8px}
+  .game-card{padding:6px;gap:3px}
+  .score-input{width:22px;height:24px;font-size:13px;padding:0}
+  .filter-btn{padding:3px 8px;font-size:10px}
+  .filter-bar{gap:4px}
+  .tab{padding:10px 10px;font-size:11px;gap:4px}
+  .tab .tab-icon{font-size:14px}
+  .third-table td,.third-table th{padding:4px 5px;font-size:10px}
+  .squad-card{font-size:10px}
+  .squad-header{padding:8px}
+  .refresh-btn{width:28px;height:28px;font-size:15px}
 }
 
 
@@ -332,12 +349,12 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 </div>
 <div class="content" id="tab-grupos">
   <div class="groups-grid dyn-content" id="groups-grid"></div>
-  <div class="third-container" id="third-container">
-    <div class="third-title">📋 Melhores Terceiros Colocados</div>
-    <table class="third-table" id="third-table">
-      <tr><th>#</th><th style="text-align:left">Grupo</th><th style="text-align:left">Seleção</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th><th>Status</th></tr>
-    </table>
-  </div>
+    <div class="third-container" id="third-container">
+      <div class="third-title">📋 Melhores Terceiros Colocados</div>
+      <div class="third-wrap"><table class="third-table" id="third-table">
+        <tr><th>#</th><th style="text-align:left">Grupo</th><th style="text-align:left">Seleção</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th><th>Status</th></tr>
+      </table></div>
+    </div>
 </div>
 <div class="content" id="tab-mata-mata">
   <div class="bracket-toggle">
@@ -500,6 +517,8 @@ function tabClick(){
   document.querySelectorAll(".content").forEach(function(c){c.classList.remove("active")});
   this.classList.add("active");
   document.getElementById("tab-"+tab).classList.add("active");
+  // Rola o menu para mostrar a tab ativa (importante no celular)
+  try{this.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})}catch(e){}
   if(tab==="grupos")renderGroups();
   if(tab==="mata-mata")renderBracket();
   if(tab==="artilheiros")renderScorers();

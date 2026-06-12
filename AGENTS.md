@@ -325,6 +325,9 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 - **Seed dados reais (FIFA Timeline API)** — Jogo 1 (México 2×0 África do Sul) e Jogo 2 (Coreia do Sul 2×1 Rep. Tcheca) com gols, assistências e cartões extraídos da FIFA API manualmente e injetados como seed inicial. Só aplica se localStorage vazio. 5 gols, 7 cartões no total
 - **Destaque na busca de convocados** — Quando há filtro ativo, jogadores que correspondem à busca recebem classe `squad-player-match` (background dourado sutil + borda esquerda + nome em negrito). Times com nome correspondente recebem `squad-team-match` (borda dourada + glow). Apenas times com ao menos um match continuam visíveis
 - **Auditoria de dados (auditData)** — `auditData()` compara scores locais vs FIFA API e exibe indicador `✓ N` (íntegro) ou `⚠ N` (divergências) ao lado do botão refresh. Auto-executa 3s após carregar, após cada mergeScores() do polling, e no refresh manual. CSS: `.audit-badge.ok` (verde), `.warn` (amarelo), `.err` (vermelho)
+- **Tab bar scroll automático** — `tabClick()` agora executa `this.scrollIntoView({inline:'center'})` para garantir que a tab ativa fique visível no celular
+- **Mobile improvements** — `@media(max-width:768px)` estendido: `.tabs` com `scrollbar-width:thin`, popup mais largo, botões de gol/cartão menores, avatar menor, contagem regressiva wrap. `@media(max-width:480px)` estendido: fonte header 18px, inputs menores, tabela terceiros com padding reduzido
+- **Tabela terceiros scrollável** — `third-wrap` div com `overflow-x:auto` + `-webkit-overflow-scrolling:touch` para evitar overflow em mobile
 
 ### v15 (2026-06-12)
 **Mudanças (verificação e refinamento das 4 melhorias + anti-flicker final):**
@@ -569,6 +572,8 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Seed inicial sem dados dos primeiros jogos~~ ✅ v16 — FIFA Timeline API: México 2×0 África do Sul, Coreia do Sul 2×1 Rep. Tcheca. 5 gols, 7 cartões injetados
 - ~~Busca em convocados sem destaque visual~~ ✅ v16 — jogador correspondente ganha background dourado + borda + nome negrito; time correspondente ganha borda dourada + glow
 - ~~Sem rotina de auditoria entre dados locais e FIFA API~~ ✅ v16 — `auditData()` compara scores a cada poll/refresh, indicador visual ✓/⚠ no cabeçalho
+- ~~Menu de abas não rola ao clicar em categoria no limite~~ ✅ v16 — `scrollIntoView({inline:'center'})` no tabClick()
+- ~~Compatibilidade mobile insuficiente~~ ✅ v16 — media queries estendidas (768px e 480px), tabela terceiros scrollável, tabs com scrollbar fina
 - Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
 - Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão
 - `parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)
