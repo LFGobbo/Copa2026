@@ -286,12 +286,13 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 ### v14 (atual — 2026-06-11)
 **Mudanças (re-aplicação incremental após revert total):**
 - **3ºs lugares no bracket corrigidos** — `resolveTeam()` para placeholder `"0"`: quando o time é conhecido (finished), mostra apenas o nome do time com bandeira (sem `(3° Grupo X)` redundante). Quando pendente, mostra `"3° Grupo X"` sem bandeira (evita bandeira enganosa de time que pode mudar)
-- **Árbitro via Wikipedia action=parse** — trocado de `action=query&prop=extracts` (sem infobox) para `action=parse&prop=text` (HTML completo). Regex `/Referee:<\/th>\s*<td>(?:<a[^>]*>)?([^<]+?)(?:<\/a>)?\s*\(<a[^>]*>([^<]+?)<\/a>/gi` extrai nome do árbitro do infobox
+- **Árbitro via Wikipedia action=parse** — trocado de `action=query&prop=extracts` para `action=parse&prop=text`. Regex `/Referee:\s*<a[^>]*>([^<]+)<\/a>\s*\(<a[^>]*>([^<]+)<\/a>/gi` (formato `<div>Referee: <a>Nome</a> (<a>País</a>)</div>`, NÃO `<th><td>`)
 - **Ordem cronológica gols+cartões** — `renderGameCard()` merge goals e cards em único array `events`, ordenado por minuto. Renderização unificada no `events.map()`
-- **Flickering resolvido** — nova função `dynRender(el, html)`: remove classe `.show`, força reflow, seta innerHTML via rAF, adiciona `.show` via rAF aninhado. CSS `.dyn-content` com `opacity:0→1` e `transition:.1s`. Aplicado em games-list, groups-grid, bracket-cards, bracket-tree, scorers-list, squads-grid
+- **Flickering resolvido** — `dynRender(el, html)` simplificado: `requestAnimationFrame(function(){el.innerHTML = html})` sem opacity/visibility. CSS `.dyn-content` removido. O rAF sozinho já previne flicker ao batchar DOM changes num único paint cycle
 - **Live game mais enfático** — `.game-card.live`: borda mais grossa (2px), glow maior (box-shadow 24px, inset 40px), `.live-dot` maior (12px) com glow vermelho, `.live-label` maior (11px) com text-shadow pulsing
 - **Countdown simultâneo** — `updateCountdown()` mostra AO VIVO e próximo jogo ao mesmo tempo. Live games no `#countdown-display` (el.innerHTML) e próximo jogo com contagem regressiva no `#countdown-next` (ne.innerHTML)
-- **Transmissões Globoplay/Ge TV** — add pós-carga no GAMES (onde tem Globo → Globoplay, SBT → Ge TV). `broadcastBadge()` reconhece os novos canais (sem logo, fallback texto)
+- **Transmissões Globoplay/Ge TV** — add pós-carga no GAMES (onde tem Globo → Globoplay, SBT → Ge TV). Logos `logo_globoplay.png` e `logo_getv.png` baixados do logodownload.org. `broadcastBadge()` agora usa logos para ambos
+- **SW v15** — bump v14→v15, adicionados `logo_globoplay.png` e `logo_getv.png` ao STATIC cache
 - `renderGoalBadge()` mantida mas não usada (events merge usa render inline)
 
 ### v13 (2026-06-11)
@@ -503,6 +504,9 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~3ºs lugares no bracket com formatação errada (bandeira + escrita)~~ ✅ v14 — resolveTeam corrigido: time conhecido mostra só nome+bandeira, pendente mostra "3º X" sem bandeira
 - ~~AO VIVO + countdown simultâneo~~ ✅ v14 — countdown mostra live games e próximo jogo lado a lado
 - ~~Live game pouco enfático~~ ✅ v14 — borda 2px, glow maior, dot 12px com glow, label maior
+- ~~Árbitro não aparecendo~~ ✅ v14 — regex corrigido para formato real `<div>Referee: <a>Nome</a>`
+- ~~Flickering ao atualizar~~ ✅ v14 — dynRender simplificado com rAF puro
+- ~~Logos Globoplay e Ge TV faltando~~ ✅ v14 — logos baixados e adicionados ao SW
 - Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
 - Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão
 - `parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)
