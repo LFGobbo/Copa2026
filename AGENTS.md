@@ -285,11 +285,11 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ### v13 (atual — 2026-06-11)
 **Mudanças:**
-- **Árbitro funcional** — Wikipedia scraper trocado de `action=query&prop=extracts` (que NÃO retorna dados de infobox) para `action=parse` (HTML completo). Regex ajustado para `<a>Nome</a> (<a>País</a>)`. Agora exibe corretamente o árbitro no card do jogo
+- **Árbitro funcional** — Wikipedia scraper trocado de `action=query&prop=extracts` (que NÃO retorna dados de infobox) para `action=parse` (HTML completo). Regex ajustado para `<a>Nome</a> (<a>País</a>)`. Exibe corretamente no card do jogo
 - **Ordem cronológica gols+cartões** — `renderGameCard()` merge goals e cards em único array `events`, ordenado por minuto
-- **Flickering resolvido** — CSS `.dyn-content` com `opacity:0` + `body.render-ready` evita flash inicial. Re-renders usam `requestAnimationFrame` para fade-out/in suave
-- **Regras de cartões/suspensões** — nova seção na aba Regras explicando: 2 amarelos = suspensão, pendurado (1 amarelo), vermelho direto, zeragem após quartas de final
-- **Botão remover cartão removido** — cartões agora são apenas automáticos (via timeline API), sem botão × para remover (economiza espaço)
+- **Flickering resolvido** — CSS `.dyn-content` com transição, `requestAnimationFrame` em re-renders. Primeiro render é síncrono (sem delay)
+- **Regras de cartões/suspensões** — nova seção na aba Regras: 2 amarelos = suspensão, pendurado, vermelho direto, zeragem após quartas
+- **Transmissões atualizadas** — adicionados Globoplay (espelha Globo, 55 jogos) e Ge TV (espelha SBT, 32 jogos) em todos os `br` do GAMES. `broadcastBadge()` reconhece os novos canais
 
 ### v12 (2026-06-11)
 **Mudanças:**
@@ -488,7 +488,8 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Ordem cronológica gols+cartões~~ ✅ v13
 - ~~Flickering na página~~ ✅ v13
 - ~~Regras de cartões/suspensões~~ ✅ v13
-- Transmissões TV (getv, globoplay, etc.) — hardcoded no campo `br` do GAMES. Esperando usuário informar dados atualizados
+- ~~Transmissões TV (getv, globoplay, etc.)~~ ✅ v13 — Globoplay e Ge TV adicionados via script em todos os GAMES<br>
+- Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
 - Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão
 - `parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)
 - Hash change causa scroll indesejado em mobile
