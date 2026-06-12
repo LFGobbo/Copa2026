@@ -271,20 +271,26 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-11 — Sessão v11.10 (correção grupos I/J, cross-browser, SW, live detection)**
+**2026-06-11 — Sessão v12 (JSON externo, virtualização, bracket automático, SW refinado)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
 
 ## Restrições
-- HTML único, sem build tools, sem Node.js/Python
-- Windows PowerShell 5.1 para extração de dados do Excel e robô de placares
+- HTML principal (~170KB) com dados essenciais inline (GAMES, GROUPS); dados pesados (PLAYERS, PLAYER_PHOTOS) em JSON externo
+- Zero build tools, sem Node.js/Python — HTML puro + JSON + SW
 - Dados de `Copa_2026_Completa.xlsx` (3 sheets: Jogos, Grupos & Chaveamento, _Dados)
 
 ## Versões
 
-### v11.10 (atual — 2026-06-11)
+### v12 (atual — 2026-06-11)
 **Mudanças:**
+- **JSON externo** — PLAYERS (48 times, 1248 jogadores) e PLAYER_PHOTOS (951 fotos) extraídos para `players.json` (116KB) e `photos.json` (174KB). HTML caiu de 499KB para 170KB (−66%). Carregamento via XMLHttpRequest com graceful degradation: app funciona sem convocados se os JSONs não carregarem
+- **Virtualização com IntersectionObserver** — `renderSquads()` não gera mais 1248 `<li>` preenchidos. Gera placeholders de 44px com shimmer animation. IntersectionObserver com rootMargin 200px hidrata cada jogador individualmente ao entrar na viewport
+- **Bracket com propagação automática** — `resolveTeam()` resolve placeholders: `"1°/2° Grupo X"` via `_groupStandings(letter)` com H2H; `"V. Jogo N"` via `_winnerOf(N)` pelo placar; `"Perd. Jogo N"` via `_loserOf(N)`; `"0"` (vaga 3º colocado) via `_rankedThirds()` com 8 melhores em 7 critérios. SVG reescrito (1050×640) com legendas, cores por fase, vencedor em dourado
+- **SW reescrito (v12)** — `STATIC` e `DATA` separados. Assets estáticos: cache-first. JSONs (`players.json`, `photos.json`): stale-while-revalidate (serve do cache imediatamente, atualiza em background). HTML: network-first com cache fallback (não fica preso em versão antiga). Demais requests (FIFA API, imagens externas): network-first.
+
+### v11.10**
 - **Correção grupos I/J** — dados de GAMES e GROUPS estavam com times trocados entre grupos I e J (Argentina, Argélia, Áustria, Jordânia no I; França, Iraque, Noruega, Senegal no J). Jogo #20 movido de G para I. 11 jogos afetados (#17-#72). Todas as tabelas de classificação agora estão corretas
 - **window.event eliminado** — `setFilter()`, `selectPlayer()`, `selectAssist()`, `selectGoalType()` agora aceitam parâmetro `e` explícito. Funciona no Firefox/Safari (não dependem mais de `window.event` legado do Chrome)
 - **saveState() com try/catch** — se localStorage estourar cota, não quebra mais a execução do app
@@ -422,7 +428,7 @@ copa2026.html (no navegador)
 FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap` com todos os 48. Casamento é feito por nome completo (português) entre FIFA traduzido e GAMES do HTML.
 
 ## Status Atual do Site
-- **Repositório**: `github.com/LFGobbo/Copa2026` (master)
+- **Repositório**: `github.com/LFGobbo/Copa2026` (master, v12)
 - **GitHub Pages**: ATIVADO em `https://lfgobbo.github.io/Copa2026/`
 - **FIFA API**: Fetch direto do navegador com CORS aberto (`Access-Control-Allow-Origin: *`). Timeout 10s (manual) / 8s (polling).
 - **Robô alternativo**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API com polling a cada 10s.
@@ -458,10 +464,10 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Cartões amarelo/vermelho~~ ✅ implementado v11.10
 - ~~Meta tags OG~~ ✅ adicionadas v11.10
 - ~~Dead data sa/sb~~ ✅ removido v11.10
-- Bracket com propagação automática de vencedores (lógica complexa de chaveamento)
-- Virtualização da lista de convocados (renderSquads bloqueia thread com 1248+ elementos)
-- Extrair PLAYERS + PLAYER_PHOTOS + GAMES para JSON externo
-- Adicionar suporte a Type 41/42/43 da timeline (vermelho 2º amarelo)
+- ~~Bracket com propagação automática~~ ✅ implementado v12
+- ~~Virtualização renderSquads~~ ✅ IntersectionObserver v12
+- ~~Extrair dados para JSON externo~~ ✅ players.json + photos.json v12
+- Adicionar suporte a Type 41/42/43 da timeline (cartão vermelho 2º amarelo)
 
 ### Itens resolvidos nesta sessão (v11 + v11.5)
 - ~~Convocados sem filtro~~ ✅ barra de busca com filtro em tempo real (país + jogador)
@@ -496,10 +502,12 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - **Nota**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API.
 
 ## Arquivos Relevantes (2026-06-11)
-- `index.html` — app principal (v11.10, deploy GitHub Pages)
-- `copa2026.html` — cópia de index.html (mantido por compatibilidade, não editar separadamente)
-- `Iniciar Copa.bat` — atalho para robot.ps1 (NÃO FUNCIONAL — robot.ps1 não existe)
-- `sw.js` — Service Worker (cache offline, rede primeiro com fallback cache)
+- `index.html` — app principal (v12, deploy GitHub Pages, 170KB)
+- `players.json` — dados dos 1248 jogadores (116KB)
+- `photos.json` — URLs das fotos dos jogadores (174KB)
+- `copa2026.html` — cópia de index.html (mantido por compatibilidade)
+- `Iniciar Copa.bat` — atalho para robot.ps1 (NÃO FUNCIONAL)
+- `sw.js` — Service Worker v12 (cache-first assets, stale-while-revalidate JSONs, network-first HTML)
 - `opencode.json` — configuração OpenCode (aponta para AGENTS.md)
 - `.gitignore` — git ignore rules
 - `logo_globo.png`, `logo_sportv.png`, `logo_cazetv.png`, `logo_sbt.png`, `logo_nsports.png` — logos broadcast
