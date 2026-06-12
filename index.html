@@ -181,7 +181,6 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .countdown-live{color:var(--red);font-weight:800;font-size:13px;animation:pulse 1s infinite}
 .countdown-sep{color:var(--border-light);margin:0 8px}
 .countdown-games{font-size:12px;color:var(--text)}
-.dyn-content{opacity:0;transition:opacity .1s ease}.dyn-content.show{opacity:1}
 .squad-filter-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .squad-filter-bar input{flex:1;min-width:180px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:inherit}
 .squad-filter-bar input:focus{outline:none;border-color:var(--gold)}
@@ -392,7 +391,7 @@ function gameUTC(g){try{var p=g.d.split(" ")[0].split("/"),tp=g.t.split(":");if(
 function toBRT(g){try{var gd=gameUTC(g);if(!gd)return'';var br=new Date(gd-10800000);return br.getUTCHours().toString().padStart(2,'0')+':'+br.getUTCMinutes().toString().padStart(2,'0')}catch(e){return''}}
 
 function flag(t){var c=FLAG_ISO[t];return c?'<img class="flag-img" src="https://flagcdn.com/24x18/'+c+'.png" alt="'+t+'" loading="lazy">':'<span style="font-size:18px">\u{1F3F3}\uFE0F</span>'}
-function broadcastBadge(br){if(!br)return'';var m={'Globo':'logo_globo.png','SporTV':'logo_sportv.png','Caz\u00e9TV':'logo_cazetv.png','SBT':'logo_sbt.png','N Sports':'logo_nsports.png','Globoplay':'','Ge TV':''};return br.split(/\u00b7/).map(function(c){c=c.trim();if(!c)return'';var k=m[c];return k?'<span class="br-badge"><img class="br-logo" src="'+k+'" alt="'+c+'">'+c+'</span>':'<span class="br-badge">'+c+'</span>'}).filter(function(s){return s}).join('')}
+function broadcastBadge(br){if(!br)return'';var m={'Globo':'logo_globo.png','SporTV':'logo_sportv.png','Caz\u00e9TV':'logo_cazetv.png','SBT':'logo_sbt.png','N Sports':'logo_nsports.png','Globoplay':'logo_globoplay.png','Ge TV':'logo_getv.png'};return br.split(/\u00b7/).map(function(c){c=c.trim();if(!c)return'';var k=m[c];return k?'<span class="br-badge"><img class="br-logo" src="'+k+'" alt="'+c+'">'+c+'</span>':'<span class="br-badge">'+c+'</span>'}).filter(function(s){return s}).join('')}
 function teamRow(n,c){return'<div class="team-row"><span class="flag">'+flag(n)+'</span><span class="team-name'+c+'">'+esc(n)+'</span></div>'}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 if(!Object.values)Object.values=function(o){return Object.keys(o).map(function(k){return o[k]})};
@@ -546,12 +545,7 @@ function renderGames(filter){
   document.querySelectorAll(".score-input").forEach(function(i){i.addEventListener("input",scoreInput)});
 }
 function dynRender(el, html){
-  el.classList.remove('show');
-  void el.offsetWidth;
-  requestAnimationFrame(function(){
-    el.innerHTML = html;
-    requestAnimationFrame(function(){el.classList.add('show')});
-  });
+  requestAnimationFrame(function(){el.innerHTML = html});
 }
 function renderGameCard(g){
   var gn=g.n,s=scores[gn]||{},sa=s.a!==undefined?s.a:"",sb=s.b!==undefined?s.b:"";
@@ -1301,7 +1295,7 @@ function _fetchWikiRefs(letter){
   fetch('https://en.wikipedia.org/w/api.php?action=parse&format=json&origin=*&page=2026_FIFA_World_Cup_Group_'+letter+'&prop=text')
     .then(function(r){return r.json()}).then(function(d){
       var txt=d.parse&&d.parse.text&&d.parse.text['*']||'';
-      var refs=[],rx=/Referee:<\/th>\s*<td>(?:<a[^>]*>)?([^<]+?)(?:<\/a>)?\s*\(<a[^>]*>([^<]+?)<\/a>/gi;
+      var refs=[],rx=/Referee:\s*<a[^>]*>([^<]+)<\/a>\s*\(<a[^>]*>([^<]+)<\/a>/gi;
       var m;while((m=rx.exec(txt))!==null)refs.push(m[1].trim());
       for(var i=0;i<refs.length&&i<grp.length;i++)REFEREES[grp[i].n]=refs[i];
       renderGames(currentFilter);
