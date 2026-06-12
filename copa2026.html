@@ -728,29 +728,57 @@ function dynRender(el, html){
   el.innerHTML = html;
 }
 function getSuspensions(forGame){
-  var acc={};
-  GAMES.forEach(function(g){
+  // Simula jogos ANTERIORES a forGame para saber quem cumpre suspensão AGORA
+  var state={}; // team -> player -> {yellows:int, suspended:bool, redCard:bool}
+  GAMES.slice().sort(function(a,b){return a.n-b.n}).forEach(function(g){
     var gn=g.n;
-    // Só cartões de jogos ANTERIORES a este
     if(gn>=forGame)return;
-    // Reset após quartas (jogo 100): para jogos 101+, só conta cartões 101+
-    if(forGame>100&&gn<=100)return;
     var c=cards[gn];if(!c)return;
+    // Reset após quartas (jogo 100): zera amarelos mas vermelhos continuam
+    if(gn===100){
+      Object.keys(state).forEach(function(tn){
+        Object.keys(state[tn]).forEach(function(pn){
+          var ps=state[tn][pn];
+          ps.yellows=0;
+          if(!ps.redCard)ps.suspended=false; // suspensão por amarelo expira
+        });
+      });
+    }
+    // Quem estava suspenso CUMPRE a suspensão NESTE jogo → libera
+    ['a','b'].forEach(function(side){
+      var tn=side==='a'?g.a:g.b;
+      if(state[tn])Object.keys(state[tn]).forEach(function(pn){
+        if(state[tn][pn].suspended){state[tn][pn].suspended=false;state[tn][pn].yellows=0;state[tn][pn].redCard=false}
+      });
+    });
+    // Processa cartões DESTE jogo (afetam o PRÓXIMO)
     ['a','b'].forEach(function(side){
       var tn=side==='a'?g.a:g.b,list=c[side];if(!list)return;
       list.forEach(function(card){
-        if(!acc[tn])acc[tn]={};
-        if(!acc[tn][card.pname])acc[tn][card.pname]={y:0,r:0};
-        if(card.type==='yellow')acc[tn][card.pname].y++;
-        if(card.type==='red')acc[tn][card.pname].r++;
+        if(!state[tn])state[tn]={};
+        if(!state[tn][card.pname])state[tn][card.pname]={yellows:0,suspended:false,redCard:false};
+        if(card.type==='yellow')state[tn][card.pname].yellows++;
+        if(card.type==='red'){state[tn][card.pname].yellows=99;state[tn][card.pname].redCard=true}
+      });
+    });
+    // Marca quem acabou de atingir critério → suspenso no PRÓXIMO jogo
+    Object.keys(state).forEach(function(tn){
+      Object.keys(state[tn]).forEach(function(pn){
+        var ps=state[tn][pn];
+        if(!ps.suspended&&(ps.yellows>=2||ps.yellows===99)){
+          ps.suspended=true;
+          ps.yellows=0; // zera ao ser suspenso
+        }
       });
     });
   });
   var out={};
-  Object.keys(acc).forEach(function(tn){
-    out[tn]=[];
-    Object.keys(acc[tn]).forEach(function(pn){
-      if(acc[tn][pn].r>0||acc[tn][pn].y>=2)out[tn].push(pn);
+  Object.keys(state).forEach(function(tn){
+    Object.keys(state[tn]).forEach(function(pn){
+      if(state[tn][pn].suspended){
+        if(!out[tn])out[tn]=[];
+        out[tn].push(pn);
+      }
     });
   });
   return out;
