@@ -304,7 +304,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-12 — Sessão v16.1 (third-place ranking position + team name)**
+**2026-06-12 — Sessão v16.2 (suspension indicator + broadcast encoding fix + performance)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -316,7 +316,19 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v16.1 (atual — 2026-06-12)
+### v16.2 (atual — 2026-06-12)
+**Mudanças (suspension indicator + broadcast encoding fix + performance):**
+- **Indicador de jogadores suspensos nos cards** — `getSuspensions()` escaneia todos os `cards[]` e agrega por time: 2 cartões amarelos ou 1 vermelho = suspenso. Exibe badge `⚠ N` ao lado do nome do time no card, com tooltip listando os jogadores. CSS: `.sus-badge` laranja com fundo translúcido
+- **Correção de encoding dos broadcasts** — arquivo estava duplamente codificado em UTF-8 (`·` virou bytes C3 82 C2 B7 em vez de C2 B7). Corrigido via restauração binária do git checkout. Globoplay e Ge TV agora aparecem corretamente (adicionados via script pós-carga linhas 1657-1658)
+- **Performance: bandeiras com lazy loading** — `flag()` usa `<img loading="lazy" decoding="async">`, só carrega bandeiras dos cards visíveis (~5-10 em vez de 104)
+- **Performance: render cache** — `dynRender(el, html)` compara com innerHTML atual e pula se igual, evitando recriação desnecessária do DOM de 104 cards a cada poll
+- **Broadcast logos como `<img>`** — revertido de `background-image` (não renderizava) para `<img>` com lazy loading
+- **Responsivo fluido** — CSS variables com `clamp()` para fontes e espaçamentos; game card com `grid-template-areas` em mobile 480px; cabeçalho e grid de grupos/squads com `minmax()` fluido
+- **Audit badge escondido** — começa `display:none`, aparece durante auditoria, fade out 400ms após 3s, só fica visível em divergência real
+- **Refresh error some em 3s** — `_refreshTimer` global cancelável, CSS `.refresh-err` no lugar de `style.color`, detecta `null` de `fetchFifaScores()` (que engolia erros)
+- **Third-place mostra posição + time** — `_resolvedTeamRow()` passa `gameNum` para `resolveTeam()`, mostra `#1 3º África do Sul` com ranking position e nome do time (não grupo). Bandeira aparece mesmo pendente
+
+### v16.1 (2026-06-12)
 **Mudanças (third-place ranking position + team name):**
 - **`_resolvedTeamRow()` passa `gameNum` para `resolveTeam()`** — `_resolvedTeamRow(placeholder,gameNum,side)` chamava `resolveTeam(placeholder)` sem segundo argumento. O `resolveTeam()` usa `arguments[1]` para mapear o slot de 3º colocado via `_THIRD_SLOTS`. Sem o `gameNum`, `arguments[1]` era `undefined` → `_THIRD_SLOTS.indexOf(undefined)` = -1 → caía no fallback `"3º colocado"`. Agora chama `resolveTeam(placeholder,gameNum)`, resolvendo o time correto do ranking de terceiros
 - **Ranking position label** — placeholder de 3º colocado agora mostra `#1`, `#2`, etc. indicando a posição no ranking de melhores terceiros (ex: `"#1 3º África do Sul"`)
@@ -598,7 +610,8 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Bandeiras piscando em mobile~~ ✅ v16 — flag() com onerror fallback (bandeira branca emoji), CSS com width/height explícitos, contain:layout no .game-card
 - ~~Erro de rede aparecendo na contagem regressiva~~ ✅ v16 — mensagens de erro separadas para #countdown-status, não sobrescrevem #countdown-next
 - ~~Jogos passados ocupam espaço sem necessidade~~ ✅ v16 — jogos passados ficam colapsados por padrão (só placar + grupo), expandem com clique no botão +. Próximo jogo aparece primeiro e recebe scroll automático
-- Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
+- ~~Falta indicador visual de jogador pendurado/suspenso nos cards de jogo~~ ✅ v16.2 — `getSuspensions()` escaneia cards por time, badge ⚠ N com tooltip
+- Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão real
 
 ### Itens resolvidos nesta sessão (v11 + v11.5)
 - ~~Convocados sem filtro~~ ✅ barra de busca com filtro em tempo real (país + jogador)
@@ -632,16 +645,16 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - **Compartilhar**: mandar o link `https://lfgobbo.github.io/Copa2026/` ou o arquivo `copa2026.html`. Abre no navegador, funciona 100% offline (com Service Worker), placar pode ser digitado manualmente ou via FIFA API ao vivo.
 - **Nota**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API.
 
-## Arquivos Relevantes (2026-06-12 v16)
-- `index.html` — app principal (v16, deploy GitHub Pages, ~192KB)
+## Arquivos Relevantes (2026-06-12 v16.2)
+- `index.html` — app principal (v16.2, deploy GitHub Pages, ~198KB)
 - `players.json` — dados dos 1248 jogadores (116KB)
 - `photos.json` — URLs das fotos dos jogadores (174KB)
 - `copa2026.html` — cópia de index.html (mantido por compatibilidade)
 - `Iniciar Copa.bat` — atalho para robot.ps1 (NÃO FUNCIONAL)
-- `sw.js` — Service Worker v18 (cache bump v17→v18 forçar refresh)
+- `sw.js` — Service Worker v19 (cache bump, skipWaiting, postMessage SW_UPDATED)
 - `opencode.json` — configuração OpenCode (aponta para AGENTS.md)
 - `.gitignore` — git ignore rules
-- `logo_globo.png`, `logo_sportv.png`, `logo_cazetv.png`, `logo_sbt.png`, `logo_nsports.png` — logos broadcast
+- `logo_globo.png`, `logo_sportv.png`, `logo_cazetv.png`, `logo_sbt.png`, `logo_nsports.png`, `logo_globoplay.png`, `logo_getv.png` — logos broadcast
 - `bola_t.png`, `mascote1_t.png`, `mascote2_t.png`, `mascote3_t.png` — assets visuais
 - `AGENTS.md` — documentação mestra (este arquivo)
 - `LEVANTAMENTO_TECNICO.md` — análise completa linha a linha, 4 bugs ativos, 11 melhorias de qualidade, 6 UX, plano de execução até Fase 3
