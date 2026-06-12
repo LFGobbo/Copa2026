@@ -304,7 +304,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-12 — Sessão v16 (persistência redundante: IndexedDB + localStorage x3)**
+**2026-06-12 — Sessão v16 (auditoria de dados + destaque busca convocados + regra regressão)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -324,6 +324,7 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 - `saveState()` salva em IndexedDB + 3 localStorage keys
 - **Seed dados reais (FIFA Timeline API)** — Jogo 1 (México 2×0 África do Sul) e Jogo 2 (Coreia do Sul 2×1 Rep. Tcheca) com gols, assistências e cartões extraídos da FIFA API manualmente e injetados como seed inicial. Só aplica se localStorage vazio. 5 gols, 7 cartões no total
 - **Destaque na busca de convocados** — Quando há filtro ativo, jogadores que correspondem à busca recebem classe `squad-player-match` (background dourado sutil + borda esquerda + nome em negrito). Times com nome correspondente recebem `squad-team-match` (borda dourada + glow). Apenas times com ao menos um match continuam visíveis
+- **Auditoria de dados (auditData)** — `auditData()` compara scores locais vs FIFA API e exibe indicador `✓ N` (íntegro) ou `⚠ N` (divergências) ao lado do botão refresh. Auto-executa 3s após carregar, após cada mergeScores() do polling, e no refresh manual. CSS: `.audit-badge.ok` (verde), `.warn` (amarelo), `.err` (vermelho)
 
 ### v15 (2026-06-12)
 **Mudanças (verificação e refinamento das 4 melhorias + anti-flicker final):**
@@ -567,6 +568,7 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Persistência localStorage com ponto único de falha~~ ✅ v16 — IndexedDB + 3 localStorage keys: `copa2026_data`, `copa2026_bak1`, `copa2026_bak2`
 - ~~Seed inicial sem dados dos primeiros jogos~~ ✅ v16 — FIFA Timeline API: México 2×0 África do Sul, Coreia do Sul 2×1 Rep. Tcheca. 5 gols, 7 cartões injetados
 - ~~Busca em convocados sem destaque visual~~ ✅ v16 — jogador correspondente ganha background dourado + borda + nome negrito; time correspondente ganha borda dourada + glow
+- ~~Sem rotina de auditoria entre dados locais e FIFA API~~ ✅ v16 — `auditData()` compara scores a cada poll/refresh, indicador visual ✓/⚠ no cabeçalho
 - Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
 - Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão
 - `parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)

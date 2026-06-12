@@ -178,6 +178,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .refresh-btn{background:var(--card);border:1px solid var(--border);color:var(--gold);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:var(--transition);font-family:inherit;flex-shrink:0;line-height:1}
 .refresh-btn:hover{background:var(--gold-dim);border-color:var(--gold);transform:rotate(90deg)}
 .refresh-btn:active{transform:rotate(180deg)}
+.audit-badge{font-size:10px;margin-left:4px;cursor:help;display:inline-flex;align-items:center;gap:2px;padding:2px 5px;border-radius:4px;font-weight:600;transition:var(--transition)}
+.audit-badge.ok{color:#4ade80;background:rgba(74,222,128,.1)}
+.audit-badge.warn{color:#fbbf24;background:rgba(251,191,36,.1)}
+.audit-badge.err{color:#f87171;background:rgba(248,113,113,.1)}
 .countdown-next strong{color:var(--text)}
 .countdown-live{color:var(--red);font-weight:800;font-size:13px;animation:pulse 1s infinite}
 .countdown-sep{color:var(--border-light);margin:0 8px}
@@ -321,6 +325,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     <span class="countdown-time" id="countdown-display">--d --h --m --s</span>
     <span class="countdown-next" id="countdown-next">Até o início da Copa</span>
     <button class="refresh-btn" id="refresh-btn" title="Atualizar placares">⟳</button>
+    <span class="audit-badge" id="audit-badge" title="Integridade dos dados">⋯</span>
   </div>
   <div class="filters" id="filter-bar"></div>
   <div id="games-list" class="dyn-content"></div>
@@ -1261,6 +1266,41 @@ Object.keys(map).forEach(function(id){var s=map[id],na=parseInt(s.a),nb=parseInt
 if(!scores[id])scores[id]={};if(scores[id].a!==na||scores[id].b!==nb)changed=true;scores[id].a=na;scores[id].b=nb});
 if(changed){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers()}return changed}
 
+function auditData(){
+  var ab=document.getElementById('audit-badge');
+  if(!ab)return;
+  ab.className='audit-badge warn';ab.textContent='⋯';
+  fetch('https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200',{cache:"no-store"})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(!d||!d.Results){ab.className='audit-badge err';ab.textContent='⚠';ab.title='Erro ao conectar na FIFA';return}
+      var ok=0,bad=0,divs=[];
+      d.Results.forEach(function(m){
+        var h=FIFA_TEAM_MAP[m.Home.Abbreviation],a=FIFA_TEAM_MAP[m.Away.Abbreviation];
+        if(!h||!a||m.HomeTeamScore===null||m.AwayTeamScore===null)return;
+        for(var i=0;i<GAMES.length;i++){
+          var g=GAMES[i];
+          if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){
+            var na=parseInt(m.HomeTeamScore,10),nb=parseInt(m.AwayTeamScore,10);
+            if(g.a!==h){var tmp=na;na=nb;nb=tmp}
+            var local=scores[g.n];
+            if(local&&local.a!==undefined){
+              if(local.a===na&&local.b===nb)ok++;
+              else{bad++;divs.push(g.a+' '+local.a+'x'+local.b+' '+g.b+' (FIFA: '+na+'x'+nb+')')}
+            }
+            break;
+          }
+        }
+      });
+      if(!ok&&!bad){ab.className='audit-badge warn';ab.textContent='⋯';ab.title='Nenhum jogo com placar ainda';return}
+      if(bad===0){ab.className='audit-badge ok';ab.textContent='✓ '+ok;ab.title=ok+' jogos conferidos — dados íntegros'}
+      else{ab.className='audit-badge err';ab.textContent='⚠ '+bad;ab.title=bad+' divergência(s): '+divs.join(' | ')}
+    })
+    .catch(function(){var e=document.getElementById('audit-badge');if(e){e.className='audit-badge err';e.textContent='⚠';e.title='Erro de rede'}});
+}
+// Auditoria automatica apos dados carregados
+setTimeout(auditData,3000);
+
 function initFifaMaps(){
   if(FIFA_MAP_READY){console.log('initFifaMaps: ja pronto');return}
   FIFA_MAP_READY=true;
@@ -1431,6 +1471,7 @@ document.getElementById("refresh-btn").addEventListener("click",function(){
   btn.textContent="\u23F3";btn.style.transform="rotate(360deg)";
   fetchFifaScores().then(function(map){
     var changed=mergeScores(map);
+    auditData();
     btn.style.transform="";
     if(changed){btn.textContent="\u2713";ne.innerHTML='\u2705 Placares atualizados com FIFA API'}else{btn.textContent="\u27F3";ne.innerHTML='\u2139\uFE0F Nenhuma mudan\u00e7a nos placares'}
     setTimeout(function(){btn.textContent="\u27F3"},2000)
@@ -1440,7 +1481,7 @@ document.getElementById("refresh-btn").addEventListener("click",function(){
 
 // --- Polling automático da FIFA API ---
 initFifaMaps();
-(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length)mergeScores(m)});var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+10800000);var recent=now<=new Date(gd.getTime()+21600000);var noScore=!scores[g.n]||scores[g.n].a===undefined;if(live||(recent&&noScore)){processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
+(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length){mergeScores(m);auditData()}});var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+10800000);var recent=now<=new Date(gd.getTime()+21600000);var noScore=!scores[g.n]||scores[g.n].a===undefined;if(live||(recent&&noScore)){processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
 
 
 
