@@ -867,11 +867,24 @@ function renderScorers(){
   var el=document.getElementById("scorers-list"),m={};
   Object.keys(goals).forEach(function(gid){
     Object.keys(goals[gid]).forEach(function(t){
-      goals[gid][t].forEach(function(gl){if(gl.type==="own")return;if(!m[gl.pname])m[gl.pname]={name:gl.pname,goals:0};m[gl.pname].goals++});
+      goals[gid][t].forEach(function(gl){
+        if(gl.type==="own")return;
+        if(!m[gl.pname])m[gl.pname]={name:gl.pname,goals:0,assists:0};
+        m[gl.pname].goals++;
+        if(gl.aname){
+          if(!m[gl.aname])m[gl.aname]={name:gl.aname,goals:0,assists:0};
+          m[gl.aname].assists++;
+        }
+      });
     });
   });
-  var sorted=Object.values(m).sort(function(a,b){return b.goals-a.goals}),medals=["rank-gold","rank-silver","rank-bronze"];
-  el.innerHTML=sorted.length?'<table class="scorers-table"><tr><th>#</th><th>Jogador</th><th style="text-align:center">Gols</th></tr>'+sorted.map(function(s,i){return'<tr><td class="rank '+(medals[i]||"")+'">'+(i+1)+'</td><td>'+s.name+'</td><td style="text-align:center;font-weight:700;font-size:14px">'+s.goals+'</td></tr>'}).join("")+'</table>':'<p style="text-align:center;color:#555;padding:40px">Nenhum gol registrado ainda. Adicione placares nos Jogos!</p>';
+  var gls=Object.values(m).filter(function(p){return p.goals>0}).sort(function(a,b){return b.goals-a.goals});
+  var ast=Object.values(m).filter(function(p){return p.assists>0}).sort(function(a,b){return b.assists-a.assists});
+  var medals=["rank-gold","rank-silver","rank-bronze"];
+  var t='';
+  if(gls.length)t+='<h3 style="color:var(--gold);margin-bottom:8px">\u26BD Artilheiros</h3>'+'<table class="scorers-table"><tr><th>#</th><th>Jogador</th><th style="text-align:center">Gols</th></tr>'+gls.map(function(s,i){return'<tr><td class="rank '+(medals[i]||"")+'">'+(i+1)+'</td><td>'+s.name+'</td><td style="text-align:center;font-weight:700;font-size:14px">'+s.goals+'</td></tr>'}).join("")+'</table>';
+  if(ast.length)t+='<h3 style="color:var(--gold);margin:20px 0 8px">\uD83C\uDFC7 Assist\u00eancias</h3>'+'<table class="scorers-table"><tr><th>#</th><th>Jogador</th><th style="text-align:center">Assists</th></tr>'+ast.map(function(s,i){return'<tr><td class="rank '+(medals[i]||"")+'">'+(i+1)+'</td><td>'+s.name+'</td><td style="text-align:center;font-weight:700;font-size:14px">'+s.assists+'</td></tr>'}).join("")+'</table>';
+  el.innerHTML=t||'<p style="text-align:center;color:#555;padding:40px">Nenhum gol registrado ainda. Adicione placares nos Jogos!</p>';
 }
 
 function getPlayerPhoto(name,team,num){
