@@ -1266,6 +1266,8 @@ function processTimeline(idMatch,gameId){
       if(!d||!d.Event||!d.Event.length)return;
       var lastId=PROCESSED_EVENTS[idMatch]||0;
       var newEvents=d.Event.filter(function(e){return parseInt(e.EventId)>lastId});
+      // ALWAYS reconcile goals vs real score from ALL timeline events (handles disallowed goals)
+      (function(){var fh=0,fa=0;d.Event.forEach(function(e){if(e.HomeGoals!==void 0&&e.AwayGoals!==void 0){fh=e.HomeGoals;fa=e.AwayGoals}});var _ga=goals[gameId]&&goals[gameId].a,_gb=goals[gameId]&&goals[gameId].b,_gl=!!_ga&&_ga.length>fh||!!_gb&&_gb.length>fa;if(_gl){if(_ga&&_ga.length>fh)_ga.length=fh;if(_gb&&_gb.length>fa)_gb.length=fa;if(_ga&&!_ga.length)delete goals[gameId].a;if(_gb&&!_gb.length)delete goals[gameId].b;saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers()}})()
       if(!newEvents.length)return;
       var maxId=0;newEvents.forEach(function(e){var id=parseInt(e.EventId);if(id>maxId)maxId=id});PROCESSED_EVENTS[idMatch]=maxId;
       // Track match state

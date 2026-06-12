@@ -286,7 +286,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-12 — Sessão v15 (slideUp removido, goalFlash removido, cartões com bandeira, CazéTV 20px, dynRender síncrono)**
+**2026-06-12 — Sessão v15 (gol anulado removido, reconciliação goals[] vs placar real da timeline)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
