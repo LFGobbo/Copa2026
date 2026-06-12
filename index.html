@@ -954,8 +954,9 @@ function renderGameCard(g){
   var phaseClass=isFinal?"final":isGroup?"group group-"+grpL:"knockout";
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
+  var liveElapsed=live?Math.floor((new Date()-gameUTC(g))/60000):0;
   var past=currentFilter==="all"&&gameIsPast(g);
-   return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
+   return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO '+(liveElapsed>0?liveElapsed+"'":"0'")+'</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
     if(x.type==='goal'){
       var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
       var tn=x.display==='a'?g.a:g.b;
@@ -2205,13 +2206,14 @@ function bolaoInit(){
 // --- Simulação: bolaoSimular() no console ---
 function bolaoSimular(){
   var simScores={7:{a:3,b:1},8:{a:2,b:0},9:{a:1,b:1},10:{a:2,b:2},11:{a:0,b:0},12:{a:3,b:0},13:{a:1,b:0},14:{a:2,b:1},15:{a:0,b:2},16:{a:1,b:3},17:{a:2,b:2},18:{a:3,b:2},19:{a:1,b:0},20:{a:0,b:0},21:{a:4,b:1},22:{a:0,b:1},23:{a:2,b:2},24:{a:1,b:1},25:{a:3,b:0},26:{a:0,b:2},27:{a:1,b:0},28:{a:2,b:3},29:{a:0,b:0},30:{a:2,b:1},31:{a:1,b:2},32:{a:3,b:1},33:{a:0,b:4},34:{a:2,b:0},35:{a:1,b:1},36:{a:0,b:0}};
+  ['copa2026_data','copa2026_bak1','copa2026_bak2'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
   Object.keys(simScores).forEach(function(gn){scores[gn]={a:simScores[gn].a,b:simScores[gn].b}});
   bolaoLoadRanking();
   renderGames(currentFilter);
   renderGroups();
   renderBracket();
   renderScorers();
-  console.log('Simula\u00e7\u00e3o carregada (apenas em mem\u00f3ria). Use bolaoLimpar() para limpar.');
+  console.log('Simula\u00e7\u00e3o carregada. Use bolaoLimpar() para limpar.');
 }
 function bolaoLimpar(){
   GAMES.forEach(function(g){delete scores[g.n]});
