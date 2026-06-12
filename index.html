@@ -408,8 +408,9 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bolao-save-btn{width:100%;margin-top:10px;padding:10px;background:var(--gold);color:#000;border:none;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;transition:opacity .15s;font-family:inherit}
 .bolao-save-btn:hover{opacity:.85}
 .bolao-save-btn:disabled{opacity:.4;cursor:not-allowed}
-.bolao-team-pick{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text);font-size:11px;font-family:inherit;margin-top:2px;box-sizing:border-box}
-.bolao-team-pick:focus{outline:none;border-color:var(--gold)}
+.bolao-ko-btn{flex:1;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:11px;font-weight:600;transition:var(--transition);font-family:inherit;text-align:center}
+.bolao-ko-btn.active{border-color:var(--gold);background:var(--gold-dim);color:var(--gold)}
+.bolao-ko-btn:hover:not(.active){border-color:var(--text);color:var(--text)}
 .bolao-confirm-banner{padding:12px 16px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);border-radius:6px;margin-top:16px;font-size:13px;color:#4ade80;display:none}
 .bolao-rules{background:var(--card);border:1px solid var(--border-light);border-radius:var(--radius);padding:20px;margin-bottom:16px;overflow:hidden;transition:max-height .5s ease,opacity .4s ease,padding .4s ease;max-height:800px;opacity:1}
 .bolao-rules.collapsed{max-height:0;padding:0 20px;opacity:0;margin-bottom:0;border-color:transparent}
@@ -1947,7 +1948,7 @@ var SUPA_URL='https://etbezmraylbvlnycltha.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0YmV6bXJheWxidmxueWNsdGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNzQxNDAsImV4cCI6MjA5Njg1MDE0MH0.SC_k3ztY-uSyQAB60ctJvb1iAMGkJJYlG5qy7RJhuqY';
 var BOLAO_FIRST=7,BOLAO_FINAL=104,BOLAO_SIGNUP_GAME=32,BOLAO_TWO_H=7200000;
 var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
-var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[];
+var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoKOPicks={};
 function _supaFetch(path,method,body){
   var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
   if(method==='POST')h['Prefer']='resolution=merge-duplicates,return=representation';
@@ -1970,29 +1971,67 @@ function _bolaoTopScorer(){
   if(tied.length===1)return{name:tied[0][0],exact:true};
   return{name:null,exact:false,tied:tied.map(function(x){return x[0]})};
 }
-function _pn(g,brk){
-  if(brk&&brk[g.n]&&!brk[g.n].a.pending&&!brk[g.n].b.pending)return esc(brk[g.n].a.name)+' vs '+esc(brk[g.n].b.name);
-  return esc(g.a)+' vs '+esc(g.b)}
-function _tp(g,side,brk){
-  var p=side==='a'?g.a:g.b;
-  if(g.n<73||!brk)return esc(p);
-  var r=brk[g.n]?brk[g.n][side]:null;
-  return r&&!r.pending?esc(r.name):esc(p);
+function _bolaoGetScore(gameN){
+  if(gameN<BOLAO_FIRST){var s=scores[gameN];return(s&&s.a!==undefined&&s.b!==undefined)?{a:s.a,b:s.b}:null}
+  var p=_bolaoMyPicks[gameN];return(p&&p.a!==undefined&&p.b!==undefined)?{a:p.a,b:p.b}:null
 }
-function bolaoTeamPick(el){
-  var gn=parseInt(el.getAttribute('data-game'),10),side=el.getAttribute('data-side');
-  if(!_bolaoTeamPicks[gn])_bolaoTeamPicks[gn]={};
-  _bolaoTeamPicks[gn][side]=el.value;
-  try{localStorage.setItem('copa2026_teampicks',JSON.stringify(_bolaoTeamPicks))}catch(e){}
+function _bolaoGroupStandings(letter){
+  var teams=GROUPS[letter]||[],pts={},gp={},gf={},ga={};
+  teams.forEach(function(t){pts[t]=0;gp[t]=0;gf[t]=0;ga[t]=0});
+  GAMES.filter(function(g){return g.f===GROUP_NAMES[letter]}).forEach(function(g){
+    var s=_bolaoGetScore(g.n);if(!s)return;
+    gp[g.a]++;gp[g.b]++;gf[g.a]+=s.a;ga[g.a]+=s.b;gf[g.b]+=s.b;ga[g.b]+=s.a;
+    if(s.a>s.b)pts[g.a]+=3;else if(s.a<s.b)pts[g.b]+=3;else{pts[g.a]++;pts[g.b]++}
+  });
+  var anyPlayed=teams.some(function(t){return gp[t]>0});if(!anyPlayed)return null;
+  var finished=GAMES.filter(function(g){return g.f===GROUP_NAMES[letter]}).every(function(g){return!!_bolaoGetScore(g.n)});
+  var sorted=teams.slice().sort(function(a,b){
+    if(pts[b]!==pts[a])return pts[b]-pts[a];
+    var gdA=gf[a]-ga[a],gdB=gf[b]-ga[b];if(gdB!==gdA)return gdB-gdA;
+    if(gf[b]!==gf[a])return gf[b]-gf[a];
+    var h2h=GAMES.filter(function(g){return g.f===GROUP_NAMES[letter]&&((g.a===a&&g.b===b)||(g.a===b&&g.b===a))});
+    if(h2h.length){var hpA=0,hpB=0;h2h.forEach(function(g){var s=_bolaoGetScore(g.n);if(s){if(g.a===a){if(s.a>s.b)hpA+=3;else if(s.a<s.b)hpB+=3;else{hpA++;hpB++}}else{if(s.b>s.a)hpA+=3;else if(s.b<s.a)hpB+=3;else{hpA++;hpB++}}}});if(hpA!==hpB)return hpB-hpA}
+    return a.localeCompare(b);
+  });
+  return{teams:sorted,pts:pts,gf:gf,ga:ga,gp:gp,finished:finished}
 }
-function _loadTeamPicks(){
-  try{var d=JSON.parse(localStorage.getItem('copa2026_teampicks')||'{}');Object.keys(d).forEach(function(k){_bolaoTeamPicks[k]=d[k]})}catch(e){}
-  if(!_bolaoTeams.length){var seen={};Object.keys(GROUPS||{}).forEach(function(k){(GROUPS[k]||[]).forEach(function(t){if(!seen[t]){seen[t]=true;_bolaoTeams.push(t)}})});_bolaoTeams.sort()}
-  if(_bolaoTeams.length&&!document.getElementById('bolao-all-teams')){
-    var dl=document.createElement('datalist');dl.id='bolao-all-teams';
-    _bolaoTeams.forEach(function(t){var o=document.createElement('option');o.value=t;dl.appendChild(o)});
-    document.body.appendChild(dl);
-  }
+function _bolaoRankedThirds(){
+  var thirds=[];GROUP_ORDER.forEach(function(letter){var st=_bolaoGroupStandings(letter);if(!st||st.teams.length<3)return;var t=st.teams[2];thirds.push({team:t,group:letter,pts:st.pts[t]||0,sg:(st.gf[t]||0)-(st.ga[t]||0),gf:st.gf[t]||0,gp:st.gp[t]||0,finished:st.finished})});
+  thirds.sort(function(a,b){if(b.pts!==a.pts)return b.pts-a.pts;if(b.sg!==a.sg)return b.sg-a.sg;if(b.gf!==a.gf)return b.gf-a.gf;return a.team.localeCompare(b.team)});
+  return thirds.slice(0,8);
+}
+function _bolaoWinnerOf(gameN){
+  var g=GAMES.find(function(x){return x.n===gameN});if(!g)return null;
+  var s=_bolaoGetScore(gameN);if(!s)return null;
+  if(s.a>s.b)return g.a;if(s.b>s.a)return g.b;
+  if(g.f&&g.f.startsWith('Grupo'))return null;
+  var ko=_bolaoKOPicks[gameN];if(ko==='a')return _bolaoResolveTeam(g.a,gameN);if(ko==='b')return _bolaoResolveTeam(g.b,gameN);
+  return null;
+}
+function _bolaoResolveTeam(placeholder,gameN){
+  if(!placeholder||placeholder==='')return null;
+  var isLiteral=placeholder.indexOf('Grupo')<0&&placeholder.indexOf('V. ')<0&&placeholder.indexOf('Perd.')<0&&placeholder!=='0';
+  if(isLiteral)return placeholder;
+  var mGrp=placeholder.match(/^(\d+)\u00ba\s+Grupo\s+([A-L])$/);
+  if(mGrp){var pos=parseInt(mGrp[1],10)-1,letter=mGrp[2],st=_bolaoGroupStandings(letter);if(st&&st.teams.length>pos)return st.teams[pos];return null}
+  var mV=placeholder.match(/^V\.\s*Jogo\s+(\d+)$/);if(mV)return _bolaoWinnerOf(parseInt(mV[1],10));
+  if(placeholder==='0'){var thirds=_bolaoRankedThirds(),slotIdx=_THIRD_SLOTS.indexOf(gameN);if(slotIdx>=0&&thirds[slotIdx])return thirds[slotIdx].team;return null}
+  return placeholder;
+}
+function _bolaoTp(g,side){
+  var placeholder=side==='a'?g.a:g.b;
+  var isKOPh=placeholder.match(/^(\d+)\u00ba\s+Grupo/)||placeholder.match(/^V\.\s*Jogo/)||placeholder==='0';
+  if(!isKOPh)return '<span>'+esc(placeholder)+'</span>';
+  var resolved=_bolaoResolveTeam(placeholder,g.n);
+  if(resolved)return '<span style="font-weight:600">'+flag(resolved)+' '+esc(resolved)+'</span>';
+  return '<span style="color:var(--muted);font-size:11px">'+esc(placeholder)+'</span>';
+}
+function bolaoKOPick(gameN,side){
+  if(_bolaoConfirmed)return;
+  if(_bolaoKOPicks[gameN]===side)delete _bolaoKOPicks[gameN];else _bolaoKOPicks[gameN]=side;
+  if(_bolaoKOPicks[gameN]===undefined)delete _bolaoKOPicks[gameN];
+  bolaoSavePick(gameN);
+  bolaoRenderPicksGrid();
 }
 function bolaoCalcPickPts(pA,pB,rA,rB){
   if(pA===null||pA===undefined||pB===null||pB===undefined)return -1;
@@ -2003,19 +2042,6 @@ function bolaoCalcPickPts(pA,pB,rA,rB){
   if(Math.max(pA,pB)===Math.max(rA,rB))return 6;
   if(Math.min(pA,pB)===Math.min(rA,rB))return 4;
   return 2;
-}
-function _bolaoGetBracket(picks){
-  var bk={};Object.keys(scores).forEach(function(k){bk[k]=scores[k]});
-  Object.keys(picks||{}).forEach(function(gn){
-    var p=picks[gn];if(p.a!==undefined)scores[gn]={a:p.a,b:p.b};
-  });
-  var res={};
-  GAMES.forEach(function(g){
-    res[g.n]={a:resolveTeam(g.a,g.n),b:resolveTeam(g.b,g.n)};
-  });
-  Object.keys(bk).forEach(function(k){scores[k]=bk[k]});
-  Object.keys(scores).forEach(function(k){if(!bk[k])delete scores[k]});
-  return res;
 }
 function bolaoCalcTotal(participantId){
   var myPicks=_bolaoAllPicks[participantId]||{},sp=_bolaoAllSpecials[participantId];
@@ -2063,7 +2089,6 @@ function bolaoRenderRanking(){
 function bolaoToggleDetail(id){var el=document.getElementById('bolao-detail-'+id);if(el)el.classList.toggle('open')}
 function bolaoRenderDetail(pid){
   var picks=_bolaoAllPicks[pid]||{},items=[];
-  var brk=_bolaoGetBracket(picks);
   GAMES.forEach(function(g){
     if(g.n<BOLAO_FIRST)return;
     var real=scores[g.n],pick=picks[g.n],hasReal=real&&real.a!==undefined&&real.b!==undefined,hasPick=pick&&pick.a!==undefined&&pick.b!==undefined;
@@ -2073,14 +2098,12 @@ function bolaoRenderDetail(pid){
     var pickStr=hasPick?(pick.a+'x'+pick.b):'?x?',realStr=hasReal?(real.a+'x'+real.b):'';
     var ptsStr=pts>=0?(pts+(bonus?'+'+bonus:''))+' pts':'';
     if(!hasReal)pickStr='<span style="filter:blur(3px)">'+pickStr+'</span>';
-    items.push('<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">#'+g.n+' '+_pn(g,brk)+'</div><div><span class="bolao-pick-score">'+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">'+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>');
+    items.push('<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">#'+g.n+' '+esc(g.a)+' vs '+esc(g.b)+'</div><div><span class="bolao-pick-score">'+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">'+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>');
   });
   if(!items.length)return '<p style="color:var(--muted);font-size:13px">Nenhum palpite ainda</p>';
   return '<div class="bolao-detail-grid">'+items.join('')+'</div>';
 }
 function bolaoRenderPicksGrid(){
-  _loadTeamPicks();
-  var brk=_bolaoGetBracket(_bolaoMyPicks);
   var grid=document.getElementById('bolao-picks-grid');
   if(!grid||!_bolaoParticipantId)return;
   var now=new Date(),html='',anyVisible=false;
@@ -2100,13 +2123,14 @@ function bolaoRenderPicksGrid(){
     var inputLocked=isLocked||_bolaoConfirmed;
     html+='<div class="bolao-pick-input-card'+(inputLocked?' locked':'')+'">'
       +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">'+esc(g.f)+'</div>'
-      +'<div class="game-teams">'+_tp(g,'a',brk)+' vs '+_tp(g,'b',brk)+'</div>'
+      +'<div class="game-teams">'+_bolaoTp(g,'a')+' vs '+_bolaoTp(g,'b')+'</div>'
       +'<div class="game-date">'+g.d+' '+g.t+(timeLeft?' <span style="color:var(--gold);font-weight:600">'+timeLeft+'</span>':'')+'</div>'
       +'<div class="bolao-score-row">'
       +'<input class="bolao-score-input" type="number" min="0" max="20" data-game="'+g.n+'" data-side="a" value="'+(pick.a!==undefined?pick.a:'')+'" placeholder="-"'+(inputLocked?' readonly':' onchange="bolaoSavePick('+g.n+')"')+'>'
       +'<span class="bolao-score-sep">×</span>'
       +'<input class="bolao-score-input" type="number" min="0" max="20" data-game="'+g.n+'" data-side="b" value="'+(pick.b!==undefined?pick.b:'')+'" placeholder="-"'+(inputLocked?' readonly':' onchange="bolaoSavePick('+g.n+')"')+'>'
       +'</div>'
+      +(!inputLocked&&pick.a!==undefined&&pick.b!==undefined&&pick.a===pick.b&&g.f&&!g.f.startsWith('Grupo')?'<div style="display:flex;gap:4px;justify-content:center;margin-top:6px"><button class="bolao-ko-btn'+(g.a&&_bolaoKOPicks[g.n]==='a'?' active':'')+'" onclick="bolaoKOPick('+g.n+',\'a\')">'+flag(_bolaoResolveTeam(g.a,g.n)||g.a)+' '+(esc(_bolaoResolveTeam(g.a,g.n)||g.a))+'</button><button class="bolao-ko-btn'+(g.b&&_bolaoKOPicks[g.n]==='b'?' active':'')+'" onclick="bolaoKOPick('+g.n+',\'b\')">'+flag(_bolaoResolveTeam(g.b,g.n)||g.b)+' '+(esc(_bolaoResolveTeam(g.b,g.n)||g.b))+'</button></div>':'')
       +'<div class="bolao-pick-saved" id="bolao-saved-'+g.n+'">'+(isLocked&&hasPick?'Registrado':(_bolaoConfirmed&&hasPick?'Confirmado':''))+'</div>'
       +ptsHtml+'</div>';
   });
@@ -2122,7 +2146,9 @@ async function bolaoSavePick(gameN){
   var saved=document.getElementById('bolao-saved-'+gameN);
   if(saved){saved.style.color='var(--muted)';saved.textContent='Salvando...';}
   try{
-    await _supaFetch('picks?on_conflict=participant_id,game_n','POST',{participant_id:_bolaoParticipantId,game_n:gameN,goals_a:vA,goals_b:vB});
+    var body={participant_id:_bolaoParticipantId,game_n:gameN,goals_a:vA,goals_b:vB};
+    if(_bolaoKOPicks[gameN])body.ko_pick=_bolaoKOPicks[gameN];
+    await _supaFetch('picks?on_conflict=participant_id,game_n','POST',body);
     _bolaoMyPicks[gameN]={a:vA,b:vB};
     if(saved){saved.style.color='#4ade80';saved.textContent='Salvo';}
   }catch(e){if(saved){saved.style.color='var(--red)';saved.textContent='Erro';}}
@@ -2209,8 +2235,8 @@ async function _bAdm(pass,name){
 }
 async function bolaoLoadMyData(){
   if(!_bolaoParticipantId)return;
-  var picks=await _supaFetch('picks?participant_id=eq.'+_bolaoParticipantId+'&select=game_n,goals_a,goals_b');
-  _bolaoMyPicks={};(picks||[]).forEach(function(p){_bolaoMyPicks[p.game_n]={a:p.goals_a,b:p.goals_b}});
+  var picks=await _supaFetch('picks?participant_id=eq.'+_bolaoParticipantId+'&select=game_n,goals_a,goals_b,ko_pick');
+  _bolaoMyPicks={};_bolaoKOPicks={};(picks||[]).forEach(function(p){_bolaoMyPicks[p.game_n]={a:p.goals_a,b:p.goals_b};if(p.ko_pick)_bolaoKOPicks[p.game_n]=p.ko_pick});
   var sp=await _supaFetch('special_picks?participant_id=eq.'+_bolaoParticipantId+'&select=champion,top_scorer,locked');
   _bolaoMySpecial=(sp&&sp.length)?sp[0]:null;
   var part=await _supaFetch('participants?id=eq.'+_bolaoParticipantId+'&select=confirmed');
@@ -2275,7 +2301,7 @@ function bolaoInit(){
 // --- Simulação: bolaoSimular() no console ---
 function bolaoSimular(){
   var simScores={7:{a:3,b:1},8:{a:2,b:0},9:{a:1,b:1},10:{a:2,b:2},11:{a:0,b:0},12:{a:3,b:0},13:{a:1,b:0},14:{a:2,b:1},15:{a:0,b:2},16:{a:1,b:3},17:{a:2,b:2},18:{a:3,b:2},19:{a:1,b:0},20:{a:0,b:0},21:{a:4,b:1},22:{a:0,b:1},23:{a:2,b:2},24:{a:1,b:1},25:{a:3,b:0},26:{a:0,b:2},27:{a:1,b:0},28:{a:2,b:3},29:{a:0,b:0},30:{a:2,b:1},31:{a:1,b:2},32:{a:3,b:1},33:{a:0,b:4},34:{a:2,b:0},35:{a:1,b:1},36:{a:0,b:0}};
-  ['copa2026_data','copa2026_bak1','copa2026_bak2','copa2026_teampicks'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
+  ['copa2026_data','copa2026_bak1','copa2026_bak2'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
   Object.keys(simScores).forEach(function(gn){scores[gn]={a:simScores[gn].a,b:simScores[gn].b}});
   bolaoLoadRanking();
   renderGames(currentFilter);
@@ -2289,14 +2315,14 @@ function bolaoReseta(){
   fetch(SUPA_URL+'/rest/v1/picks',{headers:h,method:'DELETE'}).catch(function(){});
   fetch(SUPA_URL+'/rest/v1/special_picks',{headers:h,method:'DELETE'}).catch(function(){});
   fetch(SUPA_URL+'/rest/v1/participants',{headers:h,method:'DELETE'}).catch(function(){});
-  ['copa2026_data','copa2026_bak1','copa2026_bak2','copa2026_teampicks'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
+  ['copa2026_data','copa2026_bak1','copa2026_bak2'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
   GAMES.forEach(function(g){delete scores[g.n]});
   console.log('Tudo limpo. Recarregando...');
   window.location.reload();
 }
 function bolaoLimpar(){
   GAMES.forEach(function(g){delete scores[g.n]});
-  ['copa2026_data','copa2026_bak1','copa2026_bak2','copa2026_teampicks'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
+  ['copa2026_data','copa2026_bak1','copa2026_bak2'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
   renderGames(currentFilter);
   renderGroups();
   renderBracket();
