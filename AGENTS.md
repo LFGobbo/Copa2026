@@ -557,12 +557,12 @@ copa2026.html (no navegador)
 FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap` com todos os 48. Casamento é feito por nome completo (português) entre FIFA traduzido e GAMES do HTML.
 
 ## Status Atual do Site
-- **Repositório**: `github.com/LFGobbo/Copa2026` (master, v15)
+- **Repositório**: `github.com/LFGobbo/Copa2026` (master, v19)
 - **GitHub Pages**: ATIVADO em `https://lfgobbo.github.io/Copa2026/`
 - **FIFA API**: Fetch direto do navegador com CORS aberto (`Access-Control-Allow-Origin: *`). Timeout 10s (manual) / 8s (polling).
-- **Robô alternativo**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API com polling a cada 10s.
-- **Placares ao vivo**: Funcionam apenas durante jogos reais (HomeTeamScore/AwayTeamScore = null até o jogo começar).
-- **Squads**: 1248 jogadores (48×26), dados da Wikipedia com números, clubes e países.
+- **Placares ao vivo**: Funcionam apenas durante jogos reais (HomeTeamScore/AwayTeamScore = null at� o jogo come�ar).
+- **Squads**: 1248 jogadores (48x26), dados da Wikipedia com n�meros, clubes e pa�ses.
+- **Bol�o**: Supabase (free tier), 3 tabelas, 9 participantes de teste com palpites
 
 ## Armadilhas Conhecidas (Critical Context)
 - `ConvertTo-Json` no PS 5.1 duplo-encode UTF-8 (ex: "Á" → "Ã\x81"). Solução: construir JSON manualmente com `.Replace()` e escrever via `[System.IO.StreamWriter]` com `UTF8Encoding($false)`.
@@ -673,5 +673,61 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 ## Supabase — Bolão
 - **Projeto**: copa2026 (Free tier)
 - **URL**: https://etbezmraylbvlnycltha.supabase.co
-- **Tabelas**: participants (id, name, password SHA-256, confirmed), picks (participant_id, game_n, goals_a, goals_b), special_picks (participant_id, champion, top_scorer)
+- **Anon Key**: está no `index.html` dentro de `SUPA_KEY` (é pública, pode ficar no client)
+- **Tabelas**: 3 tabelas — `participants`, `picks`, `special_picks`
 - **Admin unlock**: console do browser → `_bAdm('BolaoAdmin2026!', 'Nome do Participante')` — senha: `BolaoAdmin2026!`
+
+### SQL de setup (rodar no Supabase SQL Editor)
+```sql
+-- 1. Criar tabela de participantes
+CREATE TABLE IF NOT EXISTS participants (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  name text UNIQUE NOT NULL,
+  password text NOT NULL,
+  confirmed boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+
+-- 2. Criar tabela de palpites
+CREATE TABLE IF NOT EXISTS picks (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  participant_id uuid REFERENCES participants(id) ON DELETE CASCADE,
+  game_n integer NOT NULL,
+  goals_a integer,
+  goals_b integer,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(participant_id, game_n)
+);
+
+-- 3. Criar tabela de palpites especiais
+CREATE TABLE IF NOT EXISTS special_picks (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  participant_id uuid REFERENCES participants(id) ON DELETE CASCADE UNIQUE,
+  champion text,
+  top_scorer text,
+  locked boolean DEFAULT false,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(participant_id)
+);
+
+-- 4. RLS: habilitar Row Level Security
+ALTER TABLE participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE picks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE special_picks ENABLE ROW LEVEL SECURITY;
+
+-- 5. Policies: anon pode ler tudo, inserir, atualizar
+CREATE POLICY anon_all ON participants FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY anon_all ON picks FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY anon_all ON special_picks FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- 6. Coluna confirmed (se j� existir a tabela, s� adicionar a coluna)
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS confirmed boolean DEFAULT false;
+```
+
+### Como testar o Bolão
+1. Abrir `https://lfgobbo.github.io/Copa2026/`
+2. Abrir DevTools (F12) → Console
+3. Digitar `bolaoSimular()` e Enter
+4. Ir na aba "Bolão" — ranking com 9 participantes aparece
+5. Para logar: usar um dos nomes (ex: "Maria Santos") com senha "sim123"
