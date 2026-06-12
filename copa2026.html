@@ -183,6 +183,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .refresh-btn{background:var(--card);border:1px solid var(--border);color:var(--gold);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:var(--transition);font-family:inherit;flex-shrink:0;line-height:1}
 .refresh-btn:hover{background:var(--gold-dim);border-color:var(--gold);transform:rotate(90deg)}
 .refresh-btn:active{transform:rotate(180deg)}
+.refresh-err{background:rgba(255,50,50,.15)!important;border-color:rgba(255,50,50,.5)!important;color:rgba(255,80,80,.9)!important}
 .audit-badge{font-size:10px;margin-left:4px;cursor:help;display:inline-flex;align-items:center;gap:2px;padding:2px 5px;border-radius:4px;font-weight:600;transition:var(--transition)}
 .audit-badge.ok{color:#4ade80;background:rgba(74,222,128,.1)}
 .audit-badge.warn{color:#fbbf24;background:rgba(251,191,36,.1)}
@@ -1559,17 +1560,22 @@ function processTimeline(idMatch,gameId){
 }
 
 // --- Botão de atualização manual ---
+var _refreshTimer=null;
 document.getElementById("refresh-btn").addEventListener("click",function(){
   var btn=this,st=document.getElementById("countdown-status");
-  btn.textContent="\u23F3";btn.style.transform="rotate(360deg)";
+  if(_refreshTimer){clearTimeout(_refreshTimer);_refreshTimer=null}
+  btn.className='refresh-btn';btn.style.transform="rotate(360deg)";btn.textContent="\u23F3";
   fetchFifaScores().then(function(map){
-    var changed=mergeScores(map);
-    auditData();
+    var changed=mergeScores(map);auditData();
     btn.style.transform="";
     if(changed){btn.textContent="\u2713";st.textContent='\u2705 Placares atualizados com FIFA API'}else{btn.textContent="\u27F3";st.textContent='\u2139\uFE0F Nenhuma mudan\u00e7a nos placares'}
-    setTimeout(function(){btn.textContent="\u27F3";st.textContent=""},3000)
+    _refreshTimer=setTimeout(function(){btn.textContent="\u27F3";st.textContent="";_refreshTimer=null},3000)
   })
-  .catch(function(e){btn.style.transform="";btn.style.color="var(--red)";st.textContent='\u26A0 Erro ao conectar na FIFA API';btn.textContent="\u26A0";setTimeout(function(){btn.style.color="";st.textContent="";btn.textContent="\u27F3"},3000)})
+  .catch(function(e){
+    btn.style.transform="";btn.className='refresh-btn refresh-err';btn.textContent="!";
+    st.textContent='\u26A0 Erro ao conectar na FIFA API';
+    _refreshTimer=setTimeout(function(){btn.className='refresh-btn';btn.textContent="\u27F3";st.textContent="";_refreshTimer=null},3000)
+  })
 });
 
 // --- Polling automático da FIFA API ---
