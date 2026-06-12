@@ -364,7 +364,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="tab" data-tab="regras"><span class="tab-icon">📖</span><span class="tab-label">Regras</span></div>
 </div>
 <div class="content active" id="tab-jogos">
-  <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">&#9201; Pr&oacute;ximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados">&#8943;</span></div>
+  <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">&#9201; Pr&oacute;ximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados" style="display:none"></span></div>
   <div class="filters" id="filter-bar"></div>
   <div id="games-list" class="dyn-content"></div>
 </div>
@@ -1361,14 +1361,21 @@ Object.keys(map).forEach(function(id){var s=map[id],na=parseInt(s.a,10),nb=parse
 if(!scores[id])scores[id]={};if(scores[id].a!==na||scores[id].b!==nb)changed=true;scores[id].a=na;scores[id].b=nb});
 if(changed){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers()}return changed}
 
+function _hide(ab){
+  if(!ab||ab.style.display==='none')return;
+  ab.style.transition='opacity .4s';ab.style.opacity='0';
+  setTimeout(function(){ab.style.display='none';ab.style.opacity='';ab.style.transition=''},400)
+}
 function auditData(){
   var ab=document.getElementById('audit-badge');
   if(!ab)return;
+  // Mostrar badge durante auditoria
+  ab.style.display='inline-flex';ab.style.opacity='1';ab.style.transition='';
   ab.className='audit-badge warn';ab.textContent='⋯';
   fetch('https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200',{cache:"no-store"})
     .then(function(r){return r.json()})
     .then(function(d){
-      if(!d||!d.Results){ab.className='audit-badge err';ab.textContent='⚠';ab.title='Erro ao conectar na FIFA';return}
+      if(!d||!d.Results){ab.className='audit-badge err';ab.textContent='⚠';ab.title='Erro ao conectar na FIFA';_hide(ab);return}
       var ok=0,bad=0,divs=[];
       d.Results.forEach(function(m){
         var h=FIFA_TEAM_MAP[m.Home.Abbreviation],a=FIFA_TEAM_MAP[m.Away.Abbreviation];
@@ -1387,11 +1394,11 @@ function auditData(){
           }
         }
       });
-      if(!ok&&!bad){ab.className='audit-badge warn';ab.textContent='⋯';ab.title='Nenhum jogo com placar ainda';return}
-      if(bad===0){ab.className='audit-badge ok';ab.textContent='✓ '+ok;ab.title=ok+' jogos conferidos — dados íntegros'}
+      if(!ok&&!bad){ab.className='audit-badge warn';ab.textContent='⋯';ab.title='Nenhum jogo com placar ainda';_hide(ab);return}
+      if(bad===0){ab.className='audit-badge ok';ab.textContent='✓ '+ok;ab.title=ok+' jogos conferidos — dados íntegros';_hide(ab)}
       else{ab.className='audit-badge err';ab.textContent='⚠ '+bad;ab.title=bad+' divergência(s): '+divs.join(' | ')}
     })
-    .catch(function(){var e=document.getElementById('audit-badge');if(e){e.className='audit-badge err';e.textContent='⚠';e.title='Erro de rede'}});
+    .catch(function(){var e=document.getElementById('audit-badge');if(e){e.className='audit-badge err';e.textContent='⚠';e.title='Erro de rede';_hide(e)}});
 }
 // Auditoria automatica apos dados carregados
 setTimeout(auditData,3000);
