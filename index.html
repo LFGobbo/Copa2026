@@ -1951,14 +1951,21 @@ function _bolaoTopScorer(){
   if(tied.length===1)return{name:tied[0][0],exact:true};
   return{name:null,exact:false,tied:tied.map(function(x){return x[0]})};
 }
-function _pn(g){function rt(p){var r=resolveTeam(p,g.n);return r.pending?r.name:r.name}return esc(rt(g.a))+' vs '+esc(rt(g.b))}
+function _pn(g,picks){
+  var brk=picks?_bolaoGetBracket(picks):null;
+  if(brk&&brk[g.n])return esc(brk[g.n].a.name||'?')+' vs '+esc(brk[g.n].b.name||'?');
+  return esc(g.a)+' vs '+esc(g.b)}
 function _tp(g,side){
-  var p=side==='a'?g.a:g.b,r=resolveTeam(p,g.n);
-  if(!r.pending)return esc(r.name);
+  var p=side==='a'?g.a:g.b;
+  var brk=_bolaoGetBracket(_bolaoMyPicks);
+  var resolved=brk&&brk[g.n]?brk[g.n][side]:null;
+  if(resolved&&!resolved.pending)return esc(resolved.name);
+  if(resolved&&resolved.pending){
+    var pick=_bolaoTeamPicks[g.n]&&_bolaoTeamPicks[g.n][side];
+    return '<span style="color:var(--muted);font-size:10px">'+esc(resolved.name||p)+'</span> <input class="bolao-team-pick" list="bolao-all-teams" placeholder="Quem passa?" value="'+(pick||'')+'" data-game="'+g.n+'" data-side="'+side+'" onchange="bolaoTeamPick(this)">';
+  }
   var pick=_bolaoTeamPicks[g.n]&&_bolaoTeamPicks[g.n][side];
-  var name=p;
-  if(pick){name=pick}
-  return '<span style="color:var(--muted);font-size:10px">'+esc(name)+'</span> <input class="bolao-team-pick" list="bolao-all-teams" placeholder="Quem passa?" value="'+(pick||'')+'" data-game="'+g.n+'" data-side="'+side+'" onchange="bolaoTeamPick(this)">';
+  return '<span style="color:var(--muted);font-size:10px">'+esc(p)+'</span> <input class="bolao-team-pick" list="bolao-all-teams" placeholder="Quem passa?" value="'+(pick||'')+'" data-game="'+g.n+'" data-side="'+side+'" onchange="bolaoTeamPick(this)">';
 }
 function bolaoTeamPick(el){
   var gn=parseInt(el.getAttribute('data-game'),10),side=el.getAttribute('data-side');
@@ -1984,6 +1991,19 @@ function bolaoCalcPickPts(pA,pB,rA,rB){
   if(Math.max(pA,pB)===Math.max(rA,rB))return 6;
   if(Math.min(pA,pB)===Math.min(rA,rB))return 4;
   return 2;
+}
+function _bolaoGetBracket(picks){
+  var bk={};Object.keys(scores).forEach(function(k){bk[k]=scores[k]});
+  Object.keys(picks||{}).forEach(function(gn){
+    var p=picks[gn];if(p.a!==undefined)scores[gn]={a:p.a,b:p.b};
+  });
+  var res={};
+  GAMES.forEach(function(g){
+    res[g.n]={a:resolveTeam(g.a,g.n),b:resolveTeam(g.b,g.n)};
+  });
+  Object.keys(bk).forEach(function(k){scores[k]=bk[k]});
+  Object.keys(scores).forEach(function(k){if(!bk[k])delete scores[k]});
+  return res;
 }
 function bolaoCalcTotal(participantId){
   var myPicks=_bolaoAllPicks[participantId]||{},sp=_bolaoAllSpecials[participantId];
@@ -2040,7 +2060,7 @@ function bolaoRenderDetail(pid){
     var pickStr=hasPick?(pick.a+'x'+pick.b):'?x?',realStr=hasReal?(real.a+'x'+real.b):'';
     var ptsStr=pts>=0?(pts+(bonus?'+'+bonus:''))+' pts':'';
     if(!hasReal)pickStr='<span style="filter:blur(3px)">'+pickStr+'</span>';
-    items.push('<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">#'+g.n+' '+_pn(g)+'</div><div><span class="bolao-pick-score">'+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">'+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>');
+    items.push('<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">#'+g.n+' '+_pn(g,picks)+'</div><div><span class="bolao-pick-score">'+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">'+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>');
   });
   if(!items.length)return '<p style="color:var(--muted);font-size:13px">Nenhum palpite ainda</p>';
   return '<div class="bolao-detail-grid">'+items.join('')+'</div>';
