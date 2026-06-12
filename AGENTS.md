@@ -325,7 +325,7 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
   - Confirmação geral de palpites (bloqueia edição)
   - Ranking com medalhas, pontos, desempate, detalhes expansíveis
 - **Supabase** — `https://etbezmraylbvlnycltha.supabase.co` com tabelas `participants`, `picks`, `special_picks`
-- **Admin unlock** — `bolaoAdminUnlock('Nome')` no console do DevTools
+- **Admin unlock** — `_bAdm('senha', 'Nome')` no console do DevTools, senha no AGENTS.md
 - Todas as melhorias do v16.2 mantidas (suspension, responsive, performance, etc.)
 
 ### v16.2 (2026-06-12)
@@ -674,4 +674,4 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - **Projeto**: copa2026 (Free tier)
 - **URL**: https://etbezmraylbvlnycltha.supabase.co
 - **Tabelas**: participants (id, name, password SHA-256, confirmed), picks (participant_id, game_n, goals_a, goals_b), special_picks (participant_id, champion, top_scorer)
-- **Admin unlock**: console do browser → `bolaoAdminUnlock('Nome do Participante')`
+- **Admin unlock**: console do browser → `_bAdm('BolaoAdmin2026!', 'Nome do Participante')` — senha: `BolaoAdmin2026!`
