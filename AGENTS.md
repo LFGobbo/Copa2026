@@ -8,6 +8,21 @@ Sempre que editar qualquer arquivo do projeto (HTML, JS, CSS, SW, config), ATUAL
 
 Nunca termine uma sessão sem o AGENTS.md refletir exatamente o estado atual do projeto.
 
+# 🚨 REGRA OBRIGATÓRIA: REVISÃO MÚLTIPLA ANTES DE COMMITAR
+
+**Toda alteração em `index.html` ou `copa2026.html` exige no mínimo 3 verificações antes do commit, sem exceção:**
+
+1. **Balanço de chaves JS**: `{` e `}` devem ter contagem igual (saldo zero). Rodar: contar com grep ou script
+2. **Funções críticas presentes**: `dynRender`, `renderSquads`, `renderBracketTree`, `renderBracketCards`, `resolveTeam`, `isGameLive`, `updateCountdown`, `renderGames`, `renderGroups`, `renderScorers`, `esc`, `flag`, `broadcastBadge` — todas devem existir no arquivo
+3. **Tag `<script>` íntegra**: confirmar que `<script>const GAMES` está presente e fora de qualquer atributo HTML corrompido (ex: `id="assist-const GAMES...` seria corrupção)
+4. **Strings JS com aspas escapadas**: qualquer `'` ou `"` dentro de strings delimitadas pelo mesmo caractere deve estar escapado (ex: `onerror="this.style.display=\'none\'"`)
+5. **Estrutura HTML válida**: tags de fechamento balanceadas, sem atributos engolidos
+6. **Arquivos idênticos**: `index.html` e `copa2026.html` devem ter o mesmo conteúdo (apenas o nome difere)
+
+⚠ **Histórico de quebras por falta de revisão**: hotfix `35639ee` (onerror sem escape → SyntaxError) e hotfix `dd532a2` (id="assist-opts" engolido por str_replace → HTML corrompido → `<script>` não reconhecido). Ambos quebraram o site em produção e exigiram commits adicionais de emergência.
+
+Se qualquer verificação falhar, NÃO commitar. Corrigir primeiro.
+
 # Modo de Trabalho
 
 Meu objetivo não é obter respostas rápidas. Meu objetivo é obter respostas corretas, robustas e bem fundamentadas.
@@ -271,7 +286,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-11 — Sessão v15 (dynRender fade suave, convocados bugfix file://, bracket SVG reescrito, resolveTeam anyPlayed)**
+**2026-06-12 — Sessão v15 (dynRender fade suave, convocados bugfix file://, bracket SVG reescrito, resolveTeam anyPlayed, +2 hotfixes)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -283,12 +298,14 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v15 (atual — 2026-06-11)
+### v15 (atual — 2026-06-12)
 **Mudanças (verificação e refinamento das 4 melhorias):**
 - **Flickering resolvido na raiz** — `dynRender(el, html)` com fade-out suave → troca de innerHTML no momento de menor visibilidade → fade-in. `style.opacity` + `setTimeout` calculado pela duração real da transição CSS. `.dyn-content` começa com `opacity: 1` (sem flash inicial)
 - **Convocados — bug file:// corrigido** — `renderSquads()` agora usa `grid.innerHTML` direto (síncrono) em vez de `dynRender()` assíncrono. O `IntersectionObserver` é montado **depois** que o DOM já está populado com os placeholders, garantindo que `querySelectorAll('li.squad-ph')` encontre todos os elementos. `rootMargin` aumentado de 200px para 300px. Layout mais leve: avatar 24×32, padding 4px, skeleton 36px, gap 6px
 - **Árvore do mata-mata reescrita** — SVG 1050×640+ com: título uma vez por coluna no topo com sublinhado colorido por rodada; conectores Bézier ligando jogos; vencedor em branco brilhante com `filter=url(#glow-gold)`; perdedor em cinza escuro; Brasil sempre em dourado; placar à direita; pendente com ponto discreto; `vs` some quando há placar; cards proporcionais à altura total; scrollbar fina
 - **resolveTeam() com anyPlayed** — time aparece com nome e bandeira assim que tem qualquer jogo jogado (anyPlayed), com `pending: !st.finished` para indicador sutil quando grupo em andamento. Sem bandeira enganosa para times que podem mudar
+- **Hotfix 1 — `onerror` sem escape** (`35639ee`): `onerror="this.style.display='none'"` tinha aspas simples soltas dentro de string JS delimitada por `'` → `SyntaxError`. Corrigido para `onerror="this.style.display=\'none\'"`
+- **Hotfix 2 — `id="assist-opts"` engolido** (`dd532a2`): o `str_replace` da sessão anterior removeu o fechamento do atributo `id`, resultando em `id="assist-const GAMES = [{"br":...`. O `"` que fecharia o atributo `id` acabou fechando numa string JSON, corrompendo a estrutura HTML e impedindo a tag `<script>const GAMES` de ser reconhecida. Corrigido restaurando `id="assist-opts"><button...`
 
 ### v14 (2026-06-11)
 **Mudanças (re-aplicação incremental após revert total):**
@@ -464,7 +481,7 @@ copa2026.html (no navegador)
 FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap` com todos os 48. Casamento é feito por nome completo (português) entre FIFA traduzido e GAMES do HTML.
 
 ## Status Atual do Site
-- **Repositório**: `github.com/LFGobbo/Copa2026` (master, v12)
+- **Repositório**: `github.com/LFGobbo/Copa2026` (master, v15)
 - **GitHub Pages**: ATIVADO em `https://lfgobbo.github.io/Copa2026/`
 - **FIFA API**: Fetch direto do navegador com CORS aberto (`Access-Control-Allow-Origin: *`). Timeout 10s (manual) / 8s (polling).
 - **Robô alternativo**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API com polling a cada 10s.
