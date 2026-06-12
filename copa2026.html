@@ -503,13 +503,17 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       <div class="bolao-special-grid">
         <div class="bolao-special-card">
           <label>Campe&atilde;o da Copa (+50 pts)</label>
-          <input type="text" id="bolao-champion" list="bolao-champion-list" placeholder="Digite o nome do time..." autocomplete="off">
+          <form autocomplete="off" style="display:contents" onsubmit="return false">
+            <input type="text" id="bolao-champion" list="bolao-champion-list" placeholder="Digite o nome do time..." autocomplete="nope" spellcheck="false">
+          </form>
           <datalist id="bolao-champion-list"></datalist>
           <div class="bolao-pick-saved" id="bolao-champion-saved"></div>
         </div>
         <div class="bolao-special-card">
           <label>Artilheiro (+20 pts / +10 se empatado)</label>
-          <input type="text" id="bolao-scorer" list="bolao-scorer-list" placeholder="Digite o nome do jogador..." autocomplete="off">
+          <form autocomplete="off" style="display:contents" onsubmit="return false">
+            <input type="text" id="bolao-scorer" list="bolao-scorer-list" placeholder="Digite o nome do jogador..." autocomplete="nope" spellcheck="false">
+          </form>
           <datalist id="bolao-scorer-list"></datalist>
           <div class="bolao-pick-saved" id="bolao-scorer-saved"></div>
         </div>
