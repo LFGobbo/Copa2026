@@ -611,7 +611,7 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Erro de rede aparecendo na contagem regressiva~~ ✅ v16 — mensagens de erro separadas para #countdown-status, não sobrescrevem #countdown-next
 - ~~Jogos passados ocupam espaço sem necessidade~~ ✅ v16 — jogos passados ficam colapsados por padrão (só placar + grupo), expandem com clique no botão +. Próximo jogo aparece primeiro e recebe scroll automático
 - ~~Falta indicador visual de jogador pendurado/suspenso nos cards de jogo~~ ✅ v16.2 — `getSuspensions()` escaneia cards por time, badge ⚠ N com tooltip
-- Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão real
+- ~~Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão real~~ ✅ v16.2 — redimensionadas via System.Drawing: bola_t.png 466→36KB, mascotes 300→41KB (total 1.4MB→155KB, -89%)
 
 ### Itens resolvidos nesta sessão (v11 + v11.5)
 - ~~Convocados sem filtro~~ ✅ barra de busca com filtro em tempo real (país + jogador)
