@@ -364,7 +364,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="tab" data-tab="regras"><span class="tab-icon">📖</span><span class="tab-label">Regras</span></div>
 </div>
 <div class="content active" id="tab-jogos">
-  <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">\u23F1 Pr\u00f3ximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados">\u22EF</span></div>
+  <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">&#9201; Pr&oacute;ximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados">&#8943;</span></div>
   <div class="filters" id="filter-bar"></div>
   <div id="games-list" class="dyn-content"></div>
 </div>
@@ -1564,19 +1564,29 @@ var _refreshTimer=null;
 document.getElementById("refresh-btn").addEventListener("click",function(){
   var btn=this,st=document.getElementById("countdown-status");
   if(_refreshTimer){clearTimeout(_refreshTimer);_refreshTimer=null}
-  btn.className='refresh-btn';btn.style.transform="rotate(360deg)";btn.textContent="\u23F3";
+  btn.className='refresh-btn';btn.textContent="\u23F3";
   fetchFifaScores().then(function(map){
-    var changed=mergeScores(map);auditData();
     btn.style.transform="";
+    if(!map){
+      // fetchFifaScores engoliu o erro e retornou null
+      goRefreshError(btn,st);
+      return
+    }
+    var changed=mergeScores(map);auditData();
     if(changed){btn.textContent="\u2713";st.textContent='\u2705 Placares atualizados com FIFA API'}else{btn.textContent="\u27F3";st.textContent='\u2139\uFE0F Nenhuma mudan\u00e7a nos placares'}
-    _refreshTimer=setTimeout(function(){btn.textContent="\u27F3";st.textContent="";_refreshTimer=null},3000)
-  })
-  .catch(function(e){
-    btn.style.transform="";btn.className='refresh-btn refresh-err';btn.textContent="!";
-    st.textContent='\u26A0 Erro ao conectar na FIFA API';
     _refreshTimer=setTimeout(function(){btn.className='refresh-btn';btn.textContent="\u27F3";st.textContent="";_refreshTimer=null},3000)
   })
+  ["catch"](function(e){
+    btn.style.transform="";
+    goRefreshError(btn,st)
+  })
 });
+function goRefreshError(btn,st){
+  if(_refreshTimer){clearTimeout(_refreshTimer);_refreshTimer=null}
+  btn.className='refresh-btn refresh-err';btn.textContent="!";
+  st.textContent='\u26A0 Erro ao conectar na FIFA API';
+  _refreshTimer=setTimeout(function(){btn.className='refresh-btn';btn.textContent="\u27F3";st.textContent="";_refreshTimer=null},3000)
+}
 
 // --- Polling automático da FIFA API ---
 initFifaMaps();
