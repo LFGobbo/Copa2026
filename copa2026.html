@@ -954,9 +954,10 @@ function renderGameCard(g){
   var phaseClass=isFinal?"final":isGroup?"group group-"+grpL:"knockout";
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
-  var liveElapsed=live?Math.floor((new Date()-gameUTC(g))/60000):0;
+  var matchMin=function(gn){var id=FIFA_MATCH_IDS[gn];if(id&&MATCH_MINUTE[id])return MATCH_MINUTE[id];var gd=gameUTC(g);return gd?Math.floor((new Date()-gd)/60000):0}(gn);
+  var liveElapsed=live?matchMin:0;
   var past=currentFilter==="all"&&gameIsPast(g);
-   return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO '+(liveElapsed>0?liveElapsed+"'":"0'")+'</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
+   return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u23F1 '+liveElapsed+"'</span> ": "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
     if(x.type==='goal'){
       var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
       var tn=x.display==='a'?g.a:g.b;
@@ -1014,7 +1015,7 @@ function updateCountdown(){
   liveGames.forEach(function(x){
     var g=x.game,s=scores[g.n]||{};
     var sc=s.a!==undefined&&s.b!==undefined?s.a+"-"+s.b:"AO VIVO";
-    var elapsed=Math.floor((now-x.time)/60000);
+    var elapsed=function(gn){var id=FIFA_MATCH_IDS[gn];if(id&&MATCH_MINUTE[id])return MATCH_MINUTE[id];var gd=gameUTC(x.game);return gd?Math.floor((now-gd)/60000):0}(g.n);
     var timeStr=elapsed>0?elapsed+"'":"0'";
     cards.push('<div class="countdown-event"><span class="countdown-event-live">\u25cf</span><span class="countdown-event-num">#'+g.n+'</span><span class="countdown-event-teams">'+g.a+" vs "+g.b+'</span><span class="countdown-event-time">'+sc+'</span><span class="countdown-event-date">'+timeStr+'</span></div>');
   });
@@ -1567,7 +1568,7 @@ var FIFA_TEAM_MAP={
 };
 var FIFA_URL="https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200";
 
-var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},MATCH_STARTED={},MATCH_ENDED={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={};
+var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},MATCH_STARTED={},MATCH_ENDED={},MATCH_MINUTE={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={};
 for(var abbr in FIFA_TEAM_MAP)FIFA_TEAM_REV[FIFA_TEAM_MAP[abbr]]=abbr;
 
 function fetchFifaScores(t){var ac=new AbortController(),to=setTimeout(function(){ac.abort()},t||10000);
@@ -1718,8 +1719,15 @@ function processTimeline(idMatch,gameId){
       (function(){var fh=0,fa=0;d.Event.forEach(function(e){if(e.HomeGoals!==void 0&&e.AwayGoals!==void 0){fh=e.HomeGoals;fa=e.AwayGoals}});var _ga=goals[gameId]&&goals[gameId].a,_gb=goals[gameId]&&goals[gameId].b,_gl=!!_ga&&_ga.length>fh||!!_gb&&_gb.length>fa;if(_gl){if(_ga&&_ga.length>fh)_ga.length=fh;if(_gb&&_gb.length>fa)_gb.length=fa;if(_ga&&!_ga.length)delete goals[gameId].a;if(_gb&&!_gb.length)delete goals[gameId].b;saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers()}})()
       if(!newEvents.length)return;
       var maxId=0;newEvents.forEach(function(e){var id=parseInt(e.EventId,10);if(id>maxId)maxId=id});PROCESSED_EVENTS[idMatch]=maxId;
-      // Track match state
-      newEvents.forEach(function(e){if(e.Type===7)MATCH_STARTED[idMatch]=true;if(e.Type===26)MATCH_ENDED[idMatch]=true});
+      // Track match state and minute
+      newEvents.forEach(function(e){
+        if(e.Type===7)MATCH_STARTED[idMatch]=true;
+        if(e.Type===26)MATCH_ENDED[idMatch]=true;
+        if(e.MatchMinute){
+          var m=parseInt(e.MatchMinute.replace(/'/g,''),10);
+          if(!isNaN(m)&&(!MATCH_MINUTE[idMatch]||m>MATCH_MINUTE[idMatch]))MATCH_MINUTE[idMatch]=m;
+        }
+      });
       var changed=false,game=GAMES.find(function(g){return g.n==gameId});if(!game)return;
       var meta=FIFA_MATCH_META[gameId]||{},prevHome=0,prevAway=0;
       newEvents.forEach(function(e,idx){
