@@ -285,13 +285,18 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ### v12 (atual — 2026-06-11)
 **Mudanças:**
-- **JSON externo** — PLAYERS (48 times, 1248 jogadores) e PLAYER_PHOTOS (951 fotos) extraídos para `players.json` (116KB) e `photos.json` (174KB). HTML caiu de 499KB para 170KB (−66%). Carregamento via XMLHttpRequest com graceful degradation: app funciona sem convocados se os JSONs não carregarem
-- **Virtualização com IntersectionObserver** — `renderSquads()` não gera mais 1248 `<li>` preenchidos. Gera placeholders de 44px com shimmer animation. IntersectionObserver com rootMargin 200px hidrata cada jogador individualmente ao entrar na viewport
-- **Bracket com propagação automática** — `resolveTeam()` resolve placeholders: `"1°/2° Grupo X"` via `_groupStandings(letter)` com H2H; `"V. Jogo N"` via `_winnerOf(N)` pelo placar; `"Perd. Jogo N"` via `_loserOf(N)`; `"0"` (vaga 3º colocado) via `_rankedThirds()` com 8 melhores em 7 critérios. SVG reescrito (1050×640) com legendas, cores por fase, vencedor em dourado
-- **SW reescrito (v12)** — `STATIC` e `DATA` separados. Assets estáticos: cache-first. JSONs (`players.json`, `photos.json`): stale-while-revalidate (serve do cache imediatamente, atualiza em background). HTML: network-first com cache fallback (não fica preso em versão antiga). Demais requests (FIFA API, imagens externas): network-first.
-- **Ranking de assistências** — `renderScorers()` agora exibe duas tabelas: artilheiros e assistências, ordenadas por quantidade.
-- **Bugfix: gameUTC com BRT fixo** — os horários no GAMES já estão em Brasília (UTC-3), não no fuso do estádio. `gameUTC()` agora usa offset fixo +3 ao invés de buscar `STADIUM_TZ`, que só funcionava se o split do nome do estádio casasse. Cards exibem `HH:MM Brasília` diretamente.
-- **Bugfix: `forEach` aninhado** — `processTimeline()` tinha dois `newEvents.forEach` (cartões + gols) mas o primeiro não era fechado com `});` antes do segundo começar, deixando o segundo aninhado dentro do primeiro. Isso impedia o JavaScript inteiro de executar — o site ficava completamente branco/dead. Corrigido na v12.
+- **JSON externo** — PLAYERS (48 times, 1248 jogadores) e PLAYER_PHOTOS (951 fotos) extraídos para `players.json` (116KB) e `photos.json` (174KB). HTML caiu de 499KB para 170KB (−66%). Carregamento via XMLHttpRequest com graceful degradation
+- **Virtualização com IntersectionObserver** — `renderSquads()` gera 1248 placeholders com shimmer, hidrata sob demanda com rootMargin 200px
+- **Bracket com propagação automática** — `resolveTeam()` resolve `1°/2° Grupo X`, `V. Jogo N`, `Perd. Jogo N`, `0` (3º colocado). SVG 1050×640
+- **SW reescrito (v12)** — STATIC (cache-first), DATA (stale-while-revalidate), HTML (network-first)
+- **Ranking de assistências** — `renderScorers()` exibe gols e assistências lado a lado em flexbox
+- **Bugfix: gameUTC BRT fixo** — horários no GAMES são Brasília (UTC-3), não fuso do estádio. `gameUTC()` usa offset fixo +3
+- **Bugfix: placar via timeline** — calendário FIFA retorna `HomeTeamScore: null`. `processTimeline()` agora extrai placar final dos eventos (HomeGoals/AwayGoals cumulativos) e seta `scores[gameId]`
+- **Bugfix: `forEach` aninhado** — `processTimeline()` faltava `});` entre loops de cartões e gols, impedia JS inteiro de executar
+- **Cartões automáticos** — timeline API processa Type 2 (amarelo) e Type 3 (vermelho), exibe no game card
+- **Horário Brasília** — cards exibem `HH:MM Brasília`
+- **Meta tags OG** — og:title, og:description, og:image, og:url
+- **Todas as correções da v11.10** mantidas (window.event, saveState try/catch, esc() XSS, polling backoff, tiebreakers H2H, etc)
 
 ### v11.10**
 - **Correção grupos I/J** — dados de GAMES e GROUPS estavam com times trocados entre grupos I e J (Argentina, Argélia, Áustria, Jordânia no I; França, Iraque, Noruega, Senegal no J). Jogo #20 movido de G para I. 11 jogos afetados (#17-#72). Todas as tabelas de classificação agora estão corretas
@@ -455,22 +460,26 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 ## Pendências
 
 ### Pendências atuais
-- ~~Grupos I/J com dados trocados~~ ✅ corrigido na v11.10
-- ~~window.event em 4 funções~~ ✅ parâmetro e explícito
-- ~~saveState sem try/catch~~ ✅ adicionado catch
-- ~~SW cache assets quebrado~~ ✅ url.endsWith sem ./
-- ~~AO VIVO falso positivo~~ ✅ isGameLive checa MATCH_ENDED
-- ~~alt text vazio nas fotos~~ ✅ adicionado nome do jogador
-- ~~Critérios de desempate incompletos~~ ✅ head-to-head + GF
-- ~~XSS sem escape~~ ✅ esc() function adicionada
-- ~~Polling sem backoff~~ ✅ 10s/60s adaptativo
-- ~~Cartões amarelo/vermelho~~ ✅ implementado v11.10
-- ~~Meta tags OG~~ ✅ adicionadas v11.10
-- ~~Dead data sa/sb~~ ✅ removido v11.10
-- ~~Bracket com propagação automática~~ ✅ implementado v12
-- ~~Virtualização renderSquads~~ ✅ IntersectionObserver v12
-- ~~Extrair dados para JSON externo~~ ✅ players.json + photos.json v12
-- Adicionar suporte a Type 41/42/43 da timeline (cartão vermelho 2º amarelo)
+- ~~Grupos I/J com dados trocados~~ ✅ v11.10
+- ~~window.event em 4 funções~~ ✅ v11.10
+- ~~saveState sem try/catch~~ ✅ v11.10
+- ~~SW cache assets quebrado~~ ✅ v11.10
+- ~~AO VIVO falso positivo~~ ✅ v11.10
+- ~~Critérios de desempate incompletos~~ ✅ v11.10
+- ~~XSS sem escape~~ ✅ v11.10
+- ~~Polling sem backoff~~ ✅ v11.10
+- ~~Cartões amarelo/vermelho~~ ✅ v11.10
+- ~~Meta tags OG~~ ✅ v11.10
+- ~~Bracket com propagação automática~~ ✅ v12
+- ~~Virtualização renderSquads~~ ✅ v12
+- ~~Extrair dados para JSON externo~~ ✅ v12
+- ~~Placar via timeline (não calendário)~~ ✅ v12
+- ~~Artilheiros lado a lado~~ ✅ v12
+- ~~gameUTC com fuso correto (BRT)~~ ✅ v12
+- Juiz/árbitro nos jogos (sem fonte de dados — FIFA API retorna Officials: [] vazio)
+- Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão
+- `parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)
+- Hash change causa scroll indesejado em mobile
 
 ### Itens resolvidos nesta sessão (v11 + v11.5)
 - ~~Convocados sem filtro~~ ✅ barra de busca com filtro em tempo real (país + jogador)
