@@ -2175,14 +2175,23 @@ function bolaoInit(){
 // --- Simulação: bolaoSimular() no console ---
 function bolaoSimular(){
   var simScores={7:{a:3,b:1},8:{a:2,b:0},9:{a:1,b:1},10:{a:2,b:2},11:{a:0,b:0},12:{a:3,b:0},13:{a:1,b:0},14:{a:2,b:1},15:{a:0,b:2},16:{a:1,b:3},17:{a:2,b:2},18:{a:3,b:2},19:{a:1,b:0},20:{a:0,b:0},21:{a:4,b:1},22:{a:0,b:1},23:{a:2,b:2},24:{a:1,b:1},25:{a:3,b:0},26:{a:0,b:2},27:{a:1,b:0},28:{a:2,b:3},29:{a:0,b:0},30:{a:2,b:1},31:{a:1,b:2},32:{a:3,b:1},33:{a:0,b:4},34:{a:2,b:0},35:{a:1,b:1},36:{a:0,b:0}};
-  Object.keys(simScores).forEach(function(gn){if(!scores[gn])scores[gn]={};scores[gn].a=simScores[gn].a;scores[gn].b=simScores[gn].b});
-  saveState();
+  Object.keys(simScores).forEach(function(gn){scores[gn]={a:simScores[gn].a,b:simScores[gn].b}});
   bolaoLoadRanking();
   renderGames(currentFilter);
   renderGroups();
   renderBracket();
   renderScorers();
-  console.log('Simulação carregada: 30 jogos com placares, '+Object.keys(_bolaoParticipants).length+' participantes no ranking');
+  console.log('Simula\u00e7\u00e3o carregada (apenas em mem\u00f3ria). Use bolaoLimpar() para limpar.');
+}
+function bolaoLimpar(){
+  GAMES.forEach(function(g){delete scores[g.n]});
+  ['copa2026_data','copa2026_bak1','copa2026_bak2'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
+  renderGames(currentFilter);
+  renderGroups();
+  renderBracket();
+  renderScorers();
+  bolaoLoadRanking();
+  console.log('Placares limpos. Recarregue a p\u00e1gina para garantir.');
 }
 // ========== FIM BOLÃO ==========
 
