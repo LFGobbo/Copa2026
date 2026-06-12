@@ -271,7 +271,7 @@ Aja como alguém responsável por colocar a solução em produção e mantê-la 
 # Progresso do Projeto — Copa do Mundo 2026
 
 ## Última atualização
-**2026-06-11 — Sessão v13 (árbitro funcional, ordem cronológica, flickering resolvido, regras de suspensão)**
+**2026-06-11 — Sessão v14 (re-aplicação incremental após revert: 3ºs lugares, árbitro, eventos merge, flickering, live enfático, countdown simultâneo, broadcasts)**
 
 ## Objetivo
 App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiros, convocados e regras da Copa do Mundo 2026. Compartilhável via WhatsApp, com persistência em localStorage.
@@ -283,13 +283,25 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 
 ## Versões
 
-### v13 (atual — 2026-06-11)
-**Mudanças:**
-- **Árbitro funcional** — Wikipedia scraper trocado de `action=query&prop=extracts` (que NÃO retorna dados de infobox) para `action=parse` (HTML completo). Regex ajustado para `<a>Nome</a> (<a>País</a>)`. Exibe corretamente no card do jogo
-- **Ordem cronológica gols+cartões** — `renderGameCard()` merge goals e cards em único array `events`, ordenado por minuto
-- **Flickering resolvido** — CSS `.dyn-content` com transição, `requestAnimationFrame` em re-renders. Primeiro render é síncrono (sem delay)
-- **Regras de cartões/suspensões** — nova seção na aba Regras: 2 amarelos = suspensão, pendurado, vermelho direto, zeragem após quartas
-- **Transmissões atualizadas** — adicionados Globoplay (espelha Globo, 55 jogos) e Ge TV (espelha SBT, 32 jogos) em todos os `br` do GAMES. `broadcastBadge()` reconhece os novos canais
+### v14 (atual — 2026-06-11)
+**Mudanças (re-aplicação incremental após revert total):**
+- **3ºs lugares no bracket corrigidos** — `resolveTeam()` para placeholder `"0"`: quando o time é conhecido (finished), mostra apenas o nome do time com bandeira (sem `(3° Grupo X)` redundante). Quando pendente, mostra `"3° Grupo X"` sem bandeira (evita bandeira enganosa de time que pode mudar)
+- **Árbitro via Wikipedia action=parse** — trocado de `action=query&prop=extracts` (sem infobox) para `action=parse&prop=text` (HTML completo). Regex `/Referee:<\/th>\s*<td>(?:<a[^>]*>)?([^<]+?)(?:<\/a>)?\s*\(<a[^>]*>([^<]+?)<\/a>/gi` extrai nome do árbitro do infobox
+- **Ordem cronológica gols+cartões** — `renderGameCard()` merge goals e cards em único array `events`, ordenado por minuto. Renderização unificada no `events.map()`
+- **Flickering resolvido** — nova função `dynRender(el, html)`: remove classe `.show`, força reflow, seta innerHTML via rAF, adiciona `.show` via rAF aninhado. CSS `.dyn-content` com `opacity:0→1` e `transition:.1s`. Aplicado em games-list, groups-grid, bracket-cards, bracket-tree, scorers-list, squads-grid
+- **Live game mais enfático** — `.game-card.live`: borda mais grossa (2px), glow maior (box-shadow 24px, inset 40px), `.live-dot` maior (12px) com glow vermelho, `.live-label` maior (11px) com text-shadow pulsing
+- **Countdown simultâneo** — `updateCountdown()` mostra AO VIVO e próximo jogo ao mesmo tempo. Live games no `#countdown-display` (el.innerHTML) e próximo jogo com contagem regressiva no `#countdown-next` (ne.innerHTML)
+- **Transmissões Globoplay/Ge TV** — add pós-carga no GAMES (onde tem Globo → Globoplay, SBT → Ge TV). `broadcastBadge()` reconhece os novos canais (sem logo, fallback texto)
+- `renderGoalBadge()` mantida mas não usada (events merge usa render inline)
+
+### v13 (2026-06-11)
+**Mudanças (REVERTIDAS — sessão anterior):**
+- **Árbitro funcional** — Wikipedia scraper trocado de `action=query&prop=extracts` para `action=parse`. Regex ajustado
+- **Ordem cronológica gols+cartões** — `renderGameCard()` merge goals e cards
+- **Flickering resolvido** — CSS `.dyn-content` + rAF
+- **Regras de cartões/suspensões** — nova seção
+- **Transmissões atualizadas** — Globoplay, Ge TV
+- **⚠ Nota: Esta versão foi revertida para commit 3b09ae4/3d2a8eb (antes de todas as mudanças) porque causava tela azul. As melhorias foram reaplicadas incrementalmente na v14 com validação entre cada etapa**
 
 ### v12 (2026-06-11)
 **Mudanças:**
@@ -484,17 +496,18 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Placar via timeline (não calendário)~~ ✅ v12
 - ~~Artilheiros lado a lado~~ ✅ v12
 - ~~gameUTC com fuso correto (BRT)~~ ✅ v12
-- ~~Árbitro do Wikipedia~~ ✅ v13
-- ~~Ordem cronológica gols+cartões~~ ✅ v13
-- ~~Flickering na página~~ ✅ v13
-- ~~Regras de cartões/suspensões~~ ✅ v13
-- ~~Transmissões TV (getv, globoplay, etc.)~~ ✅ v13 — Globoplay e Ge TV adicionados via script em todos os GAMES<br>
+- ~~Árbitro do Wikipedia~~ ✅ v14
+- ~~Ordem cronológica gols+cartões~~ ✅ v14
+- ~~Flickering na página~~ ✅ v14
+- ~~Transmissões TV (getv, globoplay, etc.)~~ ✅ v14 — Globoplay e Ge TV adicionados via script em todos os GAMES<br>
+- ~~3ºs lugares no bracket com formatação errada (bandeira + escrita)~~ ✅ v14 — resolveTeam corrigido: time conhecido mostra só nome+bandeira, pendente mostra "3º X" sem bandeira
+- ~~AO VIVO + countdown simultâneo~~ ✅ v14 — countdown mostra live games e próximo jogo lado a lado
+- ~~Live game pouco enfático~~ ✅ v14 — borda 2px, glow maior, dot 12px com glow, label maior
 - Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
 - Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão
 - `parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)
 - Hash change causa scroll indesejado em mobile
 - Broadcast separator `·` corrompido em algumas entradas (ex: `Globo�SporTV�Caz�TV`) — possivelmente encoding issue
-- Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
 
 ### Itens resolvidos nesta sessão (v11 + v11.5)
 - ~~Convocados sem filtro~~ ✅ barra de busca com filtro em tempo real (país + jogador)
@@ -528,7 +541,7 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - **Compartilhar**: mandar o link `https://lfgobbo.github.io/Copa2026/` ou o arquivo `copa2026.html`. Abre no navegador, funciona 100% offline (com Service Worker), placar pode ser digitado manualmente ou via FIFA API ao vivo.
 - **Nota**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API.
 
-## Arquivos Relevantes (2026-06-11 v13)
+## Arquivos Relevantes (2026-06-11 v14)
 - `index.html` — app principal (v13, deploy GitHub Pages, ~170KB)
 - `players.json` — dados dos 1248 jogadores (116KB)
 - `photos.json` — URLs das fotos dos jogadores (174KB)

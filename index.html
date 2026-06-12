@@ -72,8 +72,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .filter-btn.group-L{background:rgba(96,125,139,.06)}
 .filter-btn.group-L:hover,.filter-btn.group-L.active{background:rgba(96,125,139,.18);border-color:#78909C;color:#78909C}
 .game-card{background:var(--card);border-radius:var(--radius);padding:12px 14px;margin-bottom:6px;display:grid;grid-template-columns:28px 1fr 1fr auto 1fr;gap:4px;align-items:center;border:1px solid var(--border);transition:var(--transition);animation:slideUp .25s ease both;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
-.game-card.live{border-color:var(--green);box-shadow:0 0 20px rgba(0,200,83,.15)}
-.game-card.live::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--green);animation:pulse 1.5s infinite}
+.game-card.live{border-color:var(--green);box-shadow:0 0 24px rgba(0,200,83,.25),inset 0 0 40px rgba(0,200,83,.06);border-width:2px}
+.game-card.live::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--green);animation:pulse .8s infinite}
+.game-card.live .live-dot{width:12px;height:12px;box-shadow:0 0 8px rgba(255,23,68,.6)}
+.game-card.live .live-label{font-size:11px;letter-spacing:1.5px;text-shadow:0 0 8px rgba(255,23,68,.4)}
 .game-card:hover{background:var(--card-hover);border-color:var(--border-light);transform:translateY(-1px);box-shadow:var(--shadow)}
 .game-num{font-size:11px;color:var(--muted);text-align:center;font-weight:600;opacity:.5}
 .game-info{font-size:12px;color:var(--muted);line-height:1.5}
@@ -176,6 +178,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .refresh-btn:hover{background:var(--gold-dim);border-color:var(--gold);transform:rotate(90deg)}
 .refresh-btn:active{transform:rotate(180deg)}
 .countdown-next strong{color:var(--text)}
+.countdown-live{color:var(--red);font-weight:800;font-size:13px;animation:pulse 1s infinite}
+.countdown-sep{color:var(--border-light);margin:0 8px}
+.countdown-games{font-size:12px;color:var(--text)}
+.dyn-content{opacity:0;transition:opacity .1s ease}.dyn-content.show{opacity:1}
 .squad-filter-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .squad-filter-bar input{flex:1;min-width:180px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:inherit}
 .squad-filter-bar input:focus{outline:none;border-color:var(--gold)}
@@ -302,10 +308,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     <button class="refresh-btn" id="refresh-btn" title="Atualizar placares">⟳</button>
   </div>
   <div class="filters" id="filter-bar"></div>
-  <div id="games-list"></div>
+  <div id="games-list" class="dyn-content"></div>
 </div>
 <div class="content" id="tab-grupos">
-  <div class="groups-grid" id="groups-grid"></div>
+  <div class="groups-grid dyn-content" id="groups-grid"></div>
   <div class="third-container" id="third-container">
     <div class="third-title">📋 Melhores Terceiros Colocados</div>
     <table class="third-table" id="third-table">
@@ -318,11 +324,11 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     <button class="bview-btn active" data-bview="cards">📇 Cartões</button>
     <button class="bview-btn" data-bview="tree">🌳 Árvore</button>
   </div>
-  <div id="bracket-cards" class="bracket-container"></div>
-  <div id="bracket-tree" class="bracket-tree"></div>
+  <div id="bracket-cards" class="bracket-container dyn-content"></div>
+  <div id="bracket-tree" class="bracket-tree dyn-content"></div>
 </div>
-<div class="content" id="tab-artilheiros"><div id="scorers-list"></div></div>
-<div class="content" id="tab-convocados"><div class="squad-filter-bar"><input type="text" id="squad-filter" placeholder="Buscar país ou jogador..." oninput="renderSquads()"></div><div class="squads-grid" id="squads-grid"></div></div>
+<div class="content" id="tab-artilheiros"><div id="scorers-list" class="dyn-content"></div></div>
+<div class="content" id="tab-convocados"><div class="squad-filter-bar"><input type="text" id="squad-filter" placeholder="Buscar país ou jogador..." oninput="renderSquads()"></div><div class="squads-grid dyn-content" id="squads-grid"></div></div>
 <div class="content" id="tab-regras"><div class="rules-content" id="rules-content"></div></div>
 <div class="popup-overlay" id="goal-popup">
   <div class="popup">
@@ -386,7 +392,7 @@ function gameUTC(g){try{var p=g.d.split(" ")[0].split("/"),tp=g.t.split(":");if(
 function toBRT(g){try{var gd=gameUTC(g);if(!gd)return'';var br=new Date(gd-10800000);return br.getUTCHours().toString().padStart(2,'0')+':'+br.getUTCMinutes().toString().padStart(2,'0')}catch(e){return''}}
 
 function flag(t){var c=FLAG_ISO[t];return c?'<img class="flag-img" src="https://flagcdn.com/24x18/'+c+'.png" alt="'+t+'" loading="lazy">':'<span style="font-size:18px">\u{1F3F3}\uFE0F</span>'}
-function broadcastBadge(br){if(!br)return'';var m={'Globo':'logo_globo.png','SporTV':'logo_sportv.png','Caz\u00e9TV':'logo_cazetv.png','SBT':'logo_sbt.png','N Sports':'logo_nsports.png'};return br.split(/\u00b7/).map(function(c){c=c.trim();if(!c)return'';var k=m[c];return k?'<span class="br-badge"><img class="br-logo" src="'+k+'" alt="'+c+'">'+c+'</span>':'<span class="br-badge">'+c+'</span>'}).filter(function(s){return s}).join('')}
+function broadcastBadge(br){if(!br)return'';var m={'Globo':'logo_globo.png','SporTV':'logo_sportv.png','Caz\u00e9TV':'logo_cazetv.png','SBT':'logo_sbt.png','N Sports':'logo_nsports.png','Globoplay':'','Ge TV':''};return br.split(/\u00b7/).map(function(c){c=c.trim();if(!c)return'';var k=m[c];return k?'<span class="br-badge"><img class="br-logo" src="'+k+'" alt="'+c+'">'+c+'</span>':'<span class="br-badge">'+c+'</span>'}).filter(function(s){return s}).join('')}
 function teamRow(n,c){return'<div class="team-row"><span class="flag">'+flag(n)+'</span><span class="team-name'+c+'">'+esc(n)+'</span></div>'}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 if(!Object.values)Object.values=function(o){return Object.keys(o).map(function(k){return o[k]})};
@@ -536,26 +542,41 @@ function renderGames(filter){
   var games=GAMES;
   if(filter!=="all")games=games.filter(function(g){return g.f===GROUP_NAMES[filter]||g.f===filter});
   games.sort(function(a,b){return a.n-b.n});
-  el.innerHTML=games.map(function(g){return renderGameCard(g)}).join("");
+  dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""));
   document.querySelectorAll(".score-input").forEach(function(i){i.addEventListener("input",scoreInput)});
+}
+function dynRender(el, html){
+  el.classList.remove('show');
+  void el.offsetWidth;
+  requestAnimationFrame(function(){
+    el.innerHTML = html;
+    requestAnimationFrame(function(){el.classList.add('show')});
+  });
 }
 function renderGameCard(g){
   var gn=g.n,s=scores[gn]||{},sa=s.a!==undefined?s.a:"",sb=s.b!==undefined?s.b:"";
   var gaA=goals[gn]&&goals[gn].a?goals[gn].a:[],gaB=goals[gn]&&goals[gn].b?goals[gn].b:[];
   var caA=cards[gn]&&cards[gn].a?cards[gn].a:[],caB=cards[gn]&&cards[gn].b?cards[gn].b:[];
-  var allGoals=[];
-  gaA.forEach(function(gl){allGoals.push({gl:gl,team:'a',display:gl.type==='own'?'b':'a',st:'a'})});
-  gaB.forEach(function(gl){allGoals.push({gl:gl,team:'b',display:gl.type==='own'?'a':'b',st:'b'})});
-  allGoals.sort(function(x,y){return(parseInt(x.gl.minute)||0)-(parseInt(y.gl.minute)||0)});
-  var allCards=[];caA.forEach(function(c){allCards.push({card:c,team:'a',tn:g.a})});caB.forEach(function(c){allCards.push({card:c,team:'b',tn:g.b})});
-  allCards.sort(function(x,y){return(parseInt(x.card.minute)||0)-(parseInt(y.card.minute)||0)});
-  var cardsHTML=allCards.map(function(x){var cr=x.card.type==='red'?'red':'yellow';return'<span class="card-badge card-'+cr+'">'+(cr==='red'?'\uD83D\uDFE5':'\uD83D\uDFE8')+' '+x.card.minute+"' "+esc(x.card.pname)+'<span class="remove-goal" onclick="removeCard('+gn+',\''+x.team+'\',\''+x.card.key+'\')">\u00d7</span></span>'}).join('');
+  var events=[];
+  gaA.forEach(function(gl){events.push({type:'goal',data:gl,team:'a',display:gl.type==='own'?'b':'a',st:'a',minute:parseInt(gl.minute)||0})});
+  gaB.forEach(function(gl){events.push({type:'goal',data:gl,team:'b',display:gl.type==='own'?'a':'b',st:'b',minute:parseInt(gl.minute)||0})});
+  caA.forEach(function(c){events.push({type:'card',data:c,team:'a',tn:g.a,minute:parseInt(c.minute)||0})});
+  caB.forEach(function(c){events.push({type:'card',data:c,team:'b',tn:g.b,minute:parseInt(c.minute)||0})});
+  events.sort(function(x,y){return x.minute-y.minute});
   var isGroup=g.f&&g.f.startsWith("Grupo"),isFinal=g.f==="Final";
   var grpL=isGroup?g.f.split(' ')[1]:'';
   var phaseClass=isFinal?"final":isGroup?"group group-"+grpL:"knockout";
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
-  return'<div class="game-card'+(live?" live":"")+'" id="g-'+gn+'"><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span><div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+teamRow(g.a,g.a==="Brasil"?" brazil":"")+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+teamRow(g.b,g.b==="Brasil"?" brazil":"")+'</div><div class="goal-events">'+allGoals.map(function(x,i){return renderGoalBadge(x.gl,gn,x.display,x.st,i+1)}).join('')+cardsHTML+'</div></div>';
+  return'<div class="game-card'+(live?" live":"")+'" id="g-'+gn+'"><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span><div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+teamRow(g.a,g.a==="Brasil"?" brazil":"")+'</div><div class="game-score"><input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-"><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-"></div><div class="team-col">'+teamRow(g.b,g.b==="Brasil"?" brazil":"")+'</div><div class="goal-events">'+events.map(function(x){
+    if(x.type==='goal'){
+      var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
+      var tn=x.display==='a'?g.a:g.b;
+      return'<div class="goal-badge" title="'+esc(gl.pname)+' (#'+gl.player+')"><span class="goal-pos"></span>'+flag(tn)+' <span class="type-badge '+tc+'">'+tl+'</span> '+(gl.minute?gl.minute+"' ":"")+esc(gl.pname)+(gl.aname?' <span class="assist-label">\uD83D\uDC5F '+esc(gl.aname)+'</span>':"")+'<span class="remove-goal" onclick="removeGoal('+gn+',\''+(gl.team||x.st||x.team)+'\',\''+gl.key+'\')">\u00d7</span></div>';
+    }
+    var cr=x.data.type==='red'?'red':'yellow';
+    return'<span class="card-badge card-'+cr+'">'+(cr==='red'?'\uD83D\uDFE5':'\uD83D\uDFE8')+' '+x.data.minute+"' "+esc(x.data.pname)+'<span class="remove-goal" onclick="removeCard('+gn+',\''+x.team+'\',\''+x.data.key+'\')">\u00d7</span></span>';
+  }).join('')+'</div></div>';
 }
 function renderGoalBadge(gl,gn,team,st,pos){
   var tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
@@ -585,37 +606,33 @@ function updateCountdown(){
     el.textContent=Math.floor(d/86400000).toString().padStart(2,"0")+"d "+Math.floor((d%86400000)/3600000).toString().padStart(2,"0")+"h "+Math.floor((d%3600000)/60000).toString().padStart(2,"0")+"m "+Math.floor((d%60000)/1000).toString().padStart(2,"0")+"s";
     ne.textContent="At\u00e9 o in\u00edcio da Copa do Mundo 2026!";return;
   }
-  // Check live games
+  // Find live games AND next upcoming simultaneously
   var liveGames=[];
-  for(var i=0;i<GAMES.length;i++){
-    try{var g=GAMES[i];if(isGameLive(g))liveGames.push(g)}catch(e){}
-  }
-  if(liveGames.length){
-    el.textContent="\u25cf AO VIVO";
-    ne.innerHTML=liveGames.map(function(g){return '<strong>#'+g.n+' '+g.a+' vs '+g.b+'</strong>'}).join(' &nbsp;|&nbsp; ');
-    return;
-  }
-  // Find next game
-  var upcoming=[];
+  var upcoming=null;
   for(var i=0;i<GAMES.length;i++){
     try{
-      var g=GAMES[i],gd=gameUTC(g);if(!gd)continue;
-      if(gd>now){upcoming.push({game:g,time:gd});break}
-  }catch(e){console.warn('Cache parse falhou, iniciando fetch')}
+      var g=GAMES[i],gd=gameUTC(g);
+      if(gd&&isGameLive(g))liveGames.push(g);
+      if(gd&&gd>now&&!upcoming)upcoming={game:g,time:gd};
+    }catch(e){}
   }
-  if(upcoming.length){
-    var ng=upcoming[0],gd=ng.time,d=gd-now;
+  if(liveGames.length){
+    el.innerHTML='<span class="countdown-live">\u25cf AO VIVO</span><span class="countdown-sep">|</span><span class="countdown-games">'+liveGames.map(function(g){return '<strong>#'+g.n+' '+g.a+' vs '+g.b+'</strong>'}).join(' &nbsp; ')+'</span>';
+  }else{
+    el.textContent="\u2014 \u2014 \u2014";
+  }
+  if(upcoming){
+    var ng=upcoming,gd=ng.time,d=gd-now;
     if(d>0){
-      el.textContent=Math.floor(d/86400000).toString().padStart(2,"0")+"d "+Math.floor((d%86400000)/3600000).toString().padStart(2,"0")+"h "+Math.floor((d%3600000)/60000).toString().padStart(2,"0")+"m "+Math.floor((d%60000)/1000).toString().padStart(2,"0")+"s";
-      ne.innerHTML='Pr\u00f3ximo: <strong>#'+ng.game.n+' '+ng.game.a+' vs '+ng.game.b+'</strong> ('+ng.game.d+' '+ng.game.t+' Bras\u00edlia)';
+      ne.innerHTML='Pr\u00f3ximo: <strong>#'+ng.game.n+' '+ng.game.a+' vs '+ng.game.b+'</strong> <span class="countdown-time" style="font-size:14px">'+Math.floor(d/86400000).toString().padStart(2,"0")+'d '+Math.floor((d%86400000)/3600000).toString().padStart(2,"0")+'h '+Math.floor((d%3600000)/60000).toString().padStart(2,"0")+'m '+Math.floor((d%60000)/1000).toString().padStart(2,"0")+'s</span> ('+ng.game.d+' '+ng.game.t+' Bras\u00edlia)';
     }
-  }else{el.textContent="\u{1F3C6} Copa encerrada!";ne.textContent="Brasil campe\u00e3o! \u{1F947}"}
+  }else if(!liveGames.length){el.textContent="\u{1F3C6} Copa encerrada!";ne.textContent="Brasil campe\u00e3o! \u{1F947}"}
 }
 setInterval(updateCountdown,1000);
 
 function renderGroups(){
   var grid=document.getElementById("groups-grid");
-  grid.innerHTML=GROUP_ORDER.map(function(letter){
+  dynRender(grid, GROUP_ORDER.map(function(letter){
     var teams=GROUPS[letter];if(!teams)return"";
     var pts={},gp={},w={},d={},l={},gf={},ga={};
     teams.forEach(function(t){pts[t]=0;gp[t]=0;w[t]=0;d[t]=0;l[t]=0;gf[t]=0;ga[t]=0});
@@ -637,7 +654,7 @@ function renderGroups(){
       return a.localeCompare(b);
     });
     return'<div class="group-card"><div class="group-title group-'+letter+'">'+GROUP_NAMES[letter]+'</div><table class="group-table"><tr><th>#</th><th style="text-align:left">Time</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th></tr>'+sorted.map(function(t,i){return'<tr class="'+(t==="Brasil"?" brazil-row":"")+'"><td><span class="pos-badge pos-'+(i+1)+'">'+(i+1)+'</span></td><td style="text-align:left">'+flag(t)+' '+t+'</td><td><strong>'+pts[t]+'</strong></td><td>'+gp[t]+'</td><td>'+w[t]+'</td><td>'+d[t]+'</td><td>'+l[t]+'</td><td>'+gf[t]+'</td><td>'+ga[t]+'</td><td>'+(gf[t]-ga[t])+'</td></tr>'}).join("")+'</table></div>';
-  }).join("");
+  }).join(""));
   renderThirdPlaced();
 }
 
@@ -785,17 +802,17 @@ function resolveTeam(placeholder){
 
   // "0" = vaga de 3o colocado — calcular pelo ranking
   if(placeholder==='0'){
-    var slotIdx=_THIRD_SLOTS.indexOf(arguments[1]); // gameNum passado como 2o arg
+    var slotIdx=_THIRD_SLOTS.indexOf(arguments[1]);
     var thirds=_rankedThirds();
     if(slotIdx>=0&&thirds[slotIdx]&&thirds[slotIdx].finished){
       var t=thirds[slotIdx].team;
-      return{name:t+' (3° Grupo '+thirds[slotIdx].group+')',flag:flag(t),pending:false};
+      return{name:t,flag:flag(t),pending:false};
     }
     if(slotIdx>=0&&thirds[slotIdx]){
       var t=thirds[slotIdx].team;
-      return{name:'3° Grupo '+thirds[slotIdx].group,flag:flag(t),pending:true};
+      return{name:'3\u00ba '+thirds[slotIdx].group,flag:'',pending:true};
     }
-    return{name:'3° colocado',flag:'',pending:true};
+    return{name:'3\u00ba colocado',flag:'',pending:true};
   }
 
   // Nome literal (já resolvido, ex. "Brasil")
@@ -809,7 +826,7 @@ function renderBracketCards(){
   var ko=GAMES.filter(function(g){return!g.f||!g.f.startsWith('Grupo');});
   var rounds={};
   ko.forEach(function(g){var r=g.f||'Mata-Mata';if(!rounds[r])rounds[r]=[];rounds[r].push(g);});
-  c.innerHTML=BRACKET_ROUNDS.map(function(rd){
+  dynRender(c, BRACKET_ROUNDS.map(function(rd){
     var gs=rounds[rd]||[];if(!gs.length)return'';
     var isFinal=rd==='Final';
     return'<div class="bracket-round"><div class="bracket-title">'+rd+'</div>'
@@ -829,7 +846,7 @@ function renderBracketCards(){
           +'</div>';
       }).join('')
       +'</div>';
-  }).join('');
+  }).join(''));
 }
 
 function renderBracketTree(){
@@ -862,7 +879,7 @@ function renderBracketTree(){
       if(hasScore)svg+='<text x="'+(x+rx-6)+'" y="'+(y+38)+'" text-anchor="end" fill="#ffdf00" font-size="10" font-weight="800">'+sb+'</text>';
     });
   });
-  el.innerHTML=svg+'</svg>';
+  dynRender(el, svg+'</svg>');
 }
 
 
@@ -886,7 +903,7 @@ function renderScorers(){
   var medals=["rank-gold","rank-silver","rank-bronze"];
   function tbl(title,icon,data,k){if(!data.length)return'';return'<div style="flex:1;min-width:260px"><h3 style="color:var(--gold);margin-bottom:8px;text-align:center">'+icon+' '+title+'</h3><table class="scorers-table"><tr><th>#</th><th>Jogador</th><th style="text-align:center">'+title+'</th></tr>'+data.map(function(s,i){return'<tr><td class="rank '+(medals[i]||"")+'">'+(i+1)+'</td><td>'+s.name+'</td><td style="text-align:center;font-weight:700;font-size:14px">'+s[k]+'</td></tr>'}).join("")+'</table></div>'}
   var t=tbl('Artilheiros','\u26BD',gls,'goals')+tbl('Assist\u00eancias','\uD83C\uDFC7',ast,'assists');
-  el.innerHTML=t?'<div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center">'+t+'</div>':'<p style="text-align:center;color:#555;padding:40px">Nenhum gol registrado ainda. Adicione placares nos Jogos!</p>';
+  dynRender(el, t?'<div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center">'+t+'</div>':'<p style="text-align:center;color:#555;padding:40px">Nenhum gol registrado ainda. Adicione placares nos Jogos!</p>');
 }
 
 function getPlayerPhoto(name,team,num){
@@ -936,7 +953,7 @@ function renderSquads(){
   }).filter(Boolean);
 
   // Gerar HTML: cada <li> começa como placeholder com altura fixa
-  grid.innerHTML=cards.map(function(card){
+  dynRender(grid, cards.map(function(card){
     var team=card.team,ps=card.players;
     return'<div class="squad-card" data-team="'+esc(team)+'">'
       +'<div class="squad-header">'
@@ -949,7 +966,7 @@ function renderSquads(){
         return'<li class="squad-player squad-ph" data-team="'+esc(team)+'" data-idx="'+idx+'"></li>';
       }).join('')
       +'</ul></div>';
-  }).join('');
+  }).join(''));
 
   // IntersectionObserver: hidratar cada <li> quando entrar na viewport
   var obs=new IntersectionObserver(function(entries){
@@ -1281,17 +1298,21 @@ setTimeout(function(){
 },0);
 function _fetchWikiRefs(letter){
   var grp=GAMES.filter(function(g){return g.f==='Grupo '+letter}).sort(function(a,b){return a.n-b.n});
-  fetch('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&titles=2026_FIFA_World_Cup_Group_'+letter+'&prop=extracts&explaintext=1')
+  fetch('https://en.wikipedia.org/w/api.php?action=parse&format=json&origin=*&page=2026_FIFA_World_Cup_Group_'+letter+'&prop=text')
     .then(function(r){return r.json()}).then(function(d){
-      var pages=d.query.pages,id=Object.keys(pages)[0],txt=pages[id].extract||'';
-      var refs=[],m=txt.match(/Referee:\s*(.+?)\s*\(/g);
-      if(m)m.forEach(function(r){var n=r.match(/Referee:\s*(.+?)\s*\(/);if(n&&n[1])refs.push(n[1].trim())});
+      var txt=d.parse&&d.parse.text&&d.parse.text['*']||'';
+      var refs=[],rx=/Referee:<\/th>\s*<td>(?:<a[^>]*>)?([^<]+?)(?:<\/a>)?\s*\(<a[^>]*>([^<]+?)<\/a>/gi;
+      var m;while((m=rx.exec(txt))!==null)refs.push(m[1].trim());
       for(var i=0;i<refs.length&&i<grp.length;i++)REFEREES[grp[i].n]=refs[i];
       renderGames(currentFilter);
     }).catch(function(){});
 }
 function loadAllReferees(){GROUP_ORDER.forEach(function(l){setTimeout(function(){_fetchWikiRefs(l)},600*GROUP_ORDER.indexOf(l))})}
 loadAllReferees();
+GAMES.forEach(function(g){
+  if(g.br&&g.br.indexOf('Globo')>=0&&g.br.indexOf('Globoplay')<0)g.br+=' \u00b7 Globoplay';
+  if(g.br&&g.br.indexOf('SBT')>=0&&g.br.indexOf('Ge TV')<0)g.br+=' \u00b7 Ge TV';
+});
 var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()})}
 </script>
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'})</script>
