@@ -1116,7 +1116,7 @@ function renderSquads(){
       var pu=getPlayerPhoto(p.name,team,p.num);
       li.innerHTML='<span class="squad-num">'+p.num+'</span>'
         +'<div class="squad-avatar">'
-          +(pu?'<img src="'+pu+'" alt="'+esc(p.name)+'" loading="lazy" onerror="this.style.display='none'">'
+          +(pu?'<img src="'+pu+'" alt="'+esc(p.name)+'" loading="lazy" onerror="this.style.display=\'none\'">'
               :'<div class="avatar-fallback" style="background-image:url('+flagImg(team)+')"></div>')
         +'</div>'
         +'<span class="squad-name">'+esc(p.name||'')+'</span>'
