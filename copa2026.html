@@ -987,15 +987,16 @@ function resolveTeam(placeholder){
   if(placeholder==='0'){
     var slotIdx=_THIRD_SLOTS.indexOf(arguments[1]);
     var thirds=_rankedThirds();
+    var posLabel=(slotIdx>=0?'#'+(slotIdx+1)+' ':'');
     if(slotIdx>=0&&thirds[slotIdx]&&thirds[slotIdx].finished){
       var t=thirds[slotIdx].team;
       return{name:t,flag:flag(t),pending:false};
     }
     if(slotIdx>=0&&thirds[slotIdx]){
       var t=thirds[slotIdx].team;
-      return{name:'3\u00ba '+thirds[slotIdx].group,flag:'',pending:true};
+      return{name:posLabel+'3\u00ba '+t,flag:'',pending:true};
     }
-    return{name:'3\u00ba colocado',flag:'',pending:true};
+    return{name:posLabel+'3\u00ba colocado',flag:'',pending:true};
   }
 
   // Nome literal (já resolvido, ex. "Brasil")
