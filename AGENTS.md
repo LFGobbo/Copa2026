@@ -299,11 +299,12 @@ App HTML autossuficiente para acompanhar partidas, grupos, mata-mata, artilheiro
 ## Versões
 
 ### v16 (atual — 2026-06-12)
-**Mudanças (persistência redundante: IndexedDB + localStorage x3):**
+**Mudanças (persistência redundante + seed dados reais):**
 - **Persistência bulletproof** — `BAK_KEYS=['copa2026_data','copa2026_bak1','copa2026_bak2']`: `_loadPersistent()` tenta as 3 chaves e replica dados entre elas. `saveState()` escreve nas 3 simultaneamente
 - **IndexedDB adicionado** — `_openDB()`, `_idbSave()`, `_idbLoad()` para armazenamento persistente que sobrevive a limpeza de localStorage. Store separado por tipo (`s`=scores, `g`=goals, `c`=cards)
 - **Async enhance** — `setTimeout` 200ms carrega dados do IndexedDB e mergeia nos objetos globais se ausentes, recuperando dados mesmo que localStorage tenha sido limpo
 - `saveState()` salva em IndexedDB + 3 localStorage keys
+- **Seed dados reais (FIFA Timeline API)** — Jogo 1 (México 2×0 África do Sul) e Jogo 2 (Coreia do Sul 2×1 Rep. Tcheca) com gols, assistências e cartões extraídos da FIFA API manualmente e injetados como seed inicial. Só aplica se localStorage vazio. 5 gols, 7 cartões no total
 
 ### v15 (2026-06-12)
 **Mudanças (verificação e refinamento das 4 melhorias + anti-flicker final):**
@@ -545,6 +546,7 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - ~~Cartões sem identificação de time~~ ✅ v15 — card-badge agora mostra bandeira+nome
 - ~~Gol anulado não removido dos eventos~~ ✅ v15 — `if(!scoredForHome&&!scoredForAway)` skip + reconciliação `goals[].length` vs placar final
 - ~~Persistência localStorage com ponto único de falha~~ ✅ v16 — IndexedDB + 3 localStorage keys: `copa2026_data`, `copa2026_bak1`, `copa2026_bak2`
+- ~~Seed inicial sem dados dos primeiros jogos~~ ✅ v16 — FIFA Timeline API: México 2×0 África do Sul, Coreia do Sul 2×1 Rep. Tcheca. 5 gols, 7 cartões injetados
 - Falta indicador visual de jogador pendurado/suspenso nos cards de jogo
 - Otimizar imagens pesadas (bola_t.png 477KB, mascotes 300KB+) com compressão
 - `parseInt()` sem radix 10 em múltiplos locais (baixa prioridade)
@@ -584,7 +586,7 @@ FIFA usa código 3 letras (MEX, RSA, BRA...). robot.ps1 tem hashtable `$teamMap`
 - **Nota**: `robot.ps1` não foi implementado. O app usa fetch direto na FIFA API.
 
 ## Arquivos Relevantes (2026-06-12 v16)
-- `index.html` — app principal (v16, deploy GitHub Pages, ~180KB)
+- `index.html` — app principal (v16, deploy GitHub Pages, ~182KB)
 - `players.json` — dados dos 1248 jogadores (116KB)
 - `photos.json` — URLs das fotos dos jogadores (174KB)
 - `copa2026.html` — cópia de index.html (mantido por compatibilidade)
