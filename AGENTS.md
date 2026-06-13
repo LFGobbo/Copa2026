@@ -571,7 +571,7 @@ Toda melhoria deve:
 
 ## 13. Version History
 
-### v19.8 (2026-06-13) — GAMES ordenado + Bolão login fix
+### v19.8 (2026-06-13) — GAMES ordenado + Bolão completo
 
 - **GAMES array reordenado**: agora ordenado por data (`d`) e horário (`t`) em vez de número do jogo (`n`). Game 5 (Austrália vs Turquia, 14/06 01:00) movido da posição 5 para a posição 8 (após jogos de 13/06). Mata-mata (jogos 73-104) também reordenado — ex: jogo 76 (29/06 13:00) agora antes de 74 (29/06 17:30)
 - **`GAME_BY_ID[g.n]` cache** continua funcionando (independe da ordem do array)
@@ -583,6 +583,11 @@ Toda melhoria deve:
 - **Syntax error corrigido**: try externo removido acidentalmente durante refatoração — código comum ficou solto, quebrando o site. Restaurado aninhamento try/catch original
 - **`BOLAO_FIRST` alterado de 7 para 6**: após renumerar jogos 5-8, Brasil vs Marrocos virou jogo #6 — bolão agora começa dele
 - **Bolão progressivo**: `bolaoRenderPicksGrid()` agora só mostra jogos até o primeiro não travado (o "jogo atual"). À medida que o tempo passa, novos jogos aparecem. Palpites pré-preenchidos para jogos futuros ainda são salvos, mas os cards só ficam visíveis quando chegar a vez
+- **Sigilo de palpites**: Worker filtra `GET /ranking` por `maxGame` (último jogo que começou). Palpites de jogos futuros não são retornados pelo servidor — nem via DevTools
+- **Especiais ocultos**: Campeão/artilheiro só retornados após jogo #32 começar (`showSpecials=1`)
+- **Summary de preenchimento**: aviso mostrando quantos palpites foram preenchidos e quais faltam
+- **Pontuação no card flutuante**: durante o jogo mostra pontos provisórios; ranking só contabiliza após `gameIsPast()`
+- **Regras do bolão reescritas**: texto completo explicando sigilo, progressão, status e pontuação ao vivo
 
 ### v19.7 (2026-06-13) — Deploy Completo + Root route
 - **Turnstile corrigido**: `turnstile.getResponse(document.getElementById('bolao-turnstile'))` em vez de `'bolao-turnstile'` string
