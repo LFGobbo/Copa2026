@@ -73,15 +73,17 @@ async function handle(req) {
     // POST /register
     if (method === 'POST' && path === '/register') {
       var body = await req.json();
-      if (!body.name || !body.password || !body.turnstileToken)
-        return error('name, password e turnstileToken obrigatorios');
+      if (!body.name || !body.password) return error('name e password obrigatorios');
 
-      var tres = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-        method: 'POST',
-        body: new URLSearchParams({ secret: TURNSTILE_SEC, response: body.turnstileToken }),
-      });
-      var tdata = await tres.json();
-      if (!tdata.success) return error('Captcha invalido', 403);
+      // Verificar captcha apenas se enviado (opcional)
+      if (body.turnstileToken) {
+        var tres = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+          method: 'POST',
+          body: new URLSearchParams({ secret: TURNSTILE_SEC, response: body.turnstileToken }),
+        });
+        var tdata = await tres.json();
+        if (!tdata.success) return error('Captcha invalido', 403);
+      }
 
       var existing = await supaFetch("participants?name=eq." + encodeURIComponent(body.name) + "&select=id");
       if (existing && existing.length) return error('Nome ja cadastrado', 409);
