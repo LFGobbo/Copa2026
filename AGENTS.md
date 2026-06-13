@@ -371,10 +371,24 @@ cards = {
 ```
 URL:  https://etbezmraylbvlnycltha.supabase.co
 Tier: Free
-Chave anônima: (inline no HTML, é pública por design)
+Chave anônima: (removida do front-end na v19.7 — só o Worker usa service_role)
 ```
 
-### 7.2 Tabelas
+### 7.2 Cloudflare Worker (bolao-worker.js)
+
+Middleware de segurança entre frontend e Supabase:
+
+- **`POST /register`** — Turnstile validation + cria participante (hash server-side)
+- **`POST /login`** — Compara senha (hash server-side), retorna JWT
+- **`POST /picks`** — Salva palpites + histórico (requer JWT)
+- **`GET /mypicks`** — Palpites do usuário logado (requer JWT)
+- **`GET /ranking`** — Ranking público (sem auth)
+- **`POST /special-picks`** — Campeão + artilheiro (requer JWT)
+- **`PATCH /confirm`** — Confirma todos os palpites (requer JWT)
+- **`PATCH /admin/unlock`** — Desbloqueia participante (admin)
+- **`DELETE /reset`** — Limpa tudo (admin key)
+
+### 7.3 Tabelas
 
 | Tabela | Colunas | Função |
 |---|---|---|
@@ -550,6 +564,19 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v19.7 (2026-06-13)
+- **Cloudflare Worker (`bolao-worker.js`)**: Middleware de segurança entre frontend e Supabase. Rotas: `/register` (com Turnstile), `/login` (hash server-side + JWT), `/picks` (com histórico), `/mypicks`, `/ranking`, `/special-picks`, `/confirm`, `/admin/unlock`, `/reset`
+- **Turnstile (Cloudflare)**: Widget anti-bot no formulário de cadastro. Token validado no Worker (server-side real, não apenas no cliente)
+- **Senha nunca mais vaza**: Hash SHA-256 + salt (`JWT_SECRET`) computado no Worker. Cliente envia senha em texto puro (HTTPS), `password` coluna nunca retornada ao frontend
+- **JWT**: Token assinado com HS256, 90 dias de validade, enviado em `Authorization: Bearer` em todas as requisições autenticadas
+- **`_supaFetch` removido**: Todas as chamadas diretas ao Supabase substituídas por `_bolaoFetch()` que passa pelo Worker
+- **`SUPA_KEY` e `SUPA_URL` removidos do frontend**: Anon key não está mais no HTML
+- **`pick_history`**: Nova tabela no Supabase que registra cada alteração de palpite com timestamp
+- **RLS desabilitado**: Worker usa `service_role` key, anon key não tem mais acesso
+- **`_hash()` removido**: Cliente não precisa mais computar SHA-256
+- **`_bAdm` atualizado**: Agora usa Worker (`/admin/unlock`) em vez de Supabase direto
+- **`_bAdmHash` removido**: Hash do admin não fica mais no frontend
 
 ### v19.6 (2026-06-13)
 - **`MATCH_ENDED` como fonte principal**: `isGameLive()` e `gameIsPast()` agora priorizam `MATCH_STARTED`/`MATCH_ENDED` da FIFA. Janela fallback aumentada para 4h (`_WINDOW_4H`=14400000ms) cobre prorrogação + pênaltis
