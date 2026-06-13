@@ -1,6 +1,6 @@
 ﻿# Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-06-13 (v19.5)
+**Última atualização:** 2026-06-13 (v19.6)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -259,7 +259,10 @@ cards = {
 | `scores` `goals` `cards` | Estado runtime + persistido |
 | `REFEREES` | Cache de árbitros (Wikipedia) |
 | `BAK_KEYS` | 3 chaves de localStorage para redundância |
-| `VALID_TABS` | Whitelist de abas válidas |
+| `VALID_TABS` | Whitelist de abas válidas (inclui `diagnostico`) |
+| `_LIVE_WINDOW` | 10800000ms — janela para live/past (3h cobre 90'+30'+pênaltis) |
+| `TIMELINE_HASH` | Hash de eventos da timeline para detectar correções da FIFA |
+| `GAME_BY_ID` | `GAME_BY_ID[g.n] = g` — lookup direto, elimina `GAMES.find()` |
 
 ### 6.2 Funções por Domínio
 
@@ -343,7 +346,7 @@ cards = {
 | Função | Descrição |
 |---|---|
 | `updateCountdown()` | Atualiza a cada 1s: abertura → AO VIVO → próximo jogo |
-| `setInterval(1000)` | Loop do countdown |
+| `scheduleCountdown()` | `setTimeout` recursivo — 1s se live, 30s se não |
 
 #### Árbitros
 
@@ -351,6 +354,13 @@ cards = {
 |---|---|
 | `loadAllReferees()` | Busca Wikipedia para 48 jogos, cache 6h |
 | `_fetchWikiRefs(letter, cb)` | Wikipedia action=parse |
+
+### 6.3 Funções de Diagnóstico
+
+| Função | Descrição |
+|---|---|
+| `renderDiagnostico()` | Aba oculta `#diagnostico`: mostra mapeamento FIFA, hashes de timeline, scores locais |
+| `switchTab(tab)` | Muda de aba sem `.tab` visível (usado para `diagnostico`) |
 
 ---
 
@@ -541,7 +551,16 @@ Toda melhoria deve:
 
 ## 13. Version History
 
-### v19.5 (atual — 2026-06-13)
+### v19.6 (2026-06-13)
+- **`MATCH_ENDED` como fonte principal**: `isGameLive()` e `gameIsPast()` agora priorizam `MATCH_STARTED`/`MATCH_ENDED` da FIFA. Janela fallback aumentada para 4h (`_WINDOW_4H`=14400000ms) cobre prorrogação + pênaltis
+- **`TIMELINE_HASH`**: Hash SHA-like da timeline completa detecta correções da FIFA mesmo sem novos `EventId`. Processa eventos de novo se o hash mudar (ex: gol adicionado/removido pela FIFA)
+- **Assist lookup por `AssistPlayerId`**: Se a FIFA enviar `AssistPlayerId`, usa direto mapeando `FIFA_PLAYER_MAP`. Fallback mantém o scan `Type===1` anterior
+- **`GAME_BY_ID[]` cache**: Lookup direto `GAME_BY_ID[g.n] = g` elimina todos os `GAMES.find()` (~15 chamadas lineares)
+- **Aba Diagnóstico oculta (`#diagnostico`)**: Acessível via URL hash, mostra mapeamento FIFA (times/jogos), hashes recentes da timeline, scores locais — debug interno sem interferir nas abas normais
+- **`switchTab(tab)`**: Nova função para navegar a abas sem `.tab` visível na DOM
+- **`_LIVE_WINDOW`**: `10800000ms` (3h) substitui `10800000` hardcoded em 3 locais. Cobre 90min + prorrogação + pênaltis sem estender demais
+
+### v19.5 (2026-06-13)
 - **Dead code removido**: `@keyframes goalFlash`, `@keyframes spin` duplicado (2x→1x), `@keyframes squad-shimmer` duplicado (2x→1x), `.squads-loading` e `.loading-spinner` duplicados
 - **`console.log` de produção removidos**: 6 logs de debug em `initFifaMaps()`, 2 logs em `fetchCalendar()` — produção silenciosa
 - **`alt=""` nos mascotes**: `mascote1_t.png`, `mascote2_t.png`, `mascote3_t.png` agora com `alt=""`

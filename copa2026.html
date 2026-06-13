@@ -596,6 +596,12 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     </div>
   </div>
 </div>
+<div class="content" id="tab-diagnostico">
+  <h3 style="color:var(--gold);margin:0 0 12px;font-size:16px">Diagnóstico — API FIFA</h3>
+  <div id="diag-fifa-map" style="margin-bottom:12px;font-size:13px;line-height:1.6"></div>
+  <div id="diag-timeline-hash" style="margin-bottom:12px;font-size:13px;line-height:1.6"></div>
+  <div id="diag-scores" style="margin-bottom:12px;font-size:13px;line-height:1.6"></div>
+</div>
 <script>const GAMES = [{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"África do Sul","d":"11/06 Qui","n":1,"f":"Grupo A","sb":"","t":"16:00","s":"Azteca – Cidade do México","sa":"","a":"México"},{"br":"CazéTV","b":"República Tcheca","d":"11/06 Qui","n":2,"f":"Grupo A","sb":"","t":"23:00","s":"Akron – Guadalajara","sa":"","a":"Coreia do Sul"},{"br":"CazéTV","b":"Bósnia","d":"12/06 Sex","n":3,"f":"Grupo B","sb":"","t":"16:00","s":"BMO Field – Toronto","sa":"","a":"Canadá"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Paraguai","d":"12/06 Sex","n":4,"f":"Grupo D","sb":"","t":"22:00","s":"SoFi – Los Angeles","sa":"","a":"Estados Unidos"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Turquia","d":"13/06 Sáb","n":5,"f":"Grupo D","sb":"","t":"01:00","s":"BC Place – Vancouver","sa":"","a":"Austrália"},{"br":"CazéTV","b":"Suíça","d":"13/06 Sáb","n":6,"f":"Grupo B","sb":"","t":"16:00","s":"Levi's – San Francisco","sa":"","a":"Catar"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Marrocos","d":"13/06 Sáb","n":7,"f":"Grupo C","sb":"","t":"19:00","s":"MetLife – Nova Jersey","sa":"","a":"Brasil"},{"br":"CazéTV","b":"Escócia","d":"13/06 Sáb","n":8,"f":"Grupo C","sb":"","t":"22:00","s":"Gillette – Boston","sa":"","a":"Haiti"},{"br":"CazéTV","b":"Curaçao","d":"14/06 Dom","n":9,"f":"Grupo E","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"Alemanha"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Japão","d":"14/06 Dom","n":10,"f":"Grupo F","sb":"","t":"17:00","s":"AT&T – Dallas","sa":"","a":"Holanda"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Equador","d":"14/06 Dom","n":11,"f":"Grupo E","sb":"","t":"20:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"Costa do Marfim"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Tunísia","d":"14/06 Dom","n":12,"f":"Grupo F","sb":"","t":"23:00","s":"BBVA – Monterrey","sa":"","a":"Suécia"},{"br":"CazéTV","b":"Cabo Verde","d":"15/06 Seg","n":13,"f":"Grupo H","sb":"","t":"13:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"Espanha"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Egito","d":"15/06 Seg","n":14,"f":"Grupo G","sb":"","t":"16:00","s":"Lumen – Seattle","sa":"","a":"Bélgica"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Uruguai","d":"15/06 Seg","n":15,"f":"Grupo H","sb":"","t":"19:00","s":"Hard Rock – Miami","sa":"","a":"Arábia Saudita"},{"br":"CazéTV","b":"Nova Zelândia","d":"15/06 Seg","n":16,"f":"Grupo G","sb":"","t":"22:00","s":"SoFi – Los Angeles","sa":"","a":"Irã"},{"br":"CazéTV","b":"Argélia","d":"16/06 Ter","n":17,"f":"Grupo I","sb":"","t":"14:00","s":"Arrowhead – Kansas City","sa":"","a":"Argentina"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Senegal","d":"16/06 Ter","n":18,"f":"Grupo J","sb":"","t":"16:00","s":"MetLife – Nova Jersey","sa":"","a":"França"},{"br":"CazéTV","b":"Noruega","d":"16/06 Ter","n":19,"f":"Grupo J","sb":"","t":"19:00","s":"Gillette – Boston","sa":"","a":"Iraque"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Jordânia","d":"17/06 Qua","n":20,"f":"Grupo I","sb":"","t":"01:00","s":"Levi's – San Francisco","sa":"","a":"Áustria"},{"br":"CazéTV","b":"RD Congo","d":"17/06 Qua","n":21,"f":"Grupo K","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"Portugal"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Croácia","d":"17/06 Qua","n":22,"f":"Grupo L","sb":"","t":"17:00","s":"AT&T – Dallas","sa":"","a":"Inglaterra"},{"br":"CazéTV","b":"Panamá","d":"17/06 Qua","n":23,"f":"Grupo L","sb":"","t":"20:00","s":"BMO Field – Toronto","sa":"","a":"Gana"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Colômbia","d":"17/06 Qua","n":24,"f":"Grupo K","sb":"","t":"23:00","s":"Azteca – Cidade do México","sa":"","a":"Uzbequistão"},{"br":"CazéTV","b":"África do Sul","d":"18/06 Qui","n":25,"f":"Grupo A","sb":"","t":"13:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"República Tcheca"},{"br":"CazéTV","b":"Bósnia","d":"18/06 Qui","n":26,"f":"Grupo B","sb":"","t":"16:00","s":"SoFi – Los Angeles","sa":"","a":"Suíça"},{"br":"CazéTV","b":"Catar","d":"18/06 Qui","n":27,"f":"Grupo B","sb":"","t":"19:00","s":"BC Place – Vancouver","sa":"","a":"Canadá"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Coreia do Sul","d":"18/06 Qui","n":28,"f":"Grupo A","sb":"","t":"22:00","s":"Akron – Guadalajara","sa":"","a":"México"},{"br":"CazéTV","b":"Paraguai","d":"19/06 Sex","n":29,"f":"Grupo D","sb":"","t":"01:00","s":"Levi's – San Francisco","sa":"","a":"Turquia"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Austrália","d":"19/06 Sex","n":30,"f":"Grupo D","sb":"","t":"16:00","s":"Lumen – Seattle","sa":"","a":"Estados Unidos"},{"br":"CazéTV","b":"Marrocos","d":"19/06 Sex","n":31,"f":"Grupo C","sb":"","t":"19:00","s":"Gillette – Boston","sa":"","a":"Escócia"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Haiti","d":"19/06 Sex","n":32,"f":"Grupo C","sb":"","t":"22:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"Brasil"},{"br":"CazéTV","b":"Suécia","d":"20/06 Sáb","n":33,"f":"Grupo F","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"Holanda"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Costa do Marfim","d":"20/06 Sáb","n":34,"f":"Grupo E","sb":"","t":"17:00","s":"BMO Field – Toronto","sa":"","a":"Alemanha"},{"br":"CazéTV","b":"Curaçao","d":"20/06 Sáb","n":35,"f":"Grupo E","sb":"","t":"21:00","s":"Arrowhead – Kansas City","sa":"","a":"Equador"},{"br":"CazéTV","b":"Japão","d":"21/06 Dom","n":36,"f":"Grupo F","sb":"","t":"01:00","s":"BBVA – Monterrey","sa":"","a":"Tunísia"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Arábia Saudita","d":"21/06 Dom","n":37,"f":"Grupo H","sb":"","t":"13:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"Espanha"},{"br":"CazéTV","b":"Irã","d":"21/06 Dom","n":38,"f":"Grupo G","sb":"","t":"16:00","s":"SoFi – Los Angeles","sa":"","a":"Bélgica"},{"br":"CazéTV","b":"Cabo Verde","d":"21/06 Dom","n":39,"f":"Grupo H","sb":"","t":"19:00","s":"Hard Rock – Miami","sa":"","a":"Uruguai"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Egito","d":"21/06 Dom","n":40,"f":"Grupo G","sb":"","t":"22:00","s":"BC Place – Vancouver","sa":"","a":"Nova Zelândia"},{"br":"CazéTV","b":"Áustria","d":"22/06 Seg","n":41,"f":"Grupo I","sb":"","t":"14:00","s":"AT&T – Dallas","sa":"","a":"Argentina"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Iraque","d":"22/06 Seg","n":42,"f":"Grupo J","sb":"","t":"18:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"França"},{"br":"CazéTV","b":"Senegal","d":"22/06 Seg","n":43,"f":"Grupo J","sb":"","t":"21:00","s":"MetLife – Nova Jersey","sa":"","a":"Noruega"},{"br":"CazéTV","b":"Argélia","d":"23/06 Ter","n":44,"f":"Grupo I","sb":"","t":"00:00","s":"Levi's – San Francisco","sa":"","a":"Jordânia"},{"br":"CazéTV","b":"Uzbequistão","d":"23/06 Ter","n":45,"f":"Grupo K","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"Portugal"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Gana","d":"23/06 Ter","n":46,"f":"Grupo L","sb":"","t":"17:00","s":"Gillette – Boston","sa":"","a":"Inglaterra"},{"br":"CazéTV","b":"Croácia","d":"23/06 Ter","n":47,"f":"Grupo L","sb":"","t":"20:00","s":"BMO Field – Toronto","sa":"","a":"Panamá"},{"br":"CazéTV","b":"RD Congo","d":"23/06 Ter","n":48,"f":"Grupo K","sb":"","t":"23:00","s":"Akron – Guadalajara","sa":"","a":"Colômbia"},{"br":"CazéTV","b":"Canadá","d":"24/06 Qua","n":49,"f":"Grupo B","sb":"","t":"16:00","s":"BC Place – Vancouver","sa":"","a":"Suíça"},{"br":"CazéTV","b":"Catar","d":"24/06 Qua","n":50,"f":"Grupo B","sb":"","t":"16:00","s":"Lumen – Seattle","sa":"","a":"Bósnia"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Brasil","d":"24/06 Qua","n":51,"f":"Grupo C","sb":"","t":"19:00","s":"Hard Rock – Miami","sa":"","a":"Escócia"},{"br":"CazéTV","b":"Haiti","d":"24/06 Qua","n":52,"f":"Grupo C","sb":"","t":"19:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"Marrocos"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"México","d":"24/06 Qua","n":53,"f":"Grupo A","sb":"","t":"22:00","s":"Azteca – Cidade do México","sa":"","a":"República Tcheca"},{"br":"CazéTV","b":"Coreia do Sul","d":"24/06 Qua","n":54,"f":"Grupo A","sb":"","t":"22:00","s":"BBVA – Monterrey","sa":"","a":"África do Sul"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Alemanha","d":"25/06 Qui","n":55,"f":"Grupo E","sb":"","t":"17:00","s":"MetLife – Nova Jersey","sa":"","a":"Equador"},{"br":"CazéTV","b":"Costa do Marfim","d":"25/06 Qui","n":56,"f":"Grupo E","sb":"","t":"17:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"Curaçao"},{"br":"CazéTV","b":"Suécia","d":"25/06 Qui","n":57,"f":"Grupo F","sb":"","t":"20:00","s":"AT&T – Dallas","sa":"","a":"Japão"},{"br":"CazéTV","b":"Holanda","d":"25/06 Qui","n":58,"f":"Grupo F","sb":"","t":"20:00","s":"Arrowhead – Kansas City","sa":"","a":"Tunísia"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Estados Unidos","d":"25/06 Qui","n":59,"f":"Grupo D","sb":"","t":"23:00","s":"SoFi – Los Angeles","sa":"","a":"Turquia"},{"br":"CazéTV","b":"Austrália","d":"25/06 Qui","n":60,"f":"Grupo D","sb":"","t":"23:00","s":"Levi's – San Francisco","sa":"","a":"Paraguai"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"França","d":"26/06 Sex","n":61,"f":"Grupo J","sb":"","t":"16:00","s":"Gillette – Boston","sa":"","a":"Noruega"},{"br":"CazéTV","b":"Iraque","d":"26/06 Sex","n":62,"f":"Grupo J","sb":"","t":"16:00","s":"BMO Field – Toronto","sa":"","a":"Senegal"},{"br":"CazéTV","b":"Arábia Saudita","d":"26/06 Sex","n":63,"f":"Grupo H","sb":"","t":"21:00","s":"NRG – Houston","sa":"","a":"Cabo Verde"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Espanha","d":"26/06 Sex","n":64,"f":"Grupo H","sb":"","t":"21:00","s":"Akron – Guadalajara","sa":"","a":"Uruguai"},{"br":"CazéTV","b":"Irã","d":"27/06 Sáb","n":65,"f":"Grupo G","sb":"","t":"00:00","s":"Lumen – Seattle","sa":"","a":"Egito"},{"br":"CazéTV","b":"Bélgica","d":"27/06 Sáb","n":66,"f":"Grupo G","sb":"","t":"00:00","s":"BC Place – Vancouver","sa":"","a":"Nova Zelândia"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Inglaterra","d":"27/06 Sáb","n":67,"f":"Grupo L","sb":"","t":"18:00","s":"MetLife – Nova Jersey","sa":"","a":"Panamá"},{"br":"CazéTV","b":"Gana","d":"27/06 Sáb","n":68,"f":"Grupo L","sb":"","t":"18:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"Croácia"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Portugal","d":"27/06 Sáb","n":69,"f":"Grupo K","sb":"","t":"20:30","s":"Hard Rock – Miami","sa":"","a":"Colômbia"},{"br":"CazéTV","b":"Uzbequistão","d":"27/06 Sáb","n":70,"f":"Grupo K","sb":"","t":"20:30","s":"Mercedes-Benz – Atlanta","sa":"","a":"RD Congo"},{"br":"CazéTV","b":"Áustria","d":"27/06 Sáb","n":71,"f":"Grupo I","sb":"","t":"23:00","s":"Arrowhead – Kansas City","sa":"","a":"Argélia"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Argentina","d":"27/06 Sáb","n":72,"f":"Grupo I","sb":"","t":"23:00","s":"AT&T – Dallas","sa":"","a":"Jordânia"},{"br":"CazéTV","b":"2° Grupo B","d":"28/06 Sáb","n":73,"f":"Rodada de 32","sb":"","t":"20:00","s":"SoFi – Los Angeles","sa":"","a":"2° Grupo A"},{"br":"CazéTV","b":"0","d":"29/06 Dom","n":74,"f":"Rodada de 32","sb":"","t":"17:30","s":"Gillette – Boston","sa":"","a":"1° Grupo E"},{"br":"CazéTV","b":"2° Grupo C","d":"29/06 Dom","n":75,"f":"Rodada de 32","sb":"","t":"21:00","s":"BBVA – Monterrey","sa":"","a":"1° Grupo F"},{"br":"CazéTV","b":"2° Grupo F","d":"29/06 Dom","n":76,"f":"Rodada de 32","sb":"","t":"13:00","s":"NRG – Houston","sa":"","a":"1° Grupo C"},{"br":"CazéTV","b":"0","d":"30/06 Seg","n":77,"f":"Rodada de 32","sb":"","t":"17:00","s":"MetLife – Nova Jersey","sa":"","a":"1° Grupo I"},{"br":"CazéTV","b":"2° Grupo I","d":"30/06 Seg","n":78,"f":"Rodada de 32","sb":"","t":"13:00","s":"AT&T – Dallas","sa":"","a":"2° Grupo E"},{"br":"CazéTV","b":"0","d":"30/06 Seg","n":79,"f":"Rodada de 32","sb":"","t":"21:00","s":"Azteca – Cidade do México","sa":"","a":"1° Grupo A"},{"br":"CazéTV","b":"0","d":"01/07 Ter","n":80,"f":"Rodada de 32","sb":"","t":"12:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"1° Grupo L"},{"br":"CazéTV","b":"0","d":"01/07 Ter","n":81,"f":"Rodada de 32","sb":"","t":"20:00","s":"Levi's – San Francisco","sa":"","a":"1° Grupo D"},{"br":"CazéTV","b":"0","d":"01/07 Ter","n":82,"f":"Rodada de 32","sb":"","t":"16:00","s":"Lumen – Seattle","sa":"","a":"1° Grupo G"},{"br":"CazéTV","b":"2° Grupo L","d":"02/07 Qua","n":83,"f":"Rodada de 32","sb":"","t":"19:00","s":"BMO Field – Toronto","sa":"","a":"2° Grupo K"},{"br":"CazéTV","b":"2° Grupo J","d":"02/07 Qua","n":84,"f":"Rodada de 32","sb":"","t":"15:00","s":"SoFi – Los Angeles","sa":"","a":"1° Grupo H"},{"br":"CazéTV","b":"0","d":"02/07 Qua","n":85,"f":"Rodada de 32","sb":"","t":"23:00","s":"BC Place – Vancouver","sa":"","a":"1° Grupo B"},{"br":"CazéTV","b":"2° Grupo H","d":"03/07 Qui","n":86,"f":"Rodada de 32","sb":"","t":"18:00","s":"Hard Rock – Miami","sa":"","a":"1° Grupo J"},{"br":"CazéTV","b":"0","d":"03/07 Qui","n":87,"f":"Rodada de 32","sb":"","t":"21:30","s":"Arrowhead – Kansas City","sa":"","a":"1° Grupo K"},{"br":"CazéTV","b":"2° Grupo G","d":"03/07 Qui","n":88,"f":"Rodada de 32","sb":"","t":"14:00","s":"AT&T – Dallas","sa":"","a":"2° Grupo D"},{"br":"CazéTV","b":"V. Jogo 74","d":"04/07 Sáb","n":89,"f":"Oitavas de Final","sb":"","t":"18:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"V. Jogo 73"},{"br":"CazéTV","b":"V. Jogo 76","d":"04/07 Sáb","n":90,"f":"Oitavas de Final","sb":"","t":"22:00","s":"NRG – Houston","sa":"","a":"V. Jogo 75"},{"br":"CazéTV","b":"V. Jogo 78","d":"05/07 Dom","n":91,"f":"Oitavas de Final","sb":"","t":"17:00","s":"MetLife – Nova Jersey","sa":"","a":"V. Jogo 77"},{"br":"CazéTV","b":"V. Jogo 80","d":"05/07 Dom","n":92,"f":"Oitavas de Final","sb":"","t":"21:00","s":"Azteca – Cidade do México","sa":"","a":"V. Jogo 79"},{"br":"CazéTV","b":"V. Jogo 82","d":"06/07 Seg","n":93,"f":"Oitavas de Final","sb":"","t":"17:00","s":"AT&T – Dallas","sa":"","a":"V. Jogo 81"},{"br":"CazéTV","b":"V. Jogo 84","d":"06/07 Seg","n":94,"f":"Oitavas de Final","sb":"","t":"21:00","s":"Lumen – Seattle","sa":"","a":"V. Jogo 83"},{"br":"CazéTV","b":"V. Jogo 86","d":"07/07 Ter","n":95,"f":"Oitavas de Final","sb":"","t":"13:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"V. Jogo 85"},{"br":"CazéTV","b":"V. Jogo 88","d":"07/07 Ter","n":96,"f":"Oitavas de Final","sb":"","t":"17:00","s":"BC Place – Vancouver","sa":"","a":"V. Jogo 87"},{"br":"CazéTV","b":"V. Jogo 90","d":"09/07 Qui","n":97,"f":"Quartas de Final","sb":"","t":"17:00","s":"Gillette – Boston","sa":"","a":"V. Jogo 89"},{"br":"CazéTV","b":"V. Jogo 92","d":"10/07 Sex","n":98,"f":"Quartas de Final","sb":"","t":"15:00","s":"SoFi – Los Angeles","sa":"","a":"V. Jogo 91"},{"br":"CazéTV","b":"V. Jogo 94","d":"11/07 Sáb","n":99,"f":"Quartas de Final","sb":"","t":"17:00","s":"Hard Rock – Miami","sa":"","a":"V. Jogo 93"},{"br":"CazéTV","b":"V. Jogo 96","d":"11/07 Sáb","n":100,"f":"Quartas de Final","sb":"","t":"21:00","s":"Arrowhead – Kansas City","sa":"","a":"V. Jogo 95"},{"br":"Globo·SporTV·CazéTV·SBT·N Sports · Globoplay · Ge TV","b":"V. Jogo 98","d":"14/07 Ter","n":101,"f":"Semifinal","br":"Globo \u00b7 SporTV \u00b7 Caz\u00e9TV \u00b7 SBT · Globoplay · Ge TV","sb":"","t":"21:00","s":"AT&T – Dallas","sa":"","a":"V. Jogo 97"},{"br":"Globo·SporTV·CazéTV·SBT·N Sports · Globoplay · Ge TV","b":"V. Jogo 100","d":"15/07 Qua","n":102,"f":"Semifinal","br":"Globo \u00b7 SporTV \u00b7 Caz\u00e9TV \u00b7 SBT · Globoplay · Ge TV","sb":"","t":"21:00","s":"MetLife – Nova Jersey","sa":"","a":"V. Jogo 99"},{"br":"Globo·SporTV·CazéTV·SBT·N Sports · Globoplay · Ge TV","b":"Perd. Jogo 102","d":"18/07 Sáb","n":103,"f":"3\u00ba Lugar","br":"Globo \u00b7 SporTV \u00b7 Caz\u00e9TV \u00b7 SBT · Globoplay · Ge TV","sb":"","t":"17:00","s":"Lumen – Seattle","sa":"","a":"Perd. Jogo 101"},{"br":"Globo·SporTV·CazéTV·SBT·N Sports · Globoplay · Ge TV","b":"V. Jogo 102","d":"19/07 Dom","n":104,"f":"Final","br":"Globo \u00b7 SporTV \u00b7 Caz\u00e9TV \u00b7 SBT · Globoplay · Ge TV","sb":"","t":"15:00","s":"MetLife – Nova Jersey","sa":"","a":"V. Jogo 101"}];
 const GROUPS = {"A":["África do Sul","Coreia do Sul","México","República Tcheca"],"B":["Bósnia","Canadá","Catar","Suíça"],"C":["Brasil","Escócia","Haiti","Marrocos"],"D":["Austrália","Estados Unidos","Paraguai","Turquia"],"E":["Alemanha","Costa do Marfim","Curaçao","Equador"],"F":["Holanda","Japão","Suécia","Tunísia"],"G":["Bélgica","Egito","Irã","Nova Zelândia"],"H":["Arábia Saudita","Cabo Verde","Espanha","Uruguai"],"I":["Argentina","Argélia","Áustria","Jordânia"],"J":["França","Iraque","Noruega","Senegal"],"K":["Colômbia","Portugal","RD Congo","Uzbequistão"],"L":["Croácia","Gana","Inglaterra","Panamá"]}
 ;
@@ -730,8 +736,16 @@ function tabClick(){
   if(tab==="bolao")bolaoInit();
   if(tab==="convocados"){if(!FIFA_MAP_READY)initFifaMaps();renderSquads();if(_rsTimer)clearTimeout(_rsTimer);if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100){_rsTimer=setTimeout(function(){renderSquads();if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100)_rsTimer=setTimeout(renderSquads,4000)},2000)}}
 }
+function switchTab(tab){
+  try{localStorage.setItem('copa2026_tab',tab)}catch(e){}
+  if(window.location.hash!=='#'+tab)window.location.hash=tab;
+  document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");t.setAttribute("aria-selected","false");t.tabIndex=-1});
+  document.querySelectorAll(".content").forEach(function(c){c.classList.remove("active")});
+  document.getElementById("tab-"+tab).classList.add("active");
+  if(tab==="diagnostico")renderDiagnostico();
+}
 document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",tabClick)});
-window.addEventListener("hashchange",function(){var h=window.location.hash.replace('#','');if(h&&VALID_TABS.indexOf(h)>=0){var t=document.querySelector('.tab[data-tab="'+h+'"]');if(t&&!t.classList.contains("active"))t.click()}});
+window.addEventListener("hashchange",function(){var h=window.location.hash.replace('#','');if(h&&VALID_TABS.indexOf(h)>=0){if(h==='diagnostico'){switchTab('diagnostico');return}var t=document.querySelector('.tab[data-tab="'+h+'"]');if(t&&!t.classList.contains("active"))t.click()}});
 
 function scoreInput(){
   var id=parseInt(this.dataset.game,10),s=this.dataset.side,v=this.value.trim();
@@ -744,14 +758,14 @@ function scoreInput(){
 function canAddGoal(id){var s=scores[id];return s&&s.a!==undefined&&s.b!==undefined}
 
 function addGoalUI(id,team){
-  var popup=document.getElementById("goal-popup"),game=GAMES.find(function(g){return g.n==id});
+  var popup=document.getElementById("goal-popup"),game=GAME_BY_ID[id];
   document.getElementById("popup-ref").textContent="Jogo #"+id;
   document.getElementById("popup-teams").innerHTML='<button class="pteam-btn'+(team==='a'?' active':'')+'" onclick="selectGoalTeam('+id+',\'a\')">'+game.a+'</button><button class="pteam-btn'+(team==='b'?' active':'')+'" onclick="selectGoalTeam('+id+',\'b\')">'+game.b+'</button>';
   setPopupMode('goal');selectGoalTeam(id,team);
   popup.classList.add("active");
 }
 function addCardUI(id,team){
-  var popup=document.getElementById("goal-popup"),game=GAMES.find(function(g){return g.n==id});
+  var popup=document.getElementById("goal-popup"),game=GAME_BY_ID[id];
   document.getElementById("popup-ref").textContent="Jogo #"+id;
   document.getElementById("popup-teams").innerHTML='<button class="pteam-btn'+(team==='a'?' active':'')+'" onclick="selectGoalTeam('+id+',\'a\')">'+game.a+'</button><button class="pteam-btn'+(team==='b'?' active':'')+'" onclick="selectGoalTeam('+id+',\'b\')">'+game.b+'</button>';
   setPopupMode('card');selectGoalTeam(id,team);
@@ -763,7 +777,7 @@ function selectGoalTeam(id,team){
   document.querySelectorAll(".pteam-btn")[team==="a"?0:1].classList.add("active");
   currentGoal={gameId:id,team:team,player:null,pname:null,type:"gol",assist:null,aname:null,minute:null};
   document.getElementById("goal-type-section").classList.remove("visible");
-  var game=GAMES.find(function(g){return g.n==id}),tn=team==="a"?game.a:game.b,ps=PLAYERS[tn]||[];
+  var game=GAME_BY_ID[id],tn=team==="a"?game.a:game.b,ps=PLAYERS[tn]||[];
   document.getElementById("popup-players").innerHTML=ps.map(function(p){return'<button class="player-btn" onclick="selectPlayer('+p.num+',\''+p.name.replace(/'/g,"\\'")+'\',\''+tn+'\',event)"><span class="num">#'+p.num+'</span>'+p.name+'<span class="pos-tag">'+p.pos+'</span></button>'}).join("");
 }
 function selectPlayer(num,name,tn,e){
@@ -775,7 +789,7 @@ function selectPlayer(num,name,tn,e){
   updateConfirmBtn();updateAssistPlayers();
 }
 function updateAssistPlayers(){
-  var game=GAMES.find(function(g){return g.n==currentGoal.gameId}),tn=currentGoal.team==="a"?game.a:game.b,ps=PLAYERS[tn]||[];
+  var game=GAME_BY_ID[currentGoal.gameId],tn=currentGoal.team==="a"?game.a:game.b,ps=PLAYERS[tn]||[];
   document.getElementById("assist-players").innerHTML=ps.filter(function(p){return p.num!=currentGoal.player}).map(function(p){return'<button class="abtn" data-player="'+p.num+'" onclick="selectAssist('+p.num+',\''+p.name.replace(/'/g,"\\'")+'\',event)">#'+p.num+' '+p.name+'</button>'}).join("");
   document.querySelectorAll("#assist-opts .abtn").forEach(function(b){b.classList.remove("active")});
 }
@@ -854,12 +868,13 @@ function setFilter(f,e){
   if(e&&e.currentTarget)e.currentTarget.classList.add("active");
   currentFilter=f;renderGames(f);
 }
+var _LIVE_WINDOW=10800000;
 function gameIsPast(g){
   try{
     var now=new Date(),gd=gameUTC(g);
     if(!gd)return false;
     if(isGameLive(g))return false;
-    if(now<=new Date(gd.getTime()+10800000))return false;
+    if(now<=new Date(gd.getTime()+_LIVE_WINDOW))return false;
     var id=FIFA_MATCH_IDS[g.n];
     if(id&&MATCH_ENDED[id])return true;
     var s=scores[g.n];
@@ -873,7 +888,7 @@ function isGameLive(g){
     if(id&&MATCH_ENDED[id])return false;
     if(id&&MATCH_STARTED[id]&&!MATCH_ENDED[id])return true;
     var kickoff=id&&MATCH_KICKOFF[id]?MATCH_KICKOFF[id]:gd;
-    return now>=kickoff&&now<=new Date(kickoff.getTime()+10800000);
+    return now>=kickoff&&now<=new Date(kickoff.getTime()+_LIVE_WINDOW);
   }catch(e){return false}
 }
 function renderGames(filter){
@@ -1007,7 +1022,7 @@ function updateCountdown(){
   if(!disp)return;
   var now=new Date();
   var WINDOW=86400000;
-  var opening=GAMES.find(function(g){return g.n===1});
+  var opening=GAME_BY_ID[1];
   var cs=opening?gameUTC(opening):new Date(Date.UTC(2026,5,11,21,0,0));
   if(now<cs){
     var d=cs-now;
@@ -1175,7 +1190,7 @@ var _THIRD_SLOTS=[74,77,79,80,81,82,85,87];
 
 // Resolve o vencedor de um jogo pelo placar
 function _winnerOf(gameNum){
-  var g=GAMES.find(function(x){return x.n===gameNum;});if(!g)return null;
+  var g=GAME_BY_ID[gameNum];if(!g)return null;
   var s=scores[gameNum];if(!s||s.a===undefined||s.b===undefined)return null;
   if(s.a>s.b)return g.a;
   if(s.b>s.a)return g.b;
@@ -1190,7 +1205,7 @@ function setPen(id,side){
   saveState();renderGames(currentFilter);renderBracket();
 }
 function _loserOf(gameNum){
-  var g=GAMES.find(function(x){return x.n===gameNum;});if(!g)return null;
+  var g=GAME_BY_ID[gameNum];if(!g)return null;
   var s=scores[gameNum];if(!s||s.a===undefined||s.b===undefined)return null;
   if(s.a>s.b)return g.b;
   if(s.b>s.a)return g.a;
@@ -1222,7 +1237,7 @@ function resolveTeam(placeholder){
     var w=_winnerOf(gameNum);
     if(w)return{name:w,flag:flag(w),pending:false};
     // Mostrar times esperados se o jogo ainda não ocorreu
-    var g=GAMES.find(function(x){return x.n===gameNum;});
+    var g=GAME_BY_ID[gameNum];
     if(g){
       var rA=resolveTeam(g.a),rB=resolveTeam(g.b);
       if(!rA.pending&&!rB.pending)
@@ -1597,7 +1612,7 @@ var FIFA_TEAM_MAP={
 };
 var FIFA_URL="https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200";
 
-var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},MATCH_STARTED={},MATCH_ENDED={},MATCH_KICKOFF={},MATCH_MINUTE={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={};
+var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},TIMELINE_HASH={},MATCH_STARTED={},MATCH_ENDED={},MATCH_KICKOFF={},MATCH_MINUTE={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={};
 for(var abbr in FIFA_TEAM_MAP)FIFA_TEAM_REV[FIFA_TEAM_MAP[abbr]]=abbr;
 
 function fetchFifaScores(t){var ac=new AbortController(),to=setTimeout(function(){ac.abort()},t||10000);
@@ -1747,7 +1762,7 @@ function processTimeline(idMatch,gameId){
     .then(function(d){
       if(!d||!d.Event||!d.Event.length)return;
       var allEvents=d.Event;
-      var game=GAMES.find(function(g){return g.n==gameId});
+      var game=GAME_BY_ID[gameId];
       if(!game)return;
       var meta=FIFA_MATCH_META[gameId]||{};
       // Garantir homeId/awayId mesmo se meta ainda não foi populado pelo fetchFifaScores
@@ -1776,6 +1791,10 @@ function processTimeline(idMatch,gameId){
       var lastId=PROCESSED_EVENTS[idMatch]||0;
       var hasNew=maxId>lastId;
       PROCESSED_EVENTS[idMatch]=maxId;
+      // Hash da timeline: detecta correcoes sem novo EventId
+      var timelineKey=allEvents.map(function(e){return e.EventId+'_'+e.Type+'_'+(e.HomeGoals||0)+'_'+(e.AwayGoals||0)+'_'+e.IdPlayer}).join('|');
+      var hashChanged=TIMELINE_HASH[idMatch]&&TIMELINE_HASH[idMatch]!==timelineKey;
+      TIMELINE_HASH[idMatch]=timelineKey;
 
       // ── Placar final da timeline ──────────────────────────
       var finalHome=0,finalAway=0;
@@ -1792,7 +1811,7 @@ function processTimeline(idMatch,gameId){
         scores[gameId].a=finalHome; scores[gameId].b=finalAway;
         changed=true;
       }
-      if(!hasNew&&!changed)return; // Nada novo, sair
+      if(!hasNew&&!hashChanged&&!changed)return; // Nada novo, sair
 
       // ── Reconstruir gols auto do zero (API é fonte da verdade) ──
       // Manter gols manuais (não-auto), descartar todos os auto
@@ -1833,12 +1852,18 @@ function processTimeline(idMatch,gameId){
 
         var goalType=(e.Type===41)?'pen':'gol';
         var min=e.MatchMinute?(e.MatchMinute.replace(/'/g,'')):(''+idx);
-        // Assistência: evento Type===1 imediatamente anterior
+        // Assistência: AssistPlayerId direto da FIFA ou fallback Type===1 anterior
         var aNum=null,aName=null;
-        for(var j=idx-1;j>=0;j--){
-          if(allEvents[j].Type===1){
-            var ai=FIFA_PLAYER_MAP[allEvents[j].IdPlayer];
-            if(ai){aNum=ai.num;aName=ai.pname;}break;
+        if(e.AssistPlayerId){
+          var ai=FIFA_PLAYER_MAP[e.AssistPlayerId];
+          if(ai){aNum=ai.num;aName=ai.pname;}
+        }
+        if(!aNum){
+          for(var j=idx-1;j>=0;j--){
+            if(allEvents[j].Type===1){
+              var ai2=FIFA_PLAYER_MAP[allEvents[j].IdPlayer];
+              if(ai2){aNum=ai2.num;aName=ai2.pname;}break;
+            }
           }
         }
         var key=gameId+'_'+storeSide+'_'+e.EventId;
@@ -1949,19 +1974,48 @@ function goRefreshError(btn,st){
   st.textContent='\u26A0 Erro ao conectar na FIFA API';
   _refreshTimer=setTimeout(function(){btn.className='refresh-btn';btn.textContent="\u27F3";st.textContent="";_refreshTimer=null},3000)
 }
+function renderDiagnostico(){
+  var fifaMap='<b>Times mapeados na FIFA:</b> '+Object.keys(FIFA_TEAM_IDS).length+'/'+Object.keys(FIFA_TEAM_REV).length;
+  var matchMap='<b>Jogos com ID FIFA:</b> '+Object.keys(FIFA_MATCH_IDS).length+'/'+GAMES.length;
+  var started=Object.keys(MATCH_STARTED).length;
+  var ended=Object.keys(MATCH_ENDED).length;
+  var hashes=Object.keys(TIMELINE_HASH).length;
+  var status=fifaMap+' | '+matchMap+' | <b>Iniciados:</b> '+started+' | <b>Encerrados:</b> '+ended+' | <b>Timeline hashes:</b> '+hashes;
+  document.getElementById('diag-fifa-map').innerHTML=status;
+  // Timeline hashes detalhados
+  var hashHtml='<b>Hashes recentes da timeline:</b><br>';
+  var hKeys=Object.keys(TIMELINE_HASH);
+  hKeys.slice(-20).forEach(function(k){
+    var gIdx=FIFA_MATCH_META[k]&&FIFA_MATCH_META[k].gameIdx||'?';
+    var h=TIMELINE_HASH[k];
+    hashHtml+=k+' (jogo #'+gIdx+'): <code style="font-size:11px;opacity:0.7">'+h.slice(0,60)+'...</code><br>';
+  });
+  if(!hKeys.length)hashHtml+='<span style="opacity:0.5">Nenhum hash ainda (aguardando dados FIFA)</span>';
+  document.getElementById('diag-timeline-hash').innerHTML=hashHtml;
+  // Scores locais
+  var scHtml='<b>Scores locais ('+Object.keys(scores).length+' jogos):</b><br>';
+  var sKeys=Object.keys(scores).sort(function(a,b){return parseInt(a,10)-parseInt(b,10)});
+  sKeys.slice(0,30).forEach(function(k){
+    var s=scores[k],g=GAME_BY_ID[k];
+    if(g)scHtml+='#'+k+' '+g.a+' '+s.a+'-'+s.b+' '+g.b+(s.pen?' ('+s.pen+')':'')+'<br>';
+  });
+  if(!sKeys.length)scHtml+='<span style="opacity:0.5">Nenhum score local</span>';
+  document.getElementById('diag-scores').innerHTML=scHtml;
+}
 
 // --- Polling automático da FIFA API ---
 initFifaMaps();
-(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length){mergeScores(m);auditData()}});var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+10800000);var recent=now<=new Date(gd.getTime()+86400000);if(live||recent){delete PROCESSED_EVENTS[id];processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
+(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length){mergeScores(m);auditData()}});var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);if(live||recent){delete PROCESSED_EVENTS[id];processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
 
 
 
 var PLAYER_PHOTOS = {};
-var VALID_TABS=['jogos','grupos','mata-mata','artilheiros','convocados','regras','bolao'];
+var GAME_BY_ID={};GAMES.forEach(function(g){GAME_BY_ID[g.n]=g;});
+var VALID_TABS=['jogos','grupos','mata-mata','artilheiros','convocados','regras','bolao','diagnostico'];
 setTimeout(function(){
   try{
     var saved=window.location.hash.replace('#','')||localStorage.getItem('copa2026_tab');
-    if(saved&&VALID_TABS.indexOf(saved)>=0){var tab=document.querySelector('.tab[data-tab="'+saved+'"]');if(tab)tab.click()}
+    if(saved&&VALID_TABS.indexOf(saved)>=0){if(saved==='diagnostico'){switchTab('diagnostico')}else{var tab=document.querySelector('.tab[data-tab="'+saved+'"]');if(tab)tab.click()}}
   }catch(e){}
 },0);
 function _fetchWikiRefs(letter,cb){
@@ -2045,7 +2099,7 @@ function _supaFetch(path,method,body){
   });
 }
 async function _hash(str){var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0')}).join('')}
-function _bolaoDeadline(gameN){var g=GAMES.find(function(x){return x.n===gameN});if(!g)return null;var gd=gameUTC(g);return gd?new Date(gd.getTime()-BOLAO_TWO_H):null}
+function _bolaoDeadline(gameN){var g=GAME_BY_ID[gameN];if(!g)return null;var gd=gameUTC(g);return gd?new Date(gd.getTime()-BOLAO_TWO_H):null}
 function _bolaoFinalChampion(){return _winnerOf(BOLAO_FINAL)}
 function _bolaoTopScorer(){
   var m={};Object.keys(goals||{}).forEach(function(gid){Object.keys(goals[gid]).forEach(function(t){goals[gid][t].forEach(function(gl){if(gl.type==='own')return;if(!m[gl.pname])m[gl.pname]=0;m[gl.pname]++})})});
@@ -2145,7 +2199,7 @@ function _bolaoRankedThirds(){
 // Vencedor de um jogo na simulação do bolão
 // Empate KO: verifica _bolaoKOPicks[gameN]
 function _bolaoWinnerOf(gameN){
-  var g=GAMES.find(function(x){return x.n===gameN;});
+  var g=GAME_BY_ID[gameN];
   if(!g)return null;
   var s=_bolaoGetScore(gameN);
   if(!s)return null;
@@ -2188,7 +2242,7 @@ function _bolaoResolveTeam(placeholder,gameN){
   var mP=placeholder.match(/^Perd\.\s*Jogo\s+(\d+)$/);
   if(mP){
     var pn=parseInt(mP[1],10);
-    var pg=GAMES.find(function(x){return x.n===pn;});
+    var pg=GAME_BY_ID[pn];
     if(!pg)return null;
     if(!_bolaoGetScore(pn))return null;
     var winner=_bolaoWinnerOf(pn);
@@ -2480,7 +2534,7 @@ function bolaoRenderPicksGrid(){
 }
 function bolaoSavePick(gameN){
   if(!_bolaoParticipantId||_bolaoConfirmed)return;
-  var g=GAMES.find(function(x){return x.n===gameN;});
+  var g=GAME_BY_ID[gameN];
   if(g){var gd=gameUTC(g);if(gd&&new Date()>=new Date(gd.getTime()-BOLAO_TWO_H))return;}
   var inA=document.querySelector('.bsp-input[data-game="'+gameN+'"][data-side="a"]');
   var inB=document.querySelector('.bsp-input[data-game="'+gameN+'"][data-side="b"]');
