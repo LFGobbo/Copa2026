@@ -2488,16 +2488,10 @@ function bolaoCalcTotal(participantId){
 }
 function bolaoRenderRanking(){
   var ids=Object.keys(_bolaoParticipants);
-  // Calcular quantos jogos estao disponiveis (visiveis no grid)
-  var now=new Date(),maxIdx=-1;
-  GAMES.forEach(function(g,i){
-    if(g.n<BOLAO_FIRST)return;
-    var gd=gameUTC(g);if(!gd)return;
-    if(now<new Date(gd.getTime()-BOLAO_TWO_H)){maxIdx=i;return}
-    maxIdx=i;
-  });
-  if(maxIdx<0)maxIdx=GAMES.length-1;
-  var totalAvail=GAMES.filter(function(g,i){return g.n>=BOLAO_FIRST&&i<=maxIdx}).length;
+  // Calcular ate que jogo ja comecou (mesmo criterio do servidor maxGame)
+  var now=new Date(),maxG=0;
+  GAMES.forEach(function(g){var gd=gameUTC(g);if(gd&&now>=gd&&g.n>maxG&&g.n>=BOLAO_FIRST)maxG=g.n});
+  var totalAvail=GAMES.filter(function(g){return g.n>=BOLAO_FIRST&&g.n<=maxG}).length;
   var rows=ids.map(function(id){
     var r=bolaoCalcTotal(id);
     var sp=_bolaoAllSpecials[id];
@@ -2506,8 +2500,8 @@ function bolaoRenderRanking(){
     var status=[];
     if(pCount>=totalAvail)status.push('\u2705');
     else status.push('\u26a0\ufe0f '+pCount+'/'+totalAvail);
-    if(!sp||!sp.champion||!sp.top_scorer)status.push('Sem especiais');
-    else status.push('Especiais OK');
+    // Especiais: se showSpecials=0, nao temos dados (sigilo), entao pula
+    if(sp&&sp.champion&&sp.top_scorer)status.push('Especiais OK');
     if(conf)status.push('Confirmado');
     else status.push('N\u00e3o confirmou');
     return{id:id,name:_bolaoParticipants[id],total:r.total,exactCount:r.exactCount,resultCount:r.resultCount,bonusCount:r.bonusCount,status:status.join(' | ')};
