@@ -128,7 +128,9 @@ async function handle(req) {
       if (!body.picks || !body.picks.length) return error('picks obrigatorio');
       for (var i = 0; i < body.picks.length; i++) {
         var pick = body.picks[i];
-        await supaFetch('picks?on_conflict=participant_id,game_n', 'POST', { participant_id: user.sub, game_n: pick.game_n, goals_a: pick.goals_a, goals_b: pick.goals_b, ko_pick: pick.ko_pick || null });
+        // Deletar pick existente (caso seja atualização) e inserir novo
+        await supaFetch("picks?participant_id=eq." + user.sub + "&game_n=eq." + pick.game_n, 'DELETE').catch(function(){});
+        await supaFetch('picks', 'POST', { participant_id: user.sub, game_n: pick.game_n, goals_a: pick.goals_a, goals_b: pick.goals_b, ko_pick: pick.ko_pick || null });
         await supaFetch('pick_history', 'POST', { participant_id: user.sub, game_n: pick.game_n, goals_a: pick.goals_a, goals_b: pick.goals_b, ko_pick: pick.ko_pick || null });
       }
       return json({ ok: true });
@@ -161,7 +163,8 @@ async function handle(req) {
     if (method === 'POST' && path === '/special-picks') {
       if (!user) return error('Token invalido', 401);
       var body = await req.json();
-      await supaFetch('special_picks?on_conflict=participant_id', 'POST', { participant_id: user.sub, champion: body.champion || null, top_scorer: body.topScorer || null });
+      await supaFetch("special_picks?participant_id=eq." + user.sub, 'DELETE').catch(function(){});
+      await supaFetch('special_picks', 'POST', { participant_id: user.sub, champion: body.champion || null, top_scorer: body.topScorer || null });
       return json({ ok: true });
     }
 
