@@ -581,13 +581,19 @@ Toda melhoria deve:
 - **`_bolaoFetch` agora propaga `err.status`**: HTTP status code preservado no erro (não só mensagem)
 - **`bolaoLogin()` com mensagens claras**: 401="Senha incorreta", 403="Conta bloqueada", 409="Nome já cadastrado — tente outro ou verifique a senha" (em vez de "Erro: ..." genérico)
 - **Syntax error corrigido**: try externo removido acidentalmente durante refatoração — código comum ficou solto, quebrando o site. Restaurado aninhamento try/catch original
-- **`BOLAO_FIRST` alterado de 7 para 6**: após renumerar jogos 5-8, Brasil vs Marrocos virou jogo #6 — bolão agora começa dele
+- **`BOLAO_FIRST` alterado de 7 para 6**: após renumerar jogos 5-8, Brasil vs Marrocos virou jogo #6 — bolão começa dele
 - **Bolão progressivo**: `bolaoRenderPicksGrid()` agora só mostra jogos até o primeiro não travado (o "jogo atual"). À medida que o tempo passa, novos jogos aparecem. Palpites pré-preenchidos para jogos futuros ainda são salvos, mas os cards só ficam visíveis quando chegar a vez
 - **Sigilo de palpites**: Worker filtra `GET /ranking` por `maxGame` (último jogo que começou). Palpites de jogos futuros não são retornados pelo servidor — nem via DevTools
 - **Especiais ocultos**: Campeão/artilheiro só retornados após jogo #32 começar (`showSpecials=1`)
 - **Summary de preenchimento**: aviso mostrando quantos palpites foram preenchidos e quais faltam
 - **Pontuação no card flutuante**: durante o jogo mostra pontos provisórios; ranking só contabiliza após `gameIsPast()`
 - **Regras do bolão reescritas**: texto completo explicando sigilo, progressão, status e pontuação ao vivo
+- **`_bolaoConfirmedStatus`**: nova store no frontend que rastreia `confirmed` de cada participante
+- **Worker `/ranking` retorna `confirmed`**: `select=id,name,confirmed` para o frontend saber quem confirmou
+- **`bolaoCalcTotal` verifica confirmação**: se o participante não confirmou, retorna 0 pts — palpites salvos só contam após "Confirmar todos"
+- **Regra de confirmação explicita**: texto "Só valem para pontuação depois de clicar em Confirmar todos os palpites" na lista de regras
+- **`_groupStandings` H2H completo**: 3 subcritérios restauratos (H2H pontos → H2H saldo → H2H gols marcados). Havia sido minificado perdendo GD e GF do confronto direto
+- **`_loserOf` com pênaltis**: agora reconhece `s.pen` para determinar perdedor em jogos decididos nos pênaltis (antes retornava `null` em empates)
 
 ### v19.7 (2026-06-13) — Deploy Completo + Root route
 - **Turnstile corrigido**: `turnstile.getResponse(document.getElementById('bolao-turnstile'))` em vez de `'bolao-turnstile'` string
