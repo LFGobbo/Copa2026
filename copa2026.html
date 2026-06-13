@@ -484,6 +484,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bolao-evolution-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
 @media(max-width:480px){.bolao-stats-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
 <div class="header">
@@ -558,11 +559,12 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     <div class="bolao-section-title">Entrar no bol&atilde;o</div>
     <div class="bolao-login">
       <div style="display:flex;gap:6px;margin-bottom:8px;width:100%">
-        <button id="bolao-mode-login" class="mode-btn active" onclick="this.classList.add('active');document.getElementById('bolao-mode-register').classList.remove('active');document.getElementById('bolao-submit-btn').textContent='Entrar'" style="flex:1">Entrar</button>
-        <button id="bolao-mode-register" class="mode-btn" onclick="this.classList.add('active');document.getElementById('bolao-mode-login').classList.remove('active');document.getElementById('bolao-submit-btn').textContent='Criar conta'" style="flex:1">Criar conta</button>
+        <button id="bolao-mode-login" class="mode-btn active" onclick="document.getElementById('bolao-turnstile-wrap').style.display='none';this.classList.add('active');document.getElementById('bolao-mode-register').classList.remove('active');document.getElementById('bolao-submit-btn').textContent='Entrar'" style="flex:1">Entrar</button>
+        <button id="bolao-mode-register" class="mode-btn" onclick="document.getElementById('bolao-turnstile-wrap').style.display='block';this.classList.add('active');document.getElementById('bolao-mode-login').classList.remove('active');document.getElementById('bolao-submit-btn').textContent='Criar conta'" style="flex:1">Criar conta</button>
       </div>
       <div><label>Seu nome</label><input type="text" id="bolao-name" placeholder="Nome e Sobrenome" autocomplete="off"></div>
       <div><label>Senha</label><input type="password" id="bolao-pass" placeholder="Senha" autocomplete="off"></div>
+      <div id="bolao-turnstile-wrap" style="display:none"><div class="cf-turnstile" data-sitekey="0x4AAAAAADj0kWY7cUoZ_uwS" data-theme="dark" data-size="normal" id="bolao-turnstile"></div></div>
 
       <button class="btn" id="bolao-submit-btn" onclick="bolaoLogin()" style="height:36px;padding:0 18px;font-size:13px">Entrar</button>
       <span class="bolao-login-status" id="bolao-login-status"></span>
@@ -2884,7 +2886,10 @@ async function bolaoLogin(){
   try{
     if(isRegister){
       // Modo cadastro: requer captcha
-      var turnstileToken='skip';
+      var turnstileToken=null;
+      try{if(typeof turnstile!=='undefined'&&turnstile)turnstileToken=turnstile.getResponse(document.getElementById('bolao-turnstile'))||turnstile.getResponse()}catch(te){}
+      if(!turnstileToken){st.className='bolao-login-status err';st.textContent='Resolva o captcha primeiro';return}
+      var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);
       var regRes=await _bolaoFetch('/register','POST',{name:name,password:pass,turnstileToken:turnstileToken});
       var loginRes2=await _bolaoFetch('/login','POST',{name:name,password:pass});
       _bolaoToken=loginRes2.token;
@@ -3123,7 +3128,7 @@ function checkAutoSnapshot(){
 // ========== FIM BOLÃƒO ==========
 
 var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED'&&!_refreshing){_refreshing=true;window.location.reload()}})}
-</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </body>
 </html>
 
