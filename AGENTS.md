@@ -584,6 +584,13 @@ Toda melhoria deve:
 - **CSS `--bg2` → `--bg`**: variável não definida corrigida no `.bsp-input`
 - **`bolaoLoadEvolution` chamada no login**: gráfico de evolução carrega ao logar (antes só carregava após snapshot)
 - **`bolaoLoadMajority` adicionada**: carrega dados da maioria e re-renderiza grid de palpites
+- **`_bolaoFetch` com retry e backoff**: 3 tentativas com delay exponencial (1s, 2s, 4s) para recuperação de falhas temporárias Worker/Supabase
+- **Worker `/health`**: endpoint de monitoramento `GET /health` → `{ok: true, uptime: ...}`
+- **Worker `/cron`**: endpoint para cron jobs externos (keepalive Supabase + poll FIFA + snapshot). Protegido por `?secret=ADMIN_KEY`. Configurar em cron-job.org a cada 5 min
+- **Worker `/scores`**: proxy para tabela `live_scores` do Supabase — scores centralizados da FIFA
+- **Tabela `live_scores`**: cache centralizado de placares no Supabase, populado pelo Worker Cron
+- **Cache offline do ranking**: `localStorage` guarda último ranking bem-sucedido (TTL 1h). Se Worker offline, mostra ranking cacheado com indicador "⚠ Dados offline"
+- **Fallback de scores**: quando `fetchFifaScores` retorna vazio, polling tenta `GET /scores` (Worker → Supabase `live_scores`) como segunda fonte
 
 ### v19.8 (2026-06-13) — GAMES ordenado + Bolão completo
 

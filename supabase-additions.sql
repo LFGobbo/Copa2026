@@ -34,3 +34,16 @@ CREATE TABLE IF NOT EXISTS majority_cache (
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
 
+-- 4. live_scores: cache centralizado de placares da FIFA (Worker Cron)
+--    Permite que o frontend leia scores mesmo se FIFA estiver offline
+--    e que snapshots sejam calculados server-side
+CREATE TABLE IF NOT EXISTS live_scores (
+  game_key    text PRIMARY KEY,  -- ex: "BRA_MAR" (home_away)
+  home_team   text NOT NULL,
+  away_team   text NOT NULL,
+  goals_home  int NOT NULL,
+  goals_away  int NOT NULL,
+  match_id    text,
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+

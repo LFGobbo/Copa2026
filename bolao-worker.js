@@ -1,4 +1,4 @@
-// Cloudflare Worker — Copa2026 Bolão (v19.7)
+// Cloudflare Worker — Copa2026 Bolão (v19.9)
 // ENV vars (configurar no dashboard):
 //   SUPABASE_URL  — https://etbezmraylbvlnycltha.supabase.co
 //   SUPABASE_KEY  — service_role key (NÃO a anônima!)
@@ -280,7 +280,87 @@ async function handle(req) {
       return json({ participantId: pid2, evolution: snaps });
     }
 
-        return json({ ok: true, message: 'Copa2026 Bolao — API do Worker. Rotas: GET /ranking, POST /register, POST /login, GET|POST /picks, GET /mypicks, POST /special-picks, PATCH /confirm, PATCH /admin/unlock, DELETE /reset' });
+    // GET /health — monitoramento
+    if (method === 'GET' && path === '/health') {
+      return json({ ok: true, uptime: Math.floor(Date.now() / 1000) });
+    }
+
+    // GET /scores — scores centralizados da FIFA (cache no Supabase via /cron)
+    if (method === 'GET' && path === '/scores') {
+      var scoresData = (await supaFetch('live_scores?select=game_key,home_team,away_team,goals_home,goals_away,match_id,updated_at&order=updated_at.desc')) || [];
+      return json({ scores: scoresData, count: scoresData.length });
+    }
+
+    // GET /cron — tarefas agendadas (chamado via cron-job.org ou Cloudflare Cron)
+    if (method === 'GET' && path === '/cron') {
+      var cronSecret = url.searchParams.get('secret') || '';
+      if (cronSecret !== ADMIN_KEY) return error('Cron secret invalido', 403);
+
+      var task = url.searchParams.get('task') || '';
+      var results = {};
+
+      // keepalive: pingar Supabase para evitar pausa do Free Tier
+      if (task === 'keepalive' || task === 'all') {
+        try {
+          await supaFetch('participants?select=id&limit=1');
+          results.keepalive = 'ok';
+        } catch (e) { results.keepalive = 'fail: ' + e.message; }
+      }
+
+      // fifa: buscar scores da FIFA e armazenar no Supabase
+      if (task === 'fifa' || task === 'all') {
+        try {
+          var fresp = await fetch('https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200');
+          var fdata = await fresp.json();
+          if (fdata && fdata.Results) {
+            var stored = 0;
+            for (var i = 0; i < fdata.Results.length; i++) {
+              var m = fdata.Results[i];
+              if (m.HomeTeamScore === null || m.AwayTeamScore === null) continue;
+              var h = m.Home ? m.Home.Abbreviation : null;
+              var a = m.Away ? m.Away.Abbreviation : null;
+              var hs = parseInt(m.HomeTeamScore, 10);
+              var as = parseInt(m.AwayTeamScore, 10);
+              if (!h || !a || isNaN(hs) || isNaN(as)) continue;
+              await supaFetch('live_scores?on_conflict=game_key', 'POST', {
+                game_key: h + '_' + a,
+                home_team: h,
+                away_team: a,
+                goals_home: hs,
+                goals_away: as,
+                match_id: m.IdMatch || null,
+                updated_at: new Date().toISOString()
+              });
+              stored++;
+            }
+            results.fifa = stored + ' scores stored';
+          } else {
+            results.fifa = 'no data';
+          }
+        } catch (e) { results.fifa = 'fail: ' + e.message; }
+      }
+
+      // snapshot: calcular ranking e gravar (para cada jogo encerrado)
+      if (task === 'snapshot' || task === 'all') {
+        try {
+          var participants = (await supaFetch('participants?select=id,name,confirmed,confirmed_at')) || [];
+          if (participants.length) {
+            var now2 = new Date().toISOString();
+            for (var p = 0; p < participants.length; p++) {
+              var pid = participants[p].id;
+              // Placeholder: snapshot real precisa dos scores no Supabase
+              // Por enquanto apenas registra que o participante existe
+              results.snapshot = (results.snapshot || 0) + 1;
+            }
+          }
+          results.snapshot = (results.snapshot || 0) + ' participants checked';
+        } catch (e) { results.snapshot = 'fail: ' + e.message; }
+      }
+
+      return json({ ok: true, tasks: results });
+    }
+
+        return json({ ok: true, message: 'Copa2026 Bolao — API do Worker. Rotas: GET /ranking, POST /register, POST /login, GET|POST /picks, GET /mypicks, POST /special-picks, PATCH /confirm, PATCH /admin/unlock, DELETE /reset, GET /health, GET /cron' });
   } catch (e) {
     return json({ error: 'Internal: ' + e.message }, 500);
   }

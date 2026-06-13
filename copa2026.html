@@ -2071,7 +2071,7 @@ function renderDiagnostico(){
 
 // --- Polling automático da FIFA API ---
 initFifaMaps();
-(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length){mergeScores(m);auditData()}});var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);if(live||recent){delete PROCESSED_EVENTS[id];processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
+(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length){mergeScores(m);auditData()}else{_bolaoFetch('/scores').then(function(d){if(d&&d.scores&&d.scores.length){var sm={};d.scores.forEach(function(s){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];var abbA=FIFA_TEAM_REV[g.a],abbB=FIFA_TEAM_REV[g.b];if((abbA===s.home_team&&abbB===s.away_team)||(abbA===s.away_team&&abbB===s.home_team)){sm[g.n]={a:abbA===s.home_team?s.goals_home:s.goals_away,b:abbA===s.home_team?s.goals_away:s.goals_home};break}}});if(Object.keys(sm).length)mergeScores(sm)}}).catch(function(){})}});var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);if(live||recent){delete PROCESSED_EVENTS[id];processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
 
 
 
@@ -2154,14 +2154,20 @@ var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmed
 var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={};
 try{_bolaoSnappedGames=JSON.parse(localStorage.getItem('copa2026_snapped')||'{}')}catch(e){}
 
-function _bolaoFetch(path,method,body){
+function _bolaoFetch(path,method,body,retries){
   var opts={method:method||'GET',headers:{'Content-Type':'application/json'}};
   if(_bolaoToken)opts.headers['Authorization']='Bearer '+_bolaoToken;
   if(body)opts.body=JSON.stringify(body);
+  retries=retries!==undefined?retries:3;
   return fetch(BOLAO_WORKER+path,opts).then(function(r){
     if(!r.ok)return r.json().then(function(e){var err=new Error(e.error||'HTTP '+r.status);err.status=r.status;throw err});
     if(method==='DELETE')return null;
     return r.json();
+  }).catch(function(e){
+    if(retries>0&&(!e.status||e.status>=500||e.status===0)){
+      return new Promise(function(resolve){setTimeout(resolve,Math.pow(2,3-retries)*1000)}).then(function(){return _bolaoFetch(path,method,body,retries-1)});
+    }
+    throw e;
   });
 }
 function _bolaoDeadline(gameN){var g=GAME_BY_ID[gameN];if(!g)return null;var gd=gameUTC(g);return gd?new Date(gd.getTime()-BOLAO_TWO_H):null}
@@ -2747,9 +2753,25 @@ async function bolaoLoadRanking(){
     _bolaoAllPicks={};(data.picks||[]).forEach(function(p){if(!_bolaoAllPicks[p.participant_id])_bolaoAllPicks[p.participant_id]={};_bolaoAllPicks[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b}});
     _bolaoAllSpecials={};(data.specialPicks||[]).forEach(function(p){_bolaoAllSpecials[p.participant_id]=p});
     bolaoRenderRanking();
+    // Salvar cache offline do ranking para fallback
+    try{localStorage.setItem('copa2026_ranking_cache',JSON.stringify({ts:Date.now(),participants:_bolaoParticipants,confirmedStatus:_bolaoConfirmedStatus,picks:_bolaoAllPicks,specials:_bolaoAllSpecials}))}catch(e){}
   }catch(e){
+    // Tentar cache offline se disponível
+    try{
+      var cached=JSON.parse(localStorage.getItem('copa2026_ranking_cache')||'null');
+      if(cached&&cached.participants&&Date.now()-cached.ts<3600000){
+        _bolaoParticipants=cached.participants;
+        _bolaoConfirmedStatus=cached.confirmedStatus||{};
+        _bolaoAllPicks=cached.picks||{};
+        _bolaoAllSpecials=cached.specials||{};
+        bolaoRenderRanking();
+        var tb=document.getElementById('bolao-rank-body');
+        if(tb)tb.insertAdjacentHTML('afterend','<div style="text-align:center;color:var(--orange);font-size:11px;padding:4px 0">&#9888; Dados offline (at&eacute; 1h atr&aacute;s)</div>');
+        return;
+      }
+    }catch(ce){}
     var tb=document.getElementById('bolao-rank-body');
-    if(tb)tb.innerHTML='<tr><td colspan="6" style="color:var(--muted);padding:16px">Erro ao carregar ranking. Verifique sua conexão.</td></tr>';
+    if(tb)tb.innerHTML='<tr><td colspan="6" style="color:var(--muted);padding:16px">Erro ao carregar ranking. Verifique sua conex&atilde;o.</td></tr>';
   }
 }
 async function bolaoLogin(){
