@@ -567,7 +567,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   </div>
   <div id="bolao-logged-area" style="display:none">
     <div class="bolao-section">
-      <div class="bolao-section-title">Palpites especiais &mdash; bloqueiam 2h antes do jogo #6</div>
+      <div class="bolao-section-title">Palpites especiais &mdash; fecham 2h antes do Brasil #2 (jogo #32)</div>
+      <div id="bolao-special-deadline" style="font-size:11px;color:var(--muted);margin-bottom:8px"></div>
       <div class="bolao-special-grid">
         <div class="bolao-special-card">
           <label>Campe&atilde;o da Copa (+50 pts)</label>
@@ -2710,6 +2711,14 @@ function bolaoPopulateSpecials(){
   if(myChamp)champSel.value=myChamp;
   if(myScorer)scorerSel.value=myScorer;
   if(locked){champSel.readOnly=true;scorerSel.readOnly=true;var btn=document.getElementById('bolao-special-btn');if(btn){btn.disabled=true;btn.textContent='Bloqueado \u2014 inscri\u00e7\u00f5es encerradas'}}
+  // Atualizar deadline
+  var dlEl=document.getElementById('bolao-special-deadline');
+  if(dlEl&&deadline){
+    if(deadline>new Date()){
+      var d=deadline-new Date(),dd=Math.floor(d/86400000),dh=Math.floor((d%86400000)/3600000),dm=Math.floor((d%3600000)/60000);
+      dlEl.textContent='\u23f0 Fecha em '+dd+'d '+dh+'h '+dm+'m (2h antes do jogo #32 \u2014 Haiti vs Brasil)';
+    }else{dlEl.textContent='\u26a0 Fechado';dlEl.style.color='var(--red)'}
+  }
   if(myChamp)document.getElementById('bolao-champion-saved').textContent=myChamp;
   if(myScorer)document.getElementById('bolao-scorer-saved').textContent=myScorer;
 }
@@ -2739,6 +2748,11 @@ async function bolaoConfirmAll(){
     // Jogos KO: se o palpite for empate, precisa decidir quem passa
     var isKO=g.f&&!g.f.startsWith('Grupo');
     if(isKO&&pick.a===pick.b&&!_bolaoKOPicks[g.n])missing.push('#'+g.n+' '+g.a+' vs '+g.b+' (desempate KO)');
+    // Jogos KO: verificar se os times foram definidos
+    if(isKO){
+      var tp=_bolaoTeamPicks[g.n]||{};
+      if(!tp.a||!tp.b)missing.push('#'+g.n+' (definir quem joga)');
+    }
   });
   if(missing.length){
     if(st){st.style.color='var(--red)';st.textContent='\u26a0\ufe0f Bloqueado: faltam '+missing.length+' preenchimentos:\n'+missing.slice(0,8).join(', ')+(missing.length>8?', ...e mais '+(missing.length-8):'')}
