@@ -1850,8 +1850,12 @@ function processTimeline(idMatch,gameId){
       });
 
       // Truncar para bater com placar real (descartar gols anulados)
-      autoGoalsA=autoGoalsA.slice(0,Math.max(0,finalHome-manualGoalsA.length));
-      autoGoalsB=autoGoalsB.slice(0,Math.max(0,finalAway-manualGoalsB.length));
+      // Gols contra ficam no time que sofreu, mas contam pro placar do adversário.
+      // Precisamos preservá-los mesmo quando o placar do time sofredor é zero.
+      var ownInA=(autoGoalsA||[]).filter(function(g){return g.type==='own'}).length;
+      var ownInB=(autoGoalsB||[]).filter(function(g){return g.type==='own'}).length;
+      autoGoalsA=autoGoalsA.slice(0,Math.max(0,finalHome-manualGoalsA.length+ownInA));
+      autoGoalsB=autoGoalsB.slice(0,Math.max(0,finalAway-manualGoalsB.length+ownInB));
 
       goals[gameId]={};
       var allA=manualGoalsA.concat(autoGoalsA);
