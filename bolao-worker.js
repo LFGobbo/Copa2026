@@ -156,8 +156,9 @@ async function handle(req) {
       try {
         var baseUrl = SUPABASE_URL + '/rest/v1/' + picksUrl;
         var opts = { method: 'GET', headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' } };
-        for (var page = 0; page < 10; page++) {
-          opts.headers['Range'] = (page * 2000) + '-' + ((page + 1) * 2000 - 1);
+        for (var page = 0; page < 20; page++) {
+          var start = page * 1000;
+          opts.headers['Range'] = start + '-' + (start + 999);
           var pres = await fetch(baseUrl, opts);
           if (!pres.ok && pres.status !== 206) break;
           var ct = pres.headers.get('content-type') || '';
@@ -165,7 +166,7 @@ async function handle(req) {
           var batch = await pres.json() || [];
           if (!batch.length) break;
           allPicks = allPicks.concat(batch);
-          if (batch.length < 2000) break;
+          if (batch.length < 1000) break;
         }
       } catch(e) {}
       var allSp = [];
