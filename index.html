@@ -450,14 +450,14 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   </div>
   <div class="header-mascots"><img src="./mascote3_t.png" alt="" onerror="this.style.display='none'"><img src="./mascote1_t.png" alt="" onerror="this.style.display='none'"><img src="./mascote2_t.png" alt="" onerror="this.style.display='none'"></div>
 </div>
-<div class="tabs">
-  <div class="tab active" data-tab="jogos"><span class="tab-icon">⚽</span><span class="tab-label">Jogos</span></div>
-  <div class="tab" data-tab="grupos"><span class="tab-icon">📊</span><span class="tab-label">Grupos</span></div>
-  <div class="tab" data-tab="mata-mata"><span class="tab-icon">🏆</span><span class="tab-label">Mata-Mata</span></div>
-  <div class="tab" data-tab="artilheiros"><span class="tab-icon">🥇</span><span class="tab-label">Artilheiros</span></div>
-  <div class="tab" data-tab="convocados"><span class="tab-icon">👥</span><span class="tab-label">Convocados</span></div>
-  <div class="tab" data-tab="regras"><span class="tab-icon">📖</span><span class="tab-label">Regras</span></div>
-  <div class="tab" data-tab="bolao"><span class="tab-icon">🎯</span><span class="tab-label">Bolão</span></div>
+<div class="tabs" role="tablist">
+  <div class="tab active" data-tab="jogos" role="tab" aria-selected="true" tabindex="0"><span class="tab-icon">⚽</span><span class="tab-label">Jogos</span></div>
+  <div class="tab" data-tab="grupos" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📊</span><span class="tab-label">Grupos</span></div>
+  <div class="tab" data-tab="mata-mata" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🏆</span><span class="tab-label">Mata-Mata</span></div>
+  <div class="tab" data-tab="artilheiros" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🥇</span><span class="tab-label">Artilheiros</span></div>
+  <div class="tab" data-tab="convocados" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">👥</span><span class="tab-label">Convocados</span></div>
+  <div class="tab" data-tab="regras" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📖</span><span class="tab-label">Regras</span></div>
+  <div class="tab" data-tab="bolao" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🎯</span><span class="tab-label">Bolão</span></div>
 </div>
 <div class="content active" id="tab-jogos">
   <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">&#9201; Pr&oacute;ximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados" style="display:none"></span></div>
@@ -565,7 +565,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     </div>
   </div>
 </div>
-<div class="popup-overlay" id="goal-popup">
+<div class="popup-overlay" id="goal-popup" role="dialog" aria-modal="true" aria-labelledby="popup-title">
   <div class="popup">
     <div class="popup-header"><h3 id="popup-title">⚽ Adicionar Gol</h3><button class="popup-close" onclick="closeGoalPopup()">&times;</button></div>
     <div class="popup-mode" id="popup-mode">
@@ -718,9 +718,9 @@ function tabClick(){
   var tab=this.dataset.tab;
   try{localStorage.setItem('copa2026_tab',tab)}catch(e){}
   if(window.location.hash!=='#'+tab)window.location.hash=tab;
-  document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});
+  document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");t.setAttribute("aria-selected","false");t.tabIndex=-1});
   document.querySelectorAll(".content").forEach(function(c){c.classList.remove("active")});
-  this.classList.add("active");
+  this.classList.add("active");this.setAttribute("aria-selected","true");this.tabIndex=0;
   document.getElementById("tab-"+tab).classList.add("active");
   // Rola o menu para mostrar a tab ativa (importante no celular)
   try{this.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})}catch(e){}
@@ -990,7 +990,7 @@ function renderGameCard(g){
   var live=isGameLive(g);
   
   var past=currentFilter==="all"&&gameIsPast(g);
-   return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+(typeof REFEREES[gn]==='string'?REFEREES[gn]:REFEREES[gn].name+(REFEREES[gn].country?' '+flag(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country)+' '+(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country):''))+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score">'+'<input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-" readonly><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-" readonly></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
+   return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+(typeof REFEREES[gn]==='string'?REFEREES[gn]:REFEREES[gn].name+(REFEREES[gn].country?' '+flag(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country)+' '+(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country):''))+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score">'+'<input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-" aria-label="Placar '+esc(g.a)+'" readonly><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-" aria-label="Placar '+esc(g.b)+'" readonly></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
     if(x.type==='goal'){
       var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
       var tn=x.display==='a'?g.a:g.b;
