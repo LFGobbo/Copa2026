@@ -2063,7 +2063,6 @@ function _bolaoWinnerOf(gameN){
 // Resolve placeholder no contexto do bolão
 function _bolaoResolveTeam(placeholder,gameN){
   if(!placeholder||placeholder==='')return null;
-  // Nome literal
   var isGroup=placeholder.startsWith('Grupo ')===false&&
     !placeholder.match(/^[\d°\s]+Grupo/)&&
     !placeholder.match(/^V\./)&&
@@ -2080,11 +2079,27 @@ function _bolaoResolveTeam(placeholder,gameN){
     return null;
   }
 
-  // "V. Jogo N"
+  // "V. Jogo N" = vencedor
   var mV=placeholder.match(/^V\.\s*Jogo\s+(\d+)$/);
   if(mV)return _bolaoWinnerOf(parseInt(mV[1],10));
 
-  // "0" = 3º colocado
+  // "Perd. Jogo N" = perdedor (3o lugar)
+  var mP=placeholder.match(/^Perd\.\s*Jogo\s+(\d+)$/);
+  if(mP){
+    var pn=parseInt(mP[1],10);
+    var pg=GAMES.find(function(x){return x.n===pn;});
+    if(!pg)return null;
+    if(!_bolaoGetScore(pn))return null;
+    var winner=_bolaoWinnerOf(pn);
+    if(!winner)return null;
+    var rA=_bolaoResolveTeam(pg.a,pn);
+    var rB=_bolaoResolveTeam(pg.b,pn);
+    if(winner===rA)return rB;
+    if(winner===rB)return rA;
+    return null;
+  }
+
+  // "0" = 3º colocado da fase de grupos
   if(placeholder==='0'){
     var thirds=_bolaoRankedThirds();
     var slotIdx=_THIRD_SLOTS.indexOf(gameN);
@@ -2092,7 +2107,7 @@ function _bolaoResolveTeam(placeholder,gameN){
     return null;
   }
 
-  return placeholder; // fallback: retorna literal
+  return placeholder;
 }
 
 // Salvar escolha de empate KO do bolão
@@ -2178,6 +2193,31 @@ function bolaoCalcTotal(participantId){
     if(g.n<BOLAO_FIRST)return;
     var pick=myPicks[g.n],real=scores[g.n];
     if(!real||real.a===undefined||real.b===undefined||!pick||pick.a===undefined)return;
+    // Validar times: só pontua se os times do palpite batem com os times reais
+    var teamPickA=_bolaoResolveTeam(g.a,g.n);
+    var teamPickB=_bolaoResolveTeam(g.b,g.n);
+    // Para times reais: usar o nome resolvido do app (scores não guarda nome do time,
+    // mas o GAMES guarda g.a e g.b como nomes reais nos jogos de grupo já realizados)
+    // Para jogos de grupo: g.a e g.b são nomes literais → teamPickA===g.a sempre
+    // Para jogos KO: g.a é placeholder → teamPickA é o time simulado
+    // O resultado real do app está em scores[n] com placar
+    // Mas não temos o time real no scores — temos só gols
+    // Para grupos: os times são literais em g.a/g.b, então sempre batem se resolver OK
+    // Para KO: precisamos saber se o time que o user acha que joga é o mesmo que jogou
+    // Usamos _winnerOf (app real) vs _bolaoWinnerOf (simulação do user)
+    // Se o time real venceu ≠ o time que o user achou que venceu → 0 pts no KO
+    var isKO=g.f&&!g.f.startsWith('Grupo');
+    if(isKO){
+      // Time real do lado A: resolver via app (_winnerOf dos jogos anteriores)
+      // Usar resolveTeam do app (a função do app principal, não do bolão)
+      var realTeamA=resolveTeam(g.a,g.n);
+      var realTeamB=resolveTeam(g.b,g.n);
+      realTeamA=realTeamA&&realTeamA.name?realTeamA.name:null;
+      realTeamB=realTeamB&&realTeamB.name?realTeamB.name:null;
+      if(realTeamA&&realTeamB&&teamPickA&&teamPickB){
+        if(teamPickA!==realTeamA||teamPickB!==realTeamB)return; // Times errados = 0 pts
+      }
+    }
     var pts=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);if(pts<0)return;
     var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
     total+=pts+bonus;
