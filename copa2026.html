@@ -2003,7 +2003,6 @@ function loadAllReferees(){
 }
 loadAllReferees();
 /* Globoplay/Ge TV já embutidos nos dados GAMES */
-(
 function initTimelineSync(){
   if(!FIFA_MAP_READY)return;
   var now=new Date();
@@ -2028,7 +2027,8 @@ function dailyMaintenance(){
     caches.match('./photos.json').then(function(r){if(!r)fetch('./photos.json',{cache:'force-cache'}).catch(function(){})}).catch(function(){});
   }
   setTimeout(dailyMaintenance,SIX_H);
-})();
+}
+dailyMaintenance();
 
 // ========== BOLÃO ==========
 var SUPA_URL='https://etbezmraylbvlnycltha.supabase.co';
