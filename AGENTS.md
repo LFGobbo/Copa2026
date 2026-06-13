@@ -571,13 +571,16 @@ Toda melhoria deve:
 
 ## 13. Version History
 
-### v19.8 (2026-06-13) — GAMES ordenado cronologicamente
+### v19.8 (2026-06-13) — GAMES ordenado + Bolão login fix
 
 - **GAMES array reordenado**: agora ordenado por data (`d`) e horário (`t`) em vez de número do jogo (`n`). Game 5 (Austrália vs Turquia, 14/06 01:00) movido da posição 5 para a posição 8 (após jogos de 13/06). Mata-mata (jogos 73-104) também reordenado — ex: jogo 76 (29/06 13:00) agora antes de 74 (29/06 17:30)
 - **`GAME_BY_ID[g.n]` cache** continua funcionando (independe da ordem do array)
 - **`renderGames()` sort corrigido**: `games.sort(function(a,b){return a.n-b.n})` substituído por sort por data/hora — antes ignorava a ordem cronológica e reordenava por número do jogo
 - **n-values corrigidos**: Game 5 (Austrália vs Turquia, 14/06 01:00) renumerado de n=5 para n=8; games 6→5 (Catar vs Suíça), 7→6 (Brasil vs Marrocos), 8→7 (Haiti vs Escócia). Agora os `n` correspondem à ordem cronológica real
 - **`copa2026.html` sincronizado** com `index.html`
+- **`_bolaoFetch` agora propaga `err.status`**: HTTP status code preservado no erro (não só mensagem)
+- **`bolaoLogin()` com mensagens claras**: 401="Senha incorreta", 403="Conta bloqueada", 409="Nome já cadastrado — tente outro ou verifique a senha" (em vez de "Erro: ..." genérico)
+- **Syntax error corrigido**: try externo removido acidentalmente durante refatoração — código comum ficou solto, quebrando o site. Restaurado aninhamento try/catch original
 
 ### v19.7 (2026-06-13) — Deploy Completo + Root route
 - **Turnstile corrigido**: `turnstile.getResponse(document.getElementById('bolao-turnstile'))` em vez de `'bolao-turnstile'` string
