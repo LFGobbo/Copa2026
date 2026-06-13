@@ -1728,6 +1728,15 @@ function fetchCalendar(){
     }).catch(function(){console.log('Calendar fetch failed')});
 }
 
+function _resolveMatchTeams(game){
+  // Resolve homeId/awayId sem depender de FIFA_MATCH_META
+  // usa FIFA_TEAM_REV (nome PT → abreviação) + FIFA_TEAM_IDS (abreviação → IdTeam)
+  var abbA=FIFA_TEAM_REV[game.a],abbB=FIFA_TEAM_REV[game.b];
+  var homeId=abbA?FIFA_TEAM_IDS[abbA]:null;
+  var awayId=abbB?FIFA_TEAM_IDS[abbB]:null;
+  return{homeId:homeId,awayId:awayId};
+}
+
 function processTimeline(idMatch,gameId){
   fetch('https://api.fifa.com/api/v3/timelines/'+idMatch)
     .then(function(r){return r.json()})
@@ -1737,6 +1746,12 @@ function processTimeline(idMatch,gameId){
       var game=GAMES.find(function(g){return g.n==gameId});
       if(!game)return;
       var meta=FIFA_MATCH_META[gameId]||{};
+      // Garantir homeId/awayId mesmo se meta ainda não foi populado pelo fetchFifaScores
+      if(!meta.homeId||!meta.awayId){
+        var resolved=_resolveMatchTeams(game);
+        if(resolved.homeId)meta.homeId=resolved.homeId;
+        if(resolved.awayId)meta.awayId=resolved.awayId;
+      }
 
       // ── Estado do jogo ────────────────────────────────────
       allEvents.forEach(function(e){
