@@ -2340,6 +2340,7 @@ function bolaoCalcTotal(participantId){
   var total=0,exactCount=0,resultCount=0,bonusCount=0;
   GAMES.forEach(function(g){
     if(g.n<BOLAO_FIRST)return;
+    if(!gameIsPast(g))return;
     var pick=myPicks[g.n],real=scores[g.n];
     if(!real||real.a===undefined||real.b===undefined||!pick||pick.a===undefined)return;
     // Validar times: só pontua se os times do palpite batem com os times reais
@@ -2492,7 +2493,7 @@ function bolaoRenderPicksGrid(){
     var tA=_bolaoTp(g,'a'),tB=_bolaoTp(g,'b');
     // Pontuação (só se jogo encerrado)
     var ptsHtml='';
-    if(isLocked&&hasReal&&hasPick){
+    if(gameIsPast(g)&&hasReal&&hasPick){
       var pts=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);
       var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
       var col=pts===10?'var(--gold)':pts>=2?'#4ade80':'var(--red)';
