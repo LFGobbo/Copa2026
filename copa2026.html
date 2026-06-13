@@ -2479,8 +2479,9 @@ function bolaoCalcTotal(participantId){
   var champion=_bolaoFinalChampion(),topScorer=_bolaoTopScorer();
   if(sp&&sp.champion&&champion&&sp.champion===champion){total+=50;bonusCount++;}
   if(sp&&sp.top_scorer&&topScorer){
-    if(topScorer.exact&&sp.top_scorer===topScorer.name){total+=20;bonusCount++;}
-    else if(!topScorer.exact&&topScorer.tied&&topScorer.tied.indexOf(sp.top_scorer)>=0){total+=10;bonusCount++;}
+    var matchName=function(a,b){if(!a||!b)return false;var na=a.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'');var nb=b.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'');return na===nb||na.indexOf(nb)>=0||nb.indexOf(na)>=0};
+    if(topScorer.exact&&matchName(sp.top_scorer,topScorer.name)){total+=20;bonusCount++;}
+    else if(!topScorer.exact&&topScorer.tied&&topScorer.tied.some(function(t){return matchName(sp.top_scorer,t)})){total+=10;bonusCount++;}
   }
   return{total:total,exactCount:exactCount,resultCount:resultCount,bonusCount:bonusCount};
 }
