@@ -1826,7 +1826,7 @@ function processTimeline(idMatch,gameId){
             }
           }
         }
-        if(!info){prevHome=e.HomeGoals;prevAway=e.AwayGoals;return;}
+        if(!info){if(isOwn){info={num:0,pname:'Gol Contra'};}else{prevHome=e.HomeGoals;prevAway=e.AwayGoals;return;}}
 
         var goalType=(e.Type===41)?'pen':'gol';
         var min=e.MatchMinute?(e.MatchMinute.replace(/'/g,'')):(''+idx);
@@ -1850,16 +1850,29 @@ function processTimeline(idMatch,gameId){
       });
 
       // Truncar para bater com placar real (descartar gols anulados)
-      // Gols contra ficam no time que sofreu, mas contam pro placar do adversário.
-      // Precisamos preservá-los mesmo quando o placar do time sofredor é zero.
-      var ownInA=(autoGoalsA||[]).filter(function(g){return g.type==='own'}).length;
-      var ownInB=(autoGoalsB||[]).filter(function(g){return g.type==='own'}).length;
-      autoGoalsA=autoGoalsA.slice(0,Math.max(0,finalHome-manualGoalsA.length+ownInA));
-      autoGoalsB=autoGoalsB.slice(0,Math.max(0,finalAway-manualGoalsB.length+ownInB));
+      // Truncagem correta considerando gols contra:
+      // autoGoalsA own = conta para placar B; autoGoalsB own = conta para placar A
+      var autoGoalsA_normal=autoGoalsA.filter(function(g){return g.type!=='own';});
+      var autoGoalsA_own=autoGoalsA.filter(function(g){return g.type==='own';});
+      var autoGoalsB_normal=autoGoalsB.filter(function(g){return g.type!=='own';});
+      var autoGoalsB_own=autoGoalsB.filter(function(g){return g.type==='own';});
+      // Pontos que contribuem para placar Home: normais A + contra B
+      var contribHome=manualGoalsA.filter(function(g){return g.type!=='own';}).length
+        +manualGoalsB.filter(function(g){return g.type==='own';}).length;
+      var contribAway=manualGoalsB.filter(function(g){return g.type!=='own';}).length
+        +manualGoalsA.filter(function(g){return g.type==='own';}).length;
+      // Slots disponíveis para gols auto
+      var slotsHomeNormal=Math.max(0,finalHome-contribHome-autoGoalsB_own.length);
+      var slotsAwayNormal=Math.max(0,finalAway-contribAway-autoGoalsA_own.length);
+      autoGoalsA_normal=autoGoalsA_normal.slice(0,slotsHomeNormal);
+      autoGoalsB_normal=autoGoalsB_normal.slice(0,slotsAwayNormal);
+      // Recombinar
+      var autoGoalsA_final=autoGoalsA_normal.concat(autoGoalsA_own);
+      var autoGoalsB_final=autoGoalsB_normal.concat(autoGoalsB_own);
 
       goals[gameId]={};
-      var allA=manualGoalsA.concat(autoGoalsA);
-      var allB=manualGoalsB.concat(autoGoalsB);
+      var allA=manualGoalsA.concat(autoGoalsA_final);
+      var allB=manualGoalsB.concat(autoGoalsB_final);
       if(allA.length)goals[gameId].a=allA;
       if(allB.length)goals[gameId].b=allB;
 

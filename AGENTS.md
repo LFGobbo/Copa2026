@@ -495,7 +495,7 @@ saveState()
 ### Dados
 
 - Gol contra armazenado no time do botão clicado (inversão corrigida na renderização)
-- **Gol contra truncado pelo placar**: `autoGoalsB.slice(0, finalAway)` remove gols contra porque `finalAway` não os contabiliza. Corrigido com `+ownInB` no limite do slice
+- **Gol contra truncado pelo placar**: gols contra ficam em `autoGoals[B]` mas `autoGoalsB.slice(0, finalAway)` os remove porque `finalAway=0`. Separa-se normais de contras antes da truncagem, cada grupo usa seu placar
 - `HomeTeamScore: null` no calendário FIFA → placar extraído da Timeline API
 - Grupos I/J tiveram dados trocados (corrigido v11.10)
 
@@ -544,7 +544,7 @@ Toda melhoria deve:
 - **`processTimeline` reescrito** — reconstrução completa de gols/cartões auto a cada poll, preservando manuais. `PROCESSED_EVENTS` agora só evita re-render desnecessário
 - **Cartão duplicado em tempos diferentes** — chave mudou de `gameId_c_time_minuto` para `gameId_c_EventId`, unique por evento da API. `seenCardEvents` deduplica na varredura
 - **Cartão removido pela API agora some** — revalidação varre timeline completa, não só `newEvents`. Cartão que a API removeu simplesmente não é recriado
-- **Gol contra truncado pelo placar** — gol contra é armazenado no lado do time que sofreu, mas o truncamento `slice(0, finalAway)` o removia. Corrigido: `+ownInB` no limite preserva gols contra
+- **Gol contra truncado pelo placar** — gol contra é armazenado em `autoGoalsB` (lado do time que sofreu), mas `autoGoalsB.slice(0, finalAway)` o removia porque `finalAway=0`. Corrigido: separar gols contra dos normais antes da truncagem, usar o placar correto para cada grupo
 - **`isOwn` dependia de `meta.homeId` populado** — adicionado fallback `_resolveMatchTeams()` para resolver homeId/awayId mesmo sem `FIFA_MATCH_META`
 - **Nacionalidade dos árbitros** — `REF_COUNTRY` (inglês→português) + exibição com bandeira no card
 - **Cache de árbitros** — bump v1→v2 para forçar refetch com novo formato (objeto `{name, country}`)
