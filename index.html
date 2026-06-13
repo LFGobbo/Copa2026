@@ -2465,8 +2465,18 @@ function bolaoRenderPicksGrid(){
   var grid=document.getElementById('bolao-picks-grid');
   if(!grid||!_bolaoParticipantId)return;
   var now=new Date(),html='',any=false;
-  GAMES.forEach(function(g){
+  // Só mostra jogos progressivamente — até o primeiro jogo não travado
+  var maxIdx=-1;
+  GAMES.forEach(function(g,i){
     if(g.n<BOLAO_FIRST)return;
+    var gd=gameUTC(g);if(!gd)return;
+    var lockTime=new Date(gd.getTime()-BOLAO_TWO_H);
+    if(now<lockTime){maxIdx=i;return} // primeiro não travado
+    maxIdx=i;
+  });
+  if(maxIdx<0)maxIdx=GAMES.length-1;
+  GAMES.forEach(function(g,i){
+    if(g.n<BOLAO_FIRST||i>maxIdx)return;
     var gd=gameUTC(g);if(!gd)return;
     var lockTime=new Date(gd.getTime()-BOLAO_TWO_H);
     var isLocked=now>=lockTime;
