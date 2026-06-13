@@ -170,10 +170,11 @@ async function handle(req) {
     if (method === 'DELETE' && path === '/reset') {
       var ak = req.headers.get('X-Admin-Key') || '';
       if (ak !== ADMIN_KEY) return error('Admin key invalida', 403);
-      await supaFetch("picks?id=gte.00000000-0000-0000-0000-000000000000", 'DELETE');
-      await supaFetch("special_picks?id=gte.00000000-0000-0000-0000-000000000000", 'DELETE');
+      // picks e pick_history usam BIGSERIAL (id bigint), participants usa UUID, special_picks usa BIGSERIAL
+      await supaFetch("picks?id=gte.0", 'DELETE');
+      await supaFetch("special_picks?id=gte.0", 'DELETE');
       await supaFetch("participants?id=gte.00000000-0000-0000-0000-000000000000", 'DELETE');
-      await supaFetch("pick_history?id=gte.00000000-0000-0000-0000-000000000000", 'DELETE');
+      await supaFetch("pick_history?id=gte.0", 'DELETE');
       return json({ ok: true });
     }
 
