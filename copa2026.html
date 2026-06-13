@@ -2668,7 +2668,7 @@ async function bolaoLoadMyData(){
 async function bolaoLoadRanking(){
   try{
     var maxG=0;
-    GAMES.forEach(function(g){var gd=gameUTC(g);if(gd&&new Date()>=new Date(gd.getTime()-BOLAO_TWO_H)&&g.n>maxG)maxG=g.n});
+    GAMES.forEach(function(g){if(gameIsPast(g)&&g.n>maxG)maxG=g.n});
     var data=await _bolaoFetch('/ranking?maxGame='+maxG);
     _bolaoParticipants={};(data.participants||[]).forEach(function(p){_bolaoParticipants[p.id]=p.name});
     _bolaoAllPicks={};(data.picks||[]).forEach(function(p){if(!_bolaoAllPicks[p.participant_id])_bolaoAllPicks[p.participant_id]={};_bolaoAllPicks[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b}});
