@@ -2494,7 +2494,7 @@ function bolaoRenderPicksGrid(){
     var tA=_bolaoTp(g,'a'),tB=_bolaoTp(g,'b');
     // Pontuação (só se jogo encerrado)
     var ptsHtml='';
-    if(gameIsPast(g)&&hasReal&&hasPick){
+    if(isLocked&&hasReal&&hasPick){
       var pts=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);
       var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
       var col=pts===10?'var(--gold)':pts>=2?'#4ade80':'var(--red)';
