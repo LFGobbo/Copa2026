@@ -542,6 +542,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     <div class="bolao-section">
       <div class="bolao-section-title">Meus palpites</div>
       <div class="bolao-picks-grid" id="bolao-picks-grid"></div>
+      <div id="bolao-pick-summary" style="margin:12px 0;font-size:var(--fs-sm);text-align:center"></div>
       <div id="bolao-confirm-area" style="margin-top:16px;display:none">
         <button class="bolao-save-btn" id="bolao-confirm-btn" onclick="bolaoConfirmAll()" style="background:var(--red);max-width:400px">Confirmar todos os palpites &mdash; n&atilde;o poder&aacute; editar depois</button>
         <div class="bolao-pick-saved" id="bolao-confirm-status" style="text-align:left;margin-top:8px"></div>
@@ -2535,6 +2536,24 @@ function bolaoRenderPicksGrid(){
     if(!isNaN(gn))bolaoSavePick(gn);
   };
   grid.addEventListener('blur',grid._bolaoBlurHandler,true);
+  // Status: quantos preenchidos
+  var elSum=document.getElementById('bolao-pick-summary');
+  if(elSum){
+    var totalV=0,filled=0,missing=[];
+    GAMES.forEach(function(g,i){
+      if(g.n<BOLAO_FIRST||i>maxIdx)return;
+      var gd=gameUTC(g);if(!gd)return;
+      var lk=new Date()>=new Date(gd.getTime()-BOLAO_TWO_H);
+      var pk=_bolaoMyPicks[g.n],hp=pk&&pk.a!==undefined&&pk.b!==undefined;
+      if(lk&&!hp)return;
+      totalV++;
+      if(hp){filled++}
+      else{missing.push(esc(g.a)+' x '+esc(g.b))}
+    });
+    if(totalV===0){elSum.innerHTML=''}
+    else if(filled===totalV){elSum.innerHTML='<span style="color:var(--green)">\u2705 Todos os palpites preenchidos para os jogos dispon\u00edveis!</span>'}
+    else{elSum.innerHTML='<span style="color:var(--orange)">\u26a0\ufe0f '+filled+'/'+totalV+' preenchidos. Faltam: '+missing.join(', ')+'</span>'}
+  }
 }
 function bolaoSavePick(gameN){
   if(!_bolaoToken||_bolaoConfirmed)return;
