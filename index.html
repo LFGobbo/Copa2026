@@ -2710,7 +2710,11 @@ function bolaoPopulateSpecials(){
   if(listB)listB.innerHTML=players.map(function(p){return'<option value="'+esc(p)+'">'}).join('');
   if(myChamp)champSel.value=myChamp;
   if(myScorer)scorerSel.value=myScorer;
-  if(locked){champSel.readOnly=true;scorerSel.readOnly=true;var btn=document.getElementById('bolao-special-btn');if(btn){btn.disabled=true;btn.textContent='Bloqueado \u2014 inscri\u00e7\u00f5es encerradas'}}
+  var btn=document.getElementById('bolao-special-btn');
+  if(locked){
+    champSel.readOnly=true;scorerSel.readOnly=true;
+    if(btn){btn.disabled=true;btn.textContent='Bloqueado \u2014 prazo encerrado'}
+  }
   // Atualizar deadline
   var dlEl=document.getElementById('bolao-special-deadline');
   if(dlEl&&deadline){
@@ -2723,7 +2727,8 @@ function bolaoPopulateSpecials(){
   if(myScorer)document.getElementById('bolao-scorer-saved').textContent=myScorer;
 }
 async function bolaoSaveSpecial(){
-  if(!_bolaoToken||_bolaoConfirmed)return;
+  if(!_bolaoToken)return;
+  var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);if(deadline&&new Date()>=deadline)return;
   var champion=document.getElementById('bolao-champion').value,topScorer=document.getElementById('bolao-scorer').value;
   var btn=document.getElementById('bolao-special-btn');btn.disabled=true;btn.textContent='Salvando...';
   try{
