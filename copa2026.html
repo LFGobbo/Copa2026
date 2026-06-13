@@ -2502,8 +2502,11 @@ function bolaoRenderRanking(){
     var conf=_bolaoConfirmedStatus[id]||false;
     var pCount=Object.keys(_bolaoAllPicks[id]||{}).filter(function(gn){return _bolaoAllPicks[id][gn].a!==undefined}).length;
     var status=[],tips=[];
-    var picksOk=pCount>=totalAvail;
-    if(picksOk&&conf){status.push('\u2705');tips.push('Tudo ok')}
+    if(conf){status.push('\u2705');tips.push('Confirmado')}
+    else{status.push('\u274c');tips.push('N\u00e3o confirmou')}
+    if(pCount===0)tips.push('Nenhum palpite');
+    else if(pCount<20)tips.push(pCount+' palpites');
+    else tips.push(pCount+' palpites');
     else{status.push('\u274c');if(!picksOk)tips.push('Faltam '+(totalAvail-pCount)+' palpites');if(!conf)tips.push('N\u00e3o confirmou')}
     if(sp&&sp.champion&&sp.top_scorer)tips.push('Especiais OK');
     return{id:id,name:_bolaoParticipants[id],total:r.total,exactCount:r.exactCount,resultCount:r.resultCount,bonusCount:r.bonusCount,status:status.join(''),tip:tips.join(' | ')};
