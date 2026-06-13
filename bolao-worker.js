@@ -156,10 +156,10 @@ async function handle(req) {
       try {
         var fetchOpts = {
           method: 'GET',
-          headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Range': '0-9999' }
+          headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Range-Unit': 'items', 'Range': '0-*' }
         };
         var pres = await fetch(SUPABASE_URL + '/rest/v1/' + picksUrl, fetchOpts);
-        if (pres.ok) { var ct = pres.headers.get('content-type') || ''; if (ct.indexOf('json') >= 0) allPicks = await pres.json() || []; }
+        if (pres.ok || pres.status === 206) { var ct = pres.headers.get('content-type') || ''; if (ct.indexOf('json') >= 0) allPicks = await pres.json() || []; }
       } catch(e) {}
       var allSp = [];
       if (url.searchParams.get('showSpecials') === '1') {

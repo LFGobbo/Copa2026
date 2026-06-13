@@ -2850,6 +2850,9 @@ async function bolaoLoadRanking(){
     _bolaoAllPicks={};(data.picks||[]).forEach(function(p){if(!_bolaoAllPicks[p.participant_id])_bolaoAllPicks[p.participant_id]={};_bolaoAllPicks[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b}});
     _bolaoAllSpecials={};(data.specialPicks||[]).forEach(function(p){_bolaoAllSpecials[p.participant_id]=p});
     bolaoRenderRanking();
+    // Alerta se os picks estiverem se aproximando do limite de paginação do Supabase
+    var totalPicks=data.picks?data.picks.length:0;
+    if(totalPicks>8000){console.warn('[Copa2026] ATENCAO: '+totalPicks+' picks no ranking — revisar paginacao do Worker')}
     // Salvar cache offline do ranking para fallback
     try{localStorage.setItem('copa2026_ranking_cache',JSON.stringify({ts:Date.now(),participants:_bolaoParticipants,confirmedStatus:_bolaoConfirmedStatus,picks:_bolaoAllPicks,specials:_bolaoAllSpecials}))}catch(e){}
   }catch(e){
