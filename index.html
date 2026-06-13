@@ -1804,7 +1804,6 @@ function processTimeline(idMatch,gameId){
 
       allEvents.forEach(function(e,idx){
         if(e.HomeGoals===undefined||e.AwayGoals===undefined)return;
-        if(e.Type!==0&&e.Type!==41){prevHome=e.HomeGoals;prevAway=e.AwayGoals;return;}
 
         var scoredForHome=e.HomeGoals>prevHome, scoredForAway=e.AwayGoals>prevAway;
         if(!scoredForHome&&!scoredForAway){prevHome=e.HomeGoals;prevAway=e.AwayGoals;return;}
