@@ -798,3 +798,23 @@ console.log(_bolaoWinnerOf(75))                   // Vencedor simulado
 console.log(_bolaoGroupStandings('F'))            // Classificação simulada
 console.log(_bolaoRankedThirds())                 // 8 melhores 3os
 ```
+
+## 15. Backup e Recuperação
+
+### Backup automático no repositório
+- Arquivos marcados com .backup no repositório são cópias do último estado estável
+- index.html.backup — última versão HTML funcional
+- olao-worker.js.backup — última versão do Worker funcional
+- Para restaurar: copiar o .backup por cima do arquivo original e fazer deploy
+
+### Backup server-side (Worker proxy)
+- GET /app no Worker serve o site completo sem depender 100% do GitHub Pages
+- Imagens e JSON são cacheados na Cache API do Cloudflare Workers
+- Se GitHub Pages ficar offline, o Worker serve do cache
+- Endereço: https://copa2026-bolao.luizfelipegobbo.workers.dev/app
+
+### Procedimento de emergência
+1. Se GitHub Pages quebrar: os usuários acessam via /app
+2. Se Worker quebrar: colar bolao-worker.js.backup no Cloudflare
+3. Se HTML quebrar: colar index.html.backup no lugar e push
+4. Se Supabase perder dados: restore do dump (se existir) ou recadastrar usuários
