@@ -1,6 +1,6 @@
 ﻿# Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-06-13 (v19.7)
+**Última atualização:** 2026-06-13 (v19.8)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -570,6 +570,13 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v19.8 (2026-06-13) — GAMES ordenado cronologicamente
+
+- **GAMES array reordenado**: agora ordenado por data (`d`) e horário (`t`) em vez de número do jogo (`n`). Game 5 (Austrália vs Turquia, 14/06 01:00) movido da posição 5 para a posição 8 (após jogos de 13/06). Mata-mata (jogos 73-104) também reordenado — ex: jogo 76 (29/06 13:00) agora antes de 74 (29/06 17:30)
+- **`GAME_BY_ID[g.n]` cache** continua funcionando (independe da ordem do array)
+- **`renderGames()` itera na ordem do array** — jogos agora aparecem em ordem cronológica na UI
+- **`copa2026.html` sincronizado** com `index.html`
 
 ### v19.7 (2026-06-13) — Deploy Completo + Root route
 - **Turnstile corrigido**: `turnstile.getResponse(document.getElementById('bolao-turnstile'))` em vez de `'bolao-turnstile'` string
