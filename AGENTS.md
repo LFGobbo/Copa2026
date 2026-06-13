@@ -575,7 +575,7 @@ Toda melhoria deve:
 
 - **GAMES array reordenado**: agora ordenado por data (`d`) e horário (`t`) em vez de número do jogo (`n`). Game 5 (Austrália vs Turquia, 14/06 01:00) movido da posição 5 para a posição 8 (após jogos de 13/06). Mata-mata (jogos 73-104) também reordenado — ex: jogo 76 (29/06 13:00) agora antes de 74 (29/06 17:30)
 - **`GAME_BY_ID[g.n]` cache** continua funcionando (independe da ordem do array)
-- **`renderGames()` itera na ordem do array** — jogos agora aparecem em ordem cronológica na UI
+- **`renderGames()` sort corrigido**: `games.sort(function(a,b){return a.n-b.n})` substituído por sort por data/hora — antes ignorava a ordem cronológica e reordenava por número do jogo
 - **`copa2026.html` sincronizado** com `index.html`
 
 ### v19.7 (2026-06-13) — Deploy Completo + Root route
