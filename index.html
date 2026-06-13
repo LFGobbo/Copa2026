@@ -2661,12 +2661,10 @@ async function bolaoLogin(){
     }catch(e){
       // Se nao existe, tentar cadastro com Turnstile
       var turnstileToken=null;
-      if(typeof turnstile!=='undefined'&&turnstile&&turnstile.getResponse){
-        turnstileToken=turnstile.getResponse('bolao-turnstile');
-      }
+      try{if(typeof turnstile!=='undefined'&&turnstile)turnstileToken=turnstile.getResponse(document.getElementById('bolao-turnstile'))||turnstile.getResponse()}catch(te){}
       if(!turnstileToken){st.className='bolao-login-status err';st.textContent='Resolva o captcha primeiro';return}
       var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);
-      if(deadline&&new Date()>=deadline){st.className='bolao-login-status err';st.textContent='Inscri\u00e7\u00f5es encerradas (2h antes do 2\u00ba jogo do Brasil)';turnstile.reset('bolao-turnstile');return}
+      if(deadline&&new Date()>=deadline){st.className='bolao-login-status err';st.textContent='Inscri\u00e7\u00f5es encerradas (2h antes do 2\u00ba jogo do Brasil)';try{turnstile.reset(document.getElementById('bolao-turnstile'))}catch(te){}return}
       var regRes=await _bolaoFetch('/register','POST',{name:name,password:pass,turnstileToken:turnstileToken});
       // Fazer login apos cadastro
       var loginRes2=await _bolaoFetch('/login','POST',{name:name,password:pass});
@@ -2685,7 +2683,7 @@ async function bolaoLogin(){
     await bolaoLoadRanking();
     if(_bolaoConfirmed)document.getElementById('bolao-confirmed-banner').style.display='block';
     else bolaoShowConfirmButton();
-  }catch(e){st.className='bolao-login-status err';st.textContent='Erro: '+e.message;if(typeof turnstile!=='undefined'&&turnstile)turnstile.reset('bolao-turnstile')}
+  }catch(e){st.className='bolao-login-status err';st.textContent='Erro: '+e.message;try{if(typeof turnstile!=='undefined'&&turnstile)turnstile.reset(document.getElementById('bolao-turnstile'))}catch(te){}}
 }
 function bolaoInit(){
   bolaoLoadRanking();
