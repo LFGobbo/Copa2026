@@ -2734,9 +2734,16 @@ async function bolaoConfirmAll(){
     if(g.n<BOLAO_FIRST)return;
     var gd=gameUTC(g);if(!gd)return;
     if(now>=new Date(gd.getTime()-BOLAO_TWO_H))return;
-    var pick=_bolaoMyPicks[g.n];if(!pick||pick.a===undefined||pick.b===undefined)missing.push('#'+g.n+' '+g.a+' vs '+g.b);
+    var pick=_bolaoMyPicks[g.n];
+    if(!pick||pick.a===undefined||pick.b===undefined){missing.push('#'+g.n+' '+g.a+' vs '+g.b);return}
+    // Jogos KO: se o palpite for empate, precisa decidir quem passa
+    var isKO=g.f&&!g.f.startsWith('Grupo');
+    if(isKO&&pick.a===pick.b&&!_bolaoKOPicks[g.n])missing.push('#'+g.n+' '+g.a+' vs '+g.b+' (desempate KO)');
   });
-  if(missing.length&&!confirm('Faltam '+missing.length+' palpites:\n'+missing.slice(0,5).join('\n')+(missing.length>5?'\n...e mais '+(missing.length-5):'')+'\n\nConfirmar assim mesmo?'))return;
+  if(missing.length){
+    if(st){st.style.color='var(--red)';st.textContent='\u26a0\ufe0f Bloqueado: faltam '+missing.length+' preenchimentos:\n'+missing.slice(0,8).join(', ')+(missing.length>8?', ...e mais '+(missing.length-8):'')}
+    return;
+  }
   btn.disabled=true;btn.textContent='Confirmando...';
   try{
     await _bolaoFetch('/confirm','PATCH');
