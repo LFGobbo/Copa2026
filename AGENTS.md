@@ -581,6 +581,7 @@ Toda melhoria deve:
 - **`_bolaoFetch` agora propaga `err.status`**: HTTP status code preservado no erro (não só mensagem)
 - **`bolaoLogin()` com mensagens claras**: 401="Senha incorreta", 403="Conta bloqueada", 409="Nome já cadastrado — tente outro ou verifique a senha" (em vez de "Erro: ..." genérico)
 - **Syntax error corrigido**: try externo removido acidentalmente durante refatoração — código comum ficou solto, quebrando o site. Restaurado aninhamento try/catch original
+- **`BOLAO_FIRST` alterado de 7 para 6**: após renumerar jogos 5-8, Brasil vs Marrocos virou jogo #6 — bolão agora começa dele
 
 ### v19.7 (2026-06-13) — Deploy Completo + Root route
 - **Turnstile corrigido**: `turnstile.getResponse(document.getElementById('bolao-turnstile'))` em vez de `'bolao-turnstile'` string
