@@ -2681,7 +2681,18 @@ function bolaoSavePick(gameN){
   var rawA=inA.value.replace(/[^0-9]/g,'').slice(0,2);
   var rawB=inB.value.replace(/[^0-9]/g,'').slice(0,2);
   inA.value=rawA; inB.value=rawB;
-  if(rawA===''||rawB==='')return;
+  if(rawA===''||rawB===''){
+    // Usuário limpou um campo — deletar pick se existia
+    if(_bolaoMyPicks[gameN]){
+      delete _bolaoMyPicks[gameN];
+      _bolaoBracketCache=null;
+      bolaoUpdateSummary();
+      _bolaoFetch('/picks','POST',{picks:[{game_n:gameN,goals_a:null,goals_b:null,ko_pick:null}]}).catch(function(){});
+    }
+    var saved=document.getElementById('bsp-status-'+gameN);
+    if(saved){saved.textContent='';}
+    return;
+  }
   var vA=parseInt(rawA,10),vB=parseInt(rawB,10);
   if(isNaN(vA)||isNaN(vB))return;
   var saved=document.getElementById('bsp-status-'+gameN);
@@ -2753,11 +2764,6 @@ async function bolaoConfirmAll(){
     // Jogos KO: se o palpite for empate, precisa decidir quem passa
     var isKO=g.f&&!g.f.startsWith('Grupo');
     if(isKO&&pick.a===pick.b&&!_bolaoKOPicks[g.n])missing.push('#'+g.n+' '+g.a+' vs '+g.b+' (desempate KO)');
-    // Jogos KO: verificar se os times foram definidos
-    if(isKO){
-      var tp=_bolaoTeamPicks[g.n]||{};
-      if(!tp.a||!tp.b)missing.push('#'+g.n+' (definir quem joga)');
-    }
   });
   if(missing.length){
     if(st){st.style.color='var(--red)';st.textContent='\u26a0\ufe0f Bloqueado: faltam '+missing.length+' preenchimentos:\n'+missing.slice(0,8).join(', ')+(missing.length>8?', ...e mais '+(missing.length-8):'')}
