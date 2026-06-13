@@ -378,6 +378,12 @@ Chave anônima: (removida do front-end na v19.7 — só o Worker usa service_rol
 
 Middleware de segurança entre frontend e Supabase:
 
+```
+URL: https://copa2026-bolao.luizfelipegobbo.workers.dev
+Turnstile Site Key: 0x4AAAAAADj0kWY7cUoZ_uwS
+Turnstile Secret: 0x4AAAAAADj0kQff4_E5yllvUOzc2sCtF2k
+```
+
 - **`POST /register`** — Turnstile validation + cria participante (hash server-side)
 - **`POST /login`** — Compara senha (hash server-side), retorna JWT
 - **`POST /picks`** — Salva palpites + histórico (requer JWT)

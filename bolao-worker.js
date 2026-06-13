@@ -309,6 +309,7 @@ export default {
     TURNSTILE_SEC = env.TURNSTILE_SEC;
     JWT_SECRET = env.JWT_SECRET;
     ADMIN_KEY = env.ADMIN_KEY;
+    ADMIN_HASH = env.ADMIN_HASH;
     try {
       return await handleRequest(req);
     } catch (e) {
