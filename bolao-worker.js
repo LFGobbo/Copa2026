@@ -146,7 +146,10 @@ async function handle(req) {
     // GET /ranking
     if (method === 'GET' && path === '/ranking') {
       var participants = (await supaFetch('participants?select=id,name')) || [];
-      var allPicks = (await supaFetch('picks?select=participant_id,game_n,goals_a,goals_b&limit=10000')) || [];
+      var maxGame = url.searchParams.get('maxGame');
+      var picksUrl = 'picks?select=participant_id,game_n,goals_a,goals_b&limit=10000';
+      if (maxGame) picksUrl += '&game_n=lte.' + encodeURIComponent(maxGame);
+      var allPicks = (await supaFetch(picksUrl)) || [];
       var allSp = (await supaFetch('special_picks?select=participant_id,champion,top_scorer')) || [];
       return json({ participants: participants, picks: allPicks, specialPicks: allSp });
     }
