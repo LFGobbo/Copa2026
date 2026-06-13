@@ -70,13 +70,14 @@ async function handle(req) {
       return error('Worker nao configurado', 500);
     }
 
-    // GET /app — proxy do site sem CSP do GitHub Pages
-    if (method === 'GET' && path === '/app') {
-      var siteRes = await fetch('https://lfgobbo.github.io/Copa2026/');
+    // GET /app or GET static files — proxy do site sem CSP do GitHub Pages
+    if (method === 'GET' && (path === '/app' || path.match(/\.(png|json|js)$/))) {
+      var ghUrl = 'https://lfgobbo.github.io/Copa2026/' + (path === '/app' ? '' : path.replace(/^\//,''));
+      var siteRes = await fetch(ghUrl + (path === '/app' ? '?v=' + Date.now() : ''));
       var siteHtml = await siteRes.text();
       return new Response(siteHtml, {
         status: 200,
-        headers: { 'Content-Type': 'text/html;charset=utf-8', 'Access-Control-Allow-Origin': '*' }
+        headers: { 'Content-Type': 'text/html;charset=utf-8', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }
       });
     }
 
