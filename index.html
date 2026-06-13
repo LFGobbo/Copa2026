@@ -338,7 +338,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bracket-team.winner{font-weight:700;color:var(--gold);}
 .bracket-score.has-score{color:var(--gold);font-weight:800;}
 .bracket-team.brazil{color:#ffdf00;}
-
+.home-badge{font-size:10px;opacity:.5;margin-right:2px}
 /* Bracket tree: scroll suave */
 .bracket-tree{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 .bracket-tree::-webkit-scrollbar{height:4px}
@@ -1281,7 +1281,7 @@ function renderBracketCards(){
         var hasScore=s.a!==undefined&&s.b!==undefined;
         var wA=hasScore&&s.a>s.b,wB=hasScore&&s.b>s.a;
         return'<div class="bracket-game'+(isFinal?' final-round':'')+'">'
-          +'<div class="'+clsA+(wA?' winner':'')+'">'+rA.flag+' '+rA.name+'</div>'
+          +'<div class="'+clsA+(wA?' winner':'')+'"><span class="home-badge" title="Mandante">\u{1F3DF}</span> '+rA.flag+' '+rA.name+'</div>'
           +'<div class="bracket-score'+(hasScore?' has-score':'')+'">'+(hasScore?sa+' \u00d7 '+sb:'\u2013 \u00d7 \u2013')+'</div>'
           +'<div class="'+clsB+(wB?' winner':'')+'">'+rB.flag+' '+rB.name+'</div>'
           +'</div>';

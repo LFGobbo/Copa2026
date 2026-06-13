@@ -1,6 +1,6 @@
 ﻿# Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-06-13 (v19.4)
+**Última atualização:** 2026-06-13 (v19.5)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -541,16 +541,17 @@ Toda melhoria deve:
 
 ## 13. Version History
 
-### v19.4 (atual)
-- **`processTimeline` reescrito** — reconstrução completa de gols/cartões auto a cada poll, preservando manuais. `PROCESSED_EVENTS` só evita re-render desnecessário
-- **Cartão: chave única por EventId** — `gameId_c_EventId` + `seenCardEvents` eliminam duplicatas em reprocessamento
-- **Cartão removido pela API agora some** — varredura da timeline completa, não só `newEvents`
-- **Gol contra truncado pelo placar** — separar gols contra dos normais antes da truncagem, cada grupo usa seu placar
-- **`isOwn` com fallback** — `_resolveMatchTeams()` para homeId/awayId mesmo sem `FIFA_MATCH_META`
-- **Nacionalidade dos árbitros** — `REF_COUNTRY` + bandeira no card
-- **Cache de árbitros** — bump v1→v2
-- **Polling: janela 6h → 24h** + `initTimelineSync` para sessões limpas
-- **`parseInt("90+8")` = 90 e `parseInt("90+3")` = 90** — `_parseMinute` corrige: "90+8" vira 98, "90+3" vira 93
+### v19.5 (atual — 2026-06-13)
+- **Dead code removido**: `@keyframes goalFlash`, `@keyframes spin` duplicado (2x→1x), `@keyframes squad-shimmer` duplicado (2x→1x), `.squads-loading` e `.loading-spinner` duplicados
+- **`console.log` de produção removidos**: 6 logs de debug em `initFifaMaps()`, 2 logs em `fetchCalendar()` — produção silenciosa
+- **`alt=""` nos mascotes**: `mascote1_t.png`, `mascote2_t.png`, `mascote3_t.png` agora com `alt=""`
+- **`hashchange` listener**: navegação por hash manual agora funciona (ex: `#grupos`)
+- **`:focus-visible`**: tabs, filter-btn, mode-btn, bview-btn, pen-btn, refresh-btn, score-input com outline dourado
+- **ARIA básico**: tabs com `role="tablist"` + `role="tab"` + `aria-selected` + `tabindex`, popup com `role="dialog" aria-modal`, inputs de placar com `aria-label`
+- **Countdown adaptativo**: `scheduleCountdown()` com `setTimeout` recursivo — 1s com jogos ao vivo, 30s sem (substitui `setInterval(1000)` que rodava pra sempre)
+- **`Iniciar Copa.bat` corrigido**: agora abre GitHub Pages em vez de chamar `robot.ps1` inexistente
+- **Mandante no bracket**: `🏟` ao lado do time da casa na view de cards do mata-mata
+- **Cópia `copa2026.html` sincronizada** com `index.html`
 
 ### v19.2
 - **`_bolaoWinnerOf` resolvido** — agora retorna time real via `_bolaoResolveTeam(g.a,gameN)` em vez do placeholder literal (`g.a`). A cascata KO agora propaga nomes de times corretos
