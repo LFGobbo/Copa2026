@@ -317,8 +317,12 @@ async function handle(req) {
 
     // GET /scores — scores centralizados da FIFA (cache no Supabase via /cron)
     if (method === 'GET' && path === '/scores') {
-      var scoresData = (await supaFetch('live_scores?select=game_key,home_team,away_team,goals_home,goals_away,match_id,updated_at&order=updated_at.desc')) || [];
-      return json({ scores: scoresData, count: scoresData.length });
+      try {
+        var scoresData = (await supaFetch('live_scores?select=game_key,home_team,away_team,goals_home,goals_away,match_id,updated_at&order=updated_at.desc')) || [];
+        return json({ scores: scoresData, count: scoresData.length });
+      } catch(e) {
+        return json({ scores: [], count: 0, error: e.message });
+      }
     }
 
     // GET /cron — tarefas agendadas (chamado via cron-job.org ou Cloudflare Cron)
