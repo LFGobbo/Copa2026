@@ -302,6 +302,28 @@ async function handle(req) {
       return json({ participantId: pid2, evolution: snaps });
     }
 
+    // GET /app — proxy do site (backup se GitHub Pages cair)
+    if (method === 'GET' && (path === '/app' || path.match(/\.(png|json)$/))) {
+      var ghUrl = 'https://lfgobbo.github.io/Copa2026/' + (path === '/app' ? '' : path.replace(/^\//,''));
+      var cacheKey = ghUrl;
+      var cache = await caches.open('copa2026-proxy');
+      var cached = await cache.match(cacheKey);
+      if (cached && path !== '/app') return cached;
+      try {
+        var siteRes = await fetch(ghUrl + (path === '/app' ? '?v=' + Date.now() : ''), { cf: { cacheEverything: false } });
+        if (siteRes.ok) {
+          if (path !== '/app') { var copy = siteRes.clone(); cache.put(cacheKey, copy); }
+          if (path === '/app') {
+            var text = await siteRes.text();
+            return new Response(text, { status: 200, headers: { 'Content-Type': 'text/html;charset=utf-8', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' } });
+          }
+          return siteRes;
+        }
+      } catch(e) {}
+      if (cached) return cached;
+      return json({ error: 'Site temporariamente indisponivel' }, 503);
+    }
+
     // GET /health — monitoramento
     if (method === 'GET' && path === '/health') {
       return json({ ok: true, uptime: Math.floor(Date.now() / 1000) });
