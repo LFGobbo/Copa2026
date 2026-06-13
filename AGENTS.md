@@ -1,6 +1,6 @@
 ﻿# Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-06-12 (v19.3)
+**Última atualização:** 2026-06-13 (v19.4)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -495,6 +495,7 @@ saveState()
 ### Dados
 
 - Gol contra armazenado no time do botão clicado (inversão corrigida na renderização)
+- **Gol contra truncado pelo placar**: `autoGoalsB.slice(0, finalAway)` remove gols contra porque `finalAway` não os contabiliza. Corrigido com `+ownInB` no limite do slice
 - `HomeTeamScore: null` no calendário FIFA → placar extraído da Timeline API
 - Grupos I/J tiveram dados trocados (corrigido v11.10)
 
@@ -504,6 +505,8 @@ saveState()
 - `parseInt()` sem radix 10 causa bugs em mobile
 - `forEach` aninhado pode faltar `});` (quebrou processTimeline no v12)
 - `dynRender` assíncrono com rAF causa flicker se `slideUp` CSS anima 104 cards
+- **Chave de cartão sem EventId**: usar minuto como identificador permite duplicatas se o mesmo cartão for reprocessado. Usar `gameId_c_EventId` + `seenCardEvents` para deduplicação
+- **`newEvents` vs timeline completa**: processar só eventos novos (`EventId > lastId`) impede revalidação de cartões removidos pela API. A timeline completa deve ser varrida, com `auto` marcador para distinguir auto de manual
 
 ### Bolão
 
@@ -537,11 +540,15 @@ Toda melhoria deve:
 
 ## 13. Version History
 
-### v19.3 (atual)
-- **`.live-clock` removido definitivamente** — CSS e span do card de jogo eliminados (relógio ⏱ não sincronizava)
-- **`isGameLive` duplicada removida** — fundida em uma única função com `MATCH_STARTED` + `MATCH_KICKOFF` + janela 3h
-- **`_bolaoGetBracket` — preserva props extras** — `scores[gn]={a:p.a,b:p.b}` trocado por `Object.assign({},scores[gn],...)` para não perder `scoreboard` e outras propriedades dos scores
-- **Ambos os HTMLs sincronizados** — `index.html` e `copa2026.html` idênticos após os 4 fixes
+### v19.4 (atual)
+- **`processTimeline` reescrito** — reconstrução completa de gols/cartões auto a cada poll, preservando manuais. `PROCESSED_EVENTS` agora só evita re-render desnecessário
+- **Cartão duplicado em tempos diferentes** — chave mudou de `gameId_c_time_minuto` para `gameId_c_EventId`, unique por evento da API. `seenCardEvents` deduplica na varredura
+- **Cartão removido pela API agora some** — revalidação varre timeline completa, não só `newEvents`. Cartão que a API removeu simplesmente não é recriado
+- **Gol contra truncado pelo placar** — gol contra é armazenado no lado do time que sofreu, mas o truncamento `slice(0, finalAway)` o removia. Corrigido: `+ownInB` no limite preserva gols contra
+- **`isOwn` dependia de `meta.homeId` populado** — adicionado fallback `_resolveMatchTeams()` para resolver homeId/awayId mesmo sem `FIFA_MATCH_META`
+- **Nacionalidade dos árbitros** — `REF_COUNTRY` (inglês→português) + exibição com bandeira no card
+- **Cache de árbitros** — bump v1→v2 para forçar refetch com novo formato (objeto `{name, country}`)
+- **Polling sem `noScore`** — timeline sempre buscado para jogos recentes (até 6h), independente de já ter placar
 
 ### v19.2
 - **`_bolaoWinnerOf` resolvido** — agora retorna time real via `_bolaoResolveTeam(g.a,gameN)` em vez do placeholder literal (`g.a`). A cascata KO agora propaga nomes de times corretos
