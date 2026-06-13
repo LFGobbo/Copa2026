@@ -507,6 +507,7 @@ saveState()
 - `dynRender` assíncrono com rAF causa flicker se `slideUp` CSS anima 104 cards
 - **Chave de cartão sem EventId**: usar minuto como identificador permite duplicatas se o mesmo cartão for reprocessado. Usar `gameId_c_EventId` + `seenCardEvents` para deduplicação
 - **`newEvents` vs timeline completa**: processar só eventos novos (`EventId > lastId`) impede revalidação de cartões removidos pela API. A timeline completa deve ser varrida, com `auto` marcador para distinguir auto de manual
+- **`parseInt` em minuto com acréscimo**: `parseInt("90+8")` retorna 90, não 98. Usar `_parseMinute` que calcula "90+8" → 98
 
 ### Bolão
 
@@ -541,14 +542,15 @@ Toda melhoria deve:
 ## 13. Version History
 
 ### v19.4 (atual)
-- **`processTimeline` reescrito** — reconstrução completa de gols/cartões auto a cada poll, preservando manuais. `PROCESSED_EVENTS` agora só evita re-render desnecessário
-- **Cartão duplicado em tempos diferentes** — chave mudou de `gameId_c_time_minuto` para `gameId_c_EventId`, unique por evento da API. `seenCardEvents` deduplica na varredura
-- **Cartão removido pela API agora some** — revalidação varre timeline completa, não só `newEvents`. Cartão que a API removeu simplesmente não é recriado
-- **Gol contra truncado pelo placar** — gol contra é armazenado em `autoGoalsB` (lado do time que sofreu), mas `autoGoalsB.slice(0, finalAway)` o removia porque `finalAway=0`. Corrigido: separar gols contra dos normais antes da truncagem, usar o placar correto para cada grupo
-- **`isOwn` dependia de `meta.homeId` populado** — adicionado fallback `_resolveMatchTeams()` para resolver homeId/awayId mesmo sem `FIFA_MATCH_META`
-- **Nacionalidade dos árbitros** — `REF_COUNTRY` (inglês→português) + exibição com bandeira no card
-- **Cache de árbitros** — bump v1→v2 para forçar refetch com novo formato (objeto `{name, country}`)
-- **Polling sem `noScore`** — timeline sempre buscado para jogos recentes (até 6h), independente de já ter placar
+- **`processTimeline` reescrito** — reconstrução completa de gols/cartões auto a cada poll, preservando manuais. `PROCESSED_EVENTS` só evita re-render desnecessário
+- **Cartão: chave única por EventId** — `gameId_c_EventId` + `seenCardEvents` eliminam duplicatas em reprocessamento
+- **Cartão removido pela API agora some** — varredura da timeline completa, não só `newEvents`
+- **Gol contra truncado pelo placar** — separar gols contra dos normais antes da truncagem, cada grupo usa seu placar
+- **`isOwn` com fallback** — `_resolveMatchTeams()` para homeId/awayId mesmo sem `FIFA_MATCH_META`
+- **Nacionalidade dos árbitros** — `REF_COUNTRY` + bandeira no card
+- **Cache de árbitros** — bump v1→v2
+- **Polling: janela 6h → 24h** + `initTimelineSync` para sessões limpas
+- **`parseInt("90+8")` = 90 e `parseInt("90+3")` = 90** — `_parseMinute` corrige: "90+8" vira 98, "90+3" vira 93
 
 ### v19.2
 - **`_bolaoWinnerOf` resolvido** — agora retorna time real via `_bolaoResolveTeam(g.a,gameN)` em vez do placeholder literal (`g.a`). A cascata KO agora propaga nomes de times corretos

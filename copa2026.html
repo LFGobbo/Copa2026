@@ -966,6 +966,13 @@ function getSuspensions(forGame){
   });
   return out;
 }
+function _parseMinute(m){
+  if(!m)return 0;
+  var s=String(m);
+  var p=s.split('+');
+  return parseInt(p[0],10)+(p[1]?parseInt(p[1],10):0);
+}
+
 function renderGameCard(g){
   var gn=g.n,s=scores[gn]||{},sa=s.a!==undefined?s.a:"",sb=s.b!==undefined?s.b:"";
   var sus=getSuspensions(gn),susA=sus[g.a]||[],susB=sus[g.b]||[];
@@ -974,10 +981,10 @@ function renderGameCard(g){
   var gaA=goals[gn]&&goals[gn].a?goals[gn].a:[],gaB=goals[gn]&&goals[gn].b?goals[gn].b:[];
   var caA=cards[gn]&&cards[gn].a?cards[gn].a:[],caB=cards[gn]&&cards[gn].b?cards[gn].b:[];
   var events=[];
-  gaA.forEach(function(gl){events.push({type:'goal',data:gl,team:'a',display:gl.type==='own'?'b':'a',st:'a',minute:parseInt(gl.minute,10)||0})});
-  gaB.forEach(function(gl){events.push({type:'goal',data:gl,team:'b',display:gl.type==='own'?'a':'b',st:'b',minute:parseInt(gl.minute,10)||0})});
-  caA.forEach(function(c){events.push({type:'card',data:c,team:'a',tn:g.a,minute:parseInt(c.minute,10)||0})});
-  caB.forEach(function(c){events.push({type:'card',data:c,team:'b',tn:g.b,minute:parseInt(c.minute,10)||0})});
+  gaA.forEach(function(gl){events.push({type:'goal',data:gl,team:'a',display:gl.type==='own'?'b':'a',st:'a',minute:_parseMinute(gl.minute)})});
+  gaB.forEach(function(gl){events.push({type:'goal',data:gl,team:'b',display:gl.type==='own'?'a':'b',st:'b',minute:_parseMinute(gl.minute)})});
+  caA.forEach(function(c){events.push({type:'card',data:c,team:'a',tn:g.a,minute:_parseMinute(c.minute)})});
+  caB.forEach(function(c){events.push({type:'card',data:c,team:'b',tn:g.b,minute:_parseMinute(c.minute)})});
   events.sort(function(x,y){return x.minute-y.minute});
   var isGroup=g.f&&g.f.startsWith("Grupo"),isFinal=g.f==="Final";
   var grpL=isGroup?g.f.split(' ')[1]:'';
@@ -1652,7 +1659,7 @@ setTimeout(auditData,3000);
 
 function initFifaMaps(){
   if(FIFA_MAP_READY){console.log('initFifaMaps: ja pronto');return}
-  FIFA_MAP_READY=true;
+  FIFA_MAP_READY=true;setTimeout(initTimelineSync,1000);
   console.log('initFifaMaps: iniciando');
   try{
     var cached=localStorage.getItem('FIFA_PLAYER_MAP_CACHE_V2');
@@ -1949,7 +1956,7 @@ function goRefreshError(btn,st){
 
 // --- Polling automático da FIFA API ---
 initFifaMaps();
-(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length){mergeScores(m);auditData()}});var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+10800000);var recent=now<=new Date(gd.getTime()+21600000);if(live||recent){delete PROCESSED_EVENTS[id];processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
+(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length){mergeScores(m);auditData()}});var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+10800000);var recent=now<=new Date(gd.getTime()+86400000);if(live||recent){delete PROCESSED_EVENTS[id];processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
 
 
 
@@ -1996,7 +2003,19 @@ function loadAllReferees(){
 }
 loadAllReferees();
 /* Globoplay/Ge TV já embutidos nos dados GAMES */
-(function dailyMaintenance(){
+(
+function initTimelineSync(){
+  if(!FIFA_MAP_READY)return;
+  var now=new Date();
+  GAMES.forEach(function(g){
+    var id=FIFA_MATCH_IDS[g.n];if(!id)return;
+    var gd=gameUTC(g);if(!gd)return;
+    if(now<gd)return;
+    if(scores[g.n]&&scores[g.n].a!==undefined)return;
+    processTimeline(id,g.n);
+  });
+}
+function dailyMaintenance(){
   var SIX_H=21600000;
   try{
     var fifaCache=JSON.parse(localStorage.getItem('FIFA_PLAYER_MAP_CACHE_V2')||'null');
