@@ -1,14 +1,12 @@
 // Cloudflare Worker — Copa2026 Bolão
-// Deploy: wrangler deploy bolao-worker.js  (ou colar no dashboard)
-// ENV vars (configurar no dashboard ou wrangler.toml):
+// Modo: Service Worker (compatível com todos os runtimes)
+// ENV vars (configurar no dashboard):
 //   SUPABASE_URL  — https://etbezmraylbvlnycltha.supabase.co
 //   SUPABASE_KEY  — service_role key (NÃO a anônima!)
 //   TURNSTILE_SEC — Secret key do Turnstile
-//   ADMIN_KEY     — Chave secreta para reset (ex: uuid)
-//   ADMIN_HASH    — SHA-256 de 'BolaoAdmin2026!' + ':' + JWT_SECRET (gerar com: node -e "console.log(require('crypto').createHash('sha256').update('BolaoAdmin2026!'+':'+process.env.JWT_SECRET).digest('hex'))")
 //   JWT_SECRET    — Qualquer string para assinar tokens
-
-let SUPABASE_URL, SUPABASE_KEY, TURNSTILE_SEC, JWT_SECRET, ADMIN_KEY, ADMIN_HASH;
+//   ADMIN_KEY     — Chave secreta para reset
+//   ADMIN_HASH    — SHA-256('BolaoAdmin2026!' + ':' + JWT_SECRET)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -16,59 +14,28 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type,Authorization',
 };
 
-function json(data, status = 200) {
+function json(data, status) {
   return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
+    status: status || 200,
+    headers: Object.assign({ 'Content-Type': 'application/json' }, CORS),
   });
 }
 
-function error(msg, status = 400) {
-  return json({ error: msg }, status);
+function error(msg, status) {
+  return json({ error: msg }, status || 400);
 }
 
-// --- Crypto helpers ---
 async function sha256(data) {
-  const buf = new TextEncoder().encode(data);
-  const hash = await crypto.subtle.digest('SHA-256', buf);
-  return Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+  var buf = new TextEncoder().encode(data);
+  var hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(function (b) {
+    return b.toString(16).padStart(2, '0');
+  }).join('');
 }
 
-// Simple JWT (HS256) — sem lib externa
-async function createToken(participantId, name) {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payload = btoa(
-    JSON.stringify({
-      sub: participantId,
-      name,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 86400 * 90, // 90 dias
-    })
-  );
-  const sig = await sha256(header + '.' + payload + '.' + JWT_SECRET);
-  return header + '.' + payload + '.' + sig;
-}
-
-async function verifyToken(token) {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const sig = await sha256(parts[0] + '.' + parts[1] + '.' + JWT_SECRET);
-    if (sig !== parts[2]) return null;
-    const payload = JSON.parse(atob(parts[1]));
-    if (payload.exp < Math.floor(Date.now() / 1000)) return null;
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-// --- Supabase helpers (usam service_role key) ---
-async function supaFetch(path, method = 'GET', body = null) {
-  const opts = {
-    method,
+async function supaFetch(path, method, body) {
+  var opts = {
+    method: method || 'GET',
     headers: {
       apikey: SUPABASE_KEY,
       Authorization: 'Bearer ' + SUPABASE_KEY,
@@ -76,253 +43,159 @@ async function supaFetch(path, method = 'GET', body = null) {
     },
   };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
+  var res = await fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
   if (!res.ok) {
-    const txt = await res.text();
+    var txt = await res.text();
     throw new Error('Supabase ' + res.status + ': ' + txt.slice(0, 200));
   }
   if (method === 'DELETE') return null;
-  const ct = res.headers.get('content-type') || '';
-  if (ct.includes('json')) return res.json();
-  return null;
+  var ct = res.headers.get('content-type') || '';
+  return ct.indexOf('json') >= 0 ? res.json() : null;
 }
 
-// --- Routes ---
-async function handleRequest(req) {
-  const url = new URL(req.url);
-  const path = url.pathname;
-  const method = req.method;
+addEventListener('fetch', function (event) {
+  event.respondWith(handle(event.request));
+});
 
-  if (method === 'OPTIONS') return json({}, 204);
-
-  // Verificar env vars
-  if (!SUPABASE_URL || !SUPABASE_KEY || !JWT_SECRET) {
-    return error('Worker nao configurado — faltam env vars', 500);
+async function handle(req) {
+  // CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: CORS });
   }
 
-  // ---- POST /register ----
-  if (method === 'POST' && path === '/register') {
-    try {
-      const { name, password, turnstileToken } = await req.json();
-      if (!name || !password || !turnstileToken)
+  var url = new URL(req.url);
+  var path = url.pathname;
+  var method = req.method;
+
+  try {
+    if (!SUPABASE_URL || !SUPABASE_KEY || !JWT_SECRET) {
+      return error('Worker nao configurado', 500);
+    }
+
+    // POST /register
+    if (method === 'POST' && path === '/register') {
+      var body = await req.json();
+      if (!body.name || !body.password || !body.turnstileToken)
         return error('name, password e turnstileToken obrigatorios');
 
       // Validar Turnstile
-      const turnstileRes = await fetch(
-        'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-        { method: 'POST', body: new URLSearchParams({ secret: TURNSTILE_SEC, response: turnstileToken }) }
-      );
-      const turnstileData = await turnstileRes.json();
-      if (!turnstileData.success) return error('Captcha invalido', 403);
-
-      // Verificar se nome ja existe
-      const existing = await supaFetch(
-        "participants?name=eq." + encodeURIComponent(name) + "&select=id"
-      );
-      if (existing && existing.length)
-        return error('Nome ja cadastrado', 409);
-
-      // Hash da senha (servidor: SHA-256 com salt interno)
-      const hash = await sha256(password + ':' + JWT_SECRET);
-
-      // Criar participante
-      const created = await supaFetch('participants', 'POST', {
-        name,
-        password: hash,
-        confirmed: false,
+      var tres = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        body: new URLSearchParams({ secret: TURNSTILE_SEC, response: body.turnstileToken }),
       });
+      var tdata = await tres.json();
+      if (!tdata.success) return error('Captcha invalido', 403);
 
-      // Buscar o criado (Supabase POST nao retorna o objeto por padrao)
-      const np = await supaFetch(
-        "participants?name=eq." + encodeURIComponent(name) + "&select=id,name"
-      );
+      // Verificar nome
+      var existing = await supaFetch("participants?name=eq." + encodeURIComponent(body.name) + "&select=id");
+      if (existing && existing.length) return error('Nome ja cadastrado', 409);
 
+      var hash = await sha256(body.password + ':' + JWT_SECRET);
+      await supaFetch('participants', 'POST', { name: body.name, password: hash, confirmed: false });
+      var np = await supaFetch("participants?name=eq." + encodeURIComponent(body.name) + "&select=id,name");
       return json({ id: np[0].id, name: np[0].name }, 201);
-    } catch (e) {
-      return error(e.message, 500);
     }
-  }
 
-  // ---- POST /login ----
-  if (method === 'POST' && path === '/login') {
-    try {
-      const { name, password } = await req.json();
-      if (!name || !password) return error('name e password obrigatorios');
-
-      const existing = await supaFetch(
-        "participants?name=eq." + encodeURIComponent(name) + "&select=id,name,password,confirmed"
-      );
+    // POST /login
+    if (method === 'POST' && path === '/login') {
+      var body = await req.json();
+      if (!body.name || !body.password) return error('name e password obrigatorios');
+      var existing = await supaFetch("participants?name=eq." + encodeURIComponent(body.name) + "&select=id,name,password,confirmed");
       if (!existing || !existing.length) return error('Participante nao encontrado', 404);
-
-      const hash = await sha256(password + ':' + JWT_SECRET);
+      var hash = await sha256(body.password + ':' + JWT_SECRET);
       if (existing[0].password !== hash) return error('Senha incorreta', 401);
-
-      const token = await createToken(existing[0].id, existing[0].name);
-      return json({
-        id: existing[0].id,
-        name: existing[0].name,
-        confirmed: existing[0].confirmed,
-        token,
-      });
-    } catch (e) {
-      return error(e.message, 500);
+      // JWT simples
+      var header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      var payload = btoa(JSON.stringify({ sub: existing[0].id, name: existing[0].name, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 * 90 }));
+      var sig = await sha256(header + '.' + payload + '.' + JWT_SECRET);
+      return json({ id: existing[0].id, name: existing[0].name, confirmed: existing[0].confirmed, token: header + '.' + payload + '.' + sig });
     }
-  }
 
-  // ---- Auth middleware (para rotas que precisam de token) ----
-  const authHeader = req.headers.get('Authorization') || '';
-  const token = authHeader.replace('Bearer ', '');
-  const user = token ? await verifyToken(token) : null;
+    // --- Rotas autenticadas ---
+    var auth = req.headers.get('Authorization') || '';
+    var token = auth.replace('Bearer ', '');
+    var user = null;
+    if (token) {
+      var parts = token.split('.');
+      if (parts.length === 3) {
+        var vsig = await sha256(parts[0] + '.' + parts[1] + '.' + JWT_SECRET);
+        if (vsig === parts[2]) {
+          var p = JSON.parse(atob(parts[1]));
+          if (p.exp > Math.floor(Date.now() / 1000)) user = p;
+        }
+      }
+    }
 
-  // ---- POST /picks ----
-  if (method === 'POST' && path === '/picks') {
-    try {
+    // POST /picks
+    if (method === 'POST' && path === '/picks') {
       if (!user) return error('Token invalido', 401);
-      const { picks } = await req.json();
-      if (!picks || !picks.length) return error('picks obrigatorio');
-
-      for (const pick of picks) {
-        // Upsert pick
-        await supaFetch('picks?on_conflict=participant_id,game_n', 'POST', {
-          participant_id: user.sub,
-          game_n: pick.game_n,
-          goals_a: pick.goals_a,
-          goals_b: pick.goals_b,
-          ko_pick: pick.ko_pick || null,
-        });
-
-        // Histórico (pick_history)
-        await supaFetch('pick_history', 'POST', {
-          participant_id: user.sub,
-          game_n: pick.game_n,
-          goals_a: pick.goals_a,
-          goals_b: pick.goals_b,
-          ko_pick: pick.ko_pick || null,
-        });
+      var body = await req.json();
+      if (!body.picks || !body.picks.length) return error('picks obrigatorio');
+      for (var i = 0; i < body.picks.length; i++) {
+        var pick = body.picks[i];
+        await supaFetch('picks?on_conflict=participant_id,game_n', 'POST', { participant_id: user.sub, game_n: pick.game_n, goals_a: pick.goals_a, goals_b: pick.goals_b, ko_pick: pick.ko_pick || null });
+        await supaFetch('pick_history', 'POST', { participant_id: user.sub, game_n: pick.game_n, goals_a: pick.goals_a, goals_b: pick.goals_b, ko_pick: pick.ko_pick || null });
       }
       return json({ ok: true });
-    } catch (e) {
-      return error(e.message, 500);
     }
-  }
 
-  // ---- GET /mypicks ----
-  if (method === 'GET' && path === '/mypicks') {
-    try {
+    // GET /mypicks
+    if (method === 'GET' && path === '/mypicks') {
       if (!user) return error('Token invalido', 401);
-      const picks = (await supaFetch(
-        "picks?participant_id=eq." + user.sub + "&select=game_n,goals_a,goals_b,ko_pick"
-      )) || [];
-      const sp = (await supaFetch(
-        "special_picks?participant_id=eq." + user.sub + "&select=champion,top_scorer,locked"
-      )) || [];
-      const part = (await supaFetch(
-        "participants?id=eq." + user.sub + "&select=confirmed"
-      )) || [];
-      return json({
-        picks,
-        specialPicks: sp[0] || null,
-        confirmed: part[0] ? part[0].confirmed : false,
-      });
-    } catch (e) {
-      return error(e.message, 500);
+      var picks = (await supaFetch("picks?participant_id=eq." + user.sub + "&select=game_n,goals_a,goals_b,ko_pick")) || [];
+      var sp = (await supaFetch("special_picks?participant_id=eq." + user.sub + "&select=champion,top_scorer,locked")) || [];
+      var part = (await supaFetch("participants?id=eq." + user.sub + "&select=confirmed")) || [];
+      return json({ picks: picks, specialPicks: sp[0] || null, confirmed: part[0] ? part[0].confirmed : false });
     }
-  }
 
-  // ---- GET /ranking ----
-  if (method === 'GET' && path === '/ranking') {
-    try {
-      const participants = (await supaFetch('participants?select=id,name')) || [];
-      const allPicks = (await supaFetch(
-        'picks?select=participant_id,game_n,goals_a,goals_b&limit=10000'
-      )) || [];
-      const allSp = (await supaFetch(
-        'special_picks?select=participant_id,champion,top_scorer'
-      )) || [];
-      return json({ participants, picks: allPicks, specialPicks: allSp });
-    } catch (e) {
-      return error(e.message, 500);
+    // GET /ranking
+    if (method === 'GET' && path === '/ranking') {
+      var participants = (await supaFetch('participants?select=id,name')) || [];
+      var allPicks = (await supaFetch('picks?select=participant_id,game_n,goals_a,goals_b&limit=10000')) || [];
+      var allSp = (await supaFetch('special_picks?select=participant_id,champion,top_scorer')) || [];
+      return json({ participants: participants, picks: allPicks, specialPicks: allSp });
     }
-  }
 
-  // ---- POST /special-picks ----
-  if (method === 'POST' && path === '/special-picks') {
-    try {
+    // POST /special-picks
+    if (method === 'POST' && path === '/special-picks') {
       if (!user) return error('Token invalido', 401);
-      const { champion, topScorer } = await req.json();
-      await supaFetch('special_picks?on_conflict=participant_id', 'POST', {
-        participant_id: user.sub,
-        champion: champion || null,
-        top_scorer: topScorer || null,
-      });
+      var body = await req.json();
+      await supaFetch('special_picks?on_conflict=participant_id', 'POST', { participant_id: user.sub, champion: body.champion || null, top_scorer: body.topScorer || null });
       return json({ ok: true });
-    } catch (e) {
-      return error(e.message, 500);
     }
-  }
 
-  // ---- PATCH /confirm ----
-  if (method === 'PATCH' && path === '/confirm') {
-    try {
+    // PATCH /confirm
+    if (method === 'PATCH' && path === '/confirm') {
       if (!user) return error('Token invalido', 401);
-      await supaFetch("participants?id=eq." + user.sub, 'PATCH', {
-        confirmed: true,
-      });
+      await supaFetch("participants?id=eq." + user.sub, 'PATCH', { confirmed: true });
       return json({ ok: true });
-    } catch (e) {
-      return error(e.message, 500);
     }
-  }
 
-  // ---- DELETE /reset (admin) ----
-  if (method === 'DELETE' && path === '/reset') {
-    try {
-      const auth = req.headers.get('X-Admin-Key') || '';
-      if (auth !== ADMIN_KEY) return error('Admin key invalida', 403);
+    // DELETE /reset
+    if (method === 'DELETE' && path === '/reset') {
+      var ak = req.headers.get('X-Admin-Key') || '';
+      if (ak !== ADMIN_KEY) return error('Admin key invalida', 403);
       await supaFetch('picks', 'DELETE');
       await supaFetch('special_picks', 'DELETE');
       await supaFetch('participants', 'DELETE');
       await supaFetch('pick_history', 'DELETE');
       return json({ ok: true });
-    } catch (e) {
-      return error(e.message, 500);
     }
-  }
 
-  // ---- PATCH /admin/unlock (desbloquear participante) ----
-  if (method === 'PATCH' && path === '/admin/unlock') {
-    try {
-      const { name, adminPass } = await req.json();
-      if (!name || !adminPass) return error('name e adminPass obrigatorios');
-      const hash = await sha256(adminPass + ':' + JWT_SECRET);
-      if (hash !== ADMIN_HASH) return error('Admin pass invalida', 403);
-      const parts = await supaFetch("participants?name=eq." + encodeURIComponent(name) + "&select=id,name,confirmed");
+    // PATCH /admin/unlock
+    if (method === 'PATCH' && path === '/admin/unlock') {
+      var body = await req.json();
+      if (!body.name || !body.adminPass) return error('name e adminPass obrigatorios');
+      var h = await sha256(body.adminPass + ':' + JWT_SECRET);
+      if (h !== ADMIN_HASH) return error('Admin pass invalida', 403);
+      var parts = await supaFetch("participants?name=eq." + encodeURIComponent(body.name) + "&select=id,name,confirmed");
       if (!parts || !parts.length) return error('Participante nao encontrado', 404);
       await supaFetch("participants?id=eq." + parts[0].id, 'PATCH', { confirmed: false });
       return json({ ok: true });
-    } catch (e) {
-      return error(e.message, 500);
     }
+
+    return error('Rota nao encontrada: ' + method + ' ' + path, 404);
+  } catch (e) {
+    return json({ error: 'Internal: ' + e.message }, 500);
   }
-
-  return error('Rota nao encontrada: ' + method + ' ' + path, 404);
 }
-
-export default {
-  async fetch(req, env) {
-    try {
-      SUPABASE_URL = env.SUPABASE_URL;
-      SUPABASE_KEY = env.SUPABASE_KEY;
-      TURNSTILE_SEC = env.TURNSTILE_SEC;
-      JWT_SECRET = env.JWT_SECRET;
-      ADMIN_KEY = env.ADMIN_KEY;
-      ADMIN_HASH = env.ADMIN_HASH;
-      return await handleRequest(req);
-    } catch (e) {
-      return new Response(JSON.stringify({ error: 'Internal: ' + e.message }), {
-        status: 500,
-        headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
-    }
-  },
-};
