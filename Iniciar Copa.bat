@@ -1,14 +1,13 @@
 @echo off
-title Copa do Mundo 2026 - Robo
+title Copa do Mundo 2026
 echo ========================================
-echo    Copa do Mundo 2026 - Robo Automatico
+echo    Copa do Mundo 2026
 echo ========================================
 echo.
-echo Iniciando servidor em http://localhost:9999
+echo Abrindo https://lfgobbo.github.io/Copa2026/
 echo.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0robot.ps1"
-if errorlevel 1 (
-    echo.
-    echo Erro! Pressione qualquer tecla para fechar.
-    pause >nul
-)
+start https://lfgobbo.github.io/Copa2026/
+echo Se o navegador nao abrir, acesse manualmente:
+echo https://lfgobbo.github.io/Copa2026/
+echo.
+pause

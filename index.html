@@ -1055,7 +1055,12 @@ function updateCountdown(){
     evts.innerHTML=cards.join("");
   }
 }
-setInterval(updateCountdown,1000);
+function scheduleCountdown(){
+  updateCountdown();
+  var hasLive=false;try{var n=new Date();GAMES.forEach(function(g){if(isGameLive(g))hasLive=true})}catch(e){}
+  setTimeout(scheduleCountdown,hasLive?1000:30000);
+}
+scheduleCountdown();
 
 function renderGroups(){
   var grid=document.getElementById("groups-grid");
