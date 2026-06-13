@@ -557,10 +557,14 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="bolao-section" id="bolao-login-section">
     <div class="bolao-section-title">Entrar no bol&atilde;o</div>
     <div class="bolao-login">
+      <div style="display:flex;gap:6px;margin-bottom:8px;width:100%">
+        <button id="bolao-mode-login" class="mode-btn active" onclick="document.getElementById('bolao-turnstile-wrap').style.display='none';this.classList.add('active');document.getElementById('bolao-mode-register').classList.remove('active');document.getElementById('bolao-submit-btn').textContent='Entrar'" style="flex:1">Entrar</button>
+        <button id="bolao-mode-register" class="mode-btn" onclick="document.getElementById('bolao-turnstile-wrap').style.display='block';this.classList.add('active');document.getElementById('bolao-mode-login').classList.remove('active');document.getElementById('bolao-submit-btn').textContent='Criar conta'" style="flex:1">Criar conta</button>
+      </div>
       <div><label>Seu nome</label><input type="text" id="bolao-name" placeholder="Nome e Sobrenome" autocomplete="off"></div>
       <div><label>Senha</label><input type="password" id="bolao-pass" placeholder="Senha" autocomplete="off"></div>
-      <div class="cf-turnstile" data-sitekey="0x4AAAAAADj0kWY7cUoZ_uwS" data-theme="dark" data-size="normal" id="bolao-turnstile"></div>
-      <button class="btn" onclick="bolaoLogin()" style="height:36px;padding:0 18px;font-size:13px">Entrar</button>
+      <div id="bolao-turnstile-wrap" style="display:none"><div class="cf-turnstile" data-sitekey="0x4AAAAAADj0kWY7cUoZ_uwS" data-theme="dark" data-size="normal" id="bolao-turnstile"></div></div>
+      <button class="btn" id="bolao-submit-btn" onclick="bolaoLogin()" style="height:36px;padding:0 18px;font-size:13px">Entrar</button>
       <span class="bolao-login-status" id="bolao-login-status"></span>
       <span class="bolao-deadline" id="bolao-deadline-info"></span>
     </div>
@@ -2870,32 +2874,28 @@ async function bolaoLogin(){
   var st=document.getElementById('bolao-login-status');
   if(!name||!pass){st.className='bolao-login-status err';st.textContent='Preencha nome e senha';return}
   st.className='bolao-login-status';st.textContent='Verificando...';
+  var isRegister=document.getElementById('bolao-mode-register')&&document.getElementById('bolao-mode-register').classList.contains('active');
   try{
-    try{
-      var loginRes=await _bolaoFetch('/login','POST',{name:name,password:pass});
-      _bolaoToken=loginRes.token;
-      _bolaoParticipantId=loginRes.id;
-      _bolaoName=loginRes.name;
-      _bolaoConfirmed=loginRes.confirmed||false;
-    }catch(loginErr){
-      if(loginErr.status===401){st.className='bolao-login-status err';st.textContent='Senha incorreta';return}
-      if(loginErr.status===403){st.className='bolao-login-status err';st.textContent='Conta bloqueada. Peça ao admin para desbloquear';return}
+    if(isRegister){
+      // Modo cadastro: requer captcha
       var turnstileToken=null;
       try{if(typeof turnstile!=='undefined'&&turnstile)turnstileToken=turnstile.getResponse(document.getElementById('bolao-turnstile'))||turnstile.getResponse()}catch(te){}
       if(!turnstileToken){st.className='bolao-login-status err';st.textContent='Resolva o captcha primeiro';return}
       var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);
       if(deadline&&new Date()>=deadline){st.className='bolao-login-status err';st.textContent='Inscri\u00e7\u00f5es encerradas (2h antes do 2\u00ba jogo do Brasil)';try{turnstile.reset(document.getElementById('bolao-turnstile'))}catch(te){}return}
-      try{
-        var regRes=await _bolaoFetch('/register','POST',{name:name,password:pass,turnstileToken:turnstileToken});
-      }catch(regErr){
-        if(regErr.status===409){st.className='bolao-login-status err';st.textContent='Nome j\u00e1 cadastrado — tente outro ou verifique a senha';return}
-        throw regErr
-      }
+      var regRes=await _bolaoFetch('/register','POST',{name:name,password:pass,turnstileToken:turnstileToken});
       var loginRes2=await _bolaoFetch('/login','POST',{name:name,password:pass});
       _bolaoToken=loginRes2.token;
       _bolaoParticipantId=loginRes2.id;
       _bolaoName=loginRes2.name;
       _bolaoConfirmed=false;
+    }else{
+      // Modo entrar: so tenta login
+      var loginRes=await _bolaoFetch('/login','POST',{name:name,password:pass});
+      _bolaoToken=loginRes.token;
+      _bolaoParticipantId=loginRes.id;
+      _bolaoName=loginRes.name;
+      _bolaoConfirmed=loginRes.confirmed||false;
     }
     document.getElementById('bolao-name').readOnly=true;
     document.getElementById('bolao-pass').readOnly=true;
@@ -2912,7 +2912,13 @@ async function bolaoLogin(){
     await bolaoLoadRanking();
     if(_bolaoConfirmed)document.getElementById('bolao-confirmed-banner').style.display='block';
     else bolaoShowConfirmButton();
-  }catch(e){st.className='bolao-login-status err';st.textContent='Erro: '+e.message}
+  }catch(e){
+    if(e.status===404&&!isRegister)st.textContent='Nome n\u00e3o encontrado \u2014 \u00e9 seu primeiro acesso? Selecione "Criar conta"';
+    else if(e.status===401)st.textContent='Senha incorreta';
+    else if(e.status===409)st.textContent='Nome j\u00e1 cadastrado \u2014 use "Entrar" em vez de "Criar conta"';
+    else st.textContent='Erro: '+(e.message||'');
+    st.className='bolao-login-status err';
+  }
 }
 function bolaoInit(){
   bolaoLoadRanking();
