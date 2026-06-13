@@ -992,7 +992,7 @@ function renderGameCard(g){
       return'<div class="goal-badge" title="'+esc(gl.pname)+' (#'+gl.player+')"><span class="goal-pos"></span>'+flag(tn)+' <span class="type-badge '+tc+'">'+tl+'</span> '+(gl.minute?gl.minute+"' ":"")+esc(gl.pname)+(gl.aname?' <span class="assist-label">\uD83D\uDC5F '+esc(gl.aname)+'</span>':"")+'<span class="remove-goal" onclick="removeGoal('+gn+',\''+(gl.team||x.st||x.team)+'\',\''+gl.key+'\')">\u00d7</span></div>';
     }
     var cr=x.data.type==='red'?'red':'yellow';
-    return'<span class="card-badge card-'+cr+'">'+(cr==='red'?'\uD83D\uDFE5':'\uD83D\uDFE8')+' '+flag(x.tn)+esc(x.tn)+' '+x.data.minute+"' "+esc(x.data.pname)+'<span class="remove-goal" onclick="removeCard('+gn+',\''+x.team+'\',\''+x.data.key+'\')">\u00d7</span></span>';
+    return'<span class="card-badge card-'+cr+'">'+(cr==='red'?'\uD83D\uDFE5':'\uD83D\uDFE8')+' '+flag(x.tn)+' '+x.data.minute+"' "+esc(x.data.pname)+'<span class="remove-goal" onclick="removeCard('+gn+',\''+x.team+'\',\''+x.data.key+'\')">\u00d7</span></span>';
   }).join('')+'</div></div>';
 }
 
@@ -1789,7 +1789,7 @@ function processTimeline(idMatch,gameId){
               if(nameMatch){
                 var parsedName=nameMatch[1].trim();
                 if(parsedName){
-                  var ourSquad=PLAYERS[scoredForHome?game.a:game.b]||[];
+                  var ourSquad=PLAYERS[isOwn?(scoredForHome?game.b:game.a):(scoredForHome?game.a:game.b)]||[];
                   for(var pi=0;pi<ourSquad.length;pi++){
                     if(ourSquad[pi].name.toUpperCase().indexOf(parsedName.split(' ').pop())>=0){info={num:ourSquad[pi].num,pname:ourSquad[pi].name,team:scoredForHome?game.a:game.b};break}
                   }
