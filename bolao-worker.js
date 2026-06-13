@@ -154,12 +154,19 @@ async function handle(req) {
       // Buscar picks com paginação para evitar limite de 1000 linhas
       var allPicks = [];
       try {
-        var fetchOpts = {
-          method: 'GET',
-          headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Range-Unit': 'items', 'Range': '0-*' }
-        };
-        var pres = await fetch(SUPABASE_URL + '/rest/v1/' + picksUrl, fetchOpts);
-        if (pres.ok || pres.status === 206) { var ct = pres.headers.get('content-type') || ''; if (ct.indexOf('json') >= 0) allPicks = await pres.json() || []; }
+        var baseUrl = SUPABASE_URL + '/rest/v1/' + picksUrl;
+        var opts = { method: 'GET', headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' } };
+        for (var page = 0; page < 10; page++) {
+          opts.headers['Range'] = (page * 2000) + '-' + ((page + 1) * 2000 - 1);
+          var pres = await fetch(baseUrl, opts);
+          if (!pres.ok && pres.status !== 206) break;
+          var ct = pres.headers.get('content-type') || '';
+          if (ct.indexOf('json') < 0) break;
+          var batch = await pres.json() || [];
+          if (!batch.length) break;
+          allPicks = allPicks.concat(batch);
+          if (batch.length < 2000) break;
+        }
       } catch(e) {}
       var allSp = [];
       if (url.searchParams.get('showSpecials') === '1') {
