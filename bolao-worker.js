@@ -8,6 +8,8 @@
 //   ADMIN_HASH    — SHA-256 de 'BolaoAdmin2026!' + ':' + JWT_SECRET (gerar com: node -e "console.log(require('crypto').createHash('sha256').update('BolaoAdmin2026!'+':'+process.env.JWT_SECRET).digest('hex'))")
 //   JWT_SECRET    — Qualquer string para assinar tokens
 
+let SUPABASE_URL, SUPABASE_KEY, TURNSTILE_SEC, JWT_SECRET, ADMIN_KEY, ADMIN_HASH;
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
@@ -92,6 +94,11 @@ async function handleRequest(req) {
   const method = req.method;
 
   if (method === 'OPTIONS') return json({}, 204);
+
+  // Verificar env vars
+  if (!SUPABASE_URL || !SUPABASE_KEY || !JWT_SECRET) {
+    return error('Worker nao configurado — faltam env vars', 500);
+  }
 
   // ---- POST /register ----
   if (method === 'POST' && path === '/register') {
@@ -303,17 +310,19 @@ async function handleRequest(req) {
 
 export default {
   async fetch(req, env) {
-    // Bind env vars
-    SUPABASE_URL = env.SUPABASE_URL;
-    SUPABASE_KEY = env.SUPABASE_KEY;
-    TURNSTILE_SEC = env.TURNSTILE_SEC;
-    JWT_SECRET = env.JWT_SECRET;
-    ADMIN_KEY = env.ADMIN_KEY;
-    ADMIN_HASH = env.ADMIN_HASH;
     try {
+      SUPABASE_URL = env.SUPABASE_URL;
+      SUPABASE_KEY = env.SUPABASE_KEY;
+      TURNSTILE_SEC = env.TURNSTILE_SEC;
+      JWT_SECRET = env.JWT_SECRET;
+      ADMIN_KEY = env.ADMIN_KEY;
+      ADMIN_HASH = env.ADMIN_HASH;
       return await handleRequest(req);
     } catch (e) {
-      return error('Internal: ' + e.message, 500);
+      return new Response(JSON.stringify({ error: 'Internal: ' + e.message }), {
+        status: 500,
+        headers: { ...CORS, 'Content-Type': 'application/json' },
+      });
     }
   },
 };
