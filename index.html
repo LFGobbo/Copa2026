@@ -2669,7 +2669,8 @@ async function bolaoLoadRanking(){
   try{
     var maxG=0;
     GAMES.forEach(function(g){var gd=gameUTC(g);if(gd&&new Date()>=gd&&g.n>maxG)maxG=g.n});
-    var data=await _bolaoFetch('/ranking?maxGame='+maxG);
+    var showSpecials=0;GAMES.forEach(function(g){var gd=gameUTC(g);if(gd&&g.n===32&&new Date()>=gd)showSpecials=1});
+    var data=await _bolaoFetch('/ranking?maxGame='+maxG+'&showSpecials='+showSpecials);
     _bolaoParticipants={};(data.participants||[]).forEach(function(p){_bolaoParticipants[p.id]=p.name});
     _bolaoAllPicks={};(data.picks||[]).forEach(function(p){if(!_bolaoAllPicks[p.participant_id])_bolaoAllPicks[p.participant_id]={};_bolaoAllPicks[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b}});
     _bolaoAllSpecials={};(data.specialPicks||[]).forEach(function(p){_bolaoAllSpecials[p.participant_id]=p});
