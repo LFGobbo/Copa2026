@@ -626,6 +626,7 @@ Object.keys(_s.cards).forEach(function(k){if(!cards[k]){cards[k]=_s.cards[k];_ch
 if(_ch)saveState()})();
 
 var REFEREES={};
+var REF_COUNTRY={"Argentina":"Argentina","Australia":"Austrália","Austria":"Áustria","Belgium":"Bélgica","Brazil":"Brasil","Canada":"Canadá","Chile":"Chile","Colombia":"Colômbia","Costa Rica":"Costa Rica","Croatia":"Croácia","Egypt":"Egito","England":"Inglaterra","France":"França","Germany":"Alemanha","Ghana":"Gana","Guatemala":"Guatemala","Honduras":"Honduras","Iran":"Irã","Italy":"Itália","Jamaica":"Jamaica","Japan":"Japão","Jordan":"Jordânia","Kenya":"Quênia","Korea Republic":"Coreia do Sul","Malaysia":"Malásia","Mexico":"México","Morocco":"Marrocos","Netherlands":"Holanda","New Zealand":"Nova Zelândia","Nigeria":"Nigéria","Norway":"Noruega","Oman":"Omã","Panama":"Panamá","Paraguay":"Paraguai","Peru":"Peru","Poland":"Polônia","Portugal":"Portugal","Qatar":"Catar","Russia":"Rússia","Saudi Arabia":"Arábia Saudita","Scotland":"Escócia","Senegal":"Senegal","Serbia":"Sérvia","Singapore":"Cingapura","Slovakia":"Eslováquia","Slovenia":"Eslovênia","South Africa":"África do Sul","Spain":"Espanha","Sweden":"Suécia","Switzerland":"Suíça","Tahiti":"Taiti","Trinidad and Tobago":"Trinidad e Tobago","Tunisia":"Tunísia","Turkey":"Turquia","UAE":"EAU","Ukraine":"Ucrânia","United States":"Estados Unidos","Uruguay":"Uruguai","Uzbekistan":"Uzbequistão","Venezuela":"Venezuela","Wales":"País de Gales","Zambia":"Zâmbia"};
 const FLAG_ISO = {
 "Alemanha":"de","Ar\u00e1bia Saudita":"sa","Argentina":"ar","Austr\u00e1lia":"au","\u00c1ustria":"at",
 "B\u00e9lgica":"be","B\u00f3snia":"ba","Brasil":"br","Cabo Verde":"cv","Canad\u00e1":"ca",
@@ -985,7 +986,7 @@ function renderGameCard(g){
   var live=isGameLive(g);
   
   var past=currentFilter==="all"&&gameIsPast(g);
-   return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+REFEREES[gn]+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score">'+'<input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-" readonly><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-" readonly></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
+   return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+(typeof REFEREES[gn]==='string'?REFEREES[gn]:REFEREES[gn].name+(REFEREES[gn].country?' '+flag(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country)+' '+(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country):''))+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score">'+'<input class="score-input" data-game="'+gn+'" data-side="a" value="'+sa+'" placeholder="-" readonly><span class="score-x">\u00d7</span><input class="score-input" data-game="'+gn+'" data-side="b" value="'+sb+'" placeholder="-" readonly></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.a===s.b&&g.f&&!g.f.startsWith('Grupo')?'<div class="pen-result"><button class="pen-btn'+(s.pen==='a'?' active':'')+'" onclick="setPen('+gn+',\'a\')">'+flag(g.a)+' Venceu nos p\u00ean.</button><button class="pen-btn'+(s.pen==='b'?' active':'')+'" onclick="setPen('+gn+',\'b\')">'+flag(g.b)+' Venceu nos p\u00ean.</button></div>':'')+'<div class="goal-events">'+events.map(function(x){
     if(x.type==='goal'){
       var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
       var tn=x.display==='a'?g.a:g.b;
@@ -1732,91 +1733,157 @@ function processTimeline(idMatch,gameId){
     .then(function(r){return r.json()})
     .then(function(d){
       if(!d||!d.Event||!d.Event.length)return;
-      var lastId=PROCESSED_EVENTS[idMatch]||0;
-      var newEvents=d.Event.filter(function(e){return parseInt(e.EventId,10)>lastId});
-      // ALWAYS reconcile goals vs real score from ALL timeline events (handles disallowed goals)
-      (function(){var fh=0,fa=0;d.Event.forEach(function(e){if(e.HomeGoals!==void 0&&e.AwayGoals!==void 0){fh=e.HomeGoals;fa=e.AwayGoals}});var _ga=goals[gameId]&&goals[gameId].a,_gb=goals[gameId]&&goals[gameId].b,_gl=!!_ga&&_ga.length>fh||!!_gb&&_gb.length>fa;if(_gl){if(_ga&&_ga.length>fh)_ga.length=fh;if(_gb&&_gb.length>fa)_gb.length=fa;if(_ga&&!_ga.length)delete goals[gameId].a;if(_gb&&!_gb.length)delete goals[gameId].b;saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers()}})()
-      if(!newEvents.length)return;
-      var maxId=0;newEvents.forEach(function(e){var id=parseInt(e.EventId,10);if(id>maxId)maxId=id});PROCESSED_EVENTS[idMatch]=maxId;
-      // Track match state and minute
-      newEvents.forEach(function(e){
-        if(e.Type===7){MATCH_STARTED[idMatch]=true;if(e.UTC&&!MATCH_KICKOFF[idMatch])MATCH_KICKOFF[idMatch]=new Date(e.UTC)}
+      var allEvents=d.Event;
+      var game=GAMES.find(function(g){return g.n==gameId});
+      if(!game)return;
+      var meta=FIFA_MATCH_META[gameId]||{};
+
+      // ── Estado do jogo ────────────────────────────────────
+      allEvents.forEach(function(e){
+        if(e.Type===7){
+          MATCH_STARTED[idMatch]=true;
+          if(e.UTC&&!MATCH_KICKOFF[idMatch])MATCH_KICKOFF[idMatch]=new Date(e.UTC);
+        }
         if(e.Type===26)MATCH_ENDED[idMatch]=true;
         if(e.MatchMinute){
           var m=parseInt(e.MatchMinute.replace(/'/g,''),10);
           if(!isNaN(m)&&(!MATCH_MINUTE[idMatch]||m>MATCH_MINUTE[idMatch]))MATCH_MINUTE[idMatch]=m;
         }
       });
-      var changed=false,game=GAMES.find(function(g){return g.n==gameId});if(!game)return;
-      var meta=FIFA_MATCH_META[gameId]||{},prevHome=0,prevAway=0;
-      newEvents.forEach(function(e,idx){
-        // Cards (Type 2 = yellow, Type 3 = red)
-        if(e.Type===2||e.Type===3){
-          var ci=FIFA_PLAYER_MAP[e.IdPlayer];
-          if(ci){
-            var ct=(meta.homeId&&e.IdTeam===meta.homeId)?'a':'b';
-            var ctyp=e.Type===2?'yellow':'red',cmin=e.MatchMinute?e.MatchMinute.replace(/'/g,""):'';
-            var cdup=false;
-            if(cards[gameId]&&cards[gameId][ct]){
-              for(var k=0;k<cards[gameId][ct].length;k++){
-                var cg=cards[gameId][ct][k];
-                if(cg.player==ci.num&&cg.minute==cmin&&cg.type==ctyp){cdup=true;break}
-              }
-            }
-            if(!cdup){
-              var ckey=gameId+'_c_'+ct+'_'+ci.num+'_'+cmin;
-              if(!cards[gameId])cards[gameId]={};
-              if(!cards[gameId][ct])cards[gameId][ct]=[];
-              cards[gameId][ct].push({key:ckey,player:ci.num,pname:ci.pname,type:ctyp,minute:cmin,auto:true});
-              changed=true;
-            }
-          }
-        }
-      });
-      newEvents.forEach(function(e,idx){
+
+      // ── Detectar se houve mudança desde o último poll ─────
+      var maxId=0;
+      allEvents.forEach(function(e){var id=parseInt(e.EventId,10);if(id>maxId)maxId=id;});
+      var lastId=PROCESSED_EVENTS[idMatch]||0;
+      var hasNew=maxId>lastId;
+      PROCESSED_EVENTS[idMatch]=maxId;
+
+      // ── Placar final da timeline ──────────────────────────
+      var finalHome=0,finalAway=0;
+      allEvents.forEach(function(e){
         if(e.HomeGoals!==undefined&&e.AwayGoals!==undefined){
-          // Detect own goal: if score increased for team that is NOT the event's team
-          if(e.Type===0||e.Type===41){
-            var homeId=meta.homeId,awayId=meta.awayId;
-            var scoredForHome=e.HomeGoals>prevHome,scoredForAway=e.AwayGoals>prevAway;
-            var isOwn=scoredForHome&&e.IdTeam&&e.IdTeam!==homeId||scoredForAway&&e.IdTeam&&e.IdTeam!==awayId;
-            if(!scoredForHome&&!scoredForAway){prevHome=e.HomeGoals;prevAway=e.AwayGoals;return}
-            var info=FIFA_PLAYER_MAP[e.IdPlayer];
-            // Fallback: parse name from EventDescription if IdPlayer not in map
-            if(!info&&e.EventDescription&&e.EventDescription[0]){
-              var desc=e.EventDescription[0].Description||'';
-              var nameMatch=desc.match(/^(.+?) \(/);
-              if(nameMatch){
-                var parsedName=nameMatch[1].trim();
-                if(parsedName){
-                  var ourSquad=PLAYERS[isOwn?(scoredForHome?game.b:game.a):(scoredForHome?game.a:game.b)]||[];
-                  for(var pi=0;pi<ourSquad.length;pi++){
-                    if(ourSquad[pi].name.toUpperCase().indexOf(parsedName.split(' ').pop())>=0){info={num:ourSquad[pi].num,pname:ourSquad[pi].name,team:scoredForHome?game.a:game.b};break}
-                  }
-                }
-              }
-            }
-            if(!info){prevHome=e.HomeGoals;prevAway=e.AwayGoals;return}
-            var teamSide=(scoredForHome?'a':'b'),goalType=(e.Type===41)?'pen':'gol',min=e.MatchMinute.replace(/'/g,"");
-            // Store own goal on the conceding team's side
-            var storeSide=isOwn?(teamSide==='a'?'b':'a'):teamSide;
-            var aNum=null,aName=null;
-            for(var j=idx-1;j>=0;j--){if(newEvents[j].Type===1){var ai=FIFA_PLAYER_MAP[newEvents[j].IdPlayer];if(ai){aNum=ai.num;aName=ai.pname}break}}
-            if(goals[gameId]&&goals[gameId][storeSide]){var dup=false;for(var k=0;k<goals[gameId][storeSide].length;k++){var g=goals[gameId][storeSide][k];if(g.player==info.num&&g.minute==min){dup=true;break}}if(dup){prevHome=e.HomeGoals;prevAway=e.AwayGoals;return}}
-            var key=gameId+'_'+storeSide+'_'+info.num+'_'+Date.now();
-            if(!goals[gameId])goals[gameId]={};if(!goals[gameId][storeSide])goals[gameId][storeSide]=[];
-            goals[gameId][storeSide].push({key:key,player:info.num,pname:info.pname,type:isOwn?'own':goalType,minute:min,assist:aNum,aname:aName,team:storeSide,auto:true});
-            changed=true;
-          }
-          prevHome=e.HomeGoals;prevAway=e.AwayGoals;
+          finalHome=e.HomeGoals; finalAway=e.AwayGoals;
         }
       });
-      if(!scores[gameId])scores[gameId]={};if(scores[gameId].a!==prevHome||scores[gameId].b!==prevAway){scores[gameId].a=prevHome;scores[gameId].b=prevAway;changed=true;}
-      // Reconcile goals array with actual score (remove disallowed goals)
-      if(goals[gameId]){var _ga=goals[gameId].a,_gb=goals[gameId].b;if(_ga&&_ga.length>prevHome)_ga.length=prevHome;if(_gb&&_gb.length>prevAway)_gb.length=prevAway;if(_ga&&!_ga.length)delete goals[gameId].a;if(_gb&&!_gb.length)delete goals[gameId].b}
-      if(changed){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers()}
+
+      // Verificar se algo mudou (placar ou novos eventos)
+      var changed=false;
+      if(!scores[gameId])scores[gameId]={};
+      if(scores[gameId].a!==finalHome||scores[gameId].b!==finalAway){
+        scores[gameId].a=finalHome; scores[gameId].b=finalAway;
+        changed=true;
+      }
+      if(!hasNew&&!changed)return; // Nada novo, sair
+
+      // ── Reconstruir gols auto do zero (API é fonte da verdade) ──
+      // Manter gols manuais (não-auto), descartar todos os auto
+      var manualGoalsA=(goals[gameId]&&goals[gameId].a||[]).filter(function(g){return!g.auto;});
+      var manualGoalsB=(goals[gameId]&&goals[gameId].b||[]).filter(function(g){return!g.auto;});
+
+      var autoGoalsA=[], autoGoalsB=[];
+      var prevHome=0, prevAway=0;
+
+      allEvents.forEach(function(e,idx){
+        if(e.HomeGoals===undefined||e.AwayGoals===undefined)return;
+        if(e.Type!==0&&e.Type!==41){prevHome=e.HomeGoals;prevAway=e.AwayGoals;return;}
+
+        var scoredForHome=e.HomeGoals>prevHome, scoredForAway=e.AwayGoals>prevAway;
+        if(!scoredForHome&&!scoredForAway){prevHome=e.HomeGoals;prevAway=e.AwayGoals;return;}
+
+        var homeId=meta.homeId, awayId=meta.awayId;
+        var isOwn=(scoredForHome&&e.IdTeam&&homeId&&e.IdTeam!==homeId)||
+                  (scoredForAway&&e.IdTeam&&awayId&&e.IdTeam!==awayId);
+        var teamSide=scoredForHome?'a':'b';
+        var storeSide=isOwn?(teamSide==='a'?'b':'a'):teamSide;
+
+        var info=FIFA_PLAYER_MAP[e.IdPlayer];
+        if(!info&&e.EventDescription&&e.EventDescription[0]){
+          var desc=e.EventDescription[0].Description||'';
+          var nm=desc.match(/^(.+?)\s*\(/);
+          if(nm){
+            var parsedName=nm[1].trim();
+            var squad=PLAYERS[isOwn?(scoredForHome?game.b:game.a):(scoredForHome?game.a:game.b)]||[];
+            for(var pi=0;pi<squad.length;pi++){
+              var lastName=parsedName.split(' ').pop().toUpperCase();
+              if(squad[pi].name.toUpperCase().indexOf(lastName)>=0){
+                info={num:squad[pi].num,pname:squad[pi].name};break;
+              }
+            }
+          }
+        }
+        if(!info){prevHome=e.HomeGoals;prevAway=e.AwayGoals;return;}
+
+        var goalType=(e.Type===41)?'pen':'gol';
+        var min=e.MatchMinute?(e.MatchMinute.replace(/'/g,'')):(''+idx);
+        // Assistência: evento Type===1 imediatamente anterior
+        var aNum=null,aName=null;
+        for(var j=idx-1;j>=0;j--){
+          if(allEvents[j].Type===1){
+            var ai=FIFA_PLAYER_MAP[allEvents[j].IdPlayer];
+            if(ai){aNum=ai.num;aName=ai.pname;}break;
+          }
+        }
+        var key=gameId+'_'+storeSide+'_'+e.EventId;
+        var goalObj={key:key,player:info.num,pname:info.pname,
+          type:isOwn?'own':goalType,minute:min,
+          assist:aNum,aname:aName,team:storeSide,auto:true};
+
+        if(storeSide==='a') autoGoalsA.push(goalObj);
+        else autoGoalsB.push(goalObj);
+
+        prevHome=e.HomeGoals; prevAway=e.AwayGoals;
+      });
+
+      // Truncar para bater com placar real (descartar gols anulados)
+      autoGoalsA=autoGoalsA.slice(0,Math.max(0,finalHome-manualGoalsA.length));
+      autoGoalsB=autoGoalsB.slice(0,Math.max(0,finalAway-manualGoalsB.length));
+
+      goals[gameId]={};
+      var allA=manualGoalsA.concat(autoGoalsA);
+      var allB=manualGoalsB.concat(autoGoalsB);
+      if(allA.length)goals[gameId].a=allA;
+      if(allB.length)goals[gameId].b=allB;
+
+      // ── Reconstruir cartões auto do zero ─────────────────
+      // Manter cartões manuais, descartar todos os auto
+      var manualCardsA=(cards[gameId]&&cards[gameId].a||[]).filter(function(x){return!x.auto;});
+      var manualCardsB=(cards[gameId]&&cards[gameId].b||[]).filter(function(x){return!x.auto;});
+      var autoCardsA=[], autoCardsB=[];
+      // Usar um Set por EventId para evitar duplicatas
+      var seenCardEvents={};
+
+      allEvents.forEach(function(e){
+        if(e.Type!==2&&e.Type!==3)return;
+        if(seenCardEvents[e.EventId])return;
+        seenCardEvents[e.EventId]=true;
+        var ci=FIFA_PLAYER_MAP[e.IdPlayer];
+        if(!ci)return;
+        var ct=(meta.homeId&&e.IdTeam===meta.homeId)?'a':'b';
+        var ctyp=e.Type===2?'yellow':'red';
+        var cmin=e.MatchMinute?(e.MatchMinute.replace(/'/g,'')):'' ;
+        var ckey=gameId+'_c_'+e.EventId;
+        var cardObj={key:ckey,player:ci.num,pname:ci.pname,
+          type:ctyp,minute:cmin,auto:true};
+        if(ct==='a') autoCardsA.push(cardObj);
+        else autoCardsB.push(cardObj);
+      });
+
+      if(!cards[gameId])cards[gameId]={};
+      var allCA=manualCardsA.concat(autoCardsA);
+      var allCB=manualCardsB.concat(autoCardsB);
+      cards[gameId].a=allCA;
+      cards[gameId].b=allCB;
+      if(!allCA.length)delete cards[gameId].a;
+      if(!allCB.length)delete cards[gameId].b;
+
+      changed=true;
+      saveState();
+      renderGames(currentFilter);
+      renderGroups();
+      renderBracket();
+      renderScorers();
     })
-    .catch(function(e){console.warn('Timeline fetch failed:',e?e.message:'')});
+    .catch(function(e){console.warn('Timeline fetch failed:',e?e.message:'');});
 }
 
 // --- Botão de atualização manual ---
@@ -1850,7 +1917,7 @@ function goRefreshError(btn,st){
 
 // --- Polling automático da FIFA API ---
 initFifaMaps();
-(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length){mergeScores(m);auditData()}});var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+10800000);var recent=now<=new Date(gd.getTime()+21600000);var noScore=!scores[g.n]||scores[g.n].a===undefined;if(live||(recent&&noScore)){processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
+(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length){mergeScores(m);auditData()}});var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+10800000);var recent=now<=new Date(gd.getTime()+21600000);if(live||recent){delete PROCESSED_EVENTS[id];processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
 
 
 
@@ -1869,14 +1936,14 @@ function _fetchWikiRefs(letter,cb){
     .then(function(r){return r.json()}).then(function(d){
       var txt=d.parse&&d.parse.text&&d.parse.text['*']||'';
       var rx=/Referee:\s*<a[^>]*>([^<]+)<\/a>\s*\(<a[^>]*>([^<]+)<\/a>/gi;
-      var refs=[],m;while((m=rx.exec(txt))!==null)refs.push(m[1].trim());
+      var refs=[],m;while((m=rx.exec(txt))!==null)refs.push({name:m[1].trim(),country:m[2].trim()});
       for(var i=0;i<refs.length&&i<grp.length;i++)REFEREES[grp[i].n]=refs[i];
       renderGames(currentFilter);
       if(cb)cb();
     }).catch(function(){if(cb)cb();});
 }
 function loadAllReferees(){
-  var REFS_CACHE='copa2026_refs_v1',TTL=6*3600*1000;
+  var REFS_CACHE='copa2026_refs_v2',TTL=6*3600*1000;
   try{
     var cached=JSON.parse(localStorage.getItem(REFS_CACHE)||'null');
     if(cached&&cached.ts&&Date.now()-cached.ts<TTL&&cached.data&&Object.keys(cached.data).length>0){
