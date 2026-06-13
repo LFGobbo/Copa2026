@@ -2651,32 +2651,32 @@ async function bolaoLogin(){
   if(!name||!pass){st.className='bolao-login-status err';st.textContent='Preencha nome e senha';return}
   st.className='bolao-login-status';st.textContent='Verificando...';
   try{
-    var loginRes=await _bolaoFetch('/login','POST',{name:name,password:pass});
-    _bolaoToken=loginRes.token;
-    _bolaoParticipantId=loginRes.id;
-    _bolaoName=loginRes.name;
-    _bolaoConfirmed=loginRes.confirmed||false;
-  }catch(loginErr){
-    if(loginErr.status===401){st.className='bolao-login-status err';st.textContent='Senha incorreta';return}
-    if(loginErr.status===403){st.className='bolao-login-status err';st.textContent='Conta bloqueada. Peça ao admin para desbloquear';return}
-    // 404 ou outro erro: tentar cadastro com Turnstile
-    var turnstileToken=null;
-    try{if(typeof turnstile!=='undefined'&&turnstile)turnstileToken=turnstile.getResponse(document.getElementById('bolao-turnstile'))||turnstile.getResponse()}catch(te){}
-    if(!turnstileToken){st.className='bolao-login-status err';st.textContent='Resolva o captcha primeiro';return}
-    var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);
-    if(deadline&&new Date()>=deadline){st.className='bolao-login-status err';st.textContent='Inscri\u00e7\u00f5es encerradas (2h antes do 2\u00ba jogo do Brasil)';try{turnstile.reset(document.getElementById('bolao-turnstile'))}catch(te){}return}
     try{
-      var regRes=await _bolaoFetch('/register','POST',{name:name,password:pass,turnstileToken:turnstileToken});
-    }catch(regErr){
-      if(regErr.status===409){st.className='bolao-login-status err';st.textContent='Nome j\u00e1 cadastrado — tente outro ou verifique a senha';return}
-      throw regErr
+      var loginRes=await _bolaoFetch('/login','POST',{name:name,password:pass});
+      _bolaoToken=loginRes.token;
+      _bolaoParticipantId=loginRes.id;
+      _bolaoName=loginRes.name;
+      _bolaoConfirmed=loginRes.confirmed||false;
+    }catch(loginErr){
+      if(loginErr.status===401){st.className='bolao-login-status err';st.textContent='Senha incorreta';return}
+      if(loginErr.status===403){st.className='bolao-login-status err';st.textContent='Conta bloqueada. Peça ao admin para desbloquear';return}
+      var turnstileToken=null;
+      try{if(typeof turnstile!=='undefined'&&turnstile)turnstileToken=turnstile.getResponse(document.getElementById('bolao-turnstile'))||turnstile.getResponse()}catch(te){}
+      if(!turnstileToken){st.className='bolao-login-status err';st.textContent='Resolva o captcha primeiro';return}
+      var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);
+      if(deadline&&new Date()>=deadline){st.className='bolao-login-status err';st.textContent='Inscri\u00e7\u00f5es encerradas (2h antes do 2\u00ba jogo do Brasil)';try{turnstile.reset(document.getElementById('bolao-turnstile'))}catch(te){}return}
+      try{
+        var regRes=await _bolaoFetch('/register','POST',{name:name,password:pass,turnstileToken:turnstileToken});
+      }catch(regErr){
+        if(regErr.status===409){st.className='bolao-login-status err';st.textContent='Nome j\u00e1 cadastrado — tente outro ou verifique a senha';return}
+        throw regErr
+      }
+      var loginRes2=await _bolaoFetch('/login','POST',{name:name,password:pass});
+      _bolaoToken=loginRes2.token;
+      _bolaoParticipantId=loginRes2.id;
+      _bolaoName=loginRes2.name;
+      _bolaoConfirmed=false;
     }
-    var loginRes2=await _bolaoFetch('/login','POST',{name:name,password:pass});
-    _bolaoToken=loginRes2.token;
-    _bolaoParticipantId=loginRes2.id;
-    _bolaoName=loginRes2.name;
-    _bolaoConfirmed=false;
-  }
     document.getElementById('bolao-name').readOnly=true;
     document.getElementById('bolao-pass').readOnly=true;
     st.className='bolao-login-status ok';st.textContent='Ol\u00e1, '+_bolaoName+'!';
@@ -2687,7 +2687,7 @@ async function bolaoLogin(){
     await bolaoLoadRanking();
     if(_bolaoConfirmed)document.getElementById('bolao-confirmed-banner').style.display='block';
     else bolaoShowConfirmButton();
-  }catch(e){st.className='bolao-login-status err';st.textContent='Erro: '+e.message;try{if(typeof turnstile!=='undefined'&&turnstile)turnstile.reset(document.getElementById('bolao-turnstile'))}catch(te){}}
+  }catch(e){st.className='bolao-login-status err';st.textContent='Erro: '+e.message}
 }
 function bolaoInit(){
   bolaoLoadRanking();
