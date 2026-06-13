@@ -606,6 +606,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 const GROUPS = {"A":["África do Sul","Coreia do Sul","México","República Tcheca"],"B":["Bósnia","Canadá","Catar","Suíça"],"C":["Brasil","Escócia","Haiti","Marrocos"],"D":["Austrália","Estados Unidos","Paraguai","Turquia"],"E":["Alemanha","Costa do Marfim","Curaçao","Equador"],"F":["Holanda","Japão","Suécia","Tunísia"],"G":["Bélgica","Egito","Irã","Nova Zelândia"],"H":["Arábia Saudita","Cabo Verde","Espanha","Uruguai"],"I":["Argentina","Argélia","Áustria","Jordânia"],"J":["França","Iraque","Noruega","Senegal"],"K":["Colômbia","Portugal","RD Congo","Uzbequistão"],"L":["Croácia","Gana","Inglaterra","Panamá"]}
 ;
 const PLAYERS = {};
+var GAME_BY_ID={};GAMES.forEach(function(g){GAME_BY_ID[g.n]=g;});
 var BAK_KEYS=['copa2026_data','copa2026_bak1','copa2026_bak2'];
 function _loadPersistent(){
   for(var i=0;i<BAK_KEYS.length;i++)try{
@@ -2010,7 +2011,6 @@ initFifaMaps();
 
 
 var PLAYER_PHOTOS = {};
-var GAME_BY_ID={};GAMES.forEach(function(g){GAME_BY_ID[g.n]=g;});
 var VALID_TABS=['jogos','grupos','mata-mata','artilheiros','convocados','regras','bolao','diagnostico'];
 setTimeout(function(){
   try{
