@@ -42,7 +42,6 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideUp{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-@keyframes goalFlash{0%{background:rgba(255,223,0,.25);box-shadow:0 0 16px rgba(255,223,0,.2);transform:scale(1.08)}100%{background:rgba(0,0,0,.3);box-shadow:none;transform:scale(1)}}
 .filters{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
 .filter-btn{padding:6px 16px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:var(--fs-xs);font-weight:500;transition:var(--transition);font-family:inherit}
 .filter-btn:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
@@ -345,11 +344,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bracket-tree::-webkit-scrollbar{height:4px}
 .bracket-tree::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .bracket-svg{width:100%;height:auto;display:block;overflow-x:auto}
-/* Squad skeleton */
-.squads-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:48px 0;color:var(--muted);font-size:14px}
-.loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes squad-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
 .pen-result{display:flex;gap:6px;justify-content:center;padding:4px 8px;grid-column:1/-1}
 .pen-btn{flex:1;padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:11px;font-weight:600;transition:var(--transition);font-family:inherit;text-align:center}
 .pen-btn.active{border-color:var(--gold);background:var(--gold-dim);color:var(--gold)}
@@ -442,6 +437,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .bsp-ko-btns{display:flex;gap:6px}
   .bsp-ko-btn{flex:1;padding:5px 6px;border-radius:6px;font-size:11px;cursor:pointer;transition:all .15s}
   .bsp-ko-confirmed{font-size:11px;color:var(--gold);margin-top:4px}
+  .tab:focus-visible,.filter-btn:focus-visible,.mode-btn:focus-visible,.bview-btn:focus-visible,.pen-btn:focus-visible,.refresh-btn:focus-visible,.score-input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 </style>
 </head>
 <body>
@@ -452,7 +448,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     <h1>Copa do Mundo <span class="year">2026</span></h1>
     <div class="header-sub"><span>Canadá</span><span class="dot"></span><span>México</span><span class="dot"></span><span>EUA</span><span class="dot"></span><span>11 jun a 19 jul</span><span class="dot"></span><span>48 seleções</span><span class="dot"></span><span>104 jogos</span></div>
   </div>
-  <div class="header-mascots"><img src="./mascote3_t.png" onerror="this.style.display='none'"><img src="./mascote1_t.png" onerror="this.style.display='none'"><img src="./mascote2_t.png" onerror="this.style.display='none'"></div>
+  <div class="header-mascots"><img src="./mascote3_t.png" alt="" onerror="this.style.display='none'"><img src="./mascote1_t.png" alt="" onerror="this.style.display='none'"><img src="./mascote2_t.png" alt="" onerror="this.style.display='none'"></div>
 </div>
 <div class="tabs">
   <div class="tab active" data-tab="jogos"><span class="tab-icon">⚽</span><span class="tab-label">Jogos</span></div>
@@ -735,6 +731,7 @@ function tabClick(){
   if(tab==="convocados"){if(!FIFA_MAP_READY)initFifaMaps();renderSquads();if(_rsTimer)clearTimeout(_rsTimer);if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100){_rsTimer=setTimeout(function(){renderSquads();if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100)_rsTimer=setTimeout(renderSquads,4000)},2000)}}
 }
 document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",tabClick)});
+window.addEventListener("hashchange",function(){var h=window.location.hash.replace('#','');if(h&&VALID_TABS.indexOf(h)>=0){var t=document.querySelector('.tab[data-tab="'+h+'"]');if(t&&!t.classList.contains("active"))t.click()}});
 
 function scoreInput(){
   var id=parseInt(this.dataset.game,10),s=this.dataset.side,v=this.value.trim();
@@ -1658,9 +1655,8 @@ function auditData(){
 setTimeout(auditData,3000);
 
 function initFifaMaps(){
-  if(FIFA_MAP_READY){console.log('initFifaMaps: ja pronto');return}
+  if(FIFA_MAP_READY){return}
   FIFA_MAP_READY=true;setTimeout(initTimelineSync,1000);
-  console.log('initFifaMaps: iniciando');
   try{
     var cached=localStorage.getItem('FIFA_PLAYER_MAP_CACHE_V2');
     if(cached){var parsed=JSON.parse(cached);if(parsed&&parsed.ts&&Date.now()-parsed.ts<86400000&&parsed.data){
@@ -1668,16 +1664,13 @@ function initFifaMaps(){
       if(parsed.photosByName){Object.keys(parsed.photosByName).forEach(function(k){if(!PLAYER_PHOTOS[k])PLAYER_PHOTOS[k]=parsed.photosByName[k]})}
       if(parsed.photosByTeamNum){Object.keys(parsed.photosByTeamNum).forEach(function(k){FIFA_PHOTO_BY_TEAM_NUM[k]=parsed.photosByTeamNum[k]})}
       if(parsed.photosByTeamName){Object.keys(parsed.photosByTeamName).forEach(function(k){FIFA_PHOTO_BY_TEAM_NAME[k]=parsed.photosByTeamName[k]})}
-      console.log('Cache restaurado');
       renderSquads();
       return
     }}
   }catch(e){}
-  console.log('initFifaMaps: sem cache valido, iniciando fetch');
   function fetchSquads(){
     var ids=Object.keys(FIFA_TEAM_IDS||{});
-    if(!ids.length){console.log('initFifaMaps: FIFA_TEAM_IDS vazio, buscando calendario primeiro');fetchCalendar().then(fetchSquads);return}
-    console.log('initFifaMaps: buscando squads de '+ids.length+' times');
+    if(!ids.length){fetchCalendar().then(fetchSquads);return}
     var idx=0,fifaPhotosByName={},fifaPhotosByTeamNum={},fifaPhotosByTeamName={};
     function norm(s){return s.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
     function next(){
@@ -1731,8 +1724,7 @@ function fetchCalendar(){
         if(m.Home&&m.Home.Abbreviation&&m.Home.IdTeam)FIFA_TEAM_IDS[m.Home.Abbreviation]=m.Home.IdTeam;
         if(m.Away&&m.Away.Abbreviation&&m.Away.IdTeam)FIFA_TEAM_IDS[m.Away.Abbreviation]=m.Away.IdTeam;
       })}
-      console.log('Calendar: '+Object.keys(FIFA_TEAM_IDS).length+' team IDs');
-    }).catch(function(){console.log('Calendar fetch failed')});
+    }).catch(function(){});
 }
 
 function _resolveMatchTeams(game){
