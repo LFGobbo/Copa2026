@@ -2638,22 +2638,37 @@ function bolaoRenderPicksGrid(){
   grid.addEventListener('blur',grid._bolaoBlurHandler,true);
   // Status: quantos preenchidos
   var elSum=document.getElementById('bolao-pick-summary');
-  if(elSum){
-    var totalV=0,filled=0,missing=[];
+  if(elSum)bolaoUpdateSummary(maxIdx);
+}
+function bolaoUpdateSummary(maxIdx){
+  var elSum=document.getElementById('bolao-pick-summary');
+  if(!elSum)return;
+  if(maxIdx===undefined){
+    var now=new Date();
+    maxIdx=-1;
     GAMES.forEach(function(g,i){
-      if(g.n<BOLAO_FIRST||i>maxIdx)return;
+      if(g.n<BOLAO_FIRST)return;
       var gd=gameUTC(g);if(!gd)return;
-      var lk=new Date()>=new Date(gd.getTime()-BOLAO_TWO_H);
-      var pk=_bolaoMyPicks[g.n],hp=pk&&pk.a!==undefined&&pk.b!==undefined;
-      if(lk&&!hp)return;
-      totalV++;
-      if(hp){filled++}
-      else{missing.push(esc(g.a)+' x '+esc(g.b))}
+      var lockTime=new Date(gd.getTime()-BOLAO_TWO_H);
+      if(now<lockTime){maxIdx=i;return}
+      maxIdx=i;
     });
-    if(totalV===0){elSum.innerHTML=''}
-    else if(filled===totalV){elSum.innerHTML='<span style="color:var(--green)">\u2705 Todos os palpites preenchidos para os jogos dispon\u00edveis!</span>'}
-    else{elSum.innerHTML='<span style="color:var(--orange)">\u26a0\ufe0f '+filled+'/'+totalV+' preenchidos. Faltam: '+missing.join(', ')+'</span>'}
+    if(maxIdx<0)maxIdx=GAMES.length-1;
   }
+  var totalV=0,filled=0,missing=[];
+  GAMES.forEach(function(g,i){
+    if(g.n<BOLAO_FIRST||i>maxIdx)return;
+    var gd=gameUTC(g);if(!gd)return;
+    var lk=new Date()>=new Date(gd.getTime()-BOLAO_TWO_H);
+    var pk=_bolaoMyPicks[g.n],hp=pk&&pk.a!==undefined&&pk.b!==undefined;
+    if(lk&&!hp)return;
+    totalV++;
+    if(hp){filled++}
+    else{missing.push(esc(g.a)+' x '+esc(g.b))}
+  });
+  if(totalV===0){elSum.innerHTML=''}
+  else if(filled===totalV){elSum.innerHTML='<span style="color:var(--green)">\u2705 Todos os palpites preenchidos para os jogos dispon\u00edveis!</span>'}
+  else{elSum.innerHTML='<span style="color:var(--orange)">\u26a0\ufe0f '+filled+'/'+totalV+' preenchidos. Faltam: '+missing.join(', ')+'</span>'}
 }
 function bolaoSavePick(gameN){
   if(!_bolaoToken||_bolaoConfirmed)return;
@@ -2675,6 +2690,7 @@ function bolaoSavePick(gameN){
   _bolaoMyPicks[gameN]={a:vA,b:vB};
   _bolaoBracketCache=null;
   _bolaoRefreshTeams();
+  bolaoUpdateSummary();
   _bolaoFetch('/picks','POST',{picks:[{game_n:gameN,goals_a:vA,goals_b:vB,ko_pick:koVal}]})
   .then(function(){if(saved){saved.style.color='#4ade80';saved.textContent='Salvo';}})
   .catch(function(){if(saved){saved.style.color='var(--red)';saved.textContent='Erro';}});
