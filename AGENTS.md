@@ -788,3 +788,58 @@ ALTER TABLE participants ADD COLUMN IF NOT EXISTS confirmed boolean DEFAULT fals
 - Novas classes `bsp-*` para os cards de palpite (bsp-card, bsp-input, bsp-score-row, etc.)
 
 ---
+
+---
+
+## Regra de ouro (adicionada 2026-06-12)
+
+**Nunca teorize sobre bugs — teste com dados reais primeiro.**
+
+Antes de propor qualquer solução para um bug de lógica JS:
+1. Extrair as funções afetadas do index.html
+2. Montar um script Node.js com dados reais dos GAMES/GROUPS
+3. Rodar o teste e ver o output real
+4. Só então corrigir
+
+Exemplo do bug `_bolaoWinnerOf`: semanas de debug teriam sido evitadas rodando `node /tmp/test_bolao.js` que mostrou imediatamente `Winner jogo 75: '1° Grupo F'` em vez do time resolvido.
+
+---
+
+## Admin — comandos úteis pelo console (F12)
+
+### Desbloquear participante confirmado
+```javascript
+_bAdm('SENHA_DO_AGENTS_MD', 'Nome Exato do Participante')
+```
+Reseta `confirmed=false` no Supabase. Participante precisa recarregar a página.
+
+### Apagar participante de teste
+Não é possível pelo console com a anon key (Supabase bloqueia DELETE).
+Usar o SQL Editor do dashboard:
+```sql
+DELETE FROM participants WHERE name = 'Nome do participante';
+-- picks e special_picks são apagados em cascata automaticamente
+```
+
+### Ver estado atual na memória (debug)
+```javascript
+// Palpites carregados
+console.log(_bolaoMyPicks)
+
+// KO picks (escolhas de empate)
+console.log(_bolaoKOPicks)
+
+// Participante logado
+console.log(_bolaoParticipantId, _bolaoName, _bolaoConfirmed)
+
+// Testar resolução de um jogo
+console.log(_bolaoResolveTeam('1° Grupo F', 75))
+console.log(_bolaoWinnerOf(75))
+
+// Ver classificação simulada de um grupo
+console.log(_bolaoGroupStandings('F'))
+
+// Ver 8 melhores 3os
+console.log(_bolaoRankedThirds())
+```
+

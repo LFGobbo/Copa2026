@@ -2048,15 +2048,16 @@ function _bolaoWinnerOf(gameN){
   if(!g)return null;
   var s=_bolaoGetScore(gameN);
   if(!s)return null;
-  if(s.a>s.b)return g.a;
-  if(s.b>s.a)return g.b;
+  // Resolver o placeholder para o time real antes de retornar
+  if(s.a>s.b)return _bolaoResolveTeam(g.a,gameN)||null;
+  if(s.b>s.a)return _bolaoResolveTeam(g.b,gameN)||null;
   // Empate: só KO tem escolha
   var isGroup=g.f&&g.f.startsWith('Grupo');
-  if(isGroup)return null; // Empate em grupo não define vencedor
+  if(isGroup)return null;
   var ko=_bolaoKOPicks[gameN];
-  if(ko==='a')return _bolaoResolveTeam(g.a,gameN);
-  if(ko==='b')return _bolaoResolveTeam(g.b,gameN);
-  return null; // Aguardando escolha
+  if(ko==='a')return _bolaoResolveTeam(g.a,gameN)||null;
+  if(ko==='b')return _bolaoResolveTeam(g.b,gameN)||null;
+  return null;
 }
 
 // Resolve placeholder no contexto do bolão
