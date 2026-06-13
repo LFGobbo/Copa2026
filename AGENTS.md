@@ -594,6 +594,19 @@ Toda melhoria deve:
 - **Regra de confirmação explicita**: texto "Só valem para pontuação depois de clicar em Confirmar todos os palpites" na lista de regras
 - **`_groupStandings` H2H completo**: 3 subcritérios restauratos (H2H pontos → H2H saldo → H2H gols marcados). Havia sido minificado perdendo GD e GF do confronto direto
 - **`_loserOf` com pênaltis**: agora reconhece `s.pen` para determinar perdedor em jogos decididos nos pênaltis (antes retornava `null` em empates)
+- **Regras com destaque visual**: palavras-chave em vermelho/laranja/verde/azul/ouro para chamar atenção (OBRIGATÓRIA, SÓ VALEM APÓS CONFIRMAR, RASCUNHOS, OCULTOS, PRÉVIA)
+- **Estatísticas pessoais**: nova seção `#bolao-stats-section` com grid de pontos, exatos, resultados, bônus e pontos por fase
+- **Evolução no ranking**: gráfico SVG mostrando posição ao longo das rodadas (`GET /evolution`)
+- **Palpite da maioria**: exibe os 3 palpites mais comuns de cada jogo, com porcentagem (`GET /majority`)
+- **Snapshot automático**: `checkAutoSnapshot()` grava posição de todos no banco quando um jogo encerra (`POST /snapshot`, tabela `ranking_snapshots`)
+- **`confirmed_at`**: Worker salva timestamp ao confirmar (`PATCH /confirm` + `confirmed_at`)
+- **`renderGroups()` sort fix**: `.sort(function(a,b){return a.n-b.n})` adicionado para ordem consistente em jogos no mesmo dia
+- **`_bolaoGetBracket` sem mutação global**: usa `JSON.parse(JSON.stringify(scores))` para clonagem profunda, evitando vazamento de palpites do bolão para o bracket real
+- **`mergeScores` dispara `checkAutoSnapshot`**: ao receber placar da FIFA, verifica se algum jogo encerrou e grava snapshot
+- **`supabase-additions.sql`**: migration para `confirmed_at`, `ranking_snapshots`, `majority_cache`
+- **Worker novas rotas**: `GET /stats`, `GET /majority`, `POST /majority/refresh`, `POST /snapshot`, `GET /evolution`
+- **Palpite da maioria cacheado**: tabela `majority_cache` no Supabase, calculado pelo Worker (`POST /majority/refresh`)
+- **`_bolaoSnappedGames`**: rastreia localStorage de snapshots já feitos para evitar duplicatas
 
 ### v19.7 (2026-06-13) — Deploy Completo + Root route
 - **Turnstile corrigido**: `turnstile.getResponse(document.getElementById('bolao-turnstile'))` em vez de `'bolao-turnstile'` string

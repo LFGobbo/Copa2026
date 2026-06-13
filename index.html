@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -439,6 +439,26 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .bsp-ko-btn{flex:1;padding:5px 6px;border-radius:6px;font-size:11px;cursor:pointer;transition:all .15s}
   .bsp-ko-confirmed{font-size:11px;color:var(--gold);margin-top:4px}
   .tab:focus-visible,.filter-btn:focus-visible,.mode-btn:focus-visible,.bview-btn:focus-visible,.pen-btn:focus-visible,.refresh-btn:focus-visible,.score-input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* Estatísticas pessoais */
+.bolao-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.bolao-stat-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
+.bolao-stat-num{font-size:22px;font-weight:800;line-height:1}
+.bolao-stat-label{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.4px}
+.bolao-stat-gold{color:var(--gold)}
+.bolao-phase-pts{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.bolao-stat-phase{display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(255,255,255,.04);border-radius:6px;padding:5px 10px;font-size:12px;min-width:120px}
+.bolao-stat-val{font-weight:700;color:var(--gold)}
+.bolao-confirmed-ts{font-size:11px;color:var(--muted);padding:6px 0;border-top:1px solid var(--border);margin-top:4px}
+/* Palpite da maioria */
+.bolao-majority{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px;padding-top:5px;border-top:1px solid var(--border)}
+.bolao-majority-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.bolao-majority-opt{font-size:11px;background:rgba(255,255,255,.06);border-radius:4px;padding:2px 6px;white-space:nowrap}
+.bolao-majority-pct{font-weight:700;color:var(--gold)}
+/* Evolução do ranking */
+.bolao-evolution-section{margin-top:16px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.bolao-evolution-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+@media(max-width:480px){.bolao-stats-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -496,11 +516,11 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       <li><strong>Palpites especiais:</strong> Escolha o campe&atilde;o (+50 pts) e o artilheiro (+20 pts exato / +10 se empatado) antes do prazo</li>
       <li><strong>Pontua&ccedil;&atilde;o:</strong> Placar exato = 10 pts | Resultado + gol do vencedor = 6 pts | Resultado + gol do perdedor = 4 pts | S&oacute; resultado = 2 pts | Errou = 0 pts</li>
       <li><strong>B&ocirc;nus final:</strong> Placar exato na Final = +20 pts (acumula com os 10 do acerto)</li>
-      <li><strong>Confirma&ccedil;&atilde;o obrigat&oacute;ria:</strong> Voc&ecirc; pode salvar palpites avulsos, mas <strong>s&oacute; valem para pontua&ccedil;&atilde;o depois de clicar em &quot;Confirmar todos os palpites&quot;</strong>. At&eacute; l&aacute;, s&atilde;o rascunhos. Ap&oacute;s confirmar, n&atilde;o d&aacute; mais para editar</li>
-      <li><strong>Sigilo at&eacute; o apito:</strong> Seus palpites ficam ocultos de todos at&eacute; a bola rolar. Quando o jogo come&ccedil;a, todos enxergam os palpites daquele jogo e dos anteriores</li>
-      <li><strong>Jogos progressivos:</strong> Os cards de palpite aparecem um a um conforme os jogos anteriores acontecem. Voc&ecirc; pode preencher com calma sem se perder</li>
-      <li><strong>Status de preenchimento:</strong> Um aviso mostra quantos palpites voc&ecirc; preencheu e quais ainda faltam. Fique tranquilo que n&atilde;o vai esquecer nenhum</li>
-      <li><strong>Pontua&ccedil;&atilde;o ao vivo:</strong> Durante o jogo, os pontos s&atilde;o exibidos no card com base no placar moment&acirc;neo. No ranking, a pontua&ccedil;&atilde;o s&oacute; vale ap&oacute;s o apito final</li>
+      <li><strong>Confirma&ccedil;&atilde;o OBRIGAT&Oacute;RIA:</strong> Voc&ecirc; pode salvar palpites avulsos, mas <strong style="color:var(--red)">s&Oacute; VALEM PARA PONTUAÇ&Atilde;O</strong> depois de clicar em &quot;<strong style="color:var(--gold)">Confirmar todos os palpites</strong>&quot;. At&eacute; l&aacute;, s&atilde;o <strong style="color:var(--orange)">RASCUNHOS</strong>. Ap&oacute;s confirmar, n&atilde;o d&aacute; mais para editar</li>
+      <li><strong>Sigilo at&eacute; o apito:</strong> Seus palpites ficam <strong style="color:var(--orange)">OCULTOS</strong> de todos at&eacute; a bola rolar. Quando o jogo come&ccedil;a, todos enxergam os palpites daquele jogo e dos anteriores</li>
+      <li><strong>Jogos progressivos:</strong> Os cards de palpite aparecem <strong style="color:var(--gold)">um a um</strong> conforme os jogos anteriores acontecem. Voc&ecirc; pode <strong style="color:var(--green)">preencher com calma</strong> e confirmar tudo depois</li>
+      <li><strong>Status de preenchimento:</strong> Um aviso mostra quantos palpites voc&ecirc; preencheu e quais ainda faltam</li>
+      <li><strong>Pontua&ccedil;&atilde;o ao vivo:</strong> Durante o jogo, os pontos s&atilde;o exibidos no card como <strong style="color:var(--blue)">PRÉVIA</strong>. No ranking, a pontua&ccedil;&atilde;o s&oacute; vale ap&oacute;s o apito final <strong style="color:var(--red)">E</strong> depois da confirma&ccedil;&atilde;o</li>
       <li><strong>Especiais em segredo:</strong> Campe&atilde;o e artilheiro de cada participante s&oacute; s&atilde;o revelados ap&oacute;s o in&iacute;cio do jogo #32, mantendo a emo&ccedil;&atilde;o at&eacute; o fim das inscri&ccedil;&otilde;es</li>
       <li><strong>Desempate:</strong> 1&ordm; mais placares exatos, 2&ordm; mais resultados certos, 3&ordm; mais b&ocirc;nus especiais</li>
     </ul>
@@ -551,6 +571,16 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       <div id="bolao-confirm-area" style="margin-top:16px;display:none">
         <button class="bolao-save-btn" id="bolao-confirm-btn" onclick="bolaoConfirmAll()" style="background:var(--red);max-width:400px">Confirmar todos os palpites &mdash; n&atilde;o poder&aacute; editar depois</button>
         <div class="bolao-pick-saved" id="bolao-confirm-status" style="text-align:left;margin-top:8px"></div>
+      </div>
+      <!-- Evolução do ranking -->
+      <div class="bolao-evolution-section" id="bolao-evolution-section" style="display:none">
+        <div class="bolao-evolution-title">📈 Evolução no Ranking</div>
+        <div id="bolao-evolution-wrap"></div>
+      </div>
+      <!-- Estatísticas pessoais -->
+      <div class="bolao-section" id="bolao-stats-section" style="display:none">
+        <div class="bolao-section-title">📊 Suas Estatísticas</div>
+        <div id="bolao-stats-wrap"></div>
       </div>
       <div id="bolao-confirmed-banner" class="bolao-confirm-banner">Seus palpites est&atilde;o confirmados e n&atilde;o podem mais ser alterados.</div>
     </div>
@@ -1092,7 +1122,7 @@ function renderGroups(){
     var teams=GROUPS[letter];if(!teams)return"";
     var pts={},gp={},w={},d={},l={},gf={},ga={};
     teams.forEach(function(t){pts[t]=0;gp[t]=0;w[t]=0;d[t]=0;l[t]=0;gf[t]=0;ga[t]=0});
-    GAMES.filter(function(g){return g.f===GROUP_NAMES[letter]}).forEach(function(g){
+    GAMES.filter(function(g){return g.f===GROUP_NAMES[letter]}).sort(function(a,b){return a.n-b.n}).forEach(function(g){
       var s=scores[g.n];
       if(s&&s.a!==undefined&&s.b!==undefined){
         var a=g.a,b=g.b;
@@ -1181,8 +1211,8 @@ function _groupStandings(letter){
         });
         if(hpA!==hpB)return hpB-hpA;
         var hgdA=hgfA-hgaA,hgdB=hgfB-hgaB;
-        if(hgdB!==hgdA)return hgdB-hgdA;
-        if(hgfB!==hgfA)return hgfB-hgfA;
+        if(hgdB!==hgdA)return hgdB-hgdA;  // H2H saldo de gols
+        if(hgfB!==hgfA)return hgfB-hgfA;  // H2H gols marcados
       }
       return a.localeCompare(b);
     }),
@@ -1656,7 +1686,7 @@ if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){map[g.n]={};if(g.a===h){map[g.n].a=hs
 function mergeScores(map){if(!map||Object.keys(map).length===0)return false;var changed=false;
 Object.keys(map).forEach(function(id){var s=map[id],na=parseInt(s.a,10),nb=parseInt(s.b,10);if(isNaN(na)||isNaN(nb))return;
 if(!scores[id])scores[id]={};if(scores[id].a!==na||scores[id].b!==nb)changed=true;scores[id].a=na;scores[id].b=nb});
-if(changed){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers()}return changed}
+if(changed){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();setTimeout(checkAutoSnapshot,500)}return changed}
 
 function _hide(ab){
   if(!ab||ab.style.display==='none')return;
@@ -2111,6 +2141,9 @@ var _bolaoToken=null;
 var BOLAO_FIRST=6,BOLAO_FINAL=104,BOLAO_SIGNUP_GAME=32,BOLAO_TWO_H=7200000;
 var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
 var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmedStatus={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[],_bolaoKOPicks={};
+var _bolaoSnappedGames={};
+try{_bolaoSnappedGames=JSON.parse(localStorage.getItem('copa2026_snapped')||'{}')}catch(e){}
+
 function _bolaoFetch(path,method,body){
   var opts={method:method||'GET',headers:{'Content-Type':'application/json'}};
   if(_bolaoToken)opts.headers['Authorization']='Bearer '+_bolaoToken;
@@ -2345,16 +2378,19 @@ function bolaoCalcPickPts(pA,pB,rA,rB){
 var _bolaoBracketCache=null;
 function _bolaoGetBracket(picks){
   if(_bolaoBracketCache)return _bolaoBracketCache;
-  var bk={};Object.keys(scores).forEach(function(k){bk[k]=scores[k]});
+  // Clonar scores profundamente para não mutar o global
+  var savedScores=JSON.parse(JSON.stringify(scores));
   Object.keys(picks||{}).forEach(function(gn){
-    var p=picks[gn];if(p.a!==undefined)scores[gn]=Object.assign({},scores[gn],{a:p.a,b:p.b});
+    var p=picks[gn];
+    if(p&&p.a!==undefined)scores[gn]=Object.assign({},scores[gn],{a:p.a,b:p.b});
   });
   var res={};
   GAMES.forEach(function(g){
     res[g.n]={a:resolveTeam(g.a,g.n),b:resolveTeam(g.b,g.n)};
   });
-  Object.keys(bk).forEach(function(k){scores[k]=bk[k]});
-  Object.keys(scores).forEach(function(k){if(!bk[k])delete scores[k]});
+  // Restaurar scores global exatamente como estava
+  Object.keys(scores).forEach(function(k){delete scores[k]});
+  Object.assign(scores,savedScores);
   _bolaoBracketCache=res;
   return res;
 }
@@ -2547,6 +2583,7 @@ function bolaoRenderPicksGrid(){
       +'<div id="bolao-ko-'+g.n+'">'+koHtml+'</div>'
       +'<div class="bsp-status" id="bsp-status-'+g.n+'">'+(inputLocked&&hasPick?'Confirmado':'')+'</div>'
       +ptsHtml
+      +(inputLocked?'':bolaoMajorityHtml(g.n))
       +'</div>';
   });
   grid.innerHTML=any?html:'<p style="color:var(--muted);font-size:13px;text-align:center;padding:24px">Nenhum jogo dispon\u00edvel para palpite agora.</p>';
@@ -2738,6 +2775,9 @@ async function bolaoLogin(){
     document.getElementById('bolao-pass').readOnly=true;
     st.className='bolao-login-status ok';st.textContent='Ol\u00e1, '+_bolaoName+'!';
     document.getElementById('bolao-logged-area').style.display='block';
+    document.getElementById('bolao-stats-section').style.display='block';
+    document.getElementById('bolao-evolution-section').style.display='block';
+    bolaoLoadStats();
     await bolaoLoadMyData();
     bolaoRenderPicksGrid();
     bolaoPopulateSpecials();
@@ -2793,6 +2833,137 @@ function bolaoLimpar(){
   bolaoLoadRanking();
   console.log('Placares limpos. Recarregue a p\u00e1gina para garantir.');
 }
+// ── bolaoLoadEvolution ─────────────────────────────────────
+async function bolaoLoadEvolution(){
+  try{
+    var d=await _bolaoFetch('/evolution?participantId='+_bolaoParticipantId);
+    _bolaoEvolution=d.evolution||[];
+    var el=document.getElementById('bolao-evolution-wrap');
+    if(el)bolaoRenderEvolution(el);
+  }catch(e){}
+}
+function bolaoRenderEvolution(el){
+  if(!_bolaoEvolution||!_bolaoEvolution.length){
+    el.innerHTML='<p style="color:var(--muted);font-size:12px;padding:8px 0">Evolução disponível após a primeira rodada</p>';return;
+  }
+  var pts=_bolaoEvolution,W=260,H=60,pad=6;
+  var maxPos=Math.max.apply(null,pts.map(function(p){return p.position;}));
+  var xStep=pts.length>1?(W-2*pad)/(pts.length-1):0;
+  function px(i){return pad+i*xStep;}
+  function py(p){return pad+(p-1)/(maxPos>1?maxPos-1:1)*(H-2*pad);}
+  var last=pts[pts.length-1];
+  var diffTxt='';
+  if(pts.length>1){
+    var d2=pts[pts.length-2].position-last.position;
+    if(d2>0)diffTxt='<span style="color:#4ade80">&#9650;'+d2+'</span>';
+    else if(d2<0)diffTxt='<span style="color:var(--red)">&#9660;'+Math.abs(d2)+'</span>';
+    else diffTxt='<span style="color:var(--muted)">&#8212;</span>';
+  }
+  el.innerHTML='<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
+    +'<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="flex-shrink:0">'
+    +'<polyline points="'+pts.map(function(p,i){return px(i).toFixed(1)+','+py(p.position).toFixed(1);}).join(' ')+'" fill="none" stroke="var(--gold)" stroke-width="2"/>'
+    +pts.map(function(p,i){return'<circle cx="'+px(i).toFixed(1)+'" cy="'+py(p.position).toFixed(1)+'" r="3" fill="var(--gold)"/>';}).join('')
+    +'<text x="'+px(pts.length-1).toFixed(1)+'" y="'+(py(last.position)-6).toFixed(1)+'" text-anchor="middle" fill="var(--gold)" font-size="9" font-weight="700">'+last.position+'&#176;</text>'
+    +'</svg>'
+    +'<div style="font-size:12px;line-height:1.8">'
+    +'<div style="font-weight:700;font-size:16px;color:var(--gold)">'+last.position+'&#176; lugar</div>'
+    +'<div style="color:var(--muted)">'+last.points+' pts</div>'
+    +(diffTxt?'<div>'+diffTxt+' desde &uacute;ltima rodada</div>':'')
+    +'</div></div>';
+}
+
+async function bolaoLoadStats(){
+  if(_bolaoStatsLoading||!_bolaoParticipantId)return;
+  _bolaoStatsLoading=true;
+  try{
+    var d=await _bolaoFetch('/stats?participantId='+_bolaoParticipantId);
+    _bolaoStats=d;
+    var el=document.getElementById('bolao-stats-wrap');
+    if(el)bolaoRenderStats(el);
+  }catch(e){}finally{_bolaoStatsLoading=false;}
+}
+function bolaoRenderStats(el){
+  if(!el)return;
+  var calc=bolaoCalcTotal(_bolaoParticipantId);
+  var cat=_bolaoConfirmedAt[_bolaoParticipantId];
+  var catStr=cat?new Date(cat).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'&mdash;';
+  var phasePts={grupos:0,r32:0,oitavas:0,quartas:0,semi:0,final:0};
+  var phaseLabels={grupos:'Grupos',r32:'Rodada 32',oitavas:'Oitavas',quartas:'Quartas',semi:'Semis',final:'Final'};
+  var myPicks=_bolaoAllPicks[_bolaoParticipantId]||{};
+  GAMES.forEach(function(g){
+    if(g.n<BOLAO_FIRST||!gameIsPast(g))return;
+    var pick=myPicks[g.n],real=scores[g.n];
+    if(!real||real.a===undefined||!pick||pick.a===undefined)return;
+    var p=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);if(p<0)return;
+    var ph=g.f.startsWith('Grupo')?'grupos':g.f==='Rodada de 32'?'r32':g.f==='Oitavas de Final'?'oitavas':g.f==='Quartas de Final'?'quartas':g.f==='Semifinal'?'semi':'final';
+    phasePts[ph]=(phasePts[ph]||0)+p;
+  });
+  var phHtml=Object.keys(phasePts).filter(function(k){return phasePts[k]>0;}).map(function(k){
+    return'<div class="bolao-stat-phase"><span>'+phaseLabels[k]+'</span><span class="bolao-stat-val">'+phasePts[k]+' pts</span></div>';
+  }).join('');
+  el.innerHTML='<div class="bolao-stats-grid">'
+    +'<div class="bolao-stat-box"><div class="bolao-stat-num bolao-stat-gold">'+calc.total+'</div><div class="bolao-stat-label">pontos</div></div>'
+    +'<div class="bolao-stat-box"><div class="bolao-stat-num" style="color:#4ade80">'+calc.exactCount+'</div><div class="bolao-stat-label">exatos</div></div>'
+    +'<div class="bolao-stat-box"><div class="bolao-stat-num">'+calc.resultCount+'</div><div class="bolao-stat-label">resultados</div></div>'
+    +'<div class="bolao-stat-box"><div class="bolao-stat-num" style="color:var(--orange)">'+calc.bonusCount+'</div><div class="bolao-stat-label">b&ocirc;nus</div></div>'
+    +'</div>'
+    +(phHtml?'<div class="bolao-phase-pts">'+phHtml+'</div>':'')
+    +'<div class="bolao-confirmed-ts">&#128274; Confirmado em: <strong>'+catStr+'</strong></div>';
+}
+
+function bolaoMajorityHtml(gameN){
+  var d=_bolaoMajority[gameN];
+  if(!d||!d.length)return'';
+  return'<div class="bolao-majority"><span class="bolao-majority-label">Maioria:</span>'
+    +d.slice(0,3).map(function(e){
+      return'<span class="bolao-majority-opt">'+e.goals_a+'&#215;'+e.goals_b
+        +' <span class="bolao-majority-pct">'+e.pct+'%</span></span>';
+    }).join('')+'</div>';
+}
+
+async function bolaoSnapshotRound(round){
+  var rows=Object.keys(_bolaoParticipants).map(function(id){
+    var r=bolaoCalcTotal(id);
+    return{participant_id:id,points:r.total,exact_count:r.exactCount,result_count:r.resultCount,position:0};
+  });
+  rows.sort(function(a,b){return b.points-a.points||b.exact_count-a.exact_count||b.result_count-a.result_count;});
+  rows.forEach(function(r,i){r.position=i+1;});
+  await _bolaoFetch('/snapshot','POST',{round:round,ranking:rows});
+  console.log('Snapshot rodada '+round+' gravado: '+rows.length+' participantes');
+}
+
+// ── Snapshot automático: disparado pelo mergeScores quando um jogo encerra
+function checkAutoSnapshot(){
+  if(!_bolaoParticipantId||!_bolaoToken)return;
+  GAMES.forEach(function(g){
+    if(g.n<BOLAO_FIRST)return;
+    if(_bolaoSnappedGames[g.n])return;
+    if(!gameIsPast(g))return;
+    // Jogo acabou de encerrar e ainda não teve snapshot
+    _bolaoSnappedGames[g.n]=true;
+    try{localStorage.setItem('copa2026_snapped',JSON.stringify(_bolaoSnappedGames))}catch(e){}
+    // Atualizar cache da maioria para este jogo
+    _bolaoFetch('/majority/refresh','POST',{game_n:g.n}).catch(function(){});
+    // Calcular ranking atual e gravar snapshot
+    var ids=Object.keys(_bolaoParticipants);
+    if(!ids.length)return;
+    var rows=ids.map(function(id){
+      var r=bolaoCalcTotal(id);
+      return{participant_id:id,points:r.total,exact_count:r.exactCount,result_count:r.resultCount,position:0};
+    });
+    rows.sort(function(a,b){
+      return b.points-a.points||b.exact_count-a.exact_count||b.result_count-a.result_count;
+    });
+    rows.forEach(function(r,i){r.position=i+1;});
+    _bolaoFetch('/snapshot','POST',{round:g.n,ranking:rows})
+      .then(function(){bolaoLoadEvolution();})
+      .catch(function(){
+        delete _bolaoSnappedGames[g.n];
+        try{localStorage.setItem('copa2026_snapped',JSON.stringify(_bolaoSnappedGames))}catch(e){}
+      });
+  });
+}
+
 // ========== FIM BOLÃO ==========
 
 var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED'&&!_refreshing){_refreshing=true;window.location.reload()}})}

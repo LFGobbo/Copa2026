@@ -168,7 +168,7 @@ async function handle(req) {
     // PATCH /confirm
     if (method === 'PATCH' && path === '/confirm') {
       if (!user) return error('Token invalido', 401);
-      await supaFetch("participants?id=eq." + user.sub, 'PATCH', { confirmed: true });
+      await supaFetch("participants?id=eq." + user.sub, 'PATCH', { confirmed: true, confirmed_at: new Date().toISOString() });
       return json({ ok: true });
     }
 
@@ -196,7 +196,91 @@ async function handle(req) {
       return json({ ok: true });
     }
 
-    return json({ ok: true, message: 'Copa2026 Bolao — API do Worker. Rotas: GET /ranking, POST /register, POST /login, GET|POST /picks, GET /mypicks, POST /special-picks, PATCH /confirm, PATCH /admin/unlock, DELETE /reset' });
+
+    // GET /stats?participantId=...
+    if (method === 'GET' && path === '/stats') {
+      var pid = url.searchParams.get('participantId');
+      if (!pid) return error('participantId obrigatorio');
+      var participant = (await supaFetch('participants?id=eq.' + pid + '&select=id,name,confirmed,confirmed_at')) || [];
+      if (!participant.length) return error('Participante nao encontrado', 404);
+      var picks = (await supaFetch('picks?participant_id=eq.' + pid + '&select=game_n,goals_a,goals_b&limit=10000')) || [];
+      var sp = (await supaFetch('special_picks?participant_id=eq.' + pid + '&select=champion,top_scorer')) || [];
+      var history = (await supaFetch('pick_history?participant_id=eq.' + pid + '&select=game_n,goals_a,goals_b,changed_at&order=changed_at.desc&limit=50')) || [];
+      return json({ participant: participant[0], picks: picks, special: sp[0] || null, recentHistory: history });
+    }
+
+    // GET /majority?gameN=N  ou  GET /majority (todos)
+    if (method === 'GET' && path === '/majority') {
+      var gn = url.searchParams.get('gameN');
+      if (!gn) {
+        var allCache = (await supaFetch('majority_cache?select=game_n,data,updated_at&order=game_n')) || [];
+        return json({ majority: allCache });
+      }
+      var cached = (await supaFetch('majority_cache?game_n=eq.' + gn + '&select=data,updated_at')) || [];
+      if (cached.length) return json({ game_n: parseInt(gn), data: cached[0].data, updated_at: cached[0].updated_at, cached: true });
+      var picks = (await supaFetch('picks?game_n=eq.' + gn + '&select=goals_a,goals_b&limit=10000')) || [];
+      var total = picks.length;
+      if (!total) return json({ game_n: parseInt(gn), data: [], total: 0 });
+      var counts = {};
+      picks.forEach(function(p) { var k = p.goals_a + 'x' + p.goals_b; counts[k] = (counts[k] || 0) + 1; });
+      var data = Object.keys(counts).map(function(k) {
+        var parts = k.split('x');
+        return { goals_a: parseInt(parts[0]), goals_b: parseInt(parts[1]), count: counts[k], pct: Math.round(counts[k] / total * 100) };
+      }).sort(function(a, b) { return b.count - a.count; });
+      return json({ game_n: parseInt(gn), data: data, total: total, cached: false });
+    }
+
+    // POST /majority/refresh — recalcula cache (admin)
+    if (method === 'POST' && path === '/majority/refresh') {
+      var ak = req.headers.get('X-Admin-Key') || '';
+      if (ak !== ADMIN_KEY) return error('Admin key invalida', 403);
+      var gnbody = await req.json();
+      var gn2 = gnbody.game_n;
+      if (!gn2) return error('game_n obrigatorio');
+      var picks2 = (await supaFetch('picks?game_n=eq.' + gn2 + '&select=goals_a,goals_b&limit=10000')) || [];
+      var total2 = picks2.length;
+      var counts2 = {};
+      picks2.forEach(function(p) { var k = p.goals_a + 'x' + p.goals_b; counts2[k] = (counts2[k] || 0) + 1; });
+      var data2 = Object.keys(counts2).map(function(k) {
+        var parts = k.split('x');
+        return { goals_a: parseInt(parts[0]), goals_b: parseInt(parts[1]), count: counts2[k], pct: Math.round(counts2[k] / total2 * 100) };
+      }).sort(function(a, b) { return b.count - a.count; });
+      await supaFetch('majority_cache?on_conflict=game_n', 'POST', { game_n: gn2, data: data2, updated_at: new Date().toISOString() });
+      return json({ ok: true, game_n: gn2, total: total2, data: data2 });
+    }
+
+    // POST /snapshot — grava posição atual (admin, após rodada fechar)
+    if (method === 'POST' && path === '/snapshot') {
+      var ak2 = req.headers.get('X-Admin-Key') || '';
+      if (ak2 !== ADMIN_KEY) return error('Admin key invalida', 403);
+      var snap = await req.json();
+      var round = snap.round;
+      if (!round) return error('round obrigatorio');
+      var ranking = snap.ranking;
+      if (!ranking || !ranking.length) return error('ranking obrigatorio');
+      for (var i = 0; i < ranking.length; i++) {
+        var entry = ranking[i];
+        await supaFetch('ranking_snapshots', 'POST', {
+          participant_id: entry.participant_id,
+          round: round,
+          position: entry.position,
+          points: entry.points,
+          exact_count: entry.exact_count || 0,
+          result_count: entry.result_count || 0
+        });
+      }
+      return json({ ok: true, round: round, count: ranking.length });
+    }
+
+    // GET /evolution?participantId=...
+    if (method === 'GET' && path === '/evolution') {
+      var pid2 = url.searchParams.get('participantId');
+      if (!pid2) return error('participantId obrigatorio');
+      var snaps = (await supaFetch('ranking_snapshots?participant_id=eq.' + pid2 + '&select=round,position,points,recorded_at&order=round')) || [];
+      return json({ participantId: pid2, evolution: snaps });
+    }
+
+        return json({ ok: true, message: 'Copa2026 Bolao — API do Worker. Rotas: GET /ranking, POST /register, POST /login, GET|POST /picks, GET /mypicks, POST /special-picks, PATCH /confirm, PATCH /admin/unlock, DELETE /reset' });
   } catch (e) {
     return json({ error: 'Internal: ' + e.message }, 500);
   }
