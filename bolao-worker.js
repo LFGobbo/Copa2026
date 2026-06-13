@@ -230,10 +230,10 @@ async function handle(req) {
       return json({ game_n: parseInt(gn), data: data, total: total, cached: false });
     }
 
-    // POST /majority/refresh — recalcula cache (admin)
+    // POST /majority/refresh — recalcula cache (admin ou JWT)
     if (method === 'POST' && path === '/majority/refresh') {
       var ak = req.headers.get('X-Admin-Key') || '';
-      if (ak !== ADMIN_KEY) return error('Admin key invalida', 403);
+      if (ak !== ADMIN_KEY && !user) return error('Auth invalida (admin key ou token JWT obrigatorio)', 403);
       var gnbody = await req.json();
       var gn2 = gnbody.game_n;
       if (!gn2) return error('game_n obrigatorio');
@@ -249,10 +249,10 @@ async function handle(req) {
       return json({ ok: true, game_n: gn2, total: total2, data: data2 });
     }
 
-    // POST /snapshot — grava posição atual (admin, após rodada fechar)
+    // POST /snapshot — grava posição atual (admin ou JWT)
     if (method === 'POST' && path === '/snapshot') {
       var ak2 = req.headers.get('X-Admin-Key') || '';
-      if (ak2 !== ADMIN_KEY) return error('Admin key invalida', 403);
+      if (ak2 !== ADMIN_KEY && !user) return error('Auth invalida (admin key ou token JWT obrigatorio)', 403);
       var snap = await req.json();
       var round = snap.round;
       if (!round) return error('round obrigatorio');
@@ -260,7 +260,7 @@ async function handle(req) {
       if (!ranking || !ranking.length) return error('ranking obrigatorio');
       for (var i = 0; i < ranking.length; i++) {
         var entry = ranking[i];
-        await supaFetch('ranking_snapshots', 'POST', {
+        await supaFetch('ranking_snapshots?on_conflict=participant_id,round', 'POST', {
           participant_id: entry.participant_id,
           round: round,
           position: entry.position,

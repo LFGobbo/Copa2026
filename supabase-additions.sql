@@ -22,6 +22,9 @@ CREATE INDEX IF NOT EXISTS ranking_snapshots_participant_idx
   ON ranking_snapshots(participant_id);
 CREATE INDEX IF NOT EXISTS ranking_snapshots_round_idx
   ON ranking_snapshots(round);
+-- Evitar duplicatas: cada participante só pode ter 1 snapshot por rodada
+ALTER TABLE ranking_snapshots
+  ADD CONSTRAINT IF NOT EXISTS ranking_snapshots_participant_round_key UNIQUE (participant_id, round);
 
 -- 3. majority_cache: cache do palpite da maioria por jogo
 --    (calculado pelo Worker, não no frontend)

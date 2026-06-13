@@ -1,6 +1,6 @@
 ﻿# Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-06-13 (v19.8)
+**Última atualização:** 2026-06-13 (v19.9)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -570,6 +570,20 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v19.9 (2026-06-13) — Auditoria final: correções críticas para produção
+
+- **`_bolaoMajority` declarado e populado**: variável agora existe e é carregada via `GET /majority` após login. Função `bolaoMajorityHtml` não lança mais ReferenceError
+- **`_bolaoConfirmedAt` populado**: armazenado do retorno de `/stats` (campo `confirmed_at`) para exibir data/hora real da confirmação
+- **Worker `/snapshot` e `/majority/refresh` aceitam JWT**: além do `X-Admin-Key`, agora aceitam token JWT válido. Frontend consegue gravar snapshots e atualizar cache da maioria
+- **`on_conflict=participant_id,round`**: upsert em `ranking_snapshots` evita duplicatas quando múltiplas abas tentam gravar
+- **`_bolaoResolveTeam` recebe `picks` do participante**: pipeline completo (`_bolaoGetScore` → `_bolaoGroupStandings` → `_bolaoRankedThirds` → `_bolaoWinnerOf` → `_bolaoResolveTeam`) agora aceita parâmetro opcional `picks`. `bolaoCalcTotal` passa os picks do participante alvo, não do usuário logado
+- **`_bolaoBracketCache` invalidado**: cache resetado em `bolaoSavePick()` — simulação do bracket reflete alterações de picks
+- **`bolaoLoadRanking` com tratamento de erro**: `catch` agora mostra mensagem "Erro ao carregar ranking" em vez de silenciar
+- **Countdown adaptativo melhorado**: atualiza a cada 1s quando há jogos ao vivo OU próximo jogo nas próximas 24h (antes era só ao vivo)
+- **CSS `--bg2` → `--bg`**: variável não definida corrigida no `.bsp-input`
+- **`bolaoLoadEvolution` chamada no login**: gráfico de evolução carrega ao logar (antes só carregava após snapshot)
+- **`bolaoLoadMajority` adicionada**: carrega dados da maioria e re-renderiza grid de palpites
 
 ### v19.8 (2026-06-13) — GAMES ordenado + Bolão completo
 
