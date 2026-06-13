@@ -611,13 +611,14 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     </div>
   </div>
   <div class="bolao-section">
+    <div id="bolao-deadline-banner" style="display:none;padding:10px 14px;border-radius:6px;margin-bottom:12px;font-size:13px;font-weight:600"></div>
     <div class="bolao-section-title">Ranking geral</div>
     <table class="bolao-rank-table">
       <thead><tr>
-        <th>#</th><th>Participante</th><th>Especiais</th><th>Exatos</th><th>Jogos</th><th>Pontos</th>
+        <th>#</th><th>Participante</th><th>Status</th><th>Especiais</th><th>Exatos</th><th>Jogos</th><th>Pontos</th>
       </tr></thead>
       <tbody id="bolao-rank-body">
-        <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Carregando...</td></tr>
+        <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Carregando...</td></tr>
       </tbody>
     </table>
     <div style="font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center">
@@ -2487,23 +2488,47 @@ function bolaoCalcTotal(participantId){
 }
 function bolaoRenderRanking(){
   var ids=Object.keys(_bolaoParticipants);
-  var rows=ids.map(function(id){var r=bolaoCalcTotal(id);return{id:id,name:_bolaoParticipants[id],total:r.total,exactCount:r.exactCount,resultCount:r.resultCount,bonusCount:r.bonusCount};});
+  // Calcular quantos jogos estao disponiveis (visiveis no grid)
+  var now=new Date(),maxIdx=-1;
+  GAMES.forEach(function(g,i){
+    if(g.n<BOLAO_FIRST)return;
+    var gd=gameUTC(g);if(!gd)return;
+    if(now<new Date(gd.getTime()-BOLAO_TWO_H)){maxIdx=i;return}
+    maxIdx=i;
+  });
+  if(maxIdx<0)maxIdx=GAMES.length-1;
+  var totalAvail=GAMES.filter(function(g,i){return g.n>=BOLAO_FIRST&&i<=maxIdx}).length;
+  var rows=ids.map(function(id){
+    var r=bolaoCalcTotal(id);
+    var sp=_bolaoAllSpecials[id];
+    var conf=_bolaoConfirmedStatus[id]||false;
+    var pCount=Object.keys(_bolaoAllPicks[id]||{}).filter(function(gn){return _bolaoAllPicks[id][gn].a!==undefined}).length;
+    var status=[];
+    if(pCount>=totalAvail)status.push('\u2705');
+    else status.push('\u26a0\ufe0f '+pCount+'/'+totalAvail);
+    if(!sp||!sp.champion||!sp.top_scorer)status.push('Sem especiais');
+    else status.push('Especiais OK');
+    if(conf)status.push('Confirmado');
+    else status.push('N\u00e3o confirmou');
+    return{id:id,name:_bolaoParticipants[id],total:r.total,exactCount:r.exactCount,resultCount:r.resultCount,bonusCount:r.bonusCount,status:status.join(' | ')};
+  });
   rows.sort(function(a,b){if(b.total!==a.total)return b.total-a.total;if(b.exactCount!==a.exactCount)return b.exactCount-a.exactCount;if(b.resultCount!==a.resultCount)return b.resultCount-a.resultCount;if(b.bonusCount!==a.bonusCount)return b.bonusCount-a.bonusCount;return 0});
   var medalEmoji=['&#127942;','&#129352;','&#129353;'];
   var tb=document.getElementById('bolao-rank-body');
   if(!tb)return;
-  if(!rows.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Nenhum participante ainda</td></tr>';return;}
+  if(!rows.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Nenhum participante ainda</td></tr>';return;}
   tb.innerHTML=rows.map(function(r,i){
     var medal=i<3?medalEmoji[i]:'',sp=_bolaoAllSpecials[r.id];
     var spText=sp?((sp.champion||'?')+' / '+(sp.top_scorer||'?')):'&mdash;';
     return '<tr class="bolao-rank-row" onclick="bolaoToggleDetail(\''+r.id+'\')">'
       +'<td class="bolao-rank-pos">'+medal+' '+(i+1)+'</td>'
       +'<td class="bolao-rank-name">'+esc(r.name)+'</td>'
+      +'<td style="font-size:10px;color:var(--muted);max-width:180px">'+r.status+'</td>'
       +'<td style="font-size:11px;color:var(--muted)">'+esc(spText)+'</td>'
       +'<td class="bolao-rank-sub">'+r.exactCount+'</td>'
       +'<td class="bolao-rank-sub">'+r.resultCount+'</td>'
       +'<td class="bolao-rank-pts">'+r.total+'</td></tr>'
-      +'<tr class="bolao-detail" id="bolao-detail-'+r.id+'"><td colspan="6"><div class="bolao-detail-inner">'+bolaoRenderDetail(r.id)+'</div></td></tr>';
+      +'<tr class="bolao-detail" id="bolao-detail-'+r.id+'"><td colspan="7"><div class="bolao-detail-inner">'+bolaoRenderDetail(r.id)+'</div></td></tr>';
   }).join('');
 }
 function bolaoToggleDetail(id){var el=document.getElementById('bolao-detail-'+id);if(el)el.classList.toggle('open')}
@@ -2844,7 +2869,7 @@ async function bolaoLoadRanking(){
       }
     }catch(ce){}
     var tb=document.getElementById('bolao-rank-body');
-    if(tb)tb.innerHTML='<tr><td colspan="6" style="color:var(--muted);padding:16px">Erro ao carregar ranking. Verifique sua conex&atilde;o.</td></tr>';
+    if(tb)tb.innerHTML='<tr><td colspan="7" style="color:var(--muted);padding:16px">Erro ao carregar ranking. Verifique sua conex&atilde;o.</td></tr>';
   }
 }
 async function bolaoLogin(){
@@ -2899,6 +2924,14 @@ async function bolaoLogin(){
 }
 function bolaoInit(){
   bolaoLoadRanking();
+  // Banner de prazo dos especiais
+  var ban=document.getElementById('bolao-deadline-banner');
+  var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);
+  if(ban&&deadline){
+    var now=new Date();
+    if(now>=deadline){ban.style.display='block';ban.style.background='rgba(255,23,68,.12)';ban.style.border='1px solid rgba(255,23,68,.3)';ban.style.color='var(--red)';ban.innerHTML='\u26a0 Palpites especiais ENCERRADOS \u2014 obrigado a todos que participaram!';ban.style.display='block'}
+    else if(deadline-now<86400000){ban.style.display='block';ban.style.background='rgba(255,145,0,.12)';ban.style.border='1px solid rgba(255,145,0,.3)';ban.style.color='var(--orange)';var h=Math.floor((deadline-now)/3600000),m=Math.floor(((deadline-now)%3600000)/60000);ban.innerHTML='\u23f1 Falta'+'m menos de <strong>'+h+'h '+m+'m</strong> para o prazo dos palpites especiais (2h antes do jogo #32 \u2014 Haiti vs Brasil). Corrige l\u00e1!'}
+  }
   var el=document.getElementById('bolao-deadline-info');if(!el)return;
   var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);if(!deadline){el.textContent='';return}
   var now=new Date();
