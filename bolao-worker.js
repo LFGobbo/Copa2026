@@ -149,9 +149,18 @@ async function handle(req) {
     if (method === 'GET' && path === '/ranking') {
       var participants = (await supaFetch('participants?select=id,name,confirmed')) || [];
       var maxGame = url.searchParams.get('maxGame');
-      var picksUrl = 'picks?select=participant_id,game_n,goals_a,goals_b&limit=10000';
+      var picksUrl = 'picks?select=participant_id,game_n,goals_a,goals_b';
       if (maxGame) picksUrl += '&game_n=lte.' + encodeURIComponent(maxGame);
-      var allPicks = (await supaFetch(picksUrl)) || [];
+      // Buscar picks com paginação para evitar limite de 1000 linhas
+      var allPicks = [];
+      try {
+        var fetchOpts = {
+          method: 'GET',
+          headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Range': '0-9999' }
+        };
+        var pres = await fetch(SUPABASE_URL + '/rest/v1/' + picksUrl, fetchOpts);
+        if (pres.ok) { var ct = pres.headers.get('content-type') || ''; if (ct.indexOf('json') >= 0) allPicks = await pres.json() || []; }
+      } catch(e) {}
       var allSp = [];
       if (url.searchParams.get('showSpecials') === '1') {
         allSp = (await supaFetch('special_picks?select=participant_id,champion,top_scorer')) || [];
