@@ -194,7 +194,7 @@ async function handle(req) {
       return json({ ok: true });
     }
 
-    return error('Rota nao encontrada: ' + method + ' ' + path, 404);
+    return new Response(JSON.stringify({ok:true,message:'Copa2026 Bolao — API do Worker. Rotas: GET /ranking, POST /register, POST /login, GET|POST /picks, GET /mypicks, POST /special-picks, PATCH /confirm, PATCH /admin/unlock, DELETE /reset'}),{status:200,headers:CORS});
   } catch (e) {
     return json({ error: 'Internal: ' + e.message }, 500);
   }

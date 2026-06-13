@@ -1,6 +1,6 @@
 ﻿# Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-06-13 (v19.6)
+**Última atualização:** 2026-06-13 (v19.7)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -571,7 +571,12 @@ Toda melhoria deve:
 
 ## 13. Version History
 
-### v19.7 (2026-06-13)
+### v19.7 (2026-06-13) — Deploy Completo + Root route
+- **Turnstile corrigido**: `turnstile.getResponse(document.getElementById('bolao-turnstile'))` em vez de `'bolao-turnstile'` string
+- **Worker configurado**: 6 env vars no Cloudflare (SUPABASE_URL, SUPABASE_KEY, TURNSTILE_SEC, JWT_SECRET, ADMIN_KEY, ADMIN_HASH)
+- **SQL migration executado**: `pick_history` criada, RLS desabilitado
+- **Verificado**: `/ranking` retorna 19 participantes, 597 picks, 5 specialPicks — bolão 100% funcional
+- **Root route**: `GET /` agora retorna lista de rotas em vez de 404
 - **Cloudflare Worker (`bolao-worker.js`)**: Middleware de segurança entre frontend e Supabase. Rotas: `/register` (com Turnstile), `/login` (hash server-side + JWT), `/picks` (com histórico), `/mypicks`, `/ranking`, `/special-picks`, `/confirm`, `/admin/unlock`, `/reset`
 - **Turnstile (Cloudflare)**: Widget anti-bot no formulário de cadastro. Token validado no Worker (server-side real, não apenas no cliente)
 - **Senha nunca mais vaza**: Hash SHA-256 + salt (`JWT_SECRET`) computado no Worker. Cliente envia senha em texto puro (HTTPS), `password` coluna nunca retornada ao frontend
