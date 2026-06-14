@@ -2530,9 +2530,11 @@ function bolaoRenderDetail(pid){
     if(g.n<BOLAO_FIRST)return;
     var real=scores[g.n],pick=picks[g.n],hasReal=real&&real.a!==undefined&&real.b!==undefined,hasPick=pick&&pick.a!==undefined&&pick.b!==undefined;
     if(!hasPick&&!hasReal)return;
-    // Jogo que não pontua por confirmação tardia
+    // Jogo que não pontua por confirmação tardia ou nunca confirmou
     var forfeit=false;
-    if(confirmTsDetail&&hasReal){var gd=gameUTC(g);if(gd&&gd.getTime()<confirmTsDetail)forfeit=true;}
+    var notConfirmed=!_bolaoConfirmedStatus[pid];
+    if(notConfirmed&&hasReal){forfeit=true}
+    else if(confirmTsDetail&&hasReal){var gd=gameUTC(g);if(gd&&gd.getTime()<confirmTsDetail)forfeit=true;}
     var pts=hasPick&&hasReal?bolaoCalcPickPts(pick.a,pick.b,real.a,real.b):-1,bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
     var forfeitPts=forfeit&&pts>=0?pts+(bonus||0):0;
     var cls=forfeit?'forfeit':!hasReal?'future':pts===10?'exact':pts>=2?'result':pts===0?'wrong':'future';
