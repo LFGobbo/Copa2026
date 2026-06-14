@@ -70,28 +70,20 @@ async function handle(req) {
       return error('Worker nao configurado', 500);
     }
 
-    // GET /app — proxy do site sem CSP do GitHub Pages
-    if (method === 'GET' && path === '/app') {
-      var siteRes = await fetch('https://lfgobbo.github.io/Copa2026/');
-      var siteHtml = await siteRes.text();
-      return new Response(siteHtml, {
-        status: 200,
-        headers: { 'Content-Type': 'text/html;charset=utf-8', 'Access-Control-Allow-Origin': '*' }
-      });
-    }
-
     // POST /register
     if (method === 'POST' && path === '/register') {
       var body = await req.json();
-      if (!body.name || !body.password || !body.turnstileToken)
-        return error('name, password e turnstileToken obrigatorios');
+      if (!body.name || !body.password) return error('name e password obrigatorios');
 
-      var tres = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-        method: 'POST',
-        body: new URLSearchParams({ secret: TURNSTILE_SEC, response: body.turnstileToken }),
-      });
-      var tdata = await tres.json();
-      if (!tdata.success) return error('Captcha invalido', 403);
+      // Verificar captcha apenas se enviado (opcional)
+      if (body.turnstileToken) {
+        var tres = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+          method: 'POST',
+          body: new URLSearchParams({ secret: TURNSTILE_SEC, response: body.turnstileToken }),
+        });
+        var tdata = await tres.json();
+        if (!tdata.success) return error('Captcha invalido', 403);
+      }
 
       var existing = await supaFetch("participants?name=eq." + encodeURIComponent(body.name) + "&select=id");
       if (existing && existing.length) return error('Nome ja cadastrado', 409);
@@ -157,7 +149,7 @@ async function handle(req) {
 
     // GET /ranking
     if (method === 'GET' && path === '/ranking') {
-      var participants = (await supaFetch('participants?select=id,name,confirmed')) || [];
+      var participants = (await supaFetch('participants?select=id,name,confirmed,confirmed_at')) || [];
       var maxGame = url.searchParams.get('maxGame');
       var picksUrl = 'picks?select=participant_id,game_n,goals_a,goals_b';
       if (maxGame) picksUrl += '&game_n=lte.' + encodeURIComponent(maxGame);
@@ -310,6 +302,28 @@ async function handle(req) {
       return json({ participantId: pid2, evolution: snaps });
     }
 
+    // GET /app — proxy do site (backup se GitHub Pages cair)
+    if (method === 'GET' && (path === '/app' || path.match(/\.(png|json)$/))) {
+      var ghUrl = 'https://lfgobbo.github.io/Copa2026/' + (path === '/app' ? '' : path.replace(/^\//,''));
+      var cacheKey = ghUrl;
+      var cache = await caches.open('copa2026-proxy');
+      var cached = await cache.match(cacheKey);
+      if (cached && path !== '/app') return cached;
+      try {
+        var siteRes = await fetch(ghUrl + (path === '/app' ? '?v=' + Date.now() : ''), { cf: { cacheEverything: false } });
+        if (siteRes.ok) {
+          if (path !== '/app') { var copy = siteRes.clone(); cache.put(cacheKey, copy); }
+          if (path === '/app') {
+            var text = await siteRes.text();
+            return new Response(text, { status: 200, headers: { 'Content-Type': 'text/html;charset=utf-8', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' } });
+          }
+          return siteRes;
+        }
+      } catch(e) {}
+      if (cached) return cached;
+      return json({ error: 'Site temporariamente indisponivel' }, 503);
+    }
+
     // GET /health — monitoramento
     if (method === 'GET' && path === '/health') {
       return json({ ok: true, uptime: Math.floor(Date.now() / 1000) });
@@ -317,8 +331,13 @@ async function handle(req) {
 
     // GET /scores — scores centralizados da FIFA (cache no Supabase via /cron)
     if (method === 'GET' && path === '/scores') {
-      var scoresData = (await supaFetch('live_scores?select=game_key,home_team,away_team,goals_home,goals_away,match_id,updated_at&order=updated_at.desc')) || [];
-      return json({ scores: scoresData, count: scoresData.length });
+      try {
+        var scoresData = (await supaFetch('live_scores?select=game_key,home_team,away_team,goals_home,goals_away,match_id,updated_at&order=updated_at.desc')) || [];
+        return json({ scores: scoresData, count: scoresData.length });
+      } catch (e) {
+        // Tabela pode não existir ainda — retorna array vazio em vez de 500
+        return json({ scores: [], count: 0, warning: 'live_scores indisponivel: ' + e.message });
+      }
     }
 
     // GET /cron — tarefas agendadas (chamado via cron-job.org ou Cloudflare Cron)
