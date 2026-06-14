@@ -149,7 +149,7 @@ async function handle(req) {
 
     // GET /ranking
     if (method === 'GET' && path === '/ranking') {
-      var participants = (await supaFetch('participants?select=id,name,confirmed')) || [];
+      var participants = (await supaFetch('participants?select=id,name,confirmed,confirmed_at')) || [];
       var maxGame = url.searchParams.get('maxGame');
       var picksUrl = 'picks?select=participant_id,game_n,goals_a,goals_b';
       if (maxGame) picksUrl += '&game_n=lte.' + encodeURIComponent(maxGame);

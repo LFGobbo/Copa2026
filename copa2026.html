@@ -397,7 +397,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bolao-pick-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:11px}
 .bolao-pick-card.exact{border-color:rgba(255,223,0,.4);background:rgba(255,223,0,.05)}
 .bolao-pick-card.result{border-color:rgba(100,200,100,.3)}
-.bolao-pick-card.wrong{opacity:.5}
+.bolao-pick-card.wrong{opacity:.5}.bolao-pick-card.forfeit{border-color:var(--red);background:rgba(255,23,68,.08);opacity:.7}
 .bolao-pick-teams{font-weight:600;color:var(--text);margin-bottom:2px}
 .bolao-pick-score{color:var(--gold);font-weight:700}
 .bolao-pick-real{color:var(--muted)}
@@ -2439,9 +2439,15 @@ function bolaoCalcTotal(participantId){
   if(!_bolaoConfirmedStatus[participantId])return{total:0,exactCount:0,resultCount:0,bonusCount:0};
   var myPicks=_bolaoAllPicks[participantId]||{},sp=_bolaoAllSpecials[participantId];
   var total=0,exactCount=0,resultCount=0,bonusCount=0;
+  var confirmTs=_bolaoConfirmedAt[participantId]?new Date(_bolaoConfirmedAt[participantId]).getTime():null;
   GAMES.forEach(function(g){
     if(g.n<BOLAO_FIRST)return;
     if(!gameIsPast(g))return;
+    // Se confirmou depois do jogo começar, perde os pontos desse jogo
+    if(confirmTs){
+      var gd=gameUTC(g);
+      if(gd&&gd.getTime()<confirmTs)return;
+    }
     var pick=myPicks[g.n],real=scores[g.n];
     if(!real||real.a===undefined||real.b===undefined||!pick||pick.a===undefined)return;
     // Validar times: só pontua se os times do palpite batem com os times reais
@@ -2509,14 +2515,18 @@ function bolaoRenderRanking(){
 function bolaoToggleDetail(id){var el=document.getElementById('bolao-detail-'+id);if(el)el.classList.toggle('open')}
 function bolaoRenderDetail(pid){
   var picks=_bolaoAllPicks[pid]||{},items=[];
+  var confirmTsDetail=_bolaoConfirmedAt[pid]?new Date(_bolaoConfirmedAt[pid]).getTime():null;
   GAMES.forEach(function(g){
     if(g.n<BOLAO_FIRST)return;
     var real=scores[g.n],pick=picks[g.n],hasReal=real&&real.a!==undefined&&real.b!==undefined,hasPick=pick&&pick.a!==undefined&&pick.b!==undefined;
     if(!hasPick&&!hasReal)return;
-    var pts=hasPick&&hasReal?bolaoCalcPickPts(pick.a,pick.b,real.a,real.b):-1,bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
-    var cls=!hasReal?'future':pts===10?'exact':pts>=2?'result':pts===0?'wrong':'future';
+    // Jogo que não pontua por confirmação tardia
+    var forfeit=false;
+    if(confirmTsDetail&&hasReal){var gd=gameUTC(g);if(gd&&gd.getTime()<confirmTsDetail)forfeit=true;}
+    var pts=forfeit?-2:(hasPick&&hasReal?bolaoCalcPickPts(pick.a,pick.b,real.a,real.b):-1),bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
+    var cls=forfeit?'forfeit':!hasReal?'future':pts===10?'exact':pts>=2?'result':pts===0?'wrong':'future';
     var pickStr=hasPick?(pick.a+'x'+pick.b):'?x?',realStr=hasReal?(real.a+'x'+real.b):'';
-    var ptsStr=pts>=0?(pts+(bonus?'+'+bonus:''))+' pts':'';
+    var ptsStr=forfeit?'<span style="color:var(--red);font-weight:600">PERDEU</span>':pts>=0?(pts+(bonus?'+'+bonus:''))+' pts':'';
     if(!hasReal)pickStr='<span style="filter:blur(3px)">'+pickStr+'</span>';
     items.push('<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">#'+g.n+' '+_pn(g)+'</div><div><span class="bolao-pick-score">'+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">'+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>');
   });
@@ -2823,11 +2833,12 @@ async function bolaoLoadRanking(){
     var data=await _bolaoFetch('/ranking?maxGame='+maxG+'&showSpecials='+showSpecials);
     _bolaoParticipants={};(data.participants||[]).forEach(function(p){_bolaoParticipants[p.id]=p.name});
     _bolaoConfirmedStatus={};(data.participants||[]).forEach(function(p){_bolaoConfirmedStatus[p.id]=p.confirmed||false});
+    _bolaoConfirmedAt={};(data.participants||[]).forEach(function(p){if(p.confirmed_at)_bolaoConfirmedAt[p.id]=p.confirmed_at});
     _bolaoAllPicks={};(data.picks||[]).forEach(function(p){if(!_bolaoAllPicks[p.participant_id])_bolaoAllPicks[p.participant_id]={};_bolaoAllPicks[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b}});
     _bolaoAllSpecials={};(data.specialPicks||[]).forEach(function(p){_bolaoAllSpecials[p.participant_id]=p});
     bolaoRenderRanking();
     // Salvar cache offline do ranking para fallback
-    try{localStorage.setItem('copa2026_ranking_cache',JSON.stringify({ts:Date.now(),participants:_bolaoParticipants,confirmedStatus:_bolaoConfirmedStatus,picks:_bolaoAllPicks,specials:_bolaoAllSpecials}))}catch(e){}
+    try{localStorage.setItem('copa2026_ranking_cache',JSON.stringify({ts:Date.now(),participants:_bolaoParticipants,confirmedStatus:_bolaoConfirmedStatus,confirmedAt:_bolaoConfirmedAt,picks:_bolaoAllPicks,specials:_bolaoAllSpecials}))}catch(e){}
   }catch(e){
     // Tentar cache offline se disponível
     try{
@@ -2835,6 +2846,7 @@ async function bolaoLoadRanking(){
       if(cached&&cached.participants&&Date.now()-cached.ts<3600000){
         _bolaoParticipants=cached.participants;
         _bolaoConfirmedStatus=cached.confirmedStatus||{};
+        _bolaoConfirmedAt=cached.confirmedAt||{};
         _bolaoAllPicks=cached.picks||{};
         _bolaoAllSpecials=cached.specials||{};
         bolaoRenderRanking();
@@ -3002,8 +3014,10 @@ function bolaoRenderStats(el){
   var phasePts={grupos:0,r32:0,oitavas:0,quartas:0,semi:0,final:0};
   var phaseLabels={grupos:'Grupos',r32:'Rodada 32',oitavas:'Oitavas',quartas:'Quartas',semi:'Semis',final:'Final'};
   var myPicks=_bolaoAllPicks[_bolaoParticipantId]||{};
+  var confirmTsStats=cat?new Date(cat).getTime():null;
   GAMES.forEach(function(g){
     if(g.n<BOLAO_FIRST||!gameIsPast(g))return;
+    if(confirmTsStats){var gd=gameUTC(g);if(gd&&gd.getTime()<confirmTsStats)return;}
     var pick=myPicks[g.n],real=scores[g.n];
     if(!real||real.a===undefined||!pick||pick.a===undefined)return;
     var p=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);if(p<0)return;
