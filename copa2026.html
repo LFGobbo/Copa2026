@@ -561,6 +561,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       <div><label>Senha</label><input type="password" id="bolao-pass" placeholder="Senha" autocomplete="off"></div>
       <div class="cf-turnstile" data-sitekey="0x4AAAAAADj0kWY7cUoZ_uwS" data-theme="dark" data-size="normal" id="bolao-turnstile"></div>
       <button class="btn" onclick="bolaoLogin()" style="height:36px;padding:0 18px;font-size:13px">Entrar</button>
+      <button class="btn" onclick="bolaoRegister()" style="height:36px;padding:0 18px;font-size:13px;background:var(--gold);color:#000">Criar conta</button>
       <span class="bolao-login-status" id="bolao-login-status"></span>
       <span class="bolao-deadline" id="bolao-deadline-info"></span>
     </div>
@@ -2877,50 +2878,60 @@ async function bolaoLogin(){
   var pass=(document.getElementById('bolao-pass').value||'').trim();
   var st=document.getElementById('bolao-login-status');
   if(!name||!pass){st.className='bolao-login-status err';st.textContent='Preencha nome e senha';return}
-  st.className='bolao-login-status';st.textContent='Verificando...';
+  st.className='bolao-login-status';st.textContent='Entrando...';
   try{
-    try{
-      var loginRes=await _bolaoFetch('/login','POST',{name:name,password:pass});
-      _bolaoToken=loginRes.token;
-      _bolaoParticipantId=loginRes.id;
-      _bolaoName=loginRes.name;
-      _bolaoConfirmed=loginRes.confirmed||false;
-    }catch(loginErr){
-      if(loginErr.status===401){st.className='bolao-login-status err';st.textContent='Senha incorreta';return}
-      if(loginErr.status===403){st.className='bolao-login-status err';st.textContent='Conta bloqueada. Peça ao admin para desbloquear';return}
-      var turnstileToken=null;
-      try{if(typeof turnstile!=='undefined'&&turnstile)turnstileToken=turnstile.getResponse(document.getElementById('bolao-turnstile'))||turnstile.getResponse()}catch(te){}
-      if(!turnstileToken){st.className='bolao-login-status err';st.textContent='Resolva o captcha primeiro';return}
-      var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);
-      if(deadline&&new Date()>=deadline){st.className='bolao-login-status err';st.textContent='Inscri\u00e7\u00f5es encerradas (2h antes do 2\u00ba jogo do Brasil)';try{turnstile.reset(document.getElementById('bolao-turnstile'))}catch(te){}return}
-      try{
-        var regRes=await _bolaoFetch('/register','POST',{name:name,password:pass,turnstileToken:turnstileToken});
-      }catch(regErr){
-        if(regErr.status===409){st.className='bolao-login-status err';st.textContent='Nome j\u00e1 cadastrado — tente outro ou verifique a senha';return}
-        throw regErr
-      }
-      var loginRes2=await _bolaoFetch('/login','POST',{name:name,password:pass});
-      _bolaoToken=loginRes2.token;
-      _bolaoParticipantId=loginRes2.id;
-      _bolaoName=loginRes2.name;
-      _bolaoConfirmed=false;
-    }
-    document.getElementById('bolao-name').readOnly=true;
-    document.getElementById('bolao-pass').readOnly=true;
-    st.className='bolao-login-status ok';st.textContent='Ol\u00e1, '+_bolaoName+'!';
-    document.getElementById('bolao-logged-area').style.display='block';
-    document.getElementById('bolao-stats-section').style.display='block';
-    document.getElementById('bolao-evolution-section').style.display='block';
-    bolaoLoadStats();
-    bolaoLoadEvolution();
-    await bolaoLoadMyData();
-    bolaoRenderPicksGrid();
-    bolaoLoadMajority();
-    bolaoPopulateSpecials();
-    await bolaoLoadRanking();
-    if(_bolaoConfirmed)document.getElementById('bolao-confirmed-banner').style.display='block';
-    else bolaoShowConfirmButton();
-  }catch(e){st.className='bolao-login-status err';st.textContent='Erro: '+e.message}
+    var loginRes=await _bolaoFetch('/login','POST',{name:name,password:pass});
+    _onLoginSuccess(loginRes);
+  }catch(e){
+    if(e.status===401){st.className='bolao-login-status err';st.textContent='Senha incorreta';return}
+    if(e.status===403){st.className='bolao-login-status err';st.textContent='Conta bloqueada. Peça ao admin para desbloquear';return}
+    if(e.status===404){st.className='bolao-login-status err';st.textContent='Nome não encontrado. Clique em "Criar conta"';return}
+    st.className='bolao-login-status err';st.textContent='Erro: '+(e.message||'desconhecido');
+  }
+}
+async function bolaoRegister(){
+  var name=(document.getElementById('bolao-name').value||'').trim();
+  var pass=(document.getElementById('bolao-pass').value||'').trim();
+  var st=document.getElementById('bolao-login-status');
+  if(!name||!pass){st.className='bolao-login-status err';st.textContent='Preencha nome e senha';return}
+  var turnstileToken=null;
+  try{if(typeof turnstile!=='undefined'&&turnstile)turnstileToken=turnstile.getResponse(document.getElementById('bolao-turnstile'))||turnstile.getResponse()}catch(te){}
+  if(!turnstileToken){st.className='bolao-login-status err';st.textContent='Resolva o captcha primeiro';return}
+  var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);
+  if(deadline&&new Date()>=deadline){st.className='bolao-login-status err';st.textContent='Inscri\u00e7\u00f5es encerradas (2h antes do 2\u00ba jogo do Brasil)';try{turnstile.reset(document.getElementById('bolao-turnstile'))}catch(te){}return}
+  st.className='bolao-login-status';st.textContent='Cadastrando...';
+  try{
+    var regRes=await _bolaoFetch('/register','POST',{name:name,password:pass,turnstileToken:turnstileToken});
+    var loginRes2=await _bolaoFetch('/login','POST',{name:name,password:pass});
+    await _onLoginSuccess(loginRes2);
+  }catch(e){
+    if(e.status===409){st.className='bolao-login-status err';st.textContent='Nome j\u00e1 cadastrado \u2014 tente outro ou verifique a senha';return}
+    st.className='bolao-login-status err';st.textContent='Erro: '+(e.message||'desconhecido');
+  }
+}
+async function _onLoginSuccess(res){
+  var st=document.getElementById('bolao-login-status');
+  _bolaoToken=res.token;
+  _bolaoParticipantId=res.id;
+  _bolaoName=res.name;
+  _bolaoConfirmed=res.confirmed||false;
+  // Resetar captcha para evitar reuso
+  try{turnstile.reset(document.getElementById('bolao-turnstile'))}catch(te){}
+  document.getElementById('bolao-name').readOnly=true;
+  document.getElementById('bolao-pass').readOnly=true;
+  st.className='bolao-login-status ok';st.textContent='Ol\u00e1, '+_bolaoName+'!';
+  document.getElementById('bolao-logged-area').style.display='block';
+  document.getElementById('bolao-stats-section').style.display='block';
+  document.getElementById('bolao-evolution-section').style.display='block';
+  bolaoLoadStats();
+  bolaoLoadEvolution();
+  try{await bolaoLoadMyData()}catch(e){}
+  bolaoRenderPicksGrid();
+  bolaoLoadMajority();
+  bolaoPopulateSpecials();
+  try{await bolaoLoadRanking()}catch(e){}
+  if(_bolaoConfirmed)document.getElementById('bolao-confirmed-banner').style.display='block';
+  else bolaoShowConfirmButton();
 }
 function bolaoInit(){
   bolaoLoadRanking();
