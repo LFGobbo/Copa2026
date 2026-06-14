@@ -2489,7 +2489,7 @@ function bolaoCalcTotal(participantId){
     var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
     total+=pts+bonus;
     if(pts===10)exactCount++;
-    if(pts>=2)resultCount++;
+    if(pts>=2&&pts<10)resultCount++;
     if(bonus>0)bonusCount++;
   });
   var champion=_bolaoFinalChampion(),topScorer=_bolaoTopScorer();
