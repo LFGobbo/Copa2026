@@ -2043,15 +2043,16 @@ document.getElementById("refresh-btn").addEventListener("click",function(){
   var btn=this,st=document.getElementById("countdown-status");
   if(_refreshTimer){clearTimeout(_refreshTimer);_refreshTimer=null}
   btn.className='refresh-btn';btn.textContent="\u23F3";
+  var ts=function(){var d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')+':'+d.getSeconds().toString().padStart(2,'0')};
   fetchFifaScores().then(function(map){
     btn.style.transform="";
     if(!map){
-      // fetchFifaScores engoliu o erro e retornou null
       goRefreshError(btn,st);
       return
     }
     var changed=mergeScores(map);auditData();
-    if(changed){btn.textContent="\u2713";st.textContent='\u2705 Placares atualizados com FIFA API'}else{btn.textContent="\u27F3";st.textContent='\u2139\uFE0F Nenhuma mudan\u00e7a nos placares'}
+    saveState(); // forca salvamento mesmo sem mudanca
+    if(changed){btn.textContent="\u2713";st.textContent='\u2705 Placares atualizados ('+ts()+')'}else{btn.textContent="\u2713";st.textContent='\u2705 Dados salvos ('+ts()+')'}
     _refreshTimer=setTimeout(function(){btn.className='refresh-btn';btn.textContent="\u27F3";st.textContent="";_refreshTimer=null},3000)
   })
   ["catch"](function(e){
@@ -2523,10 +2524,11 @@ function bolaoRenderDetail(pid){
     // Jogo que não pontua por confirmação tardia
     var forfeit=false;
     if(confirmTsDetail&&hasReal){var gd=gameUTC(g);if(gd&&gd.getTime()<confirmTsDetail)forfeit=true;}
-    var pts=forfeit?-2:(hasPick&&hasReal?bolaoCalcPickPts(pick.a,pick.b,real.a,real.b):-1),bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
+    var pts=hasPick&&hasReal?bolaoCalcPickPts(pick.a,pick.b,real.a,real.b):-1,bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
+    var forfeitPts=forfeit&&pts>=0?pts+(bonus||0):0;
     var cls=forfeit?'forfeit':!hasReal?'future':pts===10?'exact':pts>=2?'result':pts===0?'wrong':'future';
     var pickStr=hasPick?(pick.a+'x'+pick.b):'?x?',realStr=hasReal?(real.a+'x'+real.b):'';
-    var ptsStr=forfeit?'<span style="color:var(--red);font-weight:600">PERDEU</span>':pts>=0?(pts+(bonus?'+'+bonus:''))+' pts':'';
+    var ptsStr=forfeit?'<span style="color:var(--red);font-weight:600">PERDEU</span> <span style="text-decoration:line-through;opacity:.4">'+forfeitPts+' pts</span>':pts>=0?(pts+(bonus?'+'+bonus:''))+' pts':'';
     if(!hasReal)pickStr='<span style="filter:blur(3px)">'+pickStr+'</span>';
     items.push('<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">#'+g.n+' '+_pn(g)+'</div><div><span class="bolao-pick-score">'+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">'+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>');
   });
