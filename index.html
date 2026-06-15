@@ -980,7 +980,7 @@ function renderGameCard(g){
   var live=isGameLive(g);
   
   var past=currentFilter==="all"&&gameIsPast(g);
-    return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+(typeof REFEREES[gn]==='string'?REFEREES[gn]:REFEREES[gn].name+(REFEREES[gn].country?' '+flag(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country)+' '+(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country):''))+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score">'+(live&&FIFA_MATCH_IDS[gn]?'<div class="live-clock" id="live-clock-'+gn+'"></div>':'')+'<span class="score-display">'+(sa!==''?sa:'-')+'</span><span class="score-x">\u00d7</span><span class="score-display">'+(sb!==''?sb:'-')+'</span></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.pen?'<div class="pen-result"><span class="pen-badge">'+flag(s.pen==='a'?g.a:g.b)+' Venceu nos p\u00ean.</span></div>':'')+'<div class="goal-events">'+events.map(function(x){
+    return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+(typeof REFEREES[gn]==='string'?REFEREES[gn]:REFEREES[gn].name+(REFEREES[gn].country?' '+flag(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country)+' '+(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country):''))+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score"><span class="score-display">'+(sa!==''?sa:'-')+'</span><span class="score-x">\u00d7</span><span class="score-display">'+(sb!==''?sb:'-')+'</span></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.pen?'<div class="pen-result"><span class="pen-badge">'+flag(s.pen==='a'?g.a:g.b)+' Venceu nos p\u00ean.</span></div>':'')+'<div class="goal-events">'+events.map(function(x){
     if(x.type==='goal'){
       var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
       var tn=x.display==='a'?g.a:g.b;
@@ -1030,16 +1030,18 @@ function updateCountdown(){
     var g=x.game,s=scores[g.n]||{};
     var sc=s.a!==undefined&&s.b!==undefined?s.a+"-"+s.b:"AO VIVO";
     var id=FIFA_MATCH_IDS[g.n];
-    var kickoff=id&&MATCH_KICKOFF[id];
-    var rawStr=id&&MATCH_RAW_MINUTE[id]||'';
-    var rawMin=parseInt(rawStr,10)||0;
+    var kickoff=id&&MATCH_KICKOFF[id]?MATCH_KICKOFF[id].getTime():null;
+    var rawMin=id&&MATCH_RAW_MINUTE[id]?_parseMinute(MATCH_RAW_MINUTE[id]):0;
     var timeStr='';
     if(id&&MATCH_ENDED[id]){timeStr='FT';}
-    else if(kickoff){var run=Math.max(0,Math.floor((now-kickoff)/60000));var disp=Math.max(run,rawMin);timeStr=disp+"'";}
-    else if(rawStr){timeStr=rawStr+"'";}
+    else if(kickoff){
+      var run=Math.max(0,Math.floor((now.getTime()-kickoff)/60000));
+      var disp=Math.max(run,rawMin);
+      timeStr=disp+"'";
+    }else if(rawMin){timeStr=rawMin+"'";}
     else{timeStr="0'";}
-    // Atualizar badge do relogio (ja existe no HTML)
-    try{var cel=document.getElementById('live-clock-'+g.n);if(cel)cel.textContent=timeStr;}catch(e){}
+    // Injetar badge se jogo ao vivo e nao existe
+    if(id&&!MATCH_ENDED[id]){try{var cel=document.getElementById('live-clock-'+g.n);if(!cel){var scDiv=document.querySelector('#g-'+g.n+' .game-score');if(scDiv){var b=document.createElement('div');b.id='live-clock-'+g.n;b.className='live-clock';b.textContent=timeStr;scDiv.parentNode.insertBefore(b,scDiv);}}else{cel.textContent=timeStr;}}catch(e){}}
     cards.push('<div class="countdown-event"><span class="countdown-event-live">\u25cf</span><span class="countdown-event-num">#'+g.n+'</span><span class="countdown-event-teams">'+g.a+" vs "+g.b+'</span><span class="countdown-event-time">'+sc+'</span><span class="countdown-event-date">'+timeStr+'</span></div>');
   });
   upcoming.forEach(function(x,idx){
