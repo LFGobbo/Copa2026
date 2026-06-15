@@ -686,6 +686,9 @@ var _savedData=_loadPersistent()||{};
 let scores=_savedData.scores||{};
 let goals=_savedData.goals||{};
 let cards=_savedData.cards||{};
+// Version check: limpa cache stale de versoes com bugs (gol contra, cartao, parseInt)
+const DATA_VERSION = 3;
+try{var ver=localStorage.getItem('copa2026_data_version');if(ver!==String(DATA_VERSION)){BAK_KEYS.forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});localStorage.setItem('copa2026_data_version',String(DATA_VERSION));scores={};goals={};cards={};}}catch(e){}
 if(_savedData.matchEnded&&typeof MATCH_ENDED!=='undefined'){try{Object.keys(_savedData.matchEnded).forEach(function(k){MATCH_ENDED[k]=_savedData.matchEnded[k]})}catch(e){}}
 if(_savedData.matchStarted&&typeof MATCH_STARTED!=='undefined'){try{Object.keys(_savedData.matchStarted).forEach(function(k){MATCH_STARTED[k]=_savedData.matchStarted[k]})}catch(e){}}
 // Heurística: se tem placar completo e passou >2.5h do inicio, marca como encerrado
