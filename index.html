@@ -17,7 +17,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#08081a;--surface:#11112e;--card:#18183a;--card-hover:#1e1e44;--border:#252550;--border-light:#333368;--gold:#ffdf00;--gold-dim:rgba(255,223,0,.12);--green:#00c853;--red:#ff1744;--blue:#448aff;--orange:#ff9100;--text:#eaeaf2;--muted:#6a6a8e;--radius:10px;--radius-sm:6px;--shadow:0 8px 32px rgba(0,0,0,.5);--shadow-sm:0 2px 8px rgba(0,0,0,.3);--transition:all .2s cubic-bezier(.4,0,.2,1);--fs-body:clamp(13px,1.8vw,17px);--fs-sm:clamp(10px,1.3vw,13px);--fs-xs:clamp(8px,1vw,11px);--fs-lg:clamp(20px,3.5vw,30px);--fs-xl:clamp(22px,4vw,36px);--sp-xs:clamp(4px,.6vw,8px);--sp-sm:clamp(8px,1.2vw,16px);--sp-md:clamp(12px,2vw,24px);--sp-lg:clamp(16px,2.5vw,32px);--card-min:280px}
-body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;font-size:var(--fs-body)}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;line-height:1.5;font-size:var(--fs-body);overflow-anchor:auto}
 .header{position:relative;background:linear-gradient(135deg,#002776,#003d99,#009c3b,#00c853);padding:0 var(--sp-sm);text-align:center;display:flex;align-items:stretch;min-height:clamp(70px,12vw,110px)}
 .header-bg{position:absolute;top:0;left:0;right:0;bottom:0;background-image:url("https://upload.wikimedia.org/wikipedia/commons/2/24/MetLife_Stadium_Exterior.jpg");background-size:cover;background-position:center 30%;opacity:0.07;pointer-events:none}
 .header-left{position:relative;width:clamp(70px,14vw,120px);min-width:clamp(70px,14vw,120px);overflow:hidden;flex-shrink:0;z-index:1}
@@ -236,11 +236,14 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .header h1{font-size:22px}
   .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
   .tab{padding:12px 14px;font-size:12px}
-  .game-card{grid-template-columns:1fr auto;gap:4px 6px;padding:10px}
-  .game-info{grid-column:1/-1}
-  .game-num{grid-column:1;grid-row:1}
-  .game-score{grid-column:2;grid-row:1}
-  .team-col{font-size:12px}
+  .game-card{grid-template-columns:1fr auto;grid-template-areas:"num score" "team-a team-b" "info info" "goals goals" "pen pen";gap:4px 6px;padding:10px}
+  .game-card .game-num{grid-area:num}
+  .game-card .game-info{grid-area:info}
+  .game-card .team-col:nth-of-type(1){grid-area:team-a;font-size:12px;text-align:left}
+  .game-card .game-score{grid-area:score}
+  .game-card .team-col:nth-of-type(2){grid-area:team-b;font-size:12px;text-align:right}
+  .game-card .pen-result{grid-area:pen}
+  .game-card .goal-events{grid-area:goals}
   .groups-grid,.squads-grid{grid-template-columns:1fr}
   .bracket-round{min-width:130px}
   .content{padding:12px}
@@ -720,7 +723,7 @@ const BRACKET_ROUNDS = ["Rodada de 32","Oitavas de Final","Quartas de Final","Se
 function gameUTC(g){try{var p=g.d.split(" ")[0].split("/"),tp=g.t.split(":");if(p.length<2||tp.length<2)return null;return new Date(Date.UTC(2026,parseInt(p[1],10)-1,parseInt(p[0],10),parseInt(tp[0],10)+3,parseInt(tp[1],10)))}catch(e){return null}}
 function toBRT(g){try{var gd=gameUTC(g);if(!gd)return'';var br=new Date(gd-10800000);return br.getUTCHours().toString().padStart(2,'0')+':'+br.getUTCMinutes().toString().padStart(2,'0')}catch(e){return''}}
 
-function flag(t){var c=FLAG_ISO[t];return c?'<img class="flag-bg" src="https://flagcdn.com/24x18/'+c+'.png" alt="" loading="lazy" decoding="async">':'<span class="flag-fallback">\u{1F3F3}\uFE0F</span>'}
+function flag(t){var c=FLAG_ISO[t];return c?'<img class="flag-bg" src="https://flagcdn.com/24x18/'+c+'.png" alt="" width="24" height="18" loading="lazy" decoding="async">':'<span class="flag-fallback" style="display:inline-block;width:24px;height:18px">\u{1F3F3}\uFE0F</span>'}
 function broadcastBadge(br){if(!br)return'';var m={'Globo':'logo_globo.png','SporTV':'logo_sportv.png','Caz\u00e9TV':'logo_cazetv.png','SBT':'logo_sbt.png','N Sports':'logo_nsports.png','Globoplay':'logo_globoplay.png','Ge TV':'logo_getv.png'};return br.split(/\u00b7/).map(function(c){c=c.trim();if(!c)return'';var k=m[c];var cls=c==='Caz\u00e9TV'?' caze':'';return k?'<span class="br-badge"><img class="br-logo'+cls+'" src="'+k+'" alt="'+c+'" loading="lazy" decoding="async">'+c+'</span>':'<span class="br-badge">'+c+'</span>'}).filter(function(s){return s}).join('')}
 function teamRow(n,c){return'<div class="team-row"><span class="flag">'+flag(n)+'</span><span class="team-name'+c+'">'+esc(n)+'</span></div>'}
 function _resolvedTeamRow(placeholder,gameNum,side){
