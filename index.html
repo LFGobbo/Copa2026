@@ -103,7 +103,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .br-badge{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:var(--fs-xs);font-weight:600;line-height:1.4}
 .br-logo{height:11px;width:auto;border-radius:2px}
 .br-logo.caze{height:20px}
-.game-score{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:rgba(0,0,0,.35);padding:4px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);justify-content:center}
+.game-score{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:rgba(0,0,0,.35);padding:4px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);justify-content:center;position:relative}
 .score-display{font-size:var(--fs-body);font-weight:700;color:#fff;text-align:center;min-width:clamp(20px,3vw,28px);line-height:1}
 .score-x{color:var(--muted);font-weight:300}
 .team-col{font-size:var(--fs-sm);text-align:center}
@@ -229,7 +229,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .rules-content .highlight p{color:var(--text)}
 .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:4px;animation:pulse 1s infinite;vertical-align:middle}
 .live-label{font-size:9px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px}
-.live-clock{grid-column:3;grid-row:1;text-align:center;pointer-events:none;align-self:end;margin-bottom:2px}
+.live-clock{position:absolute;top:-20px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;white-space:nowrap}
 .live-clock span{display:inline-block;font-size:10px;font-weight:800;color:var(--gold);background:rgba(255,223,0,.16);padding:1px 6px;border-radius:4px;font-variant-numeric:tabular-nums;letter-spacing:0}
 @media(max-width:768px){
   .header-left,.header-mascots{display:none}
@@ -1042,8 +1042,8 @@ function updateCountdown(){
       timeStr=disp<=90?disp+"'":'90+'+(disp-90)+"'";
     }else if(rawMin){timeStr=rawMin+"'";}
     else{timeStr="0'";}
-    // Injetar badge antes do .game-score (grid do card posiciona via grid-column:3)
-    if(id&&!MATCH_ENDED[id]){try{var cel=document.getElementById('live-clock-'+g.n);if(!cel){var scDiv=document.querySelector('#g-'+g.n+' .game-score');if(scDiv&&scDiv.parentNode){var b=document.createElement('div');b.id='live-clock-'+g.n;b.className='live-clock';var sp=document.createElement('span');sp.textContent=timeStr;b.appendChild(sp);scDiv.parentNode.insertBefore(b,scDiv);}}else{var sp=cel.querySelector('span');if(sp)sp.textContent=timeStr;}}catch(e){}}
+    // Injetar badge dentro do .game-score (absolute flutua acima)
+    if(id&&!MATCH_ENDED[id]){try{var cel=document.getElementById('live-clock-'+g.n);if(!cel){var scDiv=document.querySelector('#g-'+g.n+' .game-score');if(scDiv){var b=document.createElement('div');b.id='live-clock-'+g.n;b.className='live-clock';var sp=document.createElement('span');sp.textContent=timeStr;b.appendChild(sp);scDiv.insertBefore(b,scDiv.firstChild);}}else{var sp=cel.querySelector('span');if(sp)sp.textContent=timeStr;}}catch(e){}}
     cards.push('<div class="countdown-event"><span class="countdown-event-live">\u25cf</span><span class="countdown-event-num">#'+g.n+'</span><span class="countdown-event-teams">'+g.a+" vs "+g.b+'</span><span class="countdown-event-time">'+sc+'</span><span class="countdown-event-date">'+timeStr+'</span></div>');
   });
   upcoming.forEach(function(x,idx){
