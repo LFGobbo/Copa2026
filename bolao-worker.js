@@ -171,11 +171,22 @@ async function handle(req) {
           if (batch.length < 1000) break;
         }
       } catch(e) {}
+      // Contagem total de picks por participante (sem filtro de maxGame)
+      var pickCounts = {};
+      try {
+        var countUrl = SUPABASE_URL + '/rest/v1/picks?select=participant_id&limit=100000';
+        var countOpts = { method: 'GET', headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY } };
+        var cres = await fetch(countUrl, countOpts);
+        if (cres.ok) {
+          var cdata = await cres.json() || [];
+          cdata.forEach(function(c){ pickCounts[c.participant_id] = (pickCounts[c.participant_id] || 0) + 1; });
+        }
+      } catch(e) {}
       var allSp = [];
       if (url.searchParams.get('showSpecials') === '1') {
         allSp = (await supaFetch('special_picks?select=participant_id,champion,top_scorer')) || [];
       }
-      return json({ participants: participants, picks: allPicks, specialPicks: allSp });
+      return json({ participants: participants, picks: allPicks, specialPicks: allSp, pickCounts: pickCounts });
     }
 
     // POST /special-picks
