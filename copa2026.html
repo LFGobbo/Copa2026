@@ -2639,13 +2639,11 @@ function bolaoSavePick(gameN){
   var koVal=_bolaoKOPicks[gameN]||null;
   if(vA!==vB&&_bolaoKOPicks[gameN]){delete _bolaoKOPicks[gameN];koVal=null;}
   _bolaoMyPicks[gameN]={a:vA,b:vB};
-  // Remove borda vermelha de "falta preencher"
-  var card=inA.closest('.bsp-card');if(card)card.removeAttribute('style');
   _bolaoBracketCache=null;
   _bolaoRefreshTeams();
   bolaoUpdateSummary();
   _bolaoFetch('/picks','POST',{picks:[{game_n:gameN,goals_a:vA,goals_b:vB,ko_pick:koVal}]})
-  .then(function(){if(saved){saved.style.color='#4ade80';saved.textContent='Salvo';}})
+  .then(function(){if(saved){saved.style.color='#4ade80';saved.textContent='Salvo';}try{var el=document.querySelector('.bsp-input[data-game="'+gameN+'"]');if(el){var c=el.closest('.bsp-card');if(c)c.removeAttribute('style');}}catch(e){}})
   .catch(function(){if(saved){saved.style.color='var(--red)';saved.textContent='Erro';}});
 }
 function bolaoPopulateSpecials(){
