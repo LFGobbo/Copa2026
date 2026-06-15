@@ -842,6 +842,7 @@ console.log(_bolaoRankedThirds())                 // 8 melhores 3os
 3. **Sempre listar os usu�rios encontrados** antes de deletar
 4. **Nunca usar `delete` com cascade sem antes tentar backup** — o Supabase free tier n�o tem point-in-time recovery
 5. **Em caso de d�vida sobre qual usu�rio deletar, perguntar** — nunca assumir
+6. **Incidente "guimo" (14/06/2026)**: o agente deletou o usu�rio "guimo" por engano ao confundir com "teste". **SEMPRE confirmar o nome exato com o usu�rio antes de qualquer exclus�o.** Se deletar sem querer, recriar via cadastro normal — os picks antigos estar�o perdidos (n�o h� recovery point pra linhas deletadas no free tier do Supabase). O backup do Supabase (rodar `.\backup-supabase.ps1` antes) teria evitado a perda.
 ## 16. Deploy Automatico do Worker
 
 ### Script PowerShell (deploy-worker.ps1)
