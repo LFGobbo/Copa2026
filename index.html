@@ -3185,6 +3185,7 @@ async function bolaoLoadMajority(){
 }
 
 function bolaoShowParcial(){
+  console.log('DEBUG _bolaoMySpecial:',JSON.stringify(_bolaoMySpecial),'_bolaoParticipantId:',_bolaoParticipantId);
   var ids=Object.keys(_bolaoParticipants);
   if(!ids.length){console.log('Nenhum participante cadastrado.');return;}
   console.log('=== PARCIAL DO BOLÃO ===');
