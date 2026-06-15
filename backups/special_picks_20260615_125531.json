@@ -1,0 +1,194 @@
+﻿[
+    {
+        "id":  "ab4aa44a-03b4-4d76-9620-00ece8ac8495",
+        "participant_id":  "53eb0f15-d574-4a90-a1fa-e6dd72a44e12",
+        "champion":  "Espanha",
+        "top_scorer":  "Kylian Mbappé",
+        "locked":  false,
+        "created_at":  "2026-06-13T16:10:38.424842+00:00"
+    },
+    {
+        "id":  "869a2824-43c0-4e6a-b36f-f837d51d2d4d",
+        "participant_id":  "5318bd7c-fa36-4b62-a0ca-6eb1a86e54f3",
+        "champion":  "Portugal",
+        "top_scorer":  null,
+        "locked":  false,
+        "created_at":  "2026-06-13T16:13:48.74969+00:00"
+    },
+    {
+        "id":  "46044bb6-172a-4476-a14f-331277736b04",
+        "participant_id":  "b2371f80-44ac-4241-bd23-2601e065b203",
+        "champion":  "Portugal",
+        "top_scorer":  "Harry Kane",
+        "locked":  false,
+        "created_at":  "2026-06-13T16:39:11.319237+00:00"
+    },
+    {
+        "id":  "fe13bd16-f5d2-43a6-a0b4-0d44a3a93eb4",
+        "participant_id":  "639657ba-ec36-44be-a1ee-553cb173b3a5",
+        "champion":  "Brasil",
+        "top_scorer":  "Kylian Mbappé",
+        "locked":  false,
+        "created_at":  "2026-06-13T17:19:10.147503+00:00"
+    },
+    {
+        "id":  "addf8406-72c2-49e8-925b-1ef7a3df2325",
+        "participant_id":  "20a15255-c8b7-4795-8316-425b0f4b66f1",
+        "champion":  "Portugal",
+        "top_scorer":  "Kylian Mbappé",
+        "locked":  false,
+        "created_at":  "2026-06-13T18:06:31.321954+00:00"
+    },
+    {
+        "id":  "28702437-3b54-4935-8b48-27a7af434f41",
+        "participant_id":  "1e72ae1a-67d2-4c85-a1c7-243b421531fe",
+        "champion":  "Espanha",
+        "top_scorer":  "Lamine Yamal",
+        "locked":  false,
+        "created_at":  "2026-06-13T19:05:42.869222+00:00"
+    },
+    {
+        "id":  "76459e0e-2f2e-4f78-b24f-1f52783d61a4",
+        "participant_id":  "4c82aec1-9c35-4868-8ede-9ad6f70b2cc7",
+        "champion":  "Portugal",
+        "top_scorer":  "Kylian Mbappé",
+        "locked":  false,
+        "created_at":  "2026-06-13T19:17:12.175903+00:00"
+    },
+    {
+        "id":  "b7330df1-abe2-4270-b98d-4b1224666d3b",
+        "participant_id":  "5084290e-4edc-4946-8ab3-c6c5cc00cc60",
+        "champion":  "Espanha",
+        "top_scorer":  "Kylian Mbappé",
+        "locked":  false,
+        "created_at":  "2026-06-13T19:58:05.248896+00:00"
+    },
+    {
+        "id":  "a6371d18-5a56-4b3c-a24e-a5b7fd2bc12d",
+        "participant_id":  "8e717121-ba2b-476e-bc53-28931b6041b7",
+        "champion":  "Brasil",
+        "top_scorer":  "Kylian Mbappé",
+        "locked":  false,
+        "created_at":  "2026-06-13T20:07:56.253626+00:00"
+    },
+    {
+        "id":  "564e5995-a000-4fe4-884b-721e058cecbf",
+        "participant_id":  "cd867036-8625-4b13-8ddd-8863cd8bba02",
+        "champion":  "Espanha",
+        "top_scorer":  null,
+        "locked":  false,
+        "created_at":  "2026-06-13T20:59:39.079436+00:00"
+    },
+    {
+        "id":  "c6e59b71-b1d1-4756-bfec-453385eb75ee",
+        "participant_id":  "372fad1e-9618-4785-8836-4e5e9872fcab",
+        "champion":  null,
+        "top_scorer":  null,
+        "locked":  false,
+        "created_at":  "2026-06-13T21:20:47.276356+00:00"
+    },
+    {
+        "id":  "f1b5a3c7-5cb2-4741-8a31-7c76a19870aa",
+        "participant_id":  "fe26b530-480a-42fd-9cbc-99316d14b52e",
+        "champion":  "Brasil",
+        "top_scorer":  "Vinícius Júnior",
+        "locked":  false,
+        "created_at":  "2026-06-13T21:22:14.216712+00:00"
+    },
+    {
+        "id":  "4b41e32e-ebff-47f2-9a02-fe6966396d8d",
+        "participant_id":  "bda00e15-bd94-4fce-a362-eb561d3bc7ff",
+        "champion":  "Espanha",
+        "top_scorer":  "Kylian Mbappé",
+        "locked":  false,
+        "created_at":  "2026-06-13T21:25:47.483869+00:00"
+    },
+    {
+        "id":  "e3098da0-330d-4c76-9430-a70c9236a3e3",
+        "participant_id":  "7387d9c2-4866-4a77-8ab6-63d31fb8054a",
+        "champion":  "Brasil",
+        "top_scorer":  "Harry Kane",
+        "locked":  false,
+        "created_at":  "2026-06-13T21:26:46.478821+00:00"
+    },
+    {
+        "id":  "18467d19-10b9-473d-93e5-90ec7ebbe491",
+        "participant_id":  "d299644b-3112-407c-a7c6-beace699d4f2",
+        "champion":  "Espanha",
+        "top_scorer":  "Mikel Oyarzabal",
+        "locked":  false,
+        "created_at":  "2026-06-13T23:37:30.983583+00:00"
+    },
+    {
+        "id":  "bda776c5-6901-47a5-8e50-c1df19708c73",
+        "participant_id":  "efee6aff-638c-48ac-be7b-29d4afa81a28",
+        "champion":  "Espanha",
+        "top_scorer":  "Vinicius Junior",
+        "locked":  false,
+        "created_at":  "2026-06-14T15:08:34.745632+00:00"
+    },
+    {
+        "id":  "bfc8a4d7-9973-4554-8edf-08aa236e4ccc",
+        "participant_id":  "f5fb1bc9-5e06-40e0-8bc1-ce23b58e605c",
+        "champion":  "França",
+        "top_scorer":  "Kylian Mbappé",
+        "locked":  false,
+        "created_at":  "2026-06-14T16:34:04.398108+00:00"
+    },
+    {
+        "id":  "21e2c5a9-3bdb-43ef-8dfa-fdda44c9c37e",
+        "participant_id":  "e3d4ff5e-80d5-4a11-ada3-9c3caf3950e5",
+        "champion":  "Portugal",
+        "top_scorer":  "Harry Kane",
+        "locked":  false,
+        "created_at":  "2026-06-14T22:08:16.9595+00:00"
+    },
+    {
+        "id":  "073faebb-81cb-46a9-bcd8-442ec2d4c003",
+        "participant_id":  "b8519213-ad95-4f78-82c6-8fd6889f66cd",
+        "champion":  "França",
+        "top_scorer":  "Kylian Mbappé",
+        "locked":  false,
+        "created_at":  "2026-06-14T22:10:55.288795+00:00"
+    },
+    {
+        "id":  "7c84d7e3-bad9-4e2b-a86d-f2b042f0cc01",
+        "participant_id":  "482c9642-cd55-4e26-b2b0-9533b01757d5",
+        "champion":  "Brasil",
+        "top_scorer":  "Olise",
+        "locked":  false,
+        "created_at":  "2026-06-15T00:49:33.325575+00:00"
+    },
+    {
+        "id":  "aad10fd3-c2e6-4b6c-8e95-db7d77b54445",
+        "participant_id":  "81cafb49-8d00-464c-b214-ee541b9d5a62",
+        "champion":  "Brasil",
+        "top_scorer":  "Harry Kane",
+        "locked":  false,
+        "created_at":  "2026-06-15T14:01:03.535739+00:00"
+    },
+    {
+        "id":  "71629edf-b6ac-44c0-9fae-1bec22a08968",
+        "participant_id":  "16927e43-a1d9-46a0-88d6-67cf5e15c65c",
+        "champion":  "Alemanha",
+        "top_scorer":  "Cristiano Ronaldo",
+        "locked":  false,
+        "created_at":  "2026-06-15T14:16:36.005764+00:00"
+    },
+    {
+        "id":  "18a3ca3d-9754-4f65-b9d5-337dcc5fd149",
+        "participant_id":  "c86f6172-1e37-4961-82f2-44349d2b0069",
+        "champion":  "Portugal",
+        "top_scorer":  "Cristiano Ronaldo",
+        "locked":  false,
+        "created_at":  "2026-06-15T14:46:41.704779+00:00"
+    },
+    {
+        "id":  "5cb4a50e-623b-452e-bcd8-3ae256b2b5a2",
+        "participant_id":  "4ea55eb7-ad44-4dda-b695-199a1077e51a",
+        "champion":  "França",
+        "top_scorer":  "Endrick",
+        "locked":  false,
+        "created_at":  "2026-06-15T15:42:59.183999+00:00"
+    }
+]

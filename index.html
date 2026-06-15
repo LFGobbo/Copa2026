@@ -3194,7 +3194,7 @@ function bolaoShowParcial(){
     var name=_bolaoParticipants[id];
     var confirmed=_bolaoConfirmedStatus[id];
     var confirmTs=_bolaoConfirmedAt[id]?new Date(_bolaoConfirmedAt[id]).getTime():null;
-    var especiais=_bolaoAllSpecials[id]||{};
+    var especiais=(id===_bolaoParticipantId&&_bolaoMySpecial)?_bolaoMySpecial:(_bolaoAllSpecials[id]||{});
     var pickCount=_bolaoPickCounts[id]||0;
     // Calcular quantos jogos estavam ABERTOS no momento da confirmação
     // (lockTime = game_start - BOLAO_TWO_H > confirmed_at → estava aberto)

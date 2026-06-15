@@ -1,0 +1,242 @@
+﻿[
+    {
+        "id":  "20a15255-c8b7-4795-8316-425b0f4b66f1",
+        "name":  "Diego Passeri",
+        "password":  "e16ee8db89fdfa754c397cc9aafc8618c8697c0877b281da2a0d1660ec48413f",
+        "created_at":  "2026-06-13T15:46:09.016523+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T18:17:25.341+00:00"
+    },
+    {
+        "id":  "5318bd7c-fa36-4b62-a0ca-6eb1a86e54f3",
+        "name":  "Jéssica Martins",
+        "password":  "23342c8b238b7531597def78f04173b2d6abfb9745f46ebda32dbd83f91afb3f",
+        "created_at":  "2026-06-13T16:12:40.459377+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T18:23:15.894+00:00"
+    },
+    {
+        "id":  "1e72ae1a-67d2-4c85-a1c7-243b421531fe",
+        "name":  "Felipe Mello",
+        "password":  "5c56456f0c9875dc0b918b0d55fe749b47fe659443e70c6548b019cac54299b3",
+        "created_at":  "2026-06-13T15:46:02.750993+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T19:05:06.505+00:00"
+    },
+    {
+        "id":  "e87fd2b8-2f6e-42be-baee-1efccba111df",
+        "name":  "Tatiana M",
+        "password":  "0326960dc5c817b58e8b59f031be35a0c98fa2ad35c14037ac6a866b9eef3d81",
+        "created_at":  "2026-06-13T19:18:42.498254+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T19:29:00.951+00:00"
+    },
+    {
+        "id":  "f5fb1bc9-5e06-40e0-8bc1-ce23b58e605c",
+        "name":  "Gabriel Passos",
+        "password":  "adb7ed9d941b41db4809182059a60d537a8159bdd517e8cd83c9a606378ba33a",
+        "created_at":  "2026-06-14T16:32:36.296268+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-15T00:41:59.316+00:00"
+    },
+    {
+        "id":  "5b002717-84f7-4cb4-ae2d-2717685c942a",
+        "name":  "Luiza Arce",
+        "password":  "a2591cf83ac90c2c036d04e272ac31616a1d493f20deca85090967cbef93df59",
+        "created_at":  "2026-06-13T14:55:48.740977+00:00",
+        "confirmed":  false,
+        "confirmed_at":  null
+    },
+    {
+        "id":  "ff34649e-64c8-4972-bbce-f52c860490fc",
+        "name":  "Bruna Figueiredo",
+        "password":  "dab11f221cf05af1eb7020def821c2eac9d9018729d086d3dbd3143e29968c9a",
+        "created_at":  "2026-06-13T15:14:45.651913+00:00",
+        "confirmed":  false,
+        "confirmed_at":  null
+    },
+    {
+        "id":  "b8519213-ad95-4f78-82c6-8fd6889f66cd",
+        "name":  "Cristhian Rodriguez",
+        "password":  "67bd8f9be1a892989174a70c7cb05760ccd378bf10ce797dbd4ee55d2cff488d",
+        "created_at":  "2026-06-13T15:15:42.610458+00:00",
+        "confirmed":  false,
+        "confirmed_at":  null
+    },
+    {
+        "id":  "b076494c-bcee-4bf7-9ab6-4727c96b37ce",
+        "name":  "Lanara Andrea",
+        "password":  "19462398dbffe3bab41f2eae79d98619f924cf6ec07a67814630e66dbe3c030e",
+        "created_at":  "2026-06-13T15:29:28.35366+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T15:42:48.882+00:00"
+    },
+    {
+        "id":  "53eb0f15-d574-4a90-a1fa-e6dd72a44e12",
+        "name":  "Bruna Stock",
+        "password":  "d16c8a28bcb853207a753ec9635ed325c160876ff29e7a340d81b86ef28c2371",
+        "created_at":  "2026-06-13T14:13:44.245945+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T16:15:20.68+00:00"
+    },
+    {
+        "id":  "b2371f80-44ac-4241-bd23-2601e065b203",
+        "name":  "Luiz Felipe Gobbo",
+        "password":  "cfa42f06b14f76fced4e0c2541eeee1572fe3d99d43773122893bc1dc14cf130",
+        "created_at":  "2026-06-13T06:08:04.673229+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T16:19:34.301+00:00"
+    },
+    {
+        "id":  "639657ba-ec36-44be-a1ee-553cb173b3a5",
+        "name":  "Jessica",
+        "password":  "4ad77b67e479d133cc072be33d19feea64b14a147a4cd7b002700f36a07a1e83",
+        "created_at":  "2026-06-13T14:43:44.781528+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T17:20:43.009+00:00"
+    },
+    {
+        "id":  "c33eb8e3-3bc1-4618-ad94-93b75eed5efd",
+        "name":  "Felipe Ganzarolli",
+        "password":  "c066896125e5428689400180e6c00ac1a58569dea98338eead34987805b4248c",
+        "created_at":  "2026-06-13T15:09:12.398864+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T18:17:01.843+00:00"
+    },
+    {
+        "id":  "5084290e-4edc-4946-8ab3-c6c5cc00cc60",
+        "name":  "Fellipe Menezes",
+        "password":  "b294470f6a289c8b82aa1a7a5acca8afc555b1465c5a527a7f517a9af212e506",
+        "created_at":  "2026-06-13T14:38:34.122563+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T20:05:44.228+00:00"
+    },
+    {
+        "id":  "4c82aec1-9c35-4868-8ede-9ad6f70b2cc7",
+        "name":  "Lucas Amorim",
+        "password":  "8ebf8148bad3707c87eb29b0bc3b55de075fd22bfe3679b6491f32eb9b421bc7",
+        "created_at":  "2026-06-13T19:16:15.701032+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T20:18:19.306+00:00"
+    },
+    {
+        "id":  "7387d9c2-4866-4a77-8ab6-63d31fb8054a",
+        "name":  "Matheus Stock",
+        "password":  "13711ea45c14db2e13581f4ebe3a079d695dc1fdc58f8029d305f79522104e0b",
+        "created_at":  "2026-06-13T20:05:11.330969+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T20:25:54.4+00:00"
+    },
+    {
+        "id":  "8e717121-ba2b-476e-bc53-28931b6041b7",
+        "name":  "Guilherme Stock",
+        "password":  "e04624cf7ac827fb9b959e9573b7f9977df578bd76545243c0866bf20edf25ba",
+        "created_at":  "2026-06-13T20:05:35.468469+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T20:36:12.712+00:00"
+    },
+    {
+        "id":  "cd867036-8625-4b13-8ddd-8863cd8bba02",
+        "name":  "Luiz Gobbo",
+        "password":  "0f0118669aa303f8c678d003b20f7b75dfb494fb2cdd5dac4d00c87cb7c33840",
+        "created_at":  "2026-06-13T17:14:53.03448+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T21:08:28.981+00:00"
+    },
+    {
+        "id":  "372fad1e-9618-4785-8836-4e5e9872fcab",
+        "name":  "Thiago Gondim",
+        "password":  "903dcbce7f276042b0c828ebc7efeaca47c20cb6cdfee962919fe0683be32711",
+        "created_at":  "2026-06-13T21:20:10.875797+00:00",
+        "confirmed":  false,
+        "confirmed_at":  null
+    },
+    {
+        "id":  "fe26b530-480a-42fd-9cbc-99316d14b52e",
+        "name":  "Bárbara Stock",
+        "password":  "00d61375a78b721c51fc30e08a685faa17c82cab7c316f1ccba522beaf068379",
+        "created_at":  "2026-06-13T21:08:00.574494+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T21:21:39.774+00:00"
+    },
+    {
+        "id":  "bda00e15-bd94-4fce-a362-eb561d3bc7ff",
+        "name":  "Larissa da Costa Avello",
+        "password":  "484d521c9c345283a7025136d33b215f4f6b6eebea7e8b13a7bb75fd8ae6d618",
+        "created_at":  "2026-06-13T18:32:59.612437+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-13T21:35:30.114+00:00"
+    },
+    {
+        "id":  "d299644b-3112-407c-a7c6-beace699d4f2",
+        "name":  "Gabriel Alvarenga",
+        "password":  "a20fd220b1087c836ddc157ff3355337d9b06f926829257b1c9772c4ee019e63",
+        "created_at":  "2026-06-13T23:35:28.52665+00:00",
+        "confirmed":  false,
+        "confirmed_at":  null
+    },
+    {
+        "id":  "efee6aff-638c-48ac-be7b-29d4afa81a28",
+        "name":  "Gabriel Pedrosa",
+        "password":  "1427330d1676c61d0bb534f30115b6d829563b859ee667b5a67462348def953e",
+        "created_at":  "2026-06-14T15:00:44.841014+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-14T15:18:29.317+00:00"
+    },
+    {
+        "id":  "2363a2cb-ec24-46f0-b4ff-2f9dcc9f1383",
+        "name":  "Mauricio Biscaro",
+        "password":  "f2cea8631012600116da63a7163aa1b4cd0a44f5b347369ed293fd5336ca067b",
+        "created_at":  "2026-06-13T18:05:25.448493+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-14T18:56:06.665+00:00"
+    },
+    {
+        "id":  "e3d4ff5e-80d5-4a11-ada3-9c3caf3950e5",
+        "name":  "Gabriel rosalem",
+        "password":  "85a20c1f70566718814ffe1054f3dec0034f896fda515fbfc8025b10d47cdb99",
+        "created_at":  "2026-06-14T19:44:47.677944+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-14T22:09:41.578+00:00"
+    },
+    {
+        "id":  "482c9642-cd55-4e26-b2b0-9533b01757d5",
+        "name":  "Raphaela Meneses",
+        "password":  "92c82c1a7f383904b2ff761009af09a77833a56780036370ac164c37d5cd9c4d",
+        "created_at":  "2026-06-15T00:47:00.120293+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-15T01:04:44.916+00:00"
+    },
+    {
+        "id":  "81cafb49-8d00-464c-b214-ee541b9d5a62",
+        "name":  "TX",
+        "password":  "52a6da19a31bada2482eb521a78ef38d0eb9340ffcd52015082011c8f34861ca",
+        "created_at":  "2026-06-15T13:41:53.299348+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-15T14:00:55.501+00:00"
+    },
+    {
+        "id":  "16927e43-a1d9-46a0-88d6-67cf5e15c65c",
+        "name":  "Cristiane Pedrosa",
+        "password":  "22ce40566e193130b3f0cb520192899348ca9f22a3e6163617446a64587dce85",
+        "created_at":  "2026-06-14T14:56:54.283908+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-15T14:23:23.006+00:00"
+    },
+    {
+        "id":  "c86f6172-1e37-4961-82f2-44349d2b0069",
+        "name":  "guimim_nao_apaga",
+        "password":  "66c07f362b6e66b68fe34cc21055a59980057bb7847eddc3c15fa25f928ea446",
+        "created_at":  "2026-06-15T14:43:42.774703+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-15T14:57:39.058+00:00"
+    },
+    {
+        "id":  "4ea55eb7-ad44-4dda-b695-199a1077e51a",
+        "name":  "Cristina Pedrosa",
+        "password":  "0e7e3761fdb52ee562ce86ae74160d3b51f06a7a961e7d6a28c257e00f7e1f38",
+        "created_at":  "2026-06-14T22:54:44.020379+00:00",
+        "confirmed":  true,
+        "confirmed_at":  "2026-06-15T15:47:27.451+00:00"
+    }
+]
