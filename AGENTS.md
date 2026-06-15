@@ -827,10 +827,11 @@ console.log(_bolaoRankedThirds())                 // 8 melhores 3os
 4. Se Supabase perder dados: restore do dump (se existir) ou recadastrar usu�rios
 
 ### Regras de seguran�a para exclus�o de usu�rios
-1. **Nunca deletar usu�rio sem confirmar com o usu�rio primeiro** — perguntar explicitamente: "Tem certeza que quer deletar [NOME]?"
-2. **Sempre listar os usu�rios encontrados** antes de deletar
-3. **Nunca usar `delete` com cascade sem antes tentar backup** — o Supabase free tier n�o tem point-in-time recovery
-4. **Em caso de d�vida sobre qual usu�rio deletar, perguntar** — nunca assumir
+1. **Sempre fazer backup primeiro** — rodar `.\backup-supabase.ps1` antes de qualquer exclus�o. Os JSONs ficam em `/backups/` com timestamp
+2. **Nunca deletar usu�rio sem confirmar com o usu�rio primeiro** — perguntar explicitamente: "Tem certeza que quer deletar [NOME]?"
+3. **Sempre listar os usu�rios encontrados** antes de deletar
+4. **Nunca usar `delete` com cascade sem antes tentar backup** — o Supabase free tier n�o tem point-in-time recovery
+5. **Em caso de d�vida sobre qual usu�rio deletar, perguntar** — nunca assumir
 ## 16. Deploy Automatico do Worker
 
 ### Script PowerShell (deploy-worker.ps1)
