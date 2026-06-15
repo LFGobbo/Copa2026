@@ -496,13 +496,13 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="header-mascots"><img src="./mascote3_t.png" alt="" onerror="this.style.display='none'"><img src="./mascote1_t.png" alt="" onerror="this.style.display='none'"><img src="./mascote2_t.png" alt="" onerror="this.style.display='none'"></div>
 </div>
 <div class="tabs" role="tablist">
+  <div class="tab" data-tab="bolao" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🎯</span><span class="tab-label">Bolão</span></div>
   <div class="tab active" data-tab="jogos" role="tab" aria-selected="true" tabindex="0"><span class="tab-icon">⚽</span><span class="tab-label">Jogos</span></div>
   <div class="tab" data-tab="grupos" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📊</span><span class="tab-label">Grupos</span></div>
   <div class="tab" data-tab="mata-mata" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🏆</span><span class="tab-label">Mata-Mata</span></div>
   <div class="tab" data-tab="artilheiros" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🥇</span><span class="tab-label">Artilheiros</span></div>
   <div class="tab" data-tab="convocados" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">👥</span><span class="tab-label">Convocados</span></div>
   <div class="tab" data-tab="regras" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📖</span><span class="tab-label">Regras</span></div>
-  <div class="tab" data-tab="bolao" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🎯</span><span class="tab-label">Bolão</span></div>
 </div>
 <div class="content active" id="tab-jogos">
   <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">&#9201; Próximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados" style="display:none"></span></div>
@@ -530,8 +530,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 <div class="content" id="tab-convocados"><div class="squad-filter-bar"><input type="text" id="squad-filter" placeholder="Buscar país ou jogador..." oninput="renderSquads()"></div><div class="squads-grid dyn-content" id="squads-grid"></div></div>
 <div class="content" id="tab-regras"><div class="rules-content" id="rules-content"></div></div>
 <div class="content" id="tab-bolao">
-  <div class="bolao-rules-toggle" id="bolao-rules-toggle" onclick="bolaoToggleRules()">&#9654; Regras do Bolão</div>
-  <div class="bolao-rules" id="bolao-rules">
+  <div class="bolao-rules-toggle" id="bolao-rules-toggle" onclick="bolaoToggleRules()">&#9660; Regras do Bolão</div>
+  <div class="bolao-rules collapsed" id="bolao-rules">
     <h3>&#9917; Regras do Bolão Copa 2026</h3>
     <ul>
       <li><strong>Cadastro:</strong> Use seu <strong>Nome e Sobrenome</strong> verdadeiros &mdash; para seus amigos te identificarem no ranking</li>
@@ -799,6 +799,7 @@ function tabClick(){
   document.getElementById("tab-"+tab).classList.add("active");
   // Rola o menu para mostrar a tab ativa (importante no celular)
   try{this.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})}catch(e){}
+  if(tab==="jogos")_scrolledToLive=false;
   if(tab==="grupos")renderGroups();
   if(tab==="mata-mata")renderBracket();
   if(tab==="artilheiros")renderScorers();
@@ -811,6 +812,7 @@ function switchTab(tab){
   document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");t.setAttribute("aria-selected","false");t.tabIndex=-1});
   document.querySelectorAll(".content").forEach(function(c){c.classList.remove("active")});
   document.getElementById("tab-"+tab).classList.add("active");
+  if(tab==="jogos")_scrolledToLive=false;
   if(tab==="diagnostico")renderDiagnostico();
 }
 document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",tabClick)});
@@ -935,7 +937,7 @@ var currentFilter="all";
 function setFilter(f,e){
   document.querySelectorAll(".filter-btn").forEach(function(b){b.classList.remove("active")});
   if(e&&e.currentTarget)e.currentTarget.classList.add("active");
-  currentFilter=f;renderGames(f);
+  currentFilter=f;_scrolledToLive=false;renderGames(f);
 }
 var _LIVE_WINDOW=10800000;
 function gameIsPast(g){
@@ -965,6 +967,7 @@ function isGameLive(g){
     return now>=kickoff&&now<=new Date(kickoff.getTime()+_LIVE_WINDOW);
   }catch(e){return false}
 }
+var _scrolledToLive=false;
 function renderGames(filter){
   var el=document.getElementById("games-list");
   if(!document.querySelector(".filters").children.length){
@@ -975,7 +978,7 @@ function renderGames(filter){
   if(filter==="ko")games=games.filter(function(g){return g.f&&!g.f.startsWith("Grupo")});
   else if(filter!=="all")games=games.filter(function(g){return g.f===GROUP_NAMES[filter]||g.f===filter});
   games.sort(function(a,b){var da=a.d.split(' ')[0].split('/'),db=b.d.split(' ')[0].split('/'),ca=parseInt(da[1])*100+parseInt(da[0]),cb=parseInt(db[1])*100+parseInt(db[0]);if(ca!==cb)return ca-cb;var ta=a.t.split(':'),tb=b.t.split(':'),tca=parseInt(ta[0])*60+parseInt(ta[1]),tcb=parseInt(tb[0])*60+parseInt(tb[1]);return tca-tcb});
-  if(filter==="all"){dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""));if(games.length){setTimeout(function(){var first=null;for(var i=0;i<games.length;i++){if(!gameIsPast(games[i])){first=games[i];break}}if(first){var el=document.getElementById('g-'+first.n);if(el)el.scrollIntoView({behavior:'smooth',block:'center'})}},100)}}else{dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""))}
+  if(filter==="all"){dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""));if(games.length&&!_scrolledToLive){setTimeout(function(){_scrolledToLive=true;var first=null;for(var i=0;i<games.length;i++){if(!gameIsPast(games[i])){first=games[i];break}}if(first){var el=document.getElementById('g-'+first.n);if(el)el.scrollIntoView({behavior:'smooth',block:'center'})}},100)}}else{dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""))}
      document.querySelectorAll(".score-input").forEach(function(i){i.addEventListener("input",scoreInput)});
 }
 function toggleGameCard(btn){
@@ -1723,6 +1726,9 @@ d.Results.forEach(function(m){var h=FIFA_TEAM_MAP[m.Home.Abbreviation],a=FIFA_TE
 if(!FIFA_MAP_READY&&m.Home&&m.Home.Abbreviation&&m.Home.IdTeam)FIFA_TEAM_IDS[m.Home.Abbreviation]=m.Home.IdTeam;
 if(!FIFA_MAP_READY&&m.Away&&m.Away.Abbreviation&&m.Away.IdTeam)FIFA_TEAM_IDS[m.Away.Abbreviation]=m.Away.IdTeam;
 if(h&&a&&m.IdMatch){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){if(!FIFA_MATCH_IDS[g.n])FIFA_MATCH_IDS[g.n]=m.IdMatch;FIFA_MATCH_META[g.n]={id:m.IdMatch,homeId:m.Home.IdTeam,awayId:m.Away.IdTeam};break}}}
+// MatchStatus da Calendar API: 0=encerrado, 3=ao vivo, 1=agendado → define MATCH_ENDED/STARTED sem depender da Timeline
+if(m.MatchStatus===0&&m.IdMatch){MATCH_ENDED[m.IdMatch]=true;if(!MATCH_STARTED[m.IdMatch])MATCH_STARTED[m.IdMatch]=true}
+if(m.MatchStatus===3&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true}
 if(!h||!a||hs===null||as===null)return;
 for(var i=0;i<GAMES.length;i++){var g=GAMES[i];
 if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){map[g.n]={};if(g.a===h){map[g.n].a=hs;map[g.n].b=as}else{map[g.n].a=as;map[g.n].b=hs}break}}
@@ -2107,7 +2113,9 @@ function renderDiagnostico(){
 
 // --- Polling automático da FIFA API ---
 initFifaMaps();
-(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length){mergeScores(m);auditData()}else{_bolaoFetch('/scores').then(function(d){if(d&&d.scores&&d.scores.length){var sm={};d.scores.forEach(function(s){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];var abbA=FIFA_TEAM_REV[g.a],abbB=FIFA_TEAM_REV[g.b];if((abbA===s.home_team&&abbB===s.away_team)||(abbA===s.away_team&&abbB===s.home_team)){sm[g.n]={a:abbA===s.home_team?s.goals_home:s.goals_away,b:abbA===s.home_team?s.goals_away:s.goals_home};break}}});if(Object.keys(sm).length)mergeScores(sm)}}).catch(function(){})}});var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);if(live||recent){delete PROCESSED_EVENTS[id];processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
+(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){var endedBefore=Object.keys(MATCH_ENDED).length;fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length){mergeScores(m);auditData()}else{_bolaoFetch('/scores').then(function(d){if(d&&d.scores&&d.scores.length){var sm={};d.scores.forEach(function(s){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];var abbA=FIFA_TEAM_REV[g.a],abbB=FIFA_TEAM_REV[g.b];if((abbA===s.home_team&&abbB===s.away_team)||(abbA===s.away_team&&abbB===s.home_team)){sm[g.n]={a:abbA===s.home_team?s.goals_home:s.goals_away,b:abbA===s.home_team?s.goals_away:s.goals_home};break}}});if(Object.keys(sm).length)mergeScores(sm)}}).catch(function(){})}});// Re-render se MATCH_ENDED mudou (MatchStatus da Calendar)
+if(Object.keys(MATCH_ENDED).length!==endedBefore){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();setTimeout(checkAutoSnapshot,500)}
+var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);if(live||recent){delete PROCESSED_EVENTS[id];processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
 
 
 

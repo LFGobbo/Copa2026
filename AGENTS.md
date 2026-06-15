@@ -1,6 +1,6 @@
 ﻿# Copa do Mundo 2026 � Documenta��o do Projeto
 
-**�ltima atualiza��o:** 2026-06-13 (v19.9)
+**�ltima atualiza��o:** 2026-06-14 (v19.10)
 **Reposit�rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -570,6 +570,13 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v19.10 (2026-06-14) � Ajustes finais pr�-estreia
+
+- **Scroll bouncing corrigido**: `_scrolledToLive` flag global s� permite scroll-into-view na primeira renderiza��o. Resetado ao trocar filtro ou clicar na aba Jogos. Elimina salto a cada polling
+- **Aba Bol�o movida para primeira posi��o**: tab bar agora inicia com Bol�o, seguido de Jogos. �nfase na funcionalidade de Bol�o durante a Copa
+- **Regras do bol�o recolhidas por padr�o**: adicionada classe `collapsed` ao abrir a p�gina. Usu�rio clica para expandir
+- **`copa2026.html` sincronizado** com `index.html`
 
 ### v19.9 (2026-06-13) � Auditoria final: corre��es cr�ticas para produ��o
 
