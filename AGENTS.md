@@ -1,6 +1,6 @@
 ﻿# Copa do Mundo 2026 � Documenta��o do Projeto
 
-**�ltima atualiza��o:** 2026-06-14 (v19.10)
+**�ltima atualiza��o:** 2026-06-15 (v19.11)
 **Reposit�rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -587,6 +587,16 @@ Toda melhoria deve:
 - **backup-supabase.ps1**: script PowerShell que faz dump de todas as 6 tabelas do Supabase para JSONs em /backups/
 - **Seguranca de exclusao documentada**: secao 15 do AGENTS.md - backup obrigatorio antes de deletar, nunca deletar sem confirmar com o usuario
 - **Console Reference**: secao 17 do AGENTS.md - documentacao completa de todas as funcoes e variaveis acessiveis via DevTools
+
+### v19.11 (2026-06-15) - Relogio ao vivo + dados FIFA crus + layout mobile fix
+
+- **Relogio ao vivo**: `MATCH_RAW_MINUTE` armazena minuto cru da timeline (ex: "90+8"). Countdown mostra `45'` / `90+8'` / `FT` para jogos ao vivo usando `MATCH_KICKOFF` real (Type 7 UTC) em vez de horario agendado. Card do jogo ganhou badge `.live-clock` dourado
+- **Dados FIFA crus salvos**: `FIFA_CALENDAR_RAW` + `FIFA_TIMELINES_RAW[idMatch]` persistidos em localStorage via `saveFifaRaw()`/`loadFifaRaw()` para auditoria/debug
+- **SyntaxError critico corrigido**: `(function initTimelineSync(){...} function dailyMaintenance(){...})();` — duas declaracoes de funcao dentro de operador de agrupamento sem operador entre elas. JS engine lancava SyntaxError, script inteiro nao executava
+- **Cache stale limpo**: `DATA_VERSION = 3` — se localStorage tem dados pre-fix (gol contra, cartao, parseInt), limpa tudo e comeca fresco
+- **Layout mobile**: `100vh` -> `100dvh` (evita reflow da barra de URL). `overflow-anchor: auto`. Bandeiras com `width="24" height="18"` no HTML + CSS. Flag-fallback com dimensoes inline
+- **Grid do card mobile**: 768px e 480px agora usam 4 colunas `num | team-a | score | team-b` (igual desktop). Times lado a lado com placar entre eles
+- **ScrollIntoView block:start**: em vez de `block:center` que jogava o card pro meio da tela. `history.scrollRestoration='manual'` impede browser de competir pelo scroll
 
 ### v19.9 (2026-06-13) � Auditoria final: corre��es cr�ticas para produ��o
 
