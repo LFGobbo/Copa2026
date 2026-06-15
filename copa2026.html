@@ -229,7 +229,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .rules-content .highlight p{color:var(--text)}
 .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:4px;animation:pulse 1s infinite;vertical-align:middle}
 .live-label{font-size:9px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px}
-.live-clock{position:absolute;top:-20px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;white-space:nowrap}
+.live-clock{order:-1;width:100%;text-align:center;pointer-events:none;white-space:nowrap}
 .live-clock span{display:inline-block;font-size:10px;font-weight:800;color:var(--gold);background:rgba(255,223,0,.16);padding:1px 6px;border-radius:4px;font-variant-numeric:tabular-nums;letter-spacing:0}
 @media(max-width:768px){
   .header-left,.header-mascots{display:none}
@@ -1032,17 +1032,20 @@ function updateCountdown(){
     var id=FIFA_MATCH_IDS[g.n];
     var kickoffMs=id&&MATCH_KICKOFF[id]?MATCH_KICKOFF[id].getTime()
       :(gameUTC(g)?gameUTC(g).getTime():null);
-    var rawMin=id&&MATCH_RAW_MINUTE[id]?_parseMinute(MATCH_RAW_MINUTE[id]):0;
+    var rawStr=id&&MATCH_RAW_MINUTE[id]?MATCH_RAW_MINUTE[id]:'';
+    var rawMin=rawStr?_parseMinute(rawStr):0;
     var timeStr='';
     if(id&&MATCH_ENDED[id]){timeStr='FT';}
-    else if(kickoffMs){
+    else if(rawStr.indexOf('+')>=0){
+      timeStr=rawStr+"'";
+    }else if(kickoffMs){
       var run=Math.max(0,Math.floor((now.getTime()-kickoffMs)/60000));
       var disp=Math.max(run,rawMin);
       if(disp>105)disp=105;
       timeStr=disp<=90?disp+"'":'90+'+(disp-90)+"'";
     }else if(rawMin){timeStr=rawMin+"'";}
     else{timeStr="0'";}
-    // Injetar badge dentro do .game-score (absolute flutua acima)
+    // Injetar badge dentro do .game-score (order:-1 no flex)
     if(id&&!MATCH_ENDED[id]){try{var cel=document.getElementById('live-clock-'+g.n);if(!cel){var scDiv=document.querySelector('#g-'+g.n+' .game-score');if(scDiv){var b=document.createElement('div');b.id='live-clock-'+g.n;b.className='live-clock';var sp=document.createElement('span');sp.textContent=timeStr;b.appendChild(sp);scDiv.insertBefore(b,scDiv.firstChild);}}else{var sp=cel.querySelector('span');if(sp)sp.textContent=timeStr;}}catch(e){}}
     cards.push('<div class="countdown-event"><span class="countdown-event-live">\u25cf</span><span class="countdown-event-num">#'+g.n+'</span><span class="countdown-event-teams">'+g.a+" vs "+g.b+'</span><span class="countdown-event-time">'+sc+'</span><span class="countdown-event-date">'+timeStr+'</span></div>');
   });
