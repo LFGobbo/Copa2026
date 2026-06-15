@@ -2116,8 +2116,9 @@ function renderDiagnostico(){
 // --- Polling automático da FIFA API ---
 initFifaMaps();
 (function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){var endedBefore=Object.keys(MATCH_ENDED).length;fetchFifaScores(8000).then(function(m){
-  // Se MATCH_ENDED mudou OU se tem placar, re-renderiza (garante que jogos encerrados saiam do vivo)
-  if(Object.keys(MATCH_ENDED).length!==endedBefore||Object.keys(scores).length){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();if(Object.keys(MATCH_ENDED).length!==endedBefore)setTimeout(checkAutoSnapshot,500)}
+  // Re-render sempre que a poll completa (dynRender só mexe no DOM se mudou)
+  saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();
+  if(Object.keys(MATCH_ENDED).length!==endedBefore)setTimeout(checkAutoSnapshot,500);
   if(m&&Object.keys(m).length){mergeScores(m);auditData()}else{_bolaoFetch('/scores').then(function(d){if(d&&d.scores&&d.scores.length){var sm={};d.scores.forEach(function(s){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];var abbA=FIFA_TEAM_REV[g.a],abbB=FIFA_TEAM_REV[g.b];if((abbA===s.home_team&&abbB===s.away_team)||(abbA===s.away_team&&abbB===s.home_team)){sm[g.n]={a:abbA===s.home_team?s.goals_home:s.goals_away,b:abbA===s.home_team?s.goals_away:s.goals_home};break}}});if(Object.keys(sm).length)mergeScores(sm)}}).catch(function(){})}});
 var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);if(live||recent){delete PROCESSED_EVENTS[id];processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
 
