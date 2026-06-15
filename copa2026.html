@@ -229,7 +229,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .rules-content .highlight p{color:var(--text)}
 .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:4px;animation:pulse 1s infinite;vertical-align:middle}
 .live-label{font-size:9px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px}
-.live-clock{position:absolute;bottom:100%;left:0;width:100%;text-align:center;pointer-events:none;margin-bottom:4px}
+.live-clock{flex:0 0 100%;text-align:center;margin-top:-20px;margin-bottom:2px;pointer-events:none}
 .live-clock span{display:inline-block;font-size:10px;font-weight:800;color:var(--gold);background:rgba(255,223,0,.16);padding:1px 6px;border-radius:4px;font-variant-numeric:tabular-nums;letter-spacing:0}
 @media(max-width:768px){
   .header-left,.header-mascots{display:none}
@@ -1040,8 +1040,8 @@ function updateCountdown(){
       timeStr=disp+"'";
     }else if(rawMin){timeStr=rawMin+"'";}
     else{timeStr="0'";}
-    // Injetar badge se jogo ao vivo e nao existe
-    if(id&&!MATCH_ENDED[id]){try{var cel=document.getElementById('live-clock-'+g.n);if(!cel){var scDiv=document.querySelector('#g-'+g.n+' .game-score');if(scDiv){var b=document.createElement('div');b.id='live-clock-'+g.n;b.className='live-clock';var sp=document.createElement('span');sp.textContent=timeStr;b.appendChild(sp);scDiv.parentNode.insertBefore(b,scDiv);}}else{var sp=cel.querySelector('span');if(sp)sp.textContent=timeStr;}}catch(e){}}
+    // Injetar badge dentro do .game-score (primeiro filho, margin-top negativo sobe)
+    if(id&&!MATCH_ENDED[id]){try{var cel=document.getElementById('live-clock-'+g.n);if(!cel){var scDiv=document.querySelector('#g-'+g.n+' .game-score');if(scDiv){var b=document.createElement('div');b.id='live-clock-'+g.n;b.className='live-clock';var sp=document.createElement('span');sp.textContent=timeStr;b.appendChild(sp);scDiv.insertBefore(b,scDiv.firstChild);}}else{var sp=cel.querySelector('span');if(sp)sp.textContent=timeStr;}}catch(e){}}
     cards.push('<div class="countdown-event"><span class="countdown-event-live">\u25cf</span><span class="countdown-event-num">#'+g.n+'</span><span class="countdown-event-teams">'+g.a+" vs "+g.b+'</span><span class="countdown-event-time">'+sc+'</span><span class="countdown-event-date">'+timeStr+'</span></div>');
   });
   upcoming.forEach(function(x,idx){
