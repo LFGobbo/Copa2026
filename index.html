@@ -229,7 +229,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .rules-content .highlight p{color:var(--text)}
 .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:4px;animation:pulse 1s infinite;vertical-align:middle}
 .live-label{font-size:9px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px}
-.live-clock{position:absolute;top:-22px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;white-space:nowrap}
+.live-clock{position:absolute;top:-26px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;white-space:nowrap}
 .live-clock span{display:inline-block;font-size:10px;font-weight:800;color:var(--gold);background:rgba(255,223,0,.16);padding:1px 6px;border-radius:4px;font-variant-numeric:tabular-nums;letter-spacing:0}
 @media(max-width:768px){
   .header-left,.header-mascots{display:none}
@@ -1039,19 +1039,31 @@ function updateCountdown(){
     else if(id&&MATCH_HALFTIME[id]){timeStr='HT';}
     else if(rawStr.indexOf('+')>=0){
       timeStr=rawStr+"'";
-    }else if(kickoffMs){
-      // Usar segundo tempo como referência se disponível (recalibra o relógio)
-      var secondKick=id&&MATCH_SECOND_KICKOFF[id]?MATCH_SECOND_KICKOFF[id].getTime():null;
-      var refTime=secondKick||kickoffMs;
-      var run=Math.max(0,Math.floor((now.getTime()-refTime)/60000));
-      // Se temos segundo tempo, somar 45 min (duração do 1T) ao tempo decorrido
-      if(secondKick)run+=45;
-      var disp=Math.max(run,rawMin);
+    }else{
+      // rawMin da API é a fonte da verdade. Só calcula por kickoff quando não há dado.
+      var disp;
+      if(rawMin>0){
+        disp=rawMin;
+        if(kickoffMs){
+          var refTime=kickoffMs;
+          var secondKick=id&&MATCH_SECOND_KICKOFF[id]?MATCH_SECOND_KICKOFF[id].getTime():null;
+          if(secondKick)refTime=secondKick-2700000;
+          var run=Math.max(0,Math.floor((now.getTime()-refTime)/60000));
+          var drift=Math.max(0,run-rawMin);
+          if(drift<3)disp=rawMin+drift; // avanço gradual até 3min entre polls
+        }
+      }else{
+        var secondKick=id&&MATCH_SECOND_KICKOFF[id]?MATCH_SECOND_KICKOFF[id].getTime():null;
+        var refTime=secondKick||kickoffMs;
+        if(!refTime){disp=0;}else{
+          var run=Math.max(0,Math.floor((now.getTime()-refTime)/60000));
+          if(secondKick)run+=45;
+          disp=Math.min(run,105);
+        }
+      }
       timeStr=disp<=90?disp+"'":disp<=105?'90+'+(disp-90)+"'":'120+'+(disp-105)+"'";
-      // Cap máximo: 120+30' (prorrogação máxima)
       if(disp>135)timeStr='135+';
-    }else if(rawMin){timeStr=rawMin+"'";}
-    else{timeStr="0'";}
+    }
     // Injetar badge dentro do .game-score (order:-1 no flex)
     if(id&&!MATCH_ENDED[id]){try{var cel=document.getElementById('live-clock-'+g.n);if(!cel){var scDiv=document.querySelector('#g-'+g.n+' .game-score');if(scDiv){var b=document.createElement('div');b.id='live-clock-'+g.n;b.className='live-clock';var sp=document.createElement('span');sp.textContent=timeStr;b.appendChild(sp);scDiv.insertBefore(b,scDiv.firstChild);}}else{var sp=cel.querySelector('span');if(sp)sp.textContent=timeStr;}}catch(e){}}
     cards.push('<div class="countdown-event"><span class="countdown-event-live">\u25cf</span><span class="countdown-event-num">#'+g.n+'</span><span class="countdown-event-teams">'+g.a+" vs "+g.b+'</span><span class="countdown-event-time">'+sc+'</span><span class="countdown-event-date">'+timeStr+'</span></div>');
