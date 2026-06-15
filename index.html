@@ -2639,6 +2639,8 @@ function bolaoSavePick(gameN){
   var koVal=_bolaoKOPicks[gameN]||null;
   if(vA!==vB&&_bolaoKOPicks[gameN]){delete _bolaoKOPicks[gameN];koVal=null;}
   _bolaoMyPicks[gameN]={a:vA,b:vB};
+  // Remove borda vermelha de "falta preencher"
+  var card=inA.closest('.bsp-card');if(card)card.removeAttribute('style');
   _bolaoBracketCache=null;
   _bolaoRefreshTeams();
   bolaoUpdateSummary();
