@@ -3185,8 +3185,10 @@ async function bolaoLoadMajority(){
 }
 
 async function bolaoShowParcial(){
-  // Buscar especiais direto do servidor (showSpecials=1 sempre)
-  try{var sd=await _bolaoFetch('/ranking?maxGame=0&showSpecials=1');if(sd&&sd.specialPicks){_bolaoAllSpecials={};sd.specialPicks.forEach(function(p){_bolaoAllSpecials[p.participant_id]=p})}}catch(e2){}
+  // Buscar especiais direto do Supabase (sem worker)
+  var supaKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0YmV6bXJheWxidmxueWNsdGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNzQxNDAsImV4cCI6MjA5Njg1MDE0MH0.SC_k3ztY-uSyQAB60ctJvb1iAMGkJJYlG5qy7RJhuqY';
+  var allSpec={};
+  try{var r=await fetch('https://etbezmraylbvlnycltha.supabase.co/rest/v1/special_picks?select=participant_id,champion,top_scorer',{headers:{apikey:supaKey,Authorization:'Bearer '+supaKey}});if(r.ok){var sp=await r.json();sp.forEach(function(p){allSpec[p.participant_id]=p})}}catch(e){}
   var ids=Object.keys(_bolaoParticipants);
   if(!ids.length){console.log('Nenhum participante cadastrado.');return;}
   console.log('=== PARCIAL DO BOLÃO ===');
@@ -3196,10 +3198,8 @@ async function bolaoShowParcial(){
     var name=_bolaoParticipants[id];
     var confirmed=_bolaoConfirmedStatus[id];
     var confirmTs=_bolaoConfirmedAt[id]?new Date(_bolaoConfirmedAt[id]).getTime():null;
-    var especiais=(id===_bolaoParticipantId&&_bolaoMySpecial)?_bolaoMySpecial:(_bolaoAllSpecials[id]||{});
+    var especiais=allSpec[id]||(id===_bolaoParticipantId?_bolaoMySpecial:null)||{};
     var pickCount=_bolaoPickCounts[id]||0;
-    // Calcular quantos jogos estavam ABERTOS no momento da confirmação
-    // (lockTime = game_start - BOLAO_TWO_H > confirmed_at → estava aberto)
     var eligibleTotal=99;
     if(confirmTs){
       eligibleTotal=0;
@@ -3209,11 +3209,7 @@ async function bolaoShowParcial(){
         if(gd.getTime()-BOLAO_TWO_H>confirmTs)eligibleTotal++;
       });
     }
-    // Se confirmou: o denominador é o que estava aberto na hora
-    // Se não confirmou: denominador é 99
     var total=confirmed?eligibleTotal:99;
-    // O pickCount pode ser maior que eligibleTotal (preencheu jogos já travados)
-    // Mas o que importa é o que estava disponível
     var displayCount=confirmed?Math.min(pickCount,eligibleTotal):pickCount;
     var especiaisStr=especiais.champion&&especiais.top_scorer?'OK':(especiais.champion||especiais.top_scorer?'Parcial':'Nenhum');
     var confirmStr=confirmed?'Sim':'Nao';
