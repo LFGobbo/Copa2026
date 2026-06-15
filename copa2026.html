@@ -402,6 +402,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   /* ── Bolão picks grid ─────────────────────────────── */
   .bsp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;display:flex;flex-direction:column;gap:4px}
   .bsp-card.bsp-locked{opacity:.7}
+  .bsp-card.bsp-missing{border-color:var(--red);box-shadow:0 0 12px rgba(255,23,68,.3)}
   .bsp-phase{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
   .bsp-teams{font-size:13px;font-weight:600;color:var(--text);min-height:20px}
   .bsp-date{font-size:11px;color:var(--muted)}
@@ -2541,7 +2542,8 @@ function bolaoRenderPicksGrid(){
     var koHtml=_bolaoKOHtml(g,pick,inputLocked);
     // Card
     var locked=inputLocked?' bsp-locked':'';
-    html+='<div class="bsp-card'+locked+'">'
+    var missingCls=(!hasPick&&!isLocked)?' bsp-missing':'';
+    html+='<div class="bsp-card'+locked+missingCls+'">'
       +'<div class="bsp-phase">'+esc(g.f)+'</div>'
       +'<div class="bsp-teams" id="bolao-teams-'+g.n+'">'+tA+' vs '+tB+'</div>'
       +'<div class="bsp-date">'+g.d+' '+g.t+'</div>'
