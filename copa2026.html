@@ -3110,10 +3110,20 @@ function bolaoShowParcial(){
   var ids=Object.keys(_bolaoParticipants);
   if(!ids.length){console.log('Nenhum participante cadastrado.');return;}
   var now=new Date();
-  var totalDisp=0;
-  GAMES.forEach(function(g){if(g.n>=BOLAO_FIRST){var gd=gameUTC(g);if(gd&&gd<=now)totalDisp++;}});
+  // Descobrir até que jogo já foi disponibilizado (progressivo)
+  var maxIdx=GAMES.length-1;
+  for(var i=0;i<GAMES.length;i++){
+    var g=GAMES[i];
+    if(g.n<BOLAO_FIRST)continue;
+    var gd=gameUTC(g);if(!gd)continue;
+    var lockTime=new Date(gd.getTime()-BOLAO_TWO_H);
+    if(now<lockTime){maxIdx=i-1;break;}
+    maxIdx=i;
+  }
+  if(maxIdx<0)maxIdx=GAMES.length-1;
+  var totalJogos=maxIdx>=0?GAMES.slice(BOLAO_FIRST-1,maxIdx+1).filter(function(g){return g.n>=BOLAO_FIRST}).length:0;
   console.log('=== PARCIAL DO BOLÃO ===');
-  console.log('Jogos já iniciados: '+totalDisp+' (a partir do #'+BOLAO_FIRST+')');
+  console.log('Jogos disponíveis até agora: '+totalJogos+' (jogo #'+(maxIdx>=0?GAMES[maxIdx].n:'-')+')');
   ids.forEach(function(id){
     var name=_bolaoParticipants[id];
     var confirmed=_bolaoConfirmedStatus[id];
@@ -3121,15 +3131,19 @@ function bolaoShowParcial(){
     var picks=_bolaoAllPicks[id]||{};
     var especiais=_bolaoAllSpecials[id]||{};
     var eligible=0,filled=0;
-    GAMES.forEach(function(g){
-      if(g.n<BOLAO_FIRST)return;
+    // Só conta jogos ATÉ o maxIdx (disponíveis para preencher)
+    for(var i=BOLAO_FIRST-1;i<=maxIdx&&i<GAMES.length;i++){
+      var g=GAMES[i];
+      if(g.n<BOLAO_FIRST)continue;
       var gd=gameUTC(g);
-      if(!gd)return;
-      if(confirmTs&&gd.getTime()<confirmTs)return;
-      if(!confirmed&&gd<=now)return;
+      if(!gd)continue;
+      // Se confirmou depois deste jogo começar, não pontua
+      if(confirmTs&&gd.getTime()<confirmTs)continue;
+      // Se não confirmou e o jogo já passou, não pontua mais
+      if(!confirmed&&gd<=now)continue;
       eligible++;
       if(picks[g.n]&&picks[g.n].a!==undefined&&picks[g.n].b!==undefined)filled++;
-    });
+    }
     var missing=eligible-filled;
     var linha=name+' | Palpites: '+filled+'/'+eligible;
     if(confirmed){
