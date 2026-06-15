@@ -468,7 +468,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bstats-diverge-item:last-child{border:none}
 .bstats-diverge .gd{color:var(--muted);font-size:10px}
 .bstats-table-wrap{overflow-x:auto;margin-bottom:12px}
-.bstats-rank-scroll{max-height:320px;overflow-y:auto;margin-bottom:12px}
+.bstats-rank-scroll{max-height:400px;overflow-y:auto;margin-bottom:12px}
 .evo-line{transition:opacity .2s ease,stroke-width .2s ease}
 .evo-line.evo-hover{opacity:1!important;stroke-width:3.5!important}
 .evo-line.evo-dim{opacity:0.15!important}
@@ -2974,7 +2974,7 @@ function renderBolaoEvolutionAll(container){
     var arr=byId[id];lastPos[id]=arr.length?arr[arr.length-1].pos:999;
   });
   var sorted=Object.keys(byId).sort(function(a,b){return lastPos[a]-lastPos[b];});
-  var maxShow=Math.min(sorted.length,12);
+  var maxShow=sorted.length;
   var shown=sorted.slice(0,maxShow);
   var maxPos=Math.max.apply(null,shown.map(function(id){return Math.max.apply(null,byId[id].map(function(s){return s.pos;}));}));
   maxPos=Math.max(maxPos,3);
@@ -3033,7 +3033,7 @@ function renderBolaoEvoClient(container,evo){
   if(!ids.length){container.innerHTML='<p style="color:var(--muted);font-size:12px;padding:12px 0">Sem dados de evolução.</p>';return;}
   var lastPos={};ids.forEach(function(id){var arr=evo.data[id].positions;lastPos[id]=arr.length?arr[arr.length-1]:999;});
   var sorted=ids.slice().sort(function(a,b){return lastPos[a]-lastPos[b];});
-  var maxShow=Math.min(sorted.length,14);
+  var maxShow=sorted.length;
   var shown=sorted.slice(0,maxShow);
   var maxPos=1;shown.forEach(function(id){var p=evo.data[id].positions;p.forEach(function(v){if(v>maxPos)maxPos=v;});});
   var rounds=evo.rounds,padL=32,padR=20,padT=18,padB=30;
@@ -3385,16 +3385,14 @@ function renderBolaoStats(){
   var s=_bolaoStatsCache;if(!s){dynRender(el,'<div class="bstats-warning">Nenhum dado disponível ainda.</div>');return}
   var parts=[];
   // Helper: scrollable ranking table, filtered by v>0
-  function rankTbl(title,icon,data,valLabel,valSuffix,tooltip,limit){
-    limit=limit||8;
+  function rankTbl(title,icon,data,valLabel,valSuffix,tooltip){
     var filtered=data.filter(function(r){return r.v>0;});
     if(!filtered.length)return'';
     var h='<div class="bstats-section"><div class="bstats-section-title" title="'+esc(tooltip||'')+'">'+icon+' '+title+'</div><div class="bstats-rank-scroll"><table class="bstats-rank"><tr><th>#</th><th>Participante</th><th>'+esc(valLabel)+'</th></tr>';
-    filtered.slice(0,limit).forEach(function(r,i){
+    filtered.forEach(function(r,i){
       var medal=i===0?'gold':(i===1?'silver':(i===2?'bronze':'')),nm=esc(r.name);
       h+='<tr><td class="pos'+(medal?' '+medal:'')+'">'+(i+1)+'</td><td class="clickable" onclick="bolaoStatsOpenIndividual(\''+r.id+'\')">'+nm+'</td><td><strong>'+r.v+(valSuffix||'')+'</strong></td></tr>';
     });
-    if(filtered.length>limit)h+='<tr><td colspan="3" style="text-align:center;color:var(--muted);font-size:11px;padding:6px">... e mais '+(filtered.length-limit)+' (role para ver)</td></tr>';
     h+='</table></div></div>';return h;
   }
   // Live games section
@@ -3420,10 +3418,10 @@ function renderBolaoStats(){
     parts.push('</div>');
   }
   // Top rankings
-  parts.push(rankTbl('Rei dos Placares','🏆',s.rankingExato,'Exatos','','Ranking dos participantes com mais placares exatos (10 pts cada)',8));
-  parts.push(rankTbl('Melhor Sequência','🔥',s.rankingStreak,'Seg. Máx','','Maior sequência de acertos consecutivos sem errar',8));
-  parts.push(rankTbl('Pé Frio Oficial','🥴',s.rankingPefrio,'Erros','','Ranking reverso — quem mais errou palpites até agora',8));
-  parts.push(rankTbl('Quase Acertou','💀',s.rankingNear,'Quase','','Palpites que erraram por apenas 1 gol de diferença do placar real',8));
+  parts.push(rankTbl('Rei dos Placares','🏆',s.rankingExato,'Exatos','','Ranking dos participantes com mais placares exatos (10 pts cada)'));
+  parts.push(rankTbl('Melhor Sequência','🔥',s.rankingStreak,'Seg. Máx','','Maior sequência de acertos consecutivos sem errar'));
+  parts.push(rankTbl('Pé Frio Oficial','🥴',s.rankingPefrio,'Erros','','Ranking reverso — quem mais errou palpites até agora'));
+  parts.push(rankTbl('Quase Acertou','💀',s.rankingNear,'Quase','','Palpites que erraram por apenas 1 gol de diferença do placar real'));
   // Zebra
   if(s.zebra&&s.zebra.length){
     parts.push('<div class="bstats-section"><div class="bstats-section-title" title="Jogos onde a maioria dos participantes errou o resultado">🦓 Zebra da Copa</div><div class="bstats-hint">Jogos onde a maioria errou — maior % de erro primeiro</div><div class="bstats-table-wrap"><table class="bstats-rank"><tr><th>#</th><th>Jogo</th><th>Resultado</th><th>Maioria apostou</th><th>% da maioria</th></tr>');
