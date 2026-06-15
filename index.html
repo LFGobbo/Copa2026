@@ -3121,39 +3121,34 @@ function bolaoShowParcial(){
     maxIdx=i;
   }
   if(maxIdx<0)maxIdx=GAMES.length-1;
-  var totalJogos=maxIdx>=0?GAMES.slice(BOLAO_FIRST-1,maxIdx+1).filter(function(g){return g.n>=BOLAO_FIRST}).length:0;
+  // Total de jogos disponíveis para preencher (do BOLAO_FIRST até o último liberado)
+  var total=0;
+  for(var i=0;i<=maxIdx&&i<GAMES.length;i++){
+    if(GAMES[i].n>=BOLAO_FIRST)total++;
+  }
   console.log('=== PARCIAL DO BOLÃO ===');
-  console.log('Jogos disponíveis até agora: '+totalJogos+' (jogo #'+(maxIdx>=0?GAMES[maxIdx].n:'-')+')');
+  console.log('Jogos disponíveis até agora: '+total+' (do #'+BOLAO_FIRST+' ao #'+(maxIdx>=0?GAMES[maxIdx].n:'-')+')');
   ids.forEach(function(id){
     var name=_bolaoParticipants[id];
     var confirmed=_bolaoConfirmedStatus[id];
-    var confirmTs=_bolaoConfirmedAt[id]?new Date(_bolaoConfirmedAt[id]).getTime():null;
     var picks=_bolaoAllPicks[id]||{};
     var especiais=_bolaoAllSpecials[id]||{};
-    var eligible=0,filled=0;
-    // Só conta jogos ATÉ o maxIdx (disponíveis para preencher)
-    for(var i=BOLAO_FIRST-1;i<=maxIdx&&i<GAMES.length;i++){
+    // Contar quantos picks ele preencheu (dentro dos disponíveis)
+    var filled=0;
+    for(var i=0;i<=maxIdx&&i<GAMES.length;i++){
       var g=GAMES[i];
       if(g.n<BOLAO_FIRST)continue;
-      var gd=gameUTC(g);
-      if(!gd)continue;
-      // Se confirmou depois deste jogo começar, não pontua
-      if(confirmTs&&gd.getTime()<confirmTs)continue;
-      // Se não confirmou e o jogo já passou, não pontua mais
-      if(!confirmed&&gd<=now)continue;
-      eligible++;
       if(picks[g.n]&&picks[g.n].a!==undefined&&picks[g.n].b!==undefined)filled++;
     }
-    var missing=eligible-filled;
-    var linha=name+' | Palpites: '+filled+'/'+eligible;
+    var falta=total-filled;
+    var linha=name+' | Palpites: '+filled+'/'+total;
     if(confirmed){
-      var dt=_bolaoConfirmedAt[id]?new Date(_bolaoConfirmedAt[id]).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'?';
-      linha+=' | Confirmou: '+dt;
-      if(eligible>0&&missing===0)linha+=' | ✅ COMPLETO';
+      linha+=' | ✅ Confirmou';
+      if(falta===0)linha+=' | COMPLETO';
     }else{
-      linha+=' | ❌ NÃO CONFIRMOU';
-      if(missing>0)linha+=' | FALTA '+missing+' palpites';
-      else if(eligible>0)linha+=' | ✅ COMPLETO (só confirmar)';
+      linha+=' | ❌ NÃO confirmou';
+      if(falta>0)linha+=' | FALTA '+falta+' palpites';
+      else if(total>0)linha+=' | ✅ COMPLETO (só confirmar)';
     }
     if(!especiais.champion)linha+=' | Sem campeão';
     if(!especiais.top_scorer)linha+=' | Sem artilheiro';
