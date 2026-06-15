@@ -571,12 +571,22 @@ Toda melhoria deve:
 
 ## 13. Version History
 
-### v19.10 (2026-06-14) � Ajustes finais pr�-estreia
+### v19.10 (2026-06-14) - Ajustes finais + Correcoes de Live/Ao Vivo
 
-- **Scroll bouncing corrigido**: `_scrolledToLive` flag global s� permite scroll-into-view na primeira renderiza��o. Resetado ao trocar filtro ou clicar na aba Jogos. Elimina salto a cada polling
-- **Aba Bol�o movida para primeira posi��o**: tab bar agora inicia com Bol�o, seguido de Jogos. �nfase na funcionalidade de Bol�o durante a Copa
-- **Regras do bol�o recolhidas por padr�o**: adicionada classe `collapsed` ao abrir a p�gina. Usu�rio clica para expandir
-- **`copa2026.html` sincronizado** com `index.html`
+- **Scroll bouncing corrigido**: _scrolledToLive flag global so permite scroll-into-view na primeira renderizacao. Resetado ao trocar filtro ou clicar na aba Jogos. Elimina salto a cada polling
+- **Aba Bolao movida para primeira posicao**: tab bar agora inicia com Bolao, seguido de Jogos. Enfase na funcionalidade de Bolao durante a Copa
+- **Regras do bolao recolhidas por padrao**: adicionada classe collapsed ao abrir a pagina. Usuario clica para expandir
+- **copa2026.html sincronizado** com index.html
+- **bolaoShowParcial()**: funcao console que mostra tabela de participantes com picks preenchidos/total, confirmacao, e FALTA para nao confirmados
+- **Worker retorna pickCounts**: /ranking agora inclui pickCounts (picks nao-nulos, busca paginada com Range headers). Frontend armazena em _bolaoPickCounts com cache offline
+- **MATCH_ENDED check movido para dentro do .then()**: antes rodava sincronamente antes do fetch resolver; agora a comparacao acontece dentro da callback, detectando MatchStatus=0 corretamente
+- **Re-render sempre na poll**: renderGames(), renderGroups(), renderBracket(), renderScorers() chamados em toda poll completa. dynRender evita flicker
+- **MATCH_ENDED persistido**: saveState() salva matchEnded/matchStarted, _loadPersistent() restaura - sobrevive a refresh
+- **Fallback game_+n para MATCH_ENDED**: no load, marca jogos com placar + >2.5h como encerrados mesmo sem FIFA_MATCH_IDS populado. isGameLive/gameIsPast verificam essa chave
+- **Heuristica preservada em 2.5h** (9000000ms): cobre 90min+15HT+30ET+15penaltis. Protege acuracia do bolao em jogos KO
+- **backup-supabase.ps1**: script PowerShell que faz dump de todas as 6 tabelas do Supabase para JSONs em /backups/
+- **Seguranca de exclusao documentada**: secao 15 do AGENTS.md - backup obrigatorio antes de deletar, nunca deletar sem confirmar com o usuario
+- **Console Reference**: secao 17 do AGENTS.md - documentacao completa de todas as funcoes e variaveis acessiveis via DevTools
 
 ### v19.9 (2026-06-13) � Auditoria final: corre��es cr�ticas para produ��o
 
@@ -854,3 +864,64 @@ powershell
 - O Worker e sobrescrito a cada deploy (versao anterior e perdida)
 - Sempre manter bolao-worker.js.backup sincronizado com a ultima versao estavel
 - Backup automatico: Copy-Item bolao-worker.js bolao-worker.js.backup
+
+## 17. Console Reference (DevTools F12)
+
+### Funções do Bolão
+
+| Função | Descrição |
+|---|---|
+| `bolaoShowParcial()` | Tabela de todos participantes: palpites preenchidos/total, confirmação, quanto falta (só não confirmados) |
+| `bolaoSimular()` | Gera 9 participantes de teste com palpites aleatórios (debug) |
+| `bolaoLimpar()` | Limpa scores locais (placares manuais) |
+| `bolaoReseta()` | Apaga Supabase + localStorage + recarrega a página |
+| `bolaoLogin()` | Abre o modal de login/cadastro |
+| `bolaoSavePick(gameN)` | Salva palpite individual de um jogo |
+| `bolaoKOPick(gameN, side)` | Salva desempate KO (side: 'a' ou 'b') |
+| `bolaoSaveSpecial()` | Salva campeão + artilheiro |
+| `bolaoConfirmAll()` | Trava todos os palpites |
+| `bolaoCalcTotal(participantId)` | Pontuação total de um participante |
+| `bolaoRenderRanking()` | Força re-render do ranking |
+| `bolaoRenderPicksGrid()` | Força re-render do grid de palpites |
+
+### Funções de Admin/Manutenção
+
+| Função | Descrição |
+|---|---|
+| `_bAdm('BolaoAdmin2026!', 'Nome')` | Desbloqueia participante confirmado (reseta confirmed=false) |
+| `checkAutoSnapshot()` | Força snapshot manual da posição atual no ranking_snapshots |
+
+### Variáveis de Diagnóstico (console)
+
+| Variável | Descrição |
+|---|---|
+| `_bolaoMyPicks` | Seus palpites (todos os 99 jogos) |
+| `_bolaoAllPicks` | Palpites de todos participantes (só jogos já iniciados — sigilo) |
+| `_bolaoPickCounts` | Contagem real de picks de cada participante (todos os 99 jogos) |
+| `_bolaoParticipants` | Lista de participantes {id, name, confirmed} |
+| `_bolaoConfirmedStatus` | Mapa participantId → true/false (confirmou ou não) |
+| `_bolaoConfirmedAt` | Mapa participantId → timestamp ISO (data/hora da confirmação) |
+| `_bolaoToken` | JWT atual (se logado) |
+| `_bolaoParticipantId` | Seu ID (se logado) |
+| `_bolaoName` | Seu nome (se logado) |
+| `_bolaoConfirmed` | Se você confirmou |
+| `_bolaoKOPicks` | Suas escolhas de desempate KO |
+| `_bolaoBracketCache` | Bracket simulado em cache |
+| `_bolaoMajority` | Palpites da maioria (3 mais comuns por jogo) |
+| `_bolaoSnappedGames` | Jogos que já tiveram snapshot |
+
+### Variáveis do App (console)
+
+| Variável | Descrição |
+|---|---|
+| `GAMES` | Array com 104 jogos |
+| `GROUPS` | Objeto com 12 grupos (A-L) |
+| `scores` | Estado runtime dos placares { gameN: {a, b, pen} } |
+| `goals` | Eventos de gol { gameN: {a: [...], b: [...]} } |
+| `cards` | Cartões { gameN: {a: [...], b: [...]} } |
+| `MATCH_STARTED` | Mapa FIFA matchId → true (jogo começou) |
+| `MATCH_ENDED` | Mapa FIFA matchId → true (jogo encerrou) + chave `game_+N` (heurística local) |
+| `FIFA_MATCH_IDS` | Mapa gameN → FIFA matchId |
+| `PLAYERS` | 1248 jogadores carregados de players.json |
+| `PLAYER_PHOTOS` | URLs de fotos carregadas de photos.json |
+| `REFEREES` | Cache de árbitros (Wikipedia) |
