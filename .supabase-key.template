@@ -1,0 +1,3 @@
+# Copie este arquivo para .supabase-key e substitua pela service_role key real
+# .supabase-key está no .gitignore — NUNCA commitar a chave real
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIs...

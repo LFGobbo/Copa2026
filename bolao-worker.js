@@ -320,6 +320,12 @@ async function handle(req) {
       return json({ participantId: pid2, evolution: snaps });
     }
 
+    // GET /evolution/all — historico completo de todos participantes (snapshots)
+    if (method === 'GET' && path === '/evolution/all') {
+      var allSnaps = (await supaFetch('ranking_snapshots?select=participant_id,round,position,points,recorded_at&order=round')) || [];
+      return json({ snapshots: allSnaps });
+    }
+
     // GET /app — proxy do site (backup se GitHub Pages cair)
     if (method === 'GET' && (path === '/app' || path.match(/\.(png|json)$/))) {
       var ghUrl = 'https://lfgobbo.github.io/Copa2026/' + (path === '/app' ? '' : path.replace(/^\//,''));

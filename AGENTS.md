@@ -402,7 +402,7 @@ Turnstile Secret: 0x4AAAAAADj0kQff4_E5yllvUOzc2sCtF2k
 | `picks` | `id, participant_id (fk), game_n (int), goals_a (int), goals_b (int), ko_pick (text), created_at, updated_at` | Palpites por jogo |
 | `special_picks` | `id, participant_id (fk, unique), champion (text), top_scorer (text), locked (bool)` | Palpites especiais |
 
-### 7.3 Funcionalidades
+### 7.4 Funcionalidades
 
 - Login/cadastro com SHA-256 via `crypto.subtle`
 - Palpites por jogo (grid de inputs, trava 2h antes)
@@ -816,7 +816,7 @@ console.log(_bolaoGroupStandings('F'))            // Classifica��o simulada
 console.log(_bolaoRankedThirds())                 // 8 melhores 3os
 ```
 
-## 15. Backup e Recupera��o
+## 16. Backup e Recuperação
 
 ### Backup autom�tico no reposit�rio
 - Arquivos marcados com .backup no reposit�rio s�o c�pias do �ltimo estado est�vel
@@ -843,7 +843,7 @@ console.log(_bolaoRankedThirds())                 // 8 melhores 3os
 4. **Nunca usar `delete` com cascade sem antes tentar backup** — o Supabase free tier n�o tem point-in-time recovery
 5. **Em caso de d�vida sobre qual usu�rio deletar, perguntar** — nunca assumir
 6. **Incidente "guimo" (14/06/2026)**: o agente deletou o usu�rio "guimo" por engano ao confundir com "teste". **SEMPRE confirmar o nome exato com o usu�rio antes de qualquer exclus�o.** Se deletar sem querer, recriar via cadastro normal — os picks antigos estar�o perdidos (n�o h� recovery point pra linhas deletadas no free tier do Supabase). O backup do Supabase (rodar `.\backup-supabase.ps1` antes) teria evitado a perda.
-## 16. Deploy Automatico do Worker
+## 17. Deploy Automatico do Worker
 
 ### Script PowerShell (deploy-worker.ps1)
 - Sobe o bolao-worker.js para o Cloudflare via API (sem wrangler, sem Node.js)
@@ -866,7 +866,7 @@ powershell
 - Sempre manter bolao-worker.js.backup sincronizado com a ultima versao estavel
 - Backup automatico: Copy-Item bolao-worker.js bolao-worker.js.backup
 
-## 17. Console Reference (DevTools F12)
+## 18. Console Reference (DevTools F12)
 
 ### Funções do Bolão
 

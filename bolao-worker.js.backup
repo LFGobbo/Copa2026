@@ -171,11 +171,29 @@ async function handle(req) {
           if (batch.length < 1000) break;
         }
       } catch(e) {}
+      // Contagem total de picks preenchidos por participante (só com goals não nulos)
+      var pickCounts = {};
+      try {
+        var countUrl = SUPABASE_URL + '/rest/v1/picks?select=participant_id,goals_a,goals_b';
+        var countOpts = { method: 'GET', headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' } };
+        for (var page = 0; page < 10; page++) {
+          var start = page * 1000;
+          countOpts.headers['Range'] = start + '-' + (start + 999);
+          var cres = await fetch(countUrl, countOpts);
+          if (!cres.ok && cres.status !== 206) break;
+          var ct = cres.headers.get('content-type') || '';
+          if (ct.indexOf('json') < 0) break;
+          var cdata = await cres.json() || [];
+          if (!cdata.length) break;
+          cdata.forEach(function(c){ if(c.goals_a!==null && c.goals_b!==null) pickCounts[c.participant_id] = (pickCounts[c.participant_id] || 0) + 1; });
+          if (cdata.length < 1000) break;
+        }
+      } catch(e) {}
       var allSp = [];
       if (url.searchParams.get('showSpecials') === '1') {
         allSp = (await supaFetch('special_picks?select=participant_id,champion,top_scorer')) || [];
       }
-      return json({ participants: participants, picks: allPicks, specialPicks: allSp });
+      return json({ participants: participants, picks: allPicks, specialPicks: allSp, pickCounts: pickCounts });
     }
 
     // POST /special-picks
@@ -300,6 +318,12 @@ async function handle(req) {
       if (!pid2) return error('participantId obrigatorio');
       var snaps = (await supaFetch('ranking_snapshots?participant_id=eq.' + pid2 + '&select=round,position,points,recorded_at&order=round')) || [];
       return json({ participantId: pid2, evolution: snaps });
+    }
+
+    // GET /evolution/all — historico completo de todos participantes (snapshots)
+    if (method === 'GET' && path === '/evolution/all') {
+      var allSnaps = (await supaFetch('ranking_snapshots?select=participant_id,round,position,points,recorded_at&order=round')) || [];
+      return json({ snapshots: allSnaps });
     }
 
     // GET /app — proxy do site (backup se GitHub Pages cair)

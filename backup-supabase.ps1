@@ -3,7 +3,13 @@ $outputDir = Join-Path (Split-Path $MyInvocation.MyCommand.Path) "backups"
 if (!(Test-Path $outputDir)) { New-Item -ItemType Directory -Path $outputDir | Out-Null }
 
 $supabaseUrl = "https://etbezmraylbvlnycltha.supabase.co"
-$key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0YmV6bXJheWxidmxueWNsdGhhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTI3NDE0MCwiZXhwIjoyMDk2ODUwMTQwfQ.kbcmnTI-anyEaTEIf7tlo107-EL1XEWIm7bzNBGfCbs"
+$keyFile = Join-Path $PSScriptRoot ".supabase-key"
+if (Test-Path $keyFile) {
+  $key = (Get-Content $keyFile -Raw).Trim()
+} else {
+  Write-Host "[ERRO] .supabase-key nao encontrado. Copie .supabase-key.template e preencha a chave." -ForegroundColor Red
+  exit 1
+}
 $headers = @{ apikey = $key; Authorization = "Bearer $key" }
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
