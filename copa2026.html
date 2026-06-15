@@ -3324,6 +3324,7 @@ function computeBolaoStats(){
       var pts=bolaoCalcPickPts(pk.a,pk.b,sc.a,sc.b);
       if(pts>0)scoringNow.push({id:id,name:_bolaoParticipants[id]||'?',pts:pts});
     });
+    scoringNow.sort(function(a,b){return b.pts-a.pts||(a.name<b.name?-1:1);});
     s.liveGames.push({game:g,score:sc,dist:dist,scoringNow:scoringNow});
   });
   // Individual stats
