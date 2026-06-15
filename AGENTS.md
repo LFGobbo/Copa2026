@@ -1,6 +1,6 @@
 ﻿# Copa do Mundo 2026 � Documenta��o do Projeto
 
-**�ltima atualiza��o:** 2026-06-15 (v19.11)
+**�ltima atualiza��o:** 2026-06-15 (v19.15)
 **Reposit�rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -263,6 +263,8 @@ cards = {
 | `_LIVE_WINDOW` | 10800000ms � janela para live/past (3h cobre 90'+30'+p�naltis) |
 | `TIMELINE_HASH` | Hash de eventos da timeline para detectar corre��es da FIFA |
 | `GAME_BY_ID` | `GAME_BY_ID[g.n] = g` � lookup direto, elimina `GAMES.find()` |
+| `MATCH_HALFTIME` | Mapa idMatch → true (intervalo entre 1T e 2T) |
+| `MATCH_SECOND_KICKOFF` | Mapa idMatch → Date (UTC do inicio do 2T via Type 8 ou SecondHalfKickOffTime) |
 
 ### 6.2 Fun��es por Dom�nio
 
@@ -587,6 +589,32 @@ Toda melhoria deve:
 - **backup-supabase.ps1**: script PowerShell que faz dump de todas as 6 tabelas do Supabase para JSONs em /backups/
 - **Seguranca de exclusao documentada**: secao 15 do AGENTS.md - backup obrigatorio antes de deletar, nunca deletar sem confirmar com o usuario
 - **Console Reference**: secao 17 do AGENTS.md - documentacao completa de todas as funcoes e variaveis acessiveis via DevTools
+
+### v19.15 (2026-06-15) - Anti-piscar: badge atualiza so textContent sem recriar DOM
+
+- **Anti-piscar**: `updateCountdown` verifica `sp.textContent !== timeStr` antes de escrever no DOM. Badge criado uma unica vez, reutilizado nas atualizacoes seguintes
+
+### v19.14 (2026-06-15) - rawMin como fonte da verdade, drift max 3min
+
+- **rawMin como fonte da verdade**: `disp = Math.max(run, rawMin)` invertido — agora `rawMin` da Timeline/Calendar API e a fonte principal. Calculo por kickoff usado so quando `rawMin === 0` (antes do primeiro evento)
+- **Drift max 3min**: entre polls, o relogio avanca no maximo 3min alem do ultimo `rawMin` — evita travar sem saltar para o valor inflado do 1T
+- **top:-26px**: badge mais acima, sem sobrepor o placar
+
+### v19.13 (2026-06-15) - HT detection, MatchStatus=4, Type 6/8, 120+X' extra time
+
+- **Intervalo (HT)**: `MATCH_HALFTIME` detectado via Calendar API (`MatchStatus=4`) e Timeline API (`Type 6` = fim 1T, `Type 8` = inicio 2T)
+- **Segundo tempo recalibrado**: `MATCH_SECOND_KICKOFF` guarda UTC do inicio do 2T. Quando disponivel, recalcula o relogio a partir dele
+- **Prorrogacao**: `disp<=90 → N'`, `disp<=105 → 90+X'`, `disp>105 → 120+N'`, cap `135+`
+- **Novas variaveis globais**: `MATCH_HALFTIME`, `MATCH_SECOND_KICKOFF`
+- **Calendar API**: captura `MatchTime` (minuto direto) e `SecondHalfKickOffTime`
+- **Diagnostico**: console.log dos `Type`/`TypeLocalized` durante jogos ao vivo
+
+### v19.12 (2026-06-15) - Ajustes relogio ao vivo: grid, contain, absolute
+
+- **v19.12d**: `contain:layout` removido do `.game-card` (so `contain:style`), `overflow:visible` no `.game-score`, badge volta a `position:absolute;top:-18px` relativo ao `.game-score`
+- **v19.12c**: Badge mudou de `order:-1` (flex) para `position:absolute` com `contain:layout` removido. `rawStr` preserva string original do `MATCH_RAW_MINUTE` para exibir `90+8'` em vez de `98'`
+- **v19.12b**: `.game-score` com `position:relative`, `.live-clock` com `position:absolute;top:-20px;left:50%;transform:translateX(-50%)` — flutua acima sem ocupar slot no grid
+- **v19.12a**: CSS `.live-clock` com `grid-column:3;grid-row:1` (quebrou layout) + formato `90+X'` e cap 105min. Revertido
 
 ### v19.11 (2026-06-15) - Relogio ao vivo + dados FIFA crus + layout mobile fix
 
