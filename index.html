@@ -2542,8 +2542,8 @@ function bolaoRenderPicksGrid(){
     var koHtml=_bolaoKOHtml(g,pick,inputLocked);
     // Card
     var locked=inputLocked?' bsp-locked':'';
-    var missingCls=(!hasPick&&!isLocked)?' bsp-missing':'';
-    html+='<div class="bsp-card'+locked+missingCls+'">'
+    var missingStyle=(!hasPick&&!isLocked)?'border:2px solid #ff1744;box-shadow:0 0 16px rgba(255,23,68,.5);':'';
+    html+='<div class="bsp-card'+locked+'"'+(missingStyle?' style="'+missingStyle+'"':'')+'>'
       +'<div class="bsp-phase">'+esc(g.f)+'</div>'
       +'<div class="bsp-teams" id="bolao-teams-'+g.n+'">'+tA+' vs '+tB+'</div>'
       +'<div class="bsp-date">'+g.d+' '+g.t+'</div>'
