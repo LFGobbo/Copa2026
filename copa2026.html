@@ -2683,7 +2683,7 @@ async function bolaoSaveSpecial(){
   var btn=document.getElementById('bolao-special-btn');btn.disabled=true;btn.textContent='Salvando...';
   try{
     await _bolaoFetch('/special-picks','POST',{champion:champion,topScorer:topScorer});
-    _bolaoMySpecial={champion:champion,topScorer:topScorer};
+    _bolaoMySpecial={champion:champion,top_scorer:topScorer};
     if(champion)document.getElementById('bolao-champion-saved').textContent=champion;
     if(topScorer)document.getElementById('bolao-scorer-saved').textContent=topScorer;
     btn.disabled=false;btn.textContent='Salvo com sucesso';
