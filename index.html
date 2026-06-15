@@ -3119,11 +3119,15 @@ function bolaoShowParcial(){
     var confirmed=_bolaoConfirmedStatus[id];
     var especiais=_bolaoAllSpecials[id]||{};
     var pickCount=_bolaoPickCounts[id]||0;
-    var total=99;
+    // Se confirmou: preencheu TUDO que estava disponível → denominador = pickCount
+    // Se não confirmou: o total é 99, FALTA é o que falta
+    var total=confirmed?pickCount:99;
     var especiaisStr=especiais.champion&&especiais.top_scorer?'OK':(especiais.champion||especiais.top_scorer?'Parcial':'Nenhum');
     var confirmStr=confirmed?'Sim':'Nao';
+    var dt=_bolaoConfirmedAt[id]?new Date(_bolaoConfirmedAt[id]).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
     var linha=(name||'?').padEnd(28)+String(pickCount).padStart(3)+'/'+total+'  '+especiaisStr.padEnd(7)+'  '+confirmStr;
-    if(!confirmed&&pickCount<total)linha+='  FALTA '+(total-pickCount);
+    if(dt)linha+='  ('+dt+')';
+    if(!confirmed&&pickCount<99)linha+='  FALTA '+(99-pickCount);
     if(especiais.champion)linha+='  Campeao: '+especiais.champion;
     if(especiais.top_scorer)linha+='  Art: '+especiais.top_scorer;
     console.log(linha);

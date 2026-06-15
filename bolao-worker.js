@@ -174,12 +174,19 @@ async function handle(req) {
       // Contagem total de picks preenchidos por participante (só com goals não nulos)
       var pickCounts = {};
       try {
-        var countUrl = SUPABASE_URL + '/rest/v1/picks?select=participant_id,goals_a,goals_b&limit=100000';
-        var countOpts = { method: 'GET', headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY } };
-        var cres = await fetch(countUrl, countOpts);
-        if (cres.ok) {
+        var countUrl = SUPABASE_URL + '/rest/v1/picks?select=participant_id,goals_a,goals_b';
+        var countOpts = { method: 'GET', headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' } };
+        for (var page = 0; page < 10; page++) {
+          var start = page * 1000;
+          countOpts.headers['Range'] = start + '-' + (start + 999);
+          var cres = await fetch(countUrl, countOpts);
+          if (!cres.ok && cres.status !== 206) break;
+          var ct = cres.headers.get('content-type') || '';
+          if (ct.indexOf('json') < 0) break;
           var cdata = await cres.json() || [];
+          if (!cdata.length) break;
           cdata.forEach(function(c){ if(c.goals_a!==null && c.goals_b!==null) pickCounts[c.participant_id] = (pickCounts[c.participant_id] || 0) + 1; });
+          if (cdata.length < 1000) break;
         }
       } catch(e) {}
       var allSp = [];
