@@ -597,7 +597,15 @@ Toda melhoria deve:
 - **Layout mobile**: `100vh` -> `100dvh` (evita reflow da barra de URL). `overflow-anchor: auto`. Bandeiras com `width="24" height="18"` no HTML + CSS. Flag-fallback com dimensoes inline
 - **Grid do card mobile**: 768px e 480px agora usam 4 colunas `num | team-a | score | team-b` (igual desktop). Times lado a lado com placar entre eles
 - **ScrollIntoView block:start**: em vez de `block:center` que jogava o card pro meio da tela. `history.scrollRestoration='manual'` impede browser de competir pelo scroll
-- **Bolao: card com palpite faltando destacado em vermelho**: borda vermelha (2px) + glow nos cards do grid que ainda nao foram preenchidos. Remove o `style` inline via `.closest('.bsp-card').removeAttribute('style')` no `.then()` do fetch ao salvar. Some imediatamente ao preencher os dois campos
+- **Bolao: card com palpite faltando destacado em vermelho**: borda vermelha (2px) + glow nos cards do grid que ainda nao foram preenchidos. Some imediatamente ao preencher os dois campos
+- **Bolao deadline 2h -> 30min**: `BOLAO_TWO_H` de 7200000 para 1800000
+- **BolaoShowParcial(): especiais direto do Supabase**: funcao agora busca `special_picks` direto da API REST do Supabase (sem worker, sem depender de `showSpecials`). Exibe OK/Parcial/Nenhum corretamente
+- **BolaoShowParcial(): fallback _bolaoMySpecial**: para o usuario logado, usa `_bolaoMySpecial` se `_bolaoAllSpecials` estiver vazio
+- **BolaoSaveSpecial(): topScorer -> top_scorer**: corrigido campo camelCase para snake_case (equivalente ao banco)
+- **Estatisticas: Zebra da Copa sort por %**: zebra ordenada por `pct` decrescente (maior % de erro primeiro)
+- **Relogio ao vivo refinado**: badge `.live-clock` injetado dinamicamente pelo `updateCountdown()` (nao depende do render). Usa `_parseMinute` para comparar minuto de evento vs tempo decorrido do `MATCH_KICKOFF`. `dynRender` normaliza removendo `.live-clock` da comparacao para evitar re-render a cada poll. Badge posicionado com `flex:0 0 100%; margin-top:-20px` dentro do `.game-score`, visualmente acima do placar sem `overflow:hidden` no card
+- **dynRender(): normalizacao de relogio**: regex remove `<div class="live-clock...>` da comparacao de HTML para evitar que o conteudo dinamico do badge cause substituicao desnecessaria do DOM (e o consequente pula-pula)
+- **overflow:hidden removido do .game-card**: impedia o badge do relogio de aparecer em telas menores (posicionado absolute acima do placar)
 
 ### v19.9 (2026-06-13) � Auditoria final: corre��es cr�ticas para produ��o
 
