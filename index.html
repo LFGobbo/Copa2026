@@ -945,13 +945,15 @@ function gameIsPast(g){
     var now=new Date(),gd=gameUTC(g);
     if(!gd)return false;
     if(isGameLive(g))return false;
-    if(now<=new Date(gd.getTime()+_LIVE_WINDOW))return false;
     var id=FIFA_MATCH_IDS[g.n];
     if(id&&MATCH_ENDED[id])return true;
     // Heurística: tem placar completo e passou >2.5h do inicio
     var s=scores[g.n];
     if(s&&s.a!==undefined&&s.b!==undefined&&now.getTime()-gd.getTime()>9000000)return true;
-    return s&&s.a!==undefined&&s.b!==undefined;
+    // Só verifica janela de 3h se não tiver placar
+    if(now<=new Date(gd.getTime()+_LIVE_WINDOW))return false;
+    if(s&&s.a!==undefined&&s.b!==undefined)return true;
+    return false;
   }catch(e){return false}
 }
 function isGameLive(g){
@@ -959,10 +961,10 @@ function isGameLive(g){
     var now=new Date(),gd=gameUTC(g);if(!gd)return false;
     var id=FIFA_MATCH_IDS[g.n];
     if(id&&MATCH_ENDED[id])return false;
-    if(id&&MATCH_STARTED[id]&&!MATCH_ENDED[id])return true;
-    // Heurística: tem placar e passou >2.5h → não está mais ao vivo
+    // Heurística: tem placar e passou >2.5h → não está mais ao vivo (antes do MATCH_STARTED)
     var s=scores[g.n];
     if(s&&s.a!==undefined&&s.b!==undefined&&gd&&now.getTime()-gd.getTime()>9000000)return false;
+    if(id&&MATCH_STARTED[id]&&!MATCH_ENDED[id])return true;
     var kickoff=id&&MATCH_KICKOFF[id]?MATCH_KICKOFF[id]:gd;
     return now>=kickoff&&now<=new Date(kickoff.getTime()+_LIVE_WINDOW);
   }catch(e){return false}
@@ -2113,8 +2115,10 @@ function renderDiagnostico(){
 
 // --- Polling automático da FIFA API ---
 initFifaMaps();
-(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){var endedBefore=Object.keys(MATCH_ENDED).length;fetchFifaScores(8000).then(function(m){if(m&&Object.keys(m).length){mergeScores(m);auditData()}else{_bolaoFetch('/scores').then(function(d){if(d&&d.scores&&d.scores.length){var sm={};d.scores.forEach(function(s){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];var abbA=FIFA_TEAM_REV[g.a],abbB=FIFA_TEAM_REV[g.b];if((abbA===s.home_team&&abbB===s.away_team)||(abbA===s.away_team&&abbB===s.home_team)){sm[g.n]={a:abbA===s.home_team?s.goals_home:s.goals_away,b:abbA===s.home_team?s.goals_away:s.goals_home};break}}});if(Object.keys(sm).length)mergeScores(sm)}}).catch(function(){})}});// Re-render se MATCH_ENDED mudou (MatchStatus da Calendar)
-if(Object.keys(MATCH_ENDED).length!==endedBefore){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();setTimeout(checkAutoSnapshot,500)}
+(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){var endedBefore=Object.keys(MATCH_ENDED).length;fetchFifaScores(8000).then(function(m){
+  // Re-render se MATCH_ENDED mudou (MatchStatus da Calendar/Timeline)
+  if(Object.keys(MATCH_ENDED).length!==endedBefore){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();setTimeout(checkAutoSnapshot,500)}
+  if(m&&Object.keys(m).length){mergeScores(m);auditData()}else{_bolaoFetch('/scores').then(function(d){if(d&&d.scores&&d.scores.length){var sm={};d.scores.forEach(function(s){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];var abbA=FIFA_TEAM_REV[g.a],abbB=FIFA_TEAM_REV[g.b];if((abbA===s.home_team&&abbB===s.away_team)||(abbA===s.away_team&&abbB===s.home_team)){sm[g.n]={a:abbA===s.home_team?s.goals_home:s.goals_away,b:abbA===s.home_team?s.goals_away:s.goals_home};break}}});if(Object.keys(sm).length)mergeScores(sm)}}).catch(function(){})}});
 var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);if(live||recent){delete PROCESSED_EVENTS[id];processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST)})();
 
 
