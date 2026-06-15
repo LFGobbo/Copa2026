@@ -229,7 +229,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .rules-content .highlight p{color:var(--text)}
 .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:4px;animation:pulse 1s infinite;vertical-align:middle}
 .live-label{font-size:9px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px}
-.live-clock{min-width:100%;text-align:center;font-size:10px;font-weight:800;color:var(--gold);background:rgba(255,223,0,.12);padding:1px 4px;border-radius:4px;margin-bottom:3px;font-variant-numeric:tabular-nums;letter-spacing:0}
+.game-score{position:relative}
+.live-clock{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:800;color:var(--gold);background:rgba(255,223,0,.16);padding:1px 6px;border-radius:4px;margin-bottom:4px;font-variant-numeric:tabular-nums;letter-spacing:0}
 @media(max-width:768px){
   .header-left,.header-mascots{display:none}
   .header-content{padding:14px 16px}
