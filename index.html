@@ -236,14 +236,14 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .header h1{font-size:22px}
   .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
   .tab{padding:12px 14px;font-size:12px}
-  .game-card{grid-template-columns:1fr auto;grid-template-areas:"num score" "team-a team-b" "info info" "goals goals" "pen pen";gap:4px 6px;padding:10px}
-  .game-card .game-num{grid-area:num}
-  .game-card .game-info{grid-area:info}
-  .game-card .team-col:nth-of-type(1){grid-area:team-a;font-size:12px;text-align:left}
-  .game-card .game-score{grid-area:score}
-  .game-card .team-col:nth-of-type(2){grid-area:team-b;font-size:12px;text-align:right}
-  .game-card .pen-result{grid-area:pen}
-  .game-card .goal-events{grid-area:goals}
+  .game-card{grid-template-columns:28px 1fr auto 1fr;gap:4px 6px;padding:10px}
+  .game-card .game-num{grid-column:1;grid-row:1}
+  .game-card .game-info{grid-column:1/-1;grid-row:2}
+  .game-card .team-col:nth-of-type(1){grid-column:2;grid-row:1;font-size:12px;text-align:left}
+  .game-card .game-score{grid-column:3;grid-row:1}
+  .game-card .team-col:nth-of-type(2){grid-column:4;grid-row:1;font-size:12px;text-align:right}
+  .game-card .pen-result{grid-column:1/-1;grid-row:3}
+  .game-card .goal-events{grid-column:1/-1;grid-row:4}
   .groups-grid,.squads-grid{grid-template-columns:1fr}
   .bracket-round{min-width:130px}
   .content{padding:12px}
@@ -259,9 +259,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .header{min-height:50px}
   .header-content{padding:10px}
   .content{padding:8px}
-  .game-card{padding:6px;gap:2px}
+  .game-card{padding:6px;gap:2px;grid-template-columns:24px 1fr auto 1fr}
   .game-card .team-col:nth-of-type(1){font-size:11px;text-align:left}
   .game-card .team-col:nth-of-type(2){font-size:11px;text-align:right}
+  .game-card .game-num{font-size:9px}
   .score-display{font-size:18px}
   .filter-btn{padding:3px 8px;font-size:10px}
   .filter-bar{gap:4px}
