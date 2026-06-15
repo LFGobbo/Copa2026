@@ -597,6 +597,7 @@ Toda melhoria deve:
 - **Layout mobile**: `100vh` -> `100dvh` (evita reflow da barra de URL). `overflow-anchor: auto`. Bandeiras com `width="24" height="18"` no HTML + CSS. Flag-fallback com dimensoes inline
 - **Grid do card mobile**: 768px e 480px agora usam 4 colunas `num | team-a | score | team-b` (igual desktop). Times lado a lado com placar entre eles
 - **ScrollIntoView block:start**: em vez de `block:center` que jogava o card pro meio da tela. `history.scrollRestoration='manual'` impede browser de competir pelo scroll
+- **Bolao: card com palpite faltando destacado em vermelho**: borda vermelha (2px) + glow nos cards do grid que ainda nao foram preenchidos. Remove o `style` inline via `.closest('.bsp-card').removeAttribute('style')` no `.then()` do fetch ao salvar. Some imediatamente ao preencher os dois campos
 
 ### v19.9 (2026-06-13) � Auditoria final: corre��es cr�ticas para produ��o
 
