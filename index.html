@@ -229,7 +229,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .rules-content .highlight p{color:var(--text)}
 .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:4px;animation:pulse 1s infinite;vertical-align:middle}
 .live-label{font-size:9px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px}
-.live-clock{position:absolute;top:-18px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;white-space:nowrap}
+.live-clock{position:absolute;top:-22px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;white-space:nowrap}
 .live-clock span{display:inline-block;font-size:10px;font-weight:800;color:var(--gold);background:rgba(255,223,0,.16);padding:1px 6px;border-radius:4px;font-variant-numeric:tabular-nums;letter-spacing:0}
 @media(max-width:768px){
   .header-left,.header-mascots{display:none}
@@ -1036,13 +1036,20 @@ function updateCountdown(){
     var rawMin=rawStr?_parseMinute(rawStr):0;
     var timeStr='';
     if(id&&MATCH_ENDED[id]){timeStr='FT';}
+    else if(id&&MATCH_HALFTIME[id]){timeStr='HT';}
     else if(rawStr.indexOf('+')>=0){
       timeStr=rawStr+"'";
     }else if(kickoffMs){
-      var run=Math.max(0,Math.floor((now.getTime()-kickoffMs)/60000));
+      // Usar segundo tempo como referência se disponível (recalibra o relógio)
+      var secondKick=id&&MATCH_SECOND_KICKOFF[id]?MATCH_SECOND_KICKOFF[id].getTime():null;
+      var refTime=secondKick||kickoffMs;
+      var run=Math.max(0,Math.floor((now.getTime()-refTime)/60000));
+      // Se temos segundo tempo, somar 45 min (duração do 1T) ao tempo decorrido
+      if(secondKick)run+=45;
       var disp=Math.max(run,rawMin);
-      if(disp>105)disp=105;
-      timeStr=disp<=90?disp+"'":'90+'+(disp-90)+"'";
+      timeStr=disp<=90?disp+"'":disp<=105?'90+'+(disp-90)+"'":'120+'+(disp-105)+"'";
+      // Cap máximo: 120+30' (prorrogação máxima)
+      if(disp>135)timeStr='135+';
     }else if(rawMin){timeStr=rawMin+"'";}
     else{timeStr="0'";}
     // Injetar badge dentro do .game-score (order:-1 no flex)
@@ -1624,7 +1631,7 @@ var FIFA_TEAM_MAP={
 };
 var FIFA_URL="https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200";
 
-var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},TIMELINE_HASH={},MATCH_STARTED={},MATCH_ENDED={},MATCH_KICKOFF={},MATCH_MINUTE={},MATCH_RAW_MINUTE={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={},FIFA_CALENDAR_RAW={},FIFA_TIMELINES_RAW={};
+var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},TIMELINE_HASH={},MATCH_STARTED={},MATCH_ENDED={},MATCH_KICKOFF={},MATCH_MINUTE={},MATCH_RAW_MINUTE={},MATCH_HALFTIME={},MATCH_SECOND_KICKOFF={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={},FIFA_CALENDAR_RAW={},FIFA_TIMELINES_RAW={};
 for(var abbr in FIFA_TEAM_MAP)FIFA_TEAM_REV[FIFA_TEAM_MAP[abbr]]=abbr;
 
 function fetchFifaScores(t){var ac=new AbortController(),to=setTimeout(function(){ac.abort()},t||10000);
@@ -1635,9 +1642,12 @@ d.Results.forEach(function(m){var h=FIFA_TEAM_MAP[m.Home.Abbreviation],a=FIFA_TE
 if(!FIFA_MAP_READY&&m.Home&&m.Home.Abbreviation&&m.Home.IdTeam)FIFA_TEAM_IDS[m.Home.Abbreviation]=m.Home.IdTeam;
 if(!FIFA_MAP_READY&&m.Away&&m.Away.Abbreviation&&m.Away.IdTeam)FIFA_TEAM_IDS[m.Away.Abbreviation]=m.Away.IdTeam;
 if(h&&a&&m.IdMatch){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){if(!FIFA_MATCH_IDS[g.n])FIFA_MATCH_IDS[g.n]=m.IdMatch;FIFA_MATCH_META[g.n]={id:m.IdMatch,homeId:m.Home.IdTeam,awayId:m.Away.IdTeam};break}}}
-// MatchStatus da Calendar API: 0=encerrado, 3=ao vivo, 1=agendado → define MATCH_ENDED/STARTED sem depender da Timeline
+// MatchStatus: 0=FT, 1=agendado, 3=ao vivo, 4=intervalo, 5=prorrogação, 6=pênaltis
 if(m.MatchStatus===0&&m.IdMatch){MATCH_ENDED[m.IdMatch]=true;if(!MATCH_STARTED[m.IdMatch])MATCH_STARTED[m.IdMatch]=true}
 if(m.MatchStatus===3&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true}
+if(m.MatchStatus===4&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true;MATCH_HALFTIME[m.IdMatch]=true}
+if(m.MatchTime&&m.IdMatch&&typeof m.MatchTime==='string'){var rt=m.MatchTime.replace(/'/g,'');var rn=parseInt(rt,10);if(!isNaN(rn)&&(!MATCH_MINUTE[m.IdMatch]||rn>MATCH_MINUTE[m.IdMatch])){MATCH_MINUTE[m.IdMatch]=rn;MATCH_RAW_MINUTE[m.IdMatch]=rt}}
+if(m.SecondHalfKickOffTime&&m.IdMatch&&!MATCH_SECOND_KICKOFF[m.IdMatch])MATCH_SECOND_KICKOFF[m.IdMatch]=new Date(m.SecondHalfKickOffTime)
 if(!h||!a||hs===null||as===null)return;
 for(var i=0;i<GAMES.length;i++){var g=GAMES[i];
 if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){map[g.n]={};if(g.a===h){map[g.n].a=hs;map[g.n].b=as}else{map[g.n].a=as;map[g.n].b=hs};if(hs!==null&&as!==null&&hs===as&&m.HomeTeamPenaltyScore!==null&&m.AwayTeamPenaltyScore!==null){map[g.n].pen=(g.a===h)?(parseInt(m.HomeTeamPenaltyScore,10)>parseInt(m.AwayTeamPenaltyScore,10)?'a':'b'):(parseInt(m.AwayTeamPenaltyScore,10)>parseInt(m.HomeTeamPenaltyScore,10)?'a':'b')}break}}
@@ -1794,9 +1804,14 @@ function processTimeline(idMatch,gameId){
 
       // ── Estado do jogo ────────────────────────────────────
       allEvents.forEach(function(e){
+        if(e.Type===6){MATCH_HALFTIME[idMatch]=true}
         if(e.Type===7){
           MATCH_STARTED[idMatch]=true;
           if(e.UTC&&!MATCH_KICKOFF[idMatch])MATCH_KICKOFF[idMatch]=new Date(e.UTC);
+        }
+        if(e.Type===8){
+          MATCH_HALFTIME[idMatch]=false;
+          if(e.UTC&&!MATCH_SECOND_KICKOFF[idMatch])MATCH_SECOND_KICKOFF[idMatch]=new Date(e.UTC);
         }
         if(e.Type===26)MATCH_ENDED[idMatch]=true;
         if(e.MatchMinute){
@@ -1805,6 +1820,8 @@ function processTimeline(idMatch,gameId){
           if(!isNaN(m)&&(!MATCH_MINUTE[idMatch]||m>MATCH_MINUTE[idMatch])){MATCH_MINUTE[idMatch]=m;MATCH_RAW_MINUTE[idMatch]=raw;}
         }
       });
+      // Diagnóstico: loga Types vistos durante jogos ao vivo
+      if(idMatch&&MATCH_STARTED[idMatch]&&!MATCH_ENDED[idMatch]){try{var seen={};allEvents.forEach(function(e){if(!seen[e.Type]){seen[e.Type]=e.TypeLocalized||''}});if(Object.keys(seen).length)console.log('[TIMELINE] Match '+gameId+' types:',JSON.stringify(seen));}catch(e){}}
 
       // ── Detectar se houve mudança desde o último poll ─────
       var maxId=0;
