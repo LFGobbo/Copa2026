@@ -3117,15 +3117,30 @@ function bolaoShowParcial(){
   ids.forEach(function(id){
     var name=_bolaoParticipants[id];
     var confirmed=_bolaoConfirmedStatus[id];
+    var confirmTs=_bolaoConfirmedAt[id]?new Date(_bolaoConfirmedAt[id]).getTime():null;
     var especiais=_bolaoAllSpecials[id]||{};
     var pickCount=_bolaoPickCounts[id]||0;
-    // Se confirmou: preencheu TUDO que estava disponível → denominador = pickCount
-    // Se não confirmou: o total é 99, FALTA é o que falta
-    var total=confirmed?pickCount:99;
+    // Calcular quantos jogos estavam ABERTOS no momento da confirmação
+    // (lockTime = game_start - BOLAO_TWO_H > confirmed_at → estava aberto)
+    var eligibleTotal=99;
+    if(confirmTs){
+      eligibleTotal=0;
+      GAMES.forEach(function(g){
+        if(g.n<BOLAO_FIRST)return;
+        var gd=gameUTC(g);if(!gd)return;
+        if(gd.getTime()-BOLAO_TWO_H>confirmTs)eligibleTotal++;
+      });
+    }
+    // Se confirmou: o denominador é o que estava aberto na hora
+    // Se não confirmou: denominador é 99
+    var total=confirmed?eligibleTotal:99;
+    // O pickCount pode ser maior que eligibleTotal (preencheu jogos já travados)
+    // Mas o que importa é o que estava disponível
+    var displayCount=confirmed?Math.min(pickCount,eligibleTotal):pickCount;
     var especiaisStr=especiais.champion&&especiais.top_scorer?'OK':(especiais.champion||especiais.top_scorer?'Parcial':'Nenhum');
     var confirmStr=confirmed?'Sim':'Nao';
     var dt=_bolaoConfirmedAt[id]?new Date(_bolaoConfirmedAt[id]).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
-    var linha=(name||'?').padEnd(28)+String(pickCount).padStart(3)+'/'+total+'  '+especiaisStr.padEnd(7)+'  '+confirmStr;
+    var linha=(name||'?').padEnd(28)+String(displayCount).padStart(3)+'/'+total+'  '+especiaisStr.padEnd(7)+'  '+confirmStr;
     if(dt)linha+='  ('+dt+')';
     if(!confirmed&&pickCount<99)linha+='  FALTA '+(99-pickCount);
     if(especiais.champion)linha+='  Campeao: '+especiais.champion;
