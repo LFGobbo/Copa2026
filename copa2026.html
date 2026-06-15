@@ -3447,7 +3447,7 @@ function renderBolaoStats(){
   // Zebra
   if(s.zebra&&s.zebra.length){
     parts.push('<div class="bstats-section"><div class="bstats-section-title" title="Jogos onde a maioria dos participantes errou o resultado">🦓 Zebra da Copa</div><div class="bstats-hint">Jogos onde a maioria errou — maior % de erro primeiro</div><div class="bstats-table-wrap"><table class="bstats-rank"><tr><th>#</th><th>Jogo</th><th>Resultado</th><th>Maioria apostou</th><th>% da maioria</th></tr>');
-    s.zebra.slice(0,10).forEach(function(z,i){
+    s.zebra.sort(function(a,b){return b.pct-a.pct}).slice(0,10).forEach(function(z,i){
       var ml={h:'Mandante',d:'Empate',a:'Visitante'};
       parts.push('<tr><td class="pos">'+(i+1)+'</td><td>#'+z.game.n+' '+flag(z.game.a)+' '+esc(z.game.a)+' vs '+flag(z.game.b)+' '+esc(z.game.b)+'</td><td><strong>'+scores[z.game.n].a+'-'+scores[z.game.n].b+'</strong></td><td>'+ml[z.mr]+'</td><td><strong>'+z.pct+'%</strong></td></tr>');
     });
@@ -3458,7 +3458,7 @@ function renderBolaoStats(){
     var gd=s.community.gameDist,gdn=Object.keys(gd);
     if(gdn.length){
       parts.push('<div class="bstats-section"><div class="bstats-section-title" title="Como a galera apostou em cada jogo">🌎 Palpite da Maioria</div><div class="bstats-hint">Percentual de palpites por resultado em cada jogo</div><div class="bstats-table-wrap"><table class="bstats-rank"><tr><th>Jogo</th><th>Mandante</th><th>Empate</th><th>Visitante</th><th>Total</th></tr>');
-      gdn.sort(function(a,b){return a-b;}).forEach(function(gn){
+      gdn.sort(function(a,b){var da=gd[a],db=gd[b];return Math.max(db.h,db.d,db.a)-Math.max(da.h,da.d,da.a);}).forEach(function(gn){
         var d=gd[gn],g=GAME_BY_ID[gn];
         if(!g)return;
         parts.push('<tr><td>#'+gn+' '+flag(g.a)+' '+esc(g.a)+' vs '+flag(g.b)+' '+esc(g.b)+'</td><td><div class="bstats-bar"><div class="bstats-bar-fill bstats-bar-home" style="width:'+d.h+'%"></div></div>'+d.h+'%</td><td><div class="bstats-bar"><div class="bstats-bar-fill bstats-bar-draw" style="width:'+d.d+'%"></div></div>'+d.d+'%</td><td><div class="bstats-bar"><div class="bstats-bar-fill bstats-bar-away" style="width:'+d.a+'%"></div></div>'+d.a+'%</td><td>'+d.t+'</td></tr>');
