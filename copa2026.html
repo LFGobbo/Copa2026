@@ -86,6 +86,11 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .game-card[data-collapsed="true"] .game-stadium,.game-card[data-collapsed="true"] .game-referee,.game-card[data-collapsed="true"] .game-broadcast,.game-card[data-collapsed="true"] .game-info>div:not(.game-phase):not(.expand-btn),.game-card[data-collapsed="true"] .goal-events,.game-card[data-collapsed="true"] .pen-result{display:none}
 .expand-btn{background:var(--gold-dim);border:1px solid var(--gold);color:var(--gold);width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;margin-left:6px;vertical-align:middle;padding:0;font-family:inherit;transition:var(--transition)}
 .expand-btn:hover{background:var(--gold);color:#000}
+.hero-live-inner{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+.hero-live-inner .game-card{border-color:var(--gold);border-width:2px;box-shadow:0 0 30px rgba(255,223,0,.15),inset 0 0 50px rgba(255,223,0,.04);padding:var(--sp-md)}
+.hero-live-inner .game-card::before{content:'\u25cf AO VIVO';position:absolute;top:-1px;right:12px;font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--red);animation:pulse .8s infinite;background:var(--card);padding:0 6px;border-radius:0 0 4px 4px}
+.hero-live-inner .game-card .score-display{font-size:var(--fs-lg)}
+.section-header{font-size:var(--fs-sm);font-weight:700;padding:8px 4px 4px;margin:12px 0 4px;border-bottom:1px solid var(--border);color:var(--muted);letter-spacing:1px}
 .game-num{font-size:var(--fs-xs);color:var(--muted);text-align:center;font-weight:600;opacity:.5}
 .game-info{font-size:var(--fs-xs);color:var(--muted);line-height:1.5}
 .game-phase{font-size:9px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:2px}
@@ -528,7 +533,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 </div>
 <div class="tabs" role="tablist">
   <div class="tab" data-tab="bolao" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🎯</span><span class="tab-label">Bolão</span></div>
-  <div class="tab" data-tab="hoje" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📅</span><span class="tab-label">Hoje</span></div>
+  <!-- Hoje merged into Jogos (v19.16) -->
   <div class="tab active" data-tab="jogos" role="tab" aria-selected="true" tabindex="0"><span class="tab-icon">⚽</span><span class="tab-label">Jogos</span></div>
   <div class="tab" data-tab="grupos" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📊</span><span class="tab-label">Grupos</span></div>
   <div class="tab" data-tab="mata-mata" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🏆</span><span class="tab-label">Mata-Mata</span></div>
@@ -540,10 +545,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 <div class="content active" id="tab-jogos">
   <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">&#9201; Próximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados" style="display:none"></span></div>
   <div class="filters" id="filter-bar"></div>
+  <div id="hero-live" style="display:none"></div>
   <div id="games-list" class="dyn-content"><div class="skeleton-card"><div class="s-score"><div class="skeleton s-line" style="width:40px;height:28px"></div><div class="skeleton s-line" style="width:20px;height:28px"></div><div class="skeleton s-line" style="width:40px;height:28px"></div></div><div class="skeleton s-line"></div><div class="skeleton s-line" style="width:40%"></div></div><div class="skeleton-card"><div class="s-score"><div class="skeleton s-line" style="width:40px;height:28px"></div><div class="skeleton s-line" style="width:20px;height:28px"></div><div class="skeleton s-line" style="width:40px;height:28px"></div></div><div class="skeleton s-line"></div><div class="skeleton s-line" style="width:40%"></div></div><div class="skeleton-card"><div class="s-score"><div class="skeleton s-line" style="width:40px;height:28px"></div><div class="skeleton s-line" style="width:20px;height:28px"></div><div class="skeleton s-line" style="width:40px;height:28px"></div></div><div class="skeleton s-line"></div><div class="skeleton s-line" style="width:40%"></div></div></div>
-</div>
-<div class="content" id="tab-hoje">
-  <div id="hoje-list" class="dyn-content"></div>
 </div>
 <div class="content" id="tab-grupos">
   <div class="groups-grid dyn-content" id="groups-grid"></div>
@@ -819,7 +822,6 @@ function tabClick(){
   document.getElementById("tab-"+tab).classList.add("active");
   // Rola o menu para mostrar a tab ativa (importante no celular)
   try{this.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})}catch(e){}
-  if(tab==="hoje")renderHoje();
   if(tab==="grupos")renderGroups();
   if(tab==="mata-mata")renderBracket();
   if(tab==="artilheiros")renderScorers();
@@ -833,11 +835,10 @@ function switchTab(tab){
   document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");t.setAttribute("aria-selected","false");t.tabIndex=-1});
   document.querySelectorAll(".content").forEach(function(c){c.classList.remove("active")});
   document.getElementById("tab-"+tab).classList.add("active");
-  if(tab==="hoje")renderHoje();
   if(tab==="diagnostico")renderDiagnostico();
 }
 document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",tabClick)});
-window.addEventListener("hashchange",function(){var h=window.location.hash.replace('#','');if(h&&VALID_TABS.indexOf(h)>=0){if(h==='diagnostico'){switchTab('diagnostico');return}var t=document.querySelector('.tab[data-tab="'+h+'"]');if(t&&!t.classList.contains("active"))t.click()}});
+window.addEventListener("hashchange",function(){var h=window.location.hash.replace('#','');if(h==='hoje')h='jogos';if(h&&VALID_TABS.indexOf(h)>=0){if(h==='diagnostico'){switchTab('diagnostico');return}var t=document.querySelector('.tab[data-tab="'+h+'"]');if(t&&!t.classList.contains("active"))t.click()}});
 
 var currentFilter="all";
 function setFilter(f,e){
@@ -889,16 +890,30 @@ function renderGames(filter){
   if(filter==="ko")games=games.filter(function(g){return g.f&&!g.f.startsWith("Grupo")});
   else if(filter!=="all")games=games.filter(function(g){return g.f===GROUP_NAMES[filter]||g.f===filter});
   games.sort(function(a,b){var da=a.d.split(' ')[0].split('/'),db=b.d.split(' ')[0].split('/'),ca=parseInt(da[1])*100+parseInt(da[0]),cb=parseInt(db[1])*100+parseInt(db[0]);if(ca!==cb)return ca-cb;var ta=a.t.split(':'),tb=b.t.split(':'),tca=parseInt(ta[0])*60+parseInt(ta[1]),tcb=parseInt(tb[0])*60+parseInt(tb[1]);return tca-tcb});
-  dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""))
-}
-function renderHoje(){
-  var el=document.getElementById("hoje-list");if(!el)return;
-  var now=new Date();
-  var dd=("0"+now.getDate()).slice(-2),mm=("0"+(now.getMonth()+1)).slice(-2),todayStr=dd+"/"+mm;
-  var games=GAMES.filter(function(g){return g.d&&g.d.indexOf(todayStr)===0});
-  if(!games.length){dynRender(el,_emptyState('&#128197;','Sem jogos hoje','Nenhuma partida programada para esta data. Confira a aba Jogos para ver os pr\u00f3ximos jogos.'));return}
-  games.sort(function(a,b){var ta=a.t.split(":"),tb=b.t.split(":");return(parseInt(ta[0],10)*60+parseInt(ta[1],10))-(parseInt(tb[0],10)*60+parseInt(tb[1],10))});
-  dynRender(el,games.map(function(g){return renderGameCard(g)}).join(""));
+  if(filter!=="all"){dynRender(el,games.map(function(g){return renderGameCard(g)}).join(""));return}
+  // "all": organiza em seções temporais
+  var now=new Date(),dd=("0"+now.getDate()).slice(-2),mm=("0"+(now.getMonth()+1)).slice(-2),today=dd+"/"+mm;
+  var live=[],todayGames=[],upcoming=[],past=[];
+  games.forEach(function(g){
+    if(isGameLive(g))live.push(g);
+    else if(gameIsPast(g))past.push(g);
+    else if(g.d.indexOf(today)===0)todayGames.push(g);
+    else upcoming.push(g);
+  });
+  // Hero AO VIVO
+  var heroEl=document.getElementById("hero-live");
+  if(heroEl){
+    if(live.length){
+      heroEl.style.display="";
+      heroEl.innerHTML='<div class="hero-live-inner">'+live.map(function(g){return renderGameCard(g)}).join("")+'</div>';
+    }else{heroEl.style.display="none";heroEl.innerHTML="";}
+  }
+  // Seções
+  var parts=[];
+  if(todayGames.length)parts.push('<div class="section-header section-today">\uD83D\uDCC5 HOJE</div>'+todayGames.map(function(g){return renderGameCard(g)}).join(""));
+  if(upcoming.length)parts.push('<div class="section-header section-upcoming">\u23F3 PR\u00D3XIMOS</div>'+upcoming.map(function(g){return renderGameCard(g)}).join(""));
+  if(past.length)parts.push('<div class="section-header section-past">\u2705 ANTERIORES</div>'+past.map(function(g){return renderGameCard(g)}).join(""));
+  dynRender(el,parts.length?parts.join(""):_emptyState('\u26BD','Nenhum jogo encontrado','N\u00E3o h\u00E1 partidas programadas para esta data.'));
 }
 function toggleGameCard(el){
   var card=el&&el.closest?el.closest('.game-card'):null;
@@ -2138,10 +2153,11 @@ var REPLACED_PLAYERS={
   "Cho Wi-je":"Substituiu Cho Yu-min (fratura no p\u00e9)",
   "Herman Johansson":"Substituiu Emil Holm (les\u00e3o muscular)"
 };
-var VALID_TABS=['jogos','hoje','grupos','mata-mata','artilheiros','convocados','regras','bolao-estatisticas','bolao','diagnostico'];
+var VALID_TABS=['jogos','grupos','mata-mata','artilheiros','convocados','regras','bolao-estatisticas','bolao','diagnostico'];
 setTimeout(function(){
   try{
     var saved=window.location.hash.replace('#','')||localStorage.getItem('copa2026_tab');
+    if(saved==='hoje')saved='jogos';
     if(saved&&VALID_TABS.indexOf(saved)>=0){if(saved==='diagnostico'){switchTab('diagnostico')}else{var tab=document.querySelector('.tab[data-tab="'+saved+'"]');if(tab)tab.click()}}
   }catch(e){}
 },0);
