@@ -91,6 +91,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .hero-live-inner .game-card{border-color:var(--gold);border-width:2px;box-shadow:0 0 30px rgba(255,223,0,.15),inset 0 0 50px rgba(255,223,0,.04);padding:var(--sp-md)}
 
 .hero-live-inner .game-card .score-display{font-size:var(--fs-lg)}
+.hero-live-inner .game-card .game-info::before{content:'• AO VIVO';font-size:10px;font-weight:700;letter-spacing:1px;color:var(--red);display:block;margin-bottom:3px;animation:pulse .8s infinite}
 .section-header{font-size:var(--fs-sm);font-weight:700;padding:8px 4px 4px;margin:12px 0 4px;border-bottom:1px solid var(--border);color:var(--muted);letter-spacing:1px}
 .game-num{font-size:var(--fs-xs);color:var(--muted);text-align:center;font-weight:600;opacity:.5}
 .game-info{font-size:var(--fs-xs);color:var(--muted);line-height:1.5}
@@ -256,6 +257,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .game-card{grid-template-columns:28px 1fr auto 1fr;gap:4px 6px;padding:10px}
   .game-card .game-num{grid-column:1;grid-row:1}
   .game-card .game-info{grid-column:1/-1;grid-row:2}
+  .hero-live-inner .game-card .game-info{grid-column:2;grid-row:1}
   .game-card .team-col:nth-of-type(1){grid-column:2;grid-row:1;font-size:12px;text-align:left}
   .game-card .game-score{grid-column:3;grid-row:1}
   .game-card .team-col:nth-of-type(2){grid-column:4;grid-row:1;font-size:12px;text-align:right}
@@ -956,7 +958,7 @@ function renderGames(filter){
   if(heroEl){
     if(live.length){
       heroEl.style.display="";
-      heroEl.innerHTML='<div class="hero-live-inner">'+live.map(function(g){return '<div class="hero-card-wrap">'+renderGameCard(g).replace('<div class="game-info">','<div class="game-info"><span style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--red);display:inline-block;margin-bottom:3px;animation:pulse .8s infinite">• AO VIVO</span><br>')+'</div>'}).join("")+'</div>';
+      heroEl.innerHTML='<div class="hero-live-inner">'+live.map(function(g){return '<div class="hero-card-wrap">'+renderGameCard(g)+'</div>'}).join("")+'</div>';
     }else{heroEl.style.display="none";heroEl.innerHTML="";}
   }
   // Seções
