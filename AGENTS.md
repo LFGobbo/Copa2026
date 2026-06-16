@@ -1,6 +1,6 @@
 ﻿# Copa do Mundo 2026 � Documenta��o do Projeto
 
-**�ltima atualiza��o:** 2026-06-15 (v19.15)
+**�ltima atualiza��o:** 2026-06-16 (v19.16)
 **Reposit�rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -540,6 +540,7 @@ saveState()
 - **Chave de cart�o sem EventId**: usar minuto como identificador permite duplicatas se o mesmo cart�o for reprocessado. Usar `gameId_c_EventId` + `seenCardEvents` para deduplica��o
 - **`newEvents` vs timeline completa**: processar s� eventos novos (`EventId > lastId`) impede revalida��o de cart�es removidos pela API. A timeline completa deve ser varrida, com `auto` marcador para distinguir auto de manual
 - **`parseInt` em minuto com acr�scimo**: `parseInt("90+8")` retorna 90, n�o 98. Usar `_parseMinute` que calcula "90+8" ? 98
+- **`JSON.stringify` remove whitespace**: usar `JSON.parse`/`JSON.stringify` em JSON embutido no HTML remove trailing newlines. `const a=[...]\nconst b={}` vira `const a=[...]const b={}` que é `SyntaxError`. ASI n�o insere `;` entre duas declara��es `const` na mesma linha. Prefira string replacement cir�rgico; se precisar de parse, preserve manualmente o caractere de borda
 
 ### Bol�o
 
@@ -589,6 +590,12 @@ Toda melhoria deve:
 - **backup-supabase.ps1**: script PowerShell que faz dump de todas as 6 tabelas do Supabase para JSONs em /backups/
 - **Seguranca de exclusao documentada**: secao 15 do AGENTS.md - backup obrigatorio antes de deletar, nunca deletar sem confirmar com o usuario
 - **Console Reference**: secao 17 do AGENTS.md - documentacao completa de todas as funcoes e variaveis acessiveis via DevTools
+
+### v19.16 (2026-06-16) - Correcao de 26 horarios + SyntaxError critico + Fim auto-scroll
+
+- **26 horarios de jogos corrigidos** (cross-reference Exame/BBC/GE): jogos 17, 32, 85 e toda Rodada de 32 tiveram horarios ajustados para bater com as fontes oficiais. Detalhado no summary da sessao
+- **SyntaxError critico corrigido**: `JSON.stringify` removeu a quebra de linha entre `GAMES[...]` e `const GROUPS`, colapsando tudo na mesma linha. `const a=[]const b={}` e SyntaxError no JS — ASI nao insere ponto-e-virgula entre duas declaracoes `const` na mesma linha. O script inteiro parava de executar, site ficava sem conteudo dinamico (jogos, grupos, bracket, artilharia)
+- **Auto-scroll removido**: `_scrolledToLive` e seu `scrollIntoView` no refresh removidos. Ao recarregar a pagina no celular, o site nao desce mais sozinho para o primeiro jogo ao vivo. Variavel `_scrolledToLive` e suas referencias deletadas (dead code)
 
 ### v19.15 (2026-06-15) - Anti-piscar: badge atualiza so textContent sem recriar DOM
 
