@@ -461,6 +461,22 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .bsp-ko-confirmed{font-size:11px;color:var(--gold);margin-top:4px}
   .tab:focus-visible,.filter-btn:focus-visible,.bview-btn:focus-visible,.refresh-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
+/* Mobile: ranking em cards */
+.mob-rank-tr td{padding:4px 0;border:none;display:block}
+.mob-rank-row{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer}
+.mob-rank-row:active{background:var(--card-hover)}
+.mob-rank-main{display:flex;align-items:center;gap:8px}
+.mob-rank-pos{width:24px;font-size:16px;text-align:center;flex-shrink:0}
+.mob-rank-name{flex:1;font-weight:600;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.mob-rank-pts{font-size:20px;font-weight:800;color:var(--gold);flex-shrink:0;min-width:30px;text-align:right}
+.mob-rank-sub{font-size:11px;color:var(--muted);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:480px){
+  .mob-rank-row{padding:8px 10px}
+  .mob-rank-name{font-size:13px}
+  .mob-rank-pts{font-size:18px}
+  .mob-rank-sub{font-size:10px}
+}
+
 /* Estatísticas pessoais */
 .bolao-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
 .bolao-stat-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
