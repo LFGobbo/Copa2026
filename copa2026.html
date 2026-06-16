@@ -518,6 +518,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 <div class="tabs" role="tablist">
   <div class="tab" data-tab="bolao" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🎯</span><span class="tab-label">Bolão</span></div>
   <div class="tab active" data-tab="jogos" role="tab" aria-selected="true" tabindex="0"><span class="tab-icon">⚽</span><span class="tab-label">Jogos</span></div>
+  <div class="tab" data-tab="hoje" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📅</span><span class="tab-label">Hoje</span></div>
   <div class="tab" data-tab="grupos" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📊</span><span class="tab-label">Grupos</span></div>
   <div class="tab" data-tab="mata-mata" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🏆</span><span class="tab-label">Mata-Mata</span></div>
   <div class="tab" data-tab="artilheiros" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🥇</span><span class="tab-label">Artilheiros</span></div>
@@ -529,6 +530,9 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">&#9201; Próximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados" style="display:none"></span></div>
   <div class="filters" id="filter-bar"></div>
   <div id="games-list" class="dyn-content"></div>
+</div>
+<div class="content" id="tab-hoje">
+  <div id="hoje-list" class="dyn-content"></div>
 </div>
 <div class="content" id="tab-grupos">
   <div class="groups-grid dyn-content" id="groups-grid"></div>
@@ -804,6 +808,7 @@ function tabClick(){
   document.getElementById("tab-"+tab).classList.add("active");
   // Rola o menu para mostrar a tab ativa (importante no celular)
   try{this.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})}catch(e){}
+  if(tab==="hoje")renderHoje();
   if(tab==="grupos")renderGroups();
   if(tab==="mata-mata")renderBracket();
   if(tab==="artilheiros")renderScorers();
@@ -817,7 +822,8 @@ function switchTab(tab){
   document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");t.setAttribute("aria-selected","false");t.tabIndex=-1});
   document.querySelectorAll(".content").forEach(function(c){c.classList.remove("active")});
   document.getElementById("tab-"+tab).classList.add("active");
-  if(tab==="jogos")_scrolledToLive=false;
+  if(tab==="jogos"||tab==="hoje")_scrolledToLive=false;
+  if(tab==="hoje")renderHoje();
   if(tab==="diagnostico")renderDiagnostico();
 }
 document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",tabClick)});
@@ -875,7 +881,15 @@ function renderGames(filter){
   games.sort(function(a,b){var da=a.d.split(' ')[0].split('/'),db=b.d.split(' ')[0].split('/'),ca=parseInt(da[1])*100+parseInt(da[0]),cb=parseInt(db[1])*100+parseInt(db[0]);if(ca!==cb)return ca-cb;var ta=a.t.split(':'),tb=b.t.split(':'),tca=parseInt(ta[0])*60+parseInt(ta[1]),tcb=parseInt(tb[0])*60+parseInt(tb[1]);return tca-tcb});
   if(filter==="all"){dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""));if(games.length&&!_scrolledToLive){setTimeout(function(){_scrolledToLive=true;var first=null;for(var i=0;i<games.length;i++){if(!gameIsPast(games[i])){first=games[i];break}}if(first){var el=document.getElementById('g-'+first.n);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}},300)}}else{dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""))}
 }
-
+function renderHoje(){
+  var el=document.getElementById("hoje-list");if(!el)return;
+  var now=new Date();
+  var dd=("0"+now.getDate()).slice(-2),mm=("0"+(now.getMonth()+1)).slice(-2),todayStr=dd+"/"+mm;
+  var games=GAMES.filter(function(g){return g.d&&g.d.indexOf(todayStr)===0});
+  if(!games.length){dynRender(el,'<div style="text-align:center;padding:40px;color:var(--muted);font-size:15px"><div style="font-size:36px;margin-bottom:12px">&#128197;</div>Sem jogos hoje</div>');return}
+  games.sort(function(a,b){var ta=a.t.split(":"),tb=b.t.split(":");return(parseInt(ta[0],10)*60+parseInt(ta[1],10))-(parseInt(tb[0],10)*60+parseInt(tb[1],10))});
+  dynRender(el,games.map(function(g){return renderGameCard(g)}).join(""));
+}
 function toggleGameCard(btn){
   var card=btn.closest('.game-card');
   if(!card)return;
@@ -2068,7 +2082,7 @@ window.addEventListener('focus',function(){setTimeout(poll,200)});})();
 
 
 var PLAYER_PHOTOS = {};
-var VALID_TABS=['jogos','grupos','mata-mata','artilheiros','convocados','regras','bolao-estatisticas','bolao','diagnostico'];
+var VALID_TABS=['jogos','hoje','grupos','mata-mata','artilheiros','convocados','regras','bolao-estatisticas','bolao','diagnostico'];
 setTimeout(function(){
   try{
     var saved=window.location.hash.replace('#','')||localStorage.getItem('copa2026_tab');
