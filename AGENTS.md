@@ -591,9 +591,12 @@ Toda melhoria deve:
 - **Seguranca de exclusao documentada**: secao 15 do AGENTS.md - backup obrigatorio antes de deletar, nunca deletar sem confirmar com o usuario
 - **Console Reference**: secao 17 do AGENTS.md - documentacao completa de todas as funcoes e variaveis acessiveis via DevTools
 
-### v19.16 (2026-06-16) - Correcao de 26 horarios + SyntaxError critico + Fim auto-scroll
+### v19.16 (2026-06-16) - Merge Hoje+Jogos + Hero AO VIVO + Correcoes
 
-- **26 horarios de jogos corrigidos** (cross-reference Exame/BBC/GE): jogos 17, 32, 85 e toda Rodada de 32 tiveram horarios ajustados para bater com as fontes oficiais. Detalhado no summary da sessao
+- **Aba Hoje fundida com Jogos**: A tab "Hoje" foi removida da barra de navegacao. Bookmarks/URLs com `#hoje` sao redirecionados para `#jogos`. O contudo de "Hoje" agora aparece como secao dentro da aba Jogos
+- **Hero AO VIVO**: Quando ha jogos ao vivo, um card destacado (borda dourada, glow, badge "AO VIVO pulsante") aparece no topo da lista. Usa o mesmo mecanismo de relogio `.live-clock` dos cards normais. Sem jogos ao vivo, o hero fica oculto
+- **Secoes temporais na aba Jogos**: `renderGames()` agora organiza os jogos em HOJE, PROXIMOS e ANTERIORES (apenas no filtro "Todas"). Cada secao tem cabecalho com icone e cor. Filtros de grupo/mata-mata continuam sendo lista plana
+- **26 horarios de jogos corrigidos** (cross-reference Exame/BBC/GE): jogos 17, 32, 85 e toda Rodada de 32 tiveram horarios ajustados para bater com as fontes oficiais
 - **SyntaxError critico corrigido**: `JSON.stringify` removeu a quebra de linha entre `GAMES[...]` e `const GROUPS`, colapsando tudo na mesma linha. `const a=[]const b={}` e SyntaxError no JS — ASI nao insere ponto-e-virgula entre duas declaracoes `const` na mesma linha. O script inteiro parava de executar, site ficava sem conteudo dinamico (jogos, grupos, bracket, artilharia)
 - **Auto-scroll removido**: `_scrolledToLive` e seu `scrollIntoView` no refresh removidos. Ao recarregar a pagina no celular, o site nao desce mais sozinho para o primeiro jogo ao vivo. Variavel `_scrolledToLive` e suas referencias deletadas (dead code)
 
