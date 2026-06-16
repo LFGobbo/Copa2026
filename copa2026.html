@@ -316,6 +316,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .countdown-event-time{font-size:9px}
   .countdown-event-date{display:none}
   .countdown-events{-webkit-overflow-scrolling:touch}
+  /* Mobile: tabela bolao com scroll */
+  .bolao-rank-table{display:block;overflow-x:auto;width:100%;-webkit-overflow-scrolling:touch}
   /* Mobile: tabelas com scroll */
   .group-table,.third-table,.bolao-rank-table,.scorers-table{font-size:10px}
   .bolao-rank-table th,.bolao-rank-table td{padding:6px 5px;font-size:10px}
@@ -333,7 +335,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .bolao-stats-grid{grid-template-columns:repeat(2,1fr)}
   /* Mobile: safe area iPhone */
   .tabs{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
-  .content{padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+  .content{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
   /* Mobile: hero AO VIVO compacto */
   .hero-live-inner .game-card{padding:var(--sp-sm)}
   .hero-live-inner .game-card .score-display{font-size:var(--fs-body)}
@@ -2033,6 +2035,12 @@ function processTimeline(idMatch,gameId){
         var storeSide=isOwn?(teamSide==='a'?'b':'a'):teamSide;
 
         var info=FIFA_PLAYER_MAP[e.IdPlayer];
+        // Validar que o jogador do gol é do time correto
+        if(info&&info.team){
+          var _gt=scoredForHome?game.a:game.b;
+          var _pt=isOwn?(_gt===game.a?game.b:game.a):_gt;
+          if(info.team!==_pt)info=null;
+        }
         if(!info&&e.EventDescription&&e.EventDescription[0]){
           var desc=e.EventDescription[0].Description||'';
           var nm=desc.match(/^(.+?)\s*\(/);
@@ -2051,17 +2059,18 @@ function processTimeline(idMatch,gameId){
 
         var goalType=(e.Type===41)?'pen':'gol';
         var min=e.MatchMinute?(e.MatchMinute.replace(/'/g,'')):(''+idx);
-        // Assistência: AssistPlayerId direto da FIFA ou fallback Type===1 anterior
+        // Assistência: validar que é do mesmo time do gol
         var aNum=null,aName=null;
+        var _gt=scoredForHome?game.a:game.b,_pt=isOwn?(_gt===game.a?game.b:game.a):_gt;
         if(e.AssistPlayerId){
           var ai=FIFA_PLAYER_MAP[e.AssistPlayerId];
-          if(ai){aNum=ai.num;aName=ai.pname;}
+          if(ai&&(!ai.team||ai.team===_pt)){aNum=ai.num;aName=ai.pname;}
         }
         if(!aNum){
           for(var j=idx-1;j>=0;j--){
             if(allEvents[j].Type===1){
               var ai2=FIFA_PLAYER_MAP[allEvents[j].IdPlayer];
-              if(ai2){aNum=ai2.num;aName=ai2.pname;}break;
+              if(ai2&&(!ai2.team||ai2.team===_pt)){aNum=ai2.num;aName=ai2.pname;}break;
             }
           }
         }
