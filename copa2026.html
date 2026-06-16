@@ -956,7 +956,7 @@ function renderGames(filter){
   if(heroEl){
     if(live.length){
       heroEl.style.display="";
-      heroEl.innerHTML='<div class="hero-live-inner">'+live.map(function(g){return '<div class="hero-card-wrap" style="position:relative"><div style="position:absolute;top:8px;left:48px;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--red);background:var(--card);padding:0 6px;border-radius:4px;white-space:nowrap;z-index:2;animation:pulse .8s infinite">• AO VIVO</div>'+renderGameCard(g)+'</div>'}).join("")+'</div>';
+      heroEl.innerHTML='<div class="hero-live-inner">'+live.map(function(g){return '<div class="hero-card-wrap">'+renderGameCard(g).replace('<div class="game-info">','<div class="game-info"><span style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--red);display:inline-block;margin-bottom:3px;animation:pulse .8s infinite">• AO VIVO</span><br>')+'</div>'}).join("")+'</div>';
     }else{heroEl.style.display="none";heroEl.innerHTML="";}
   }
   // Seções
