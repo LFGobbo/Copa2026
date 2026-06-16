@@ -1566,21 +1566,34 @@ function renderSquads(){
   _squadObserver=obs;
   },50);
 }
-document.addEventListener('click',function(e){
-  var badge=e.target.closest('[data-tip]');
-  document.querySelectorAll('.tooltip-popup').forEach(function(p){p.remove()});
-  if(badge){
-    e.preventDefault();
-    var tip=badge.getAttribute('data-tip');
-    var popup=document.createElement('div');
-    popup.className='tooltip-popup';
-    popup.textContent=tip;
-    document.body.appendChild(popup);
-    var rect=badge.getBoundingClientRect();
-    var top=rect.bottom+6,left=rect.left+rect.width/2;
-    popup.style.top=top+'px';popup.style.left=left+'px';popup.style.transform='translateX(-50%)';
-  }
-});
+function _showTip(badge){
+  var tip=badge.getAttribute('data-tip');
+  if(!tip)return;
+  var popup=document.createElement('div');
+  popup.className='tooltip-popup';
+  popup.textContent=tip;
+  document.body.appendChild(popup);
+  var rect=badge.getBoundingClientRect();
+  popup.style.top=(rect.bottom+6)+'px';popup.style.left=(rect.left+rect.width/2)+'px';popup.style.transform='translateX(-50%)';
+  return popup;
+}
+if(window.matchMedia('(hover:hover)').matches){
+  document.addEventListener('mouseover',function(e){
+    var badge=e.target.closest('[data-tip]');
+    if(!badge)return;
+    document.querySelectorAll('.tooltip-popup').forEach(function(p){p.remove()});
+    _showTip(badge);
+  });
+  document.addEventListener('mouseout',function(e){
+    if(e.target.closest('[data-tip]'))document.querySelectorAll('.tooltip-popup').forEach(function(p){p.remove()});
+  });
+}else{
+  document.addEventListener('click',function(e){
+    var badge=e.target.closest('[data-tip]');
+    document.querySelectorAll('.tooltip-popup').forEach(function(p){p.remove()});
+    if(badge){e.preventDefault();_showTip(badge)}
+  });
+}
 
 document.querySelectorAll(".bview-btn").forEach(function(b){b.addEventListener("click",function(){
   document.querySelectorAll(".bview-btn").forEach(function(x){x.classList.remove("active")});this.classList.add("active");
