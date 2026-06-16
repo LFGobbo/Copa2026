@@ -87,10 +87,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .game-card[data-collapsed="true"] .game-stadium,.game-card[data-collapsed="true"] .game-referee,.game-card[data-collapsed="true"] .game-broadcast,.game-card[data-collapsed="true"] .game-info>div:not(.game-phase):not(.expand-btn),.game-card[data-collapsed="true"] .goal-events,.game-card[data-collapsed="true"] .pen-result{display:none}
 .expand-btn{background:var(--gold-dim);border:1px solid var(--gold);color:var(--gold);width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;margin-left:6px;vertical-align:middle;padding:0;font-family:inherit;transition:var(--transition)}
 .expand-btn:hover{background:var(--gold);color:#000}
-.hero-live-inner{display:flex;flex-direction:column;gap:6px;margin-bottom:6px;position:relative}
-.hero-live-dismiss{position:absolute;top:0;right:0;z-index:10;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--muted);width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:.15s}
-.hero-live-dismiss:hover{color:#fff;background:rgba(255,0,0,.3);border-color:var(--red)}
-.hero-live-dismissed{display:none!important}
+.hero-live-inner{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
 .hero-live-inner .game-card{border-color:var(--gold);border-width:2px;box-shadow:0 0 30px rgba(255,223,0,.15),inset 0 0 50px rgba(255,223,0,.04);padding:var(--sp-md)}
 
 .hero-live-inner .game-card .score-display{font-size:var(--fs-lg)}
@@ -982,10 +979,9 @@ function renderGames(filter){
   // Hero AO VIVO
   var heroEl=document.getElementById("hero-live");
   if(heroEl){
-    var heroDismissed=localStorage.getItem('copa2026_hero_dismissed');
-    if(live.length&&heroDismissed!=='1'){
+    if(live.length){
       heroEl.style.display="";
-      heroEl.innerHTML='<div class="hero-live-inner"><button class="hero-live-dismiss" title="Fechar" onclick="document.getElementById(\'hero-live\').classList.add(\'hero-live-dismissed\');localStorage.setItem(\'copa2026_hero_dismissed\',\'1\')">&times;</button>'+live.map(function(g){return '<div class="hero-card-wrap">'+renderGameCard(g)+'</div>'}).join("")+'</div>';
+      heroEl.innerHTML='<div class="hero-live-inner">'+live.map(function(g){return '<div class="hero-card-wrap">'+renderGameCard(g)+'</div>'}).join("")+'</div>';
     }else{heroEl.style.display="none";heroEl.innerHTML="";}
   }
   // Seções
