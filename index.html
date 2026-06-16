@@ -220,6 +220,9 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .card-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 7px;font-size:10px;color:var(--muted)}
 .card-badge.card-yellow{border-color:rgba(255,214,0,.3);color:#ffd600}
 .card-badge.card-red{border-color:rgba(255,23,68,.3);color:#ff1744}
+.squad-rep-badge{display:inline-flex;align-items:center;gap:2px;background:rgba(255,145,0,.12);border:1px solid rgba(255,145,0,.3);border-radius:var(--radius-sm);padding:1px 5px;font-size:9px;color:var(--orange);cursor:pointer;margin-left:4px;vertical-align:middle;position:relative}
+.tooltip-popup{position:fixed;z-index:9999;background:#1a1a4a;border:1px solid var(--border-light);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--text);max-width:260px;box-shadow:0 8px 32px rgba(0,0,0,.6);pointer-events:auto;white-space:normal;line-height:1.4}
+.tooltip-popup:before{content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:6px solid var(--border-light)}
 .rules-content{max-width:780px;margin:0 auto;font-size:13px;line-height:1.8}
 .rules-content h2{color:var(--gold);font-size:18px;margin:24px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);font-weight:800}
 .rules-content h3{color:var(--text);font-size:14px;margin:16px 0 6px;font-weight:600}
@@ -977,8 +980,8 @@ function _parseMinute(m){
 function renderGameCard(g){
   var gn=g.n,s=scores[gn]||{},sa=s.a!==undefined?s.a:"",sb=s.b!==undefined?s.b:"";
   var sus=getSuspensions(gn),susA=sus[g.a]||[],susB=sus[g.b]||[];
-  var susBadgeA=susA.length?'<span class="sus-badge" title="Suspensos: '+esc(susA.join(', '))+'">\u26A0 '+susA.length+'</span>':'';
-  var susBadgeB=susB.length?'<span class="sus-badge" title="Suspensos: '+esc(susB.join(', '))+'">\u26A0 '+susB.length+'</span>':'';
+  var susBadgeA=susA.length?'<span class="sus-badge" data-tip="Suspensos: '+esc(susA.join(', '))+'">\u26A0 '+susA.length+'</span>':'';
+  var susBadgeB=susB.length?'<span class="sus-badge" data-tip="Suspensos: '+esc(susB.join(', '))+'">\u26A0 '+susB.length+'</span>':'';
   var gaA=goals[gn]&&goals[gn].a?goals[gn].a:[],gaB=goals[gn]&&goals[gn].b?goals[gn].b:[];
   var caA=cards[gn]&&cards[gn].a?cards[gn].a:[],caB=cards[gn]&&cards[gn].b?cards[gn].b:[];
   var events=[];
@@ -1548,12 +1551,13 @@ function renderSquads(){
       if(li.dataset.match)li.classList.add('squad-player-match');
       obs.unobserve(li);
       var pu=getPlayerPhoto(p.name,team,p.num);
+      var rep=REPLACED_PLAYERS[p.name];
       li.innerHTML='<span class="squad-num">'+p.num+'</span>'
         +'<div class="squad-avatar">'
           +(pu?'<img src="'+pu+'" alt="'+esc(p.name)+'" loading="lazy" onerror="this.style.display=\'none\'">'
               :'<div class="avatar-fallback" style="background-image:url('+flagImg(team)+')"></div>')
         +'</div>'
-        +'<span class="squad-name">'+esc(p.name||'')+'</span>'
+        +'<span class="squad-name">'+esc(p.name||'')+(rep?' <span class="squad-rep-badge" data-tip="'+esc(rep)+'">\u26A0</span>':'')+'</span>'
         +'<span class="squad-pos">'+esc(p.pos||'')+'<br><small>'+esc(p.club||'')+' - '+esc(p.pais||'')+'</small></span>';
     });
   },{rootMargin:'300px 0px',threshold:0});
@@ -1562,6 +1566,21 @@ function renderSquads(){
   _squadObserver=obs;
   },50);
 }
+document.addEventListener('click',function(e){
+  var badge=e.target.closest('[data-tip]');
+  document.querySelectorAll('.tooltip-popup').forEach(function(p){p.remove()});
+  if(badge){
+    e.preventDefault();
+    var tip=badge.getAttribute('data-tip');
+    var popup=document.createElement('div');
+    popup.className='tooltip-popup';
+    popup.textContent=tip;
+    document.body.appendChild(popup);
+    var rect=badge.getBoundingClientRect();
+    var top=rect.bottom+6,left=rect.left+rect.width/2;
+    popup.style.top=top+'px';popup.style.left=left+'px';popup.style.transform='translateX(-50%)';
+  }
+});
 
 document.querySelectorAll(".bview-btn").forEach(function(b){b.addEventListener("click",function(){
   document.querySelectorAll(".bview-btn").forEach(function(x){x.classList.remove("active")});this.classList.add("active");
@@ -2083,6 +2102,11 @@ window.addEventListener('focus',function(){setTimeout(poll,200)});})();
 
 
 var PLAYER_PHOTOS = {};
+var REPLACED_PLAYERS={
+  "Trevoh Chalobah":"Substituiu Tino Livramento (les\u00e3o posterior da coxa)",
+  "Logan Rogerson":"Substituiu Matthew Garbett (les\u00e3o durante o aquecimento)",
+  "Marcos Senesi":"Substituiu Leonardo Balerdi (les\u00e3o no s\u00f3leo)"
+};
 var VALID_TABS=['jogos','hoje','grupos','mata-mata','artilheiros','convocados','regras','bolao-estatisticas','bolao','diagnostico'];
 setTimeout(function(){
   try{
