@@ -755,15 +755,16 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     <div class="bolao-section-title">Ranking geral</div>
     <table class="bolao-rank-table">
       <thead><tr>
-        <th>#</th><th>Participante</th><th>Desempenho</th><th>Dist\u00e2ncia</th><th>Pontos</th>
+        <th>#</th><th>Participante</th><th>Especiais</th><th>Exatos</th><th>Jogos</th><th>Pontos</th>
       </tr></thead>
       <tbody id="bolao-rank-body">
-        <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Carregando...</td></tr>
+        <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Carregando...</td></tr>
       </tbody>
     </table>
     <div style="font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center">
-      <span><strong style="color:var(--gold)">Desempenho</strong>: exatos (placar exato, 10 pts) &middot; resultados (vitória/empate, 2-6 pts)</span>
-      <span><strong style="color:var(--gold)">Dist&acirc;ncia</strong>: diferen&ccedil;a de pontos para o l&iacute;der</span>
+      <span><strong style="color:var(--gold)">Especiais</strong>: b&ocirc;nus campeão (+50) / artilheiro (+20/+10)</span>
+      <span><strong style="color:var(--gold)">Exatos</strong>: placar exato (10 pts)</span>
+      <span><strong style="color:var(--gold)">Jogos</strong>: partidas que pontuou (2 a 6 pts)</span>
       <span><strong style="color:var(--gold)">Pontos</strong>: total geral</span>
     </div>
   </div>
@@ -2734,18 +2735,16 @@ function bolaoRenderRanking(){
   var rankClass=['rank-gold','rank-silver','rank-bronze'];
   var tb=document.getElementById('bolao-rank-body');
   if(!tb)return;
-  if(!rows.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Nenhum participante ainda</td></tr>';return;}
+  if(!rows.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Nenhum participante ainda</td></tr>';return;}
   var isMobile=window.innerWidth<768;
-  var leaderTotal=rows.length?rows[0].total:0;
   if(isMobile){
     tb.innerHTML=rows.map(function(r,i){
-      var medal=i<3?medalEmoji[i]:i+1;
+      var medal=i<3?medalEmoji[i]:i+1,sp=_bolaoAllSpecials[r.id];
       var topClass=i<3?' '+rankClass[i]:'';
       var isUser=r.id===_bolaoParticipantId;
       var extraClass=topClass+(i===0?' rank-first':'')+(isUser?' mob-rank-self':'');
-      var diff=i===0?0:Math.round(leaderTotal-r.total);
-      var subLine=r.exactCount+'ex \u00b7 '+r.resultCount+'res \u2022 '+(i===0?'L\u00cdDER':'\u2212'+diff+' pts');
-      return '<tr class="mob-rank-tr"><td colspan="5">'
+      var subLine=r.exactCount+'ex \u00b7 '+r.resultCount+'res';
+      return '<tr class="mob-rank-tr"><td colspan="6">'
         +'<div class="mob-rank-row'+extraClass+'" onclick="bolaoToggleDetail(\''+r.id+'\')">'
         +'<div class="mob-rank-main"><span class="mob-rank-pos">'+medal+'</span><span class="mob-rank-name">'+esc(r.name)+'</span><span class="mob-rank-pts">'+r.total+' <span class="pts-label">pts</span></span></div>'
         +'<div class="mob-rank-sub">'+subLine+'</div>'
@@ -2755,20 +2754,18 @@ function bolaoRenderRanking(){
     }).join('');
   }else{
     tb.innerHTML=rows.map(function(r,i){
-      var medal=i<3?medalEmoji[i]:'';
+      var medal=i<3?medalEmoji[i]:'',sp=_bolaoAllSpecials[r.id];
+      var spText=sp?((sp.champion||'?')+' / '+(sp.top_scorer||'?')):'&mdash;';
       var isUser=r.id===_bolaoParticipantId;
       var userClass=isUser?' bolao-rank-self':'';
-      var diff=i===0?0:Math.round(leaderTotal-r.total);
-      var nameDisplay=esc(r.name)+(i===0?' (l\u00edder)':'');
-      var distDisplay=i===0?'L\u00cdDER':'\u2212'+diff;
-      var metDisplay=r.exactCount+'ex\u00b7'+r.resultCount+'res';
       return '<tr class="bolao-rank-row'+userClass+'" onclick="bolaoToggleDetail(\''+r.id+'\')">'
         +'<td class="bolao-rank-pos">'+medal+' '+(i+1)+'</td>'
-        +'<td class="bolao-rank-name">'+nameDisplay+'</td>'
-        +'<td class="bolao-rank-sub">'+metDisplay+'</td>'
-        +'<td class="bolao-rank-sub">'+distDisplay+'</td>'
+        +'<td class="bolao-rank-name">'+esc(r.name)+'</td>'
+        +'<td style="font-size:11px;color:var(--muted)">'+esc(spText)+'</td>'
+        +'<td class="bolao-rank-sub">'+r.exactCount+'</td>'
+        +'<td class="bolao-rank-sub">'+r.resultCount+'</td>'
         +'<td class="bolao-rank-pts">'+r.total+'</td></tr>'
-        +'<tr class="bolao-detail" id="bolao-detail-'+r.id+'"><td colspan="5"><div class="bolao-detail-inner">'+bolaoRenderDetail(r.id)+'</div></td></tr>';
+        +'<tr class="bolao-detail" id="bolao-detail-'+r.id+'"><td colspan="6"><div class="bolao-detail-inner">'+bolaoRenderDetail(r.id)+'</div></td></tr>';
     }).join('');
   }
 }
@@ -3157,7 +3154,7 @@ async function bolaoLoadRanking(){
       }
     }catch(ce){}
     var tb=document.getElementById('bolao-rank-body');
-    if(tb)tb.innerHTML='<tr><td colspan="5" style="color:var(--muted);padding:16px">Erro ao carregar ranking. Verifique sua conexão.</td></tr>';
+    if(tb)tb.innerHTML='<tr><td colspan="6" style="color:var(--muted);padding:16px">Erro ao carregar ranking. Verifique sua conexão.</td></tr>';
   }
 }
 async function bolaoLogin(){
