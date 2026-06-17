@@ -393,10 +393,13 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bolao-detail.open{display:table-row}
 .bolao-detail-inner{padding:12px 10px}
 .bolao-detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
-.bolao-pick-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:11px}
-.bolao-pick-card.exact{border-color:rgba(255,223,0,.4);background:rgba(255,223,0,.05)}
-.bolao-pick-card.result{border-color:rgba(100,200,100,.3)}
-.bolao-pick-card.wrong{opacity:.5}.bolao-pick-card.forfeit{border-color:var(--red);background:rgba(255,23,68,.08);opacity:.7}
+.bolao-detail-section{margin-bottom:8px}
+.bolao-detail-section:last-child{margin-bottom:0}
+.bolao-detail-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:6px 0 4px}
+.bolao-pick-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:11px;border-left:4px solid var(--border)}
+.bolao-pick-card.exact{border-color:rgba(255,223,0,.4);border-left-color:var(--gold);background:rgba(255,223,0,.05)}
+.bolao-pick-card.result{border-color:rgba(100,200,100,.3);border-left-color:#4ade80}
+.bolao-pick-card.wrong{opacity:.5;border-left-color:var(--red)}.bolao-pick-card.forfeit{border-color:var(--red);background:rgba(255,23,68,.08);opacity:.7;border-left-color:var(--red)}
 .bolao-pick-teams{font-weight:600;color:var(--text);margin-bottom:2px}
 .bolao-pick-score{color:var(--gold);font-weight:700}
 .bolao-pick-real{color:var(--muted)}
@@ -448,16 +451,18 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .bsp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;display:flex;flex-direction:column;gap:4px}
   .bsp-card.bsp-locked{opacity:.7}
   .bsp-card.bsp-missing{border-color:var(--red);box-shadow:0 0 12px rgba(255,23,68,.3)}
-  .bsp-phase{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  .bsp-header{display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .bsp-phase{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);flex-shrink:0}
+  .bsp-date{font-size:10px;color:var(--muted);text-align:right;flex-shrink:0}
   .bsp-teams{font-size:13px;font-weight:600;color:var(--text);min-height:20px}
-  .bsp-date{font-size:11px;color:var(--muted)}
   .bsp-score-row{display:flex;align-items:center;gap:8px;justify-content:center;margin:6px 0}
   .bsp-input{width:44px;text-align:center;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 4px;color:var(--text);font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
   .bsp-input:focus{outline:none;border-color:var(--gold)}
   .bsp-input[readonly]{opacity:.6;cursor:not-allowed}
   .bsp-sep{color:var(--muted);font-weight:700;font-size:14px}
-  .bsp-status{font-size:11px;color:#4ade80;text-align:center;min-height:14px}
-  .bsp-pts{font-size:12px;font-weight:700;text-align:center}
+  .bsp-status-pts{display:flex;justify-content:space-between;align-items:center;min-height:18px;margin-top:2px}
+  .bsp-status{font-size:11px;color:#4ade80}
+  .bsp-pts{font-size:12px;font-weight:700}
   .bsp-ko-label{font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:4px}
   .bsp-ko-btns{display:flex;gap:6px}
   .bsp-ko-btn{flex:1;padding:5px 6px;border-radius:6px;font-size:11px;cursor:pointer;transition:all .15s;min-height:44px}
@@ -473,12 +478,19 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .mob-rank-pos{width:24px;font-size:16px;text-align:center;flex-shrink:0}
 .mob-rank-name{flex:1;font-weight:600;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .mob-rank-pts{font-size:20px;font-weight:800;color:var(--gold);flex-shrink:0;min-width:30px;text-align:right}
-.mob-rank-sub{font-size:11px;color:var(--muted);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mob-rank-pts .pts-label{font-size:11px;font-weight:400;color:var(--muted)}
+.mob-rank-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.mob-rank-line2{font-size:11px;color:var(--muted);margin-top:1px}
+/* Top 3 premium */
+.rank-gold{border:2px solid var(--gold);background:rgba(255,223,0,.06);box-shadow:0 0 20px rgba(255,223,0,.1)}
+.rank-silver{border:2px solid #c0c0c0;background:rgba(200,200,220,.05);box-shadow:0 0 15px rgba(200,200,220,.08)}
+.rank-bronze{border:2px solid #cd7f32;background:rgba(205,127,50,.04);box-shadow:0 0 12px rgba(205,127,50,.06)}
 @media(max-width:480px){
   .mob-rank-row{padding:8px 10px}
   .mob-rank-name{font-size:13px}
   .mob-rank-pts{font-size:18px}
   .mob-rank-sub{font-size:10px}
+  .mob-rank-line2{font-size:10px}
 }
 
 /* Estatísticas pessoais */
@@ -584,6 +596,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .bolao-picks-grid{grid-template-columns:1fr}
   .bsp-teams{font-size:11px}
   .bsp-input{width:38px;font-size:16px;padding:6px 2px}
+  .bsp-status{font-size:10px}
+  .bsp-pts{font-size:11px}
   .bolao-rank-table td,.bolao-rank-table th{padding:4px 3px;font-size:9px}
   .bolao-rank-pts{font-size:13px}
   .bolao-rank-name{font-size:10px}
@@ -2706,6 +2720,7 @@ function bolaoRenderRanking(){
   var rows=ids.map(function(id){var r=bolaoCalcTotal(id);return{id:id,name:_bolaoParticipants[id],total:r.total,exactCount:r.exactCount,resultCount:r.resultCount,bonusCount:r.bonusCount};});
   rows.sort(function(a,b){if(b.total!==a.total)return b.total-a.total;if(b.exactCount!==a.exactCount)return b.exactCount-a.exactCount;if(b.resultCount!==a.resultCount)return b.resultCount-a.resultCount;if(b.bonusCount!==a.bonusCount)return b.bonusCount-a.bonusCount;return 0});
   var medalEmoji=['&#127942;','&#129352;','&#129353;'];
+  var rankClass=['rank-gold','rank-silver','rank-bronze'];
   var tb=document.getElementById('bolao-rank-body');
   if(!tb)return;
   if(!rows.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Nenhum participante ainda</td></tr>';return;}
@@ -2713,12 +2728,15 @@ function bolaoRenderRanking(){
   if(isMobile){
     tb.innerHTML=rows.map(function(r,i){
       var medal=i<3?medalEmoji[i]:i+1,sp=_bolaoAllSpecials[r.id];
-      var spText=sp?('🎯 '+esc(sp.champion||'?')+' / '+esc(sp.top_scorer||'?')):'';
-      var subText=spText+(spText?' · ':'')+'✓ '+r.exactCount+' ex · '+r.resultCount+' jogos';
+      var topClass=i<3?' '+rankClass[i]:'';
+      var subLine1=r.exactCount+' exato'+(r.exactCount!==1?'s':'')+' \u00b7 '+r.resultCount+' resultado'+(r.resultCount!==1?'s':'');
+      var subLine2=sp?('\ud83c\udfc6 '+esc(sp.champion||'?')+' \u00b7 \u26bd '+esc(sp.top_scorer||'?')):'';
       return '<tr class="mob-rank-tr"><td colspan="6">'
-        +'<div class="mob-rank-row" onclick="bolaoToggleDetail(\''+r.id+'\')">'
-        +'<div class="mob-rank-main"><span class="mob-rank-pos">'+medal+'</span><span class="mob-rank-name">'+esc(r.name)+'</span><span class="mob-rank-pts">'+r.total+'</span><span class="mob-rank-var"></span></div>'
-        +'<div class="mob-rank-sub">'+esc(subText)+'</div></div>'
+        +'<div class="mob-rank-row'+topClass+'" onclick="bolaoToggleDetail(\''+r.id+'\')">'
+        +'<div class="mob-rank-main"><span class="mob-rank-pos">'+medal+'</span><span class="mob-rank-name">'+esc(r.name)+'</span><span class="mob-rank-pts">'+r.total+' <span class="pts-label">pts</span></span></div>'
+        +'<div class="mob-rank-sub">'+subLine1+'</div>'
+        +(subLine2?'<div class="mob-rank-line2">'+subLine2+'</div>':'')
+        +'</div>'
         +'<div class="bolao-detail" id="bolao-detail-'+r.id+'"><div class="bolao-detail-inner">'+bolaoRenderDetail(r.id)+'</div></div>'
         +'</td></tr>';
     }).join('');
@@ -2739,13 +2757,12 @@ function bolaoRenderRanking(){
 }
 function bolaoToggleDetail(id){var el=document.getElementById('bolao-detail-'+id);if(el)el.classList.toggle('open')}
 function bolaoRenderDetail(pid){
-  var picks=_bolaoAllPicks[pid]||{},items=[];
+  var picks=_bolaoAllPicks[pid]||{},scored=[],future=[];
   var confirmTsDetail=_bolaoConfirmedAt[pid]?new Date(_bolaoConfirmedAt[pid]).getTime():null;
   GAMES.forEach(function(g){
     if(g.n<BOLAO_FIRST)return;
     var real=scores[g.n],pick=picks[g.n],hasReal=real&&real.a!==undefined&&real.b!==undefined,hasPick=pick&&pick.a!==undefined&&pick.b!==undefined;
     if(!hasPick&&!hasReal)return;
-    // Jogo que não pontua por confirmação tardia ou nunca confirmou
     var forfeit=false;
     var notConfirmed=!_bolaoConfirmedStatus[pid];
     if(notConfirmed&&hasReal){forfeit=true}
@@ -2756,10 +2773,14 @@ function bolaoRenderDetail(pid){
     var pickStr=hasPick?(pick.a+'x'+pick.b):'?x?',realStr=hasReal?(real.a+'x'+real.b):'';
     var ptsStr=forfeit?'<span style="color:var(--red);font-weight:600">PERDEU</span> <span style="text-decoration:line-through;opacity:.4">'+forfeitPts+' pts</span>':pts>=0?(pts+(bonus?'+'+bonus:''))+' pts':'';
     if(!hasReal)pickStr='<span style="filter:blur(3px)">'+pickStr+'</span>';
-    items.push('<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">#'+g.n+' '+_pn(g)+'</div><div><span class="bolao-pick-score">'+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">'+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>');
+    var card='<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">'+flag(g.a)+' '+esc(g.a)+' vs '+flag(g.b)+' '+esc(g.b)+'</div><div><span class="bolao-pick-score">Palpite: '+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">\u2192 '+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>';
+    if(hasReal){scored.push(card)}else{future.push(card)}
   });
-  if(!items.length)return '<p style="color:var(--muted);font-size:13px">Nenhum palpite ainda</p>';
-  return '<div class="bolao-detail-grid">'+items.join('')+'</div>';
+  var out='';
+  if(scored.length){out+='<div class="bolao-detail-section"><div class="bolao-detail-section-title">\u2705 PONTUADOS ('+scored.length+')</div><div class="bolao-detail-grid">'+scored.join('')+'</div></div>'}
+  if(future.length){out+='<div class="bolao-detail-section"><div class="bolao-detail-section-title">\u23f3 PR\u00d3XIMOS ('+future.length+')</div><div class="bolao-detail-grid">'+future.join('')+'</div></div>'}
+  if(!out)return '<p style="color:var(--muted);font-size:13px">Nenhum palpite ainda</p>';
+  return out;
 }
 function _bolaoKOHtml(g,pick,inputLocked){
   var isKO=g.f&&!g.f.startsWith('Grupo');
@@ -2769,15 +2790,15 @@ function _bolaoKOHtml(g,pick,inputLocked){
   var rB=_bolaoResolveTeam(g.b,g.n)||g.b;
   if(!inputLocked){
     var selA=_bolaoKOPicks[g.n]==='a',selB=_bolaoKOPicks[g.n]==='b';
-    var btnSt=function(sel){return 'border:1.5px solid '+(sel?'var(--gold)':'var(--border)')+';background:'+(sel?'rgba(255,223,0,.1)':'transparent')+';color:'+(sel?'var(--gold)':'var(--text)')+';font-weight:'+(sel?'700':'400')+';';};
+    var btnSt=function(sel){return sel?'background:var(--gold);color:#000;font-weight:700;border-color:var(--gold)':'background:transparent;color:var(--text);font-weight:400;border-color:var(--border)';};
     return '<div class="bsp-ko-label">Empate \u2014 quem passa?</div>'
       +'<div class="bsp-ko-btns">'
-      +'<button onclick="bolaoKOPick('+g.n+',\'a\')" class="bsp-ko-btn" style="'+btnSt(selA)+'">'+flag(rA)+' '+esc(rA)+'</button>'
-      +'<button onclick="bolaoKOPick('+g.n+',\'b\')" class="bsp-ko-btn" style="'+btnSt(selB)+'">'+flag(rB)+' '+esc(rB)+'</button>'
+      +'<button onclick="bolaoKOPick('+g.n+',\'a\')" class="bsp-ko-btn" style="'+btnSt(selA)+'">'+(selA?'\u2714 ':'')+flag(rA)+' '+esc(rA)+'</button>'
+      +'<button onclick="bolaoKOPick('+g.n+',\'b\')" class="bsp-ko-btn" style="'+btnSt(selB)+'">'+(selB?'\u2714 ':'')+flag(rB)+' '+esc(rB)+'</button>'
       +'</div>';
   }else if(_bolaoKOPicks[g.n]){
     var sel=_bolaoKOPicks[g.n]==='a'?rA:rB;
-    return '<div class="bsp-ko-confirmed">Passou: '+flag(sel)+' '+esc(sel)+'</div>';
+    return '<div class="bsp-ko-confirmed">\u2714 '+flag(sel)+' '+esc(sel)+'</div>';
   }
   return '';
 }
@@ -2837,7 +2858,8 @@ function bolaoRenderPicksGrid(){
       var pts=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);
       var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
       var col=pts===10?'var(--gold)':pts>=2?'#4ade80':'var(--red)';
-      ptsHtml='<div class="bsp-pts" style="color:'+col+'">'+pts+(bonus?'+'+bonus:'')+' pts</div>';
+      var trophy=pts===10?' \ud83c\udfc6':'';
+      ptsHtml='<span class="bsp-pts" style="color:'+col+'">'+(pts>=0?'+':'')+pts+(bonus?'+'+bonus:'')+' pts'+trophy+'</span>';
     }
     // Bloco de empate KO
     var koHtml=_bolaoKOHtml(g,pick,inputLocked);
@@ -2845,9 +2867,8 @@ function bolaoRenderPicksGrid(){
     var locked=inputLocked?' bsp-locked':'';
     var missingStyle=(!hasPick&&!isLocked)?'border:2px solid #ff1744;box-shadow:0 0 16px rgba(255,23,68,.5);':'';
     html+='<div class="bsp-card'+locked+'"'+(missingStyle?' style="'+missingStyle+'"':'')+'>'
-      +'<div class="bsp-phase">'+esc(g.f)+'</div>'
+      +'<div class="bsp-header"><span class="bsp-phase">#'+g.n+' \u00b7 '+esc(g.f)+'</span><span class="bsp-date">'+g.d+' '+g.t+'</span></div>'
       +'<div class="bsp-teams" id="bolao-teams-'+g.n+'">'+tA+' vs '+tB+'</div>'
-      +'<div class="bsp-date">'+g.d+' '+g.t+'</div>'
       +'<div class="bsp-score-row">'
       +'<input class="bsp-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2"'
       +' data-game="'+g.n+'" data-side="a"'
@@ -2862,8 +2883,7 @@ function bolaoRenderPicksGrid(){
       +(inputLocked?' readonly':'')+'>'
       +'</div>'
       +'<div id="bolao-ko-'+g.n+'">'+koHtml+'</div>'
-      +'<div class="bsp-status" id="bsp-status-'+g.n+'">'+(inputLocked&&hasPick?'Confirmado':'')+'</div>'
-      +ptsHtml
+      +'<div class="bsp-status-pts"><span class="bsp-status" id="bsp-status-'+g.n+'">'+(inputLocked&&hasPick?'\u25cf Confirmado':'')+'</span>'+ptsHtml+'</div>'
       +(inputLocked?'':bolaoMajorityHtml(g.n))
       +'</div>';
   });

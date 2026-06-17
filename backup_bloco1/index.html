@@ -32,7 +32,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .header-sub .dot{display:inline-block;width:3px;height:3px;background:rgba(255,255,255,.3);border-radius:50%;vertical-align:middle;margin:0 5px}
 .tabs{display:flex;background:rgba(17,17,46,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:0;z-index:100;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tab{padding:var(--sp-sm) var(--sp-md);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;font-size:var(--fs-sm);font-weight:600;color:var(--muted);transition:var(--transition);font-family:inherit;display:flex;align-items:center;gap:6px;min-height:44px}
+.tab{padding:var(--sp-sm) var(--sp-md);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;font-size:var(--fs-sm);font-weight:600;color:var(--muted);transition:var(--transition);font-family:inherit;display:flex;align-items:center;gap:6px}
 .tab .tab-icon{font-size:18px;opacity:.5;transition:var(--transition)}
 .tab:hover{color:var(--text);background:rgba(255,255,255,.02)}
 .tab:hover .tab-icon{opacity:.8}
@@ -40,17 +40,9 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .tab.active .tab-icon{opacity:1}
 .content{display:none;padding:var(--sp-md);max-width:1400px;margin:0 auto}
 .content.active{display:block}
-.bottom-nav{display:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .filters{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
-@keyframes skeleton-pulse{0%{opacity:.6}50%{opacity:.3}100%{opacity:.6}}
-.skeleton{background:linear-gradient(90deg,rgba(255,255,255,.06) 25%,rgba(255,255,255,.1) 50%,rgba(255,255,255,.06) 75%);background-size:200% 100%;animation:skeleton-pulse 1.5s ease-in-out infinite;border-radius:6px;color:transparent!important;pointer-events:none;user-select:none;min-height:1em}
-.skeleton-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp-sm);margin-bottom:6px;display:flex;flex-direction:column;gap:8px}
-.skeleton-card .s-line{height:14px;border-radius:4px;width:60%}
-.skeleton-card .s-line:last-child{width:40%}
-.skeleton-card .s-score{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 0}
-.skeleton-card .s-score .s-line{width:30px;height:24px;border-radius:4px}
-.filter-btn{padding:6px 16px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:var(--fs-xs);font-weight:500;transition:var(--transition);font-family:inherit;min-height:44px;min-width:44px}
+.filter-btn{padding:6px 16px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:var(--fs-xs);font-weight:500;transition:var(--transition);font-family:inherit}
 .filter-btn:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
 .filter-btn.active{background:var(--gold);color:#000;border-color:var(--gold);font-weight:700;box-shadow:0 2px 12px rgba(255,223,0,.25)}
 .filter-btn.group-A{background:rgba(76,175,80,.06)}
@@ -78,8 +70,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .filter-btn.group-L{background:rgba(96,125,139,.06)}
 .filter-btn.group-L:hover,.filter-btn.group-L.active{background:rgba(96,125,139,.18);border-color:#78909C;color:#78909C}
 .game-card{background:var(--card);border-radius:var(--radius);padding:var(--sp-sm);margin-bottom:6px;display:grid;grid-template-columns:28px 1fr 1fr auto 1fr;gap:var(--sp-xs);align-items:center;border:1px solid var(--border);transition:var(--transition);box-shadow:var(--shadow-sm);position:relative;contain:style}
-.game-card.live{border-color:var(--green);box-shadow:0 0 24px rgba(0,200,83,.25),inset 0 0 40px rgba(0,200,83,.06)}
-.game-card.live::before{content:'';display:none}
+.game-card.live{border-color:var(--green);box-shadow:0 0 24px rgba(0,200,83,.25),inset 0 0 40px rgba(0,200,83,.06);border-width:2px}
+.game-card.live::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--green);animation:pulse .8s infinite}
 .game-card.live .live-dot{width:12px;height:12px;box-shadow:0 0 8px rgba(255,23,68,.6)}
 .game-card.live .live-label{font-size:11px;letter-spacing:1.5px;text-shadow:0 0 8px rgba(255,23,68,.4)}
 .game-card:hover{background:var(--card-hover);border-color:var(--border-light);transform:translateY(-1px);box-shadow:var(--shadow)}
@@ -87,16 +79,6 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .game-card[data-collapsed="true"] .game-stadium,.game-card[data-collapsed="true"] .game-referee,.game-card[data-collapsed="true"] .game-broadcast,.game-card[data-collapsed="true"] .game-info>div:not(.game-phase):not(.expand-btn),.game-card[data-collapsed="true"] .goal-events,.game-card[data-collapsed="true"] .pen-result{display:none}
 .expand-btn{background:var(--gold-dim);border:1px solid var(--gold);color:var(--gold);width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;margin-left:6px;vertical-align:middle;padding:0;font-family:inherit;transition:var(--transition)}
 .expand-btn:hover{background:var(--gold);color:#000}
-.hero-live-inner{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
-.hero-live-inner .game-card{border-color:var(--gold);border-width:2px;box-shadow:0 0 30px rgba(255,223,0,.15),inset 0 0 50px rgba(255,223,0,.04);padding:var(--sp-md)}
-
-.hero-live-inner .game-card .score-display{font-size:var(--fs-lg)}
-.hero-live-inner .game-card .game-info::before{content:'• AO VIVO';font-size:10px;font-weight:700;letter-spacing:1px;color:var(--red);display:block;margin-bottom:3px;animation:pulse .8s infinite}
-.section-header{font-size:var(--fs-sm);font-weight:700;padding:8px 4px 4px;margin:12px 0 4px;border-bottom:1px solid var(--border);color:var(--muted);letter-spacing:1px}
-.past-link{font-size:var(--fs-xs);color:var(--gold);cursor:pointer;display:inline-block;margin-bottom:6px;padding:4px 0}
-.past-link:hover{text-decoration:underline}
-.expand-all-btn{font-size:10px;color:var(--muted);cursor:pointer;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:12px;padding:3px 12px;margin-left:8px;font-family:inherit;vertical-align:middle}
-.expand-all-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
 .game-num{font-size:var(--fs-xs);color:var(--muted);text-align:center;font-weight:600;opacity:.5}
 .game-info{font-size:var(--fs-xs);color:var(--muted);line-height:1.5}
 .game-phase{font-size:9px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:2px}
@@ -129,7 +111,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .team-pending{font-style:italic;opacity:.6}
 .sus-badge{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;color:#ff9100;background:rgba(255,145,0,.12);padding:1px 5px;border-radius:4px;margin-left:4px;cursor:help;line-height:1.4}
 .flag{font-size:clamp(14px,2.5vw,20px);line-height:1;display:inline-flex;align-items:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
-.flag-bg,.flag-fallback{display:inline-block;width:24px;height:18px;border-radius:2px;vertical-align:middle;flex-shrink:0;background-size:contain;background-repeat:no-repeat;background-position:center}
+.flag-bg,.flag-fallback{display:inline-block;width:24px;height:18px;border-radius:2px;vertical-align:middle;flex-shrink:0}
 .team-name{font-weight:500;color:var(--text);font-size:clamp(11px,1.7vw,15px)}
 .team-name.brazil{color:var(--gold);font-weight:700}
 .goal-events{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:3px;padding:6px 0 0;border-top:1px solid rgba(255,255,255,.04);margin-top:2px}
@@ -159,7 +141,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .pos-4{background:rgba(255,23,68,.1);color:var(--red)}
 .brazil-row{background:linear-gradient(90deg,rgba(0,39,118,.1),rgba(0,156,59,.1))}
 .bracket-toggle{display:flex;gap:10px;justify-content:center;margin-bottom:16px}
-.bview-btn{padding:8px 20px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:600;transition:var(--transition);font-family:inherit;cursor:pointer;min-height:44px}
+.bview-btn{padding:8px 20px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:600;transition:var(--transition);font-family:inherit;cursor:pointer}
 .bview-btn:hover{border-color:var(--gold);color:var(--gold)}
 .bview-btn.active{background:var(--gold);color:#000;border-color:var(--gold);box-shadow:0 2px 12px rgba(255,223,0,.25)}
 .bracket-container{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
@@ -256,7 +238,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .header-left,.header-mascots{display:none}
   .header-content{padding:14px 16px}
   .header h1{font-size:22px}
-  .tabs{display:none}
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
   .tab{padding:12px 14px;font-size:12px}
   .game-card{grid-template-columns:28px 1fr auto 1fr;gap:4px 6px;padding:10px}
   .game-card .game-num{grid-column:1;grid-row:1}
@@ -268,30 +250,12 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .game-card .goal-events{grid-column:1/-1;grid-row:4}
   .groups-grid,.squads-grid{grid-template-columns:1fr}
   .bracket-round{min-width:130px}
-  .content{padding:12px;padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+  .content{padding:12px}
   .squad-player{font-size:10px;padding:3px 6px}
   .squad-avatar{width:22px;height:28px}
   .countdown-bar{gap:4px;flex-wrap:wrap}
   .countdown-label{font-size:10px}
   .countdown-time{font-size:13px}
-  /* Bottom navigation */
-  .bottom-nav{display:flex;position:fixed;bottom:0;left:0;width:100%;background:rgba(17,17,46,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--border);z-index:200;justify-content:space-around;align-items:stretch;padding-bottom:env(safe-area-inset-bottom)}
-  .bottom-nav .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px 4px;min-height:56px;cursor:pointer;color:var(--muted);font-size:9px;gap:2px;border:none;background:transparent;font-family:inherit;transition:color .15s}
-  .bottom-nav .nav-btn .nav-icon{font-size:20px;line-height:1}
-  .bottom-nav .nav-btn .nav-label{font-size:9px;font-weight:500;line-height:1}
-  .bottom-nav .nav-btn.active{color:var(--gold)}
-  .bottom-nav .nav-btn:hover{color:var(--text)}
-  .bottom-nav .nav-btn:active{color:var(--gold);background:rgba(255,223,0,.06)}
-  .bottom-nav .nav-btn:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
-  /* Mais menu */
-  .mais-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:flex-end;justify-content:center}
-  .mais-menu{width:100%;max-width:400px;background:var(--card);border-radius:16px 16px 0 0;overflow:hidden;animation:maisSlideUp .25s ease}
-  .mais-item{padding:16px;font-size:14px;color:var(--text);border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:10px;font-family:inherit;background:transparent;width:100%;text-align:left}
-  .mais-item:last-child{border-bottom:none}
-  .mais-item:hover{background:var(--card-hover)}
-  .mais-item:active{background:rgba(255,255,255,.05)}
-  .mais-item:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
-  @keyframes maisSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 }
 @media(max-width:480px){
   .header h1{font-size:18px}
@@ -304,24 +268,22 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .game-card .team-col:nth-of-type(2){font-size:11px;text-align:right}
   .game-card .game-num{font-size:9px}
   .score-display{font-size:18px}
-  .filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:4px;margin-bottom:8px}
-  .filter-btn{padding:2px 10px;font-size:9px;min-height:32px;flex-shrink:0}
+  .filter-btn{padding:3px 8px;font-size:10px}
+  .filter-bar{gap:4px}
   .tab{padding:10px 10px;font-size:11px;gap:4px}
   .tab .tab-icon{font-size:14px}
   .third-table td,.third-table th{padding:4px 5px;font-size:10px}
   .squad-card{font-size:10px}
   .squad-header{padding:8px}
   .refresh-btn{width:28px;height:28px;font-size:15px}
-  .countdown-bar{padding:4px 8px;gap:4px;min-height:32px;margin-bottom:8px}
+  .countdown-bar{padding:6px 8px;gap:6px;min-height:36px}
   .countdown-label{font-size:8px}
-  .countdown-time{font-size:13px}
-  .countdown-event{padding:2px 4px;gap:2px}
-  .countdown-event-teams{font-size:9px}
-  .countdown-event-time{font-size:9px}
+  .countdown-time{font-size:14px}
+  .countdown-event{padding:2px 5px;gap:3px}
+  .countdown-event-teams{font-size:10px}
+  .countdown-event-time{font-size:10px}
   .countdown-event-date{display:none}
   .countdown-events{-webkit-overflow-scrolling:touch}
-  /* Mobile: tabela bolao com scroll */
-  .bolao-rank-table{display:block;overflow-x:auto;width:100%;-webkit-overflow-scrolling:touch}
   /* Mobile: tabelas com scroll */
   .group-table,.third-table,.bolao-rank-table,.scorers-table{font-size:10px}
   .bolao-rank-table th,.bolao-rank-table td{padding:6px 5px;font-size:10px}
@@ -339,10 +301,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .bolao-stats-grid{grid-template-columns:repeat(2,1fr)}
   /* Mobile: safe area iPhone */
   .tabs{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
-  .content{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
-  /* Mobile: hero AO VIVO compacto */
-  .hero-live-inner .game-card{padding:var(--sp-sm)}
-  .hero-live-inner .game-card .score-display{font-size:var(--fs-body)}
+  .content{padding-bottom:calc(8px + env(safe-area-inset-bottom))}
   /* Mobile: tabelas com scroll horizontal */
   .group-card,.scorers-table{overflow-x:auto;-webkit-overflow-scrolling:touch}
 }
@@ -393,13 +352,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bolao-detail.open{display:table-row}
 .bolao-detail-inner{padding:12px 10px}
 .bolao-detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
-.bolao-detail-section{margin-bottom:8px}
-.bolao-detail-section:last-child{margin-bottom:0}
-.bolao-detail-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:6px 0 4px}
-.bolao-pick-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:11px;border-left:4px solid var(--border)}
-.bolao-pick-card.exact{border-color:rgba(255,223,0,.4);border-left-color:var(--gold);background:rgba(255,223,0,.05)}
-.bolao-pick-card.result{border-color:rgba(100,200,100,.3);border-left-color:#4ade80}
-.bolao-pick-card.wrong{opacity:.5;border-left-color:var(--red)}.bolao-pick-card.forfeit{border-color:var(--red);background:rgba(255,23,68,.08);opacity:.7;border-left-color:var(--red)}
+.bolao-pick-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:11px}
+.bolao-pick-card.exact{border-color:rgba(255,223,0,.4);background:rgba(255,223,0,.05)}
+.bolao-pick-card.result{border-color:rgba(100,200,100,.3)}
+.bolao-pick-card.wrong{opacity:.5}.bolao-pick-card.forfeit{border-color:var(--red);background:rgba(255,23,68,.08);opacity:.7}
 .bolao-pick-teams{font-weight:600;color:var(--text);margin-bottom:2px}
 .bolao-pick-score{color:var(--gold);font-weight:700}
 .bolao-pick-real{color:var(--muted)}
@@ -451,47 +407,21 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .bsp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;display:flex;flex-direction:column;gap:4px}
   .bsp-card.bsp-locked{opacity:.7}
   .bsp-card.bsp-missing{border-color:var(--red);box-shadow:0 0 12px rgba(255,23,68,.3)}
-  .bsp-header{display:flex;justify-content:space-between;align-items:center;gap:6px}
-  .bsp-phase{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);flex-shrink:0}
-  .bsp-date{font-size:10px;color:var(--muted);text-align:right;flex-shrink:0}
+  .bsp-phase{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
   .bsp-teams{font-size:13px;font-weight:600;color:var(--text);min-height:20px}
+  .bsp-date{font-size:11px;color:var(--muted)}
   .bsp-score-row{display:flex;align-items:center;gap:8px;justify-content:center;margin:6px 0}
   .bsp-input{width:44px;text-align:center;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 4px;color:var(--text);font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
   .bsp-input:focus{outline:none;border-color:var(--gold)}
   .bsp-input[readonly]{opacity:.6;cursor:not-allowed}
   .bsp-sep{color:var(--muted);font-weight:700;font-size:14px}
-  .bsp-status-pts{display:flex;justify-content:space-between;align-items:center;min-height:18px;margin-top:2px}
-  .bsp-status{font-size:11px;color:#4ade80}
-  .bsp-pts{font-size:12px;font-weight:700}
+  .bsp-status{font-size:11px;color:#4ade80;text-align:center;min-height:14px}
+  .bsp-pts{font-size:12px;font-weight:700;text-align:center}
   .bsp-ko-label{font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:4px}
   .bsp-ko-btns{display:flex;gap:6px}
-  .bsp-ko-btn{flex:1;padding:5px 6px;border-radius:6px;font-size:11px;cursor:pointer;transition:all .15s;min-height:44px}
-.btn{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}
+  .bsp-ko-btn{flex:1;padding:5px 6px;border-radius:6px;font-size:11px;cursor:pointer;transition:all .15s}
   .bsp-ko-confirmed{font-size:11px;color:var(--gold);margin-top:4px}
   .tab:focus-visible,.filter-btn:focus-visible,.bview-btn:focus-visible,.refresh-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-
-/* Mobile: ranking em cards */
-.mob-rank-tr td{padding:4px 0;border:none;display:block}
-.mob-rank-row{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer}
-.mob-rank-row:active{background:var(--card-hover)}
-.mob-rank-main{display:flex;align-items:center;gap:8px}
-.mob-rank-pos{width:24px;font-size:16px;text-align:center;flex-shrink:0}
-.mob-rank-name{flex:1;font-weight:600;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.mob-rank-pts{font-size:20px;font-weight:800;color:var(--gold);flex-shrink:0;min-width:30px;text-align:right}
-.mob-rank-pts .pts-label{font-size:11px;font-weight:400;color:var(--muted)}
-.mob-rank-sub{font-size:11px;color:var(--muted);margin-top:4px}
-.mob-rank-line2{font-size:11px;color:var(--muted);margin-top:1px}
-/* Top 3 premium */
-.rank-gold{border:2px solid var(--gold);background:rgba(255,223,0,.06);box-shadow:0 0 20px rgba(255,223,0,.1)}
-.rank-silver{border:2px solid #c0c0c0;background:rgba(200,200,220,.05);box-shadow:0 0 15px rgba(200,200,220,.08)}
-.rank-bronze{border:2px solid #cd7f32;background:rgba(205,127,50,.04);box-shadow:0 0 12px rgba(205,127,50,.06)}
-@media(max-width:480px){
-  .mob-rank-row{padding:8px 10px}
-  .mob-rank-name{font-size:13px}
-  .mob-rank-pts{font-size:18px}
-  .mob-rank-sub{font-size:10px}
-  .mob-rank-line2{font-size:10px}
-}
 
 /* Estatísticas pessoais */
 .bolao-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
@@ -576,32 +506,6 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .bstats-compare{grid-template-columns:1fr}
   .bstats-compare-vs{padding-top:4px}
 }
-/* Mobile fixes */
-@media(max-width:768px){
-  .bolao-picks-grid{grid-template-columns:1fr}
-  .bsp-card{word-break:break-word}
-  .bsp-teams{font-size:12px}
-  .bolao-rank-table{font-size:11px}
-  .bolao-rank-row td{padding:6px;font-size:12px}
-  .botao-confirm-btn{max-width:100%}
-  .bolao-special-grid{grid-template-columns:1fr}
-  .bolao-login{flex-direction:column;align-items:stretch}
-  .bolao-login input{width:100%;max-width:none;box-sizing:border-box}
-  .bolao-section-title{font-size:11px}
-  .game-card .game-info{font-size:10px}
-  .game-card .game-phase{font-size:9px}
-  .game-card .score-display{font-size:16px}
-}
-@media(max-width:480px){
-  .bolao-picks-grid{grid-template-columns:1fr}
-  .bsp-teams{font-size:11px}
-  .bsp-input{width:38px;font-size:16px;padding:6px 2px}
-  .bsp-status{font-size:10px}
-  .bsp-pts{font-size:11px}
-  .bolao-rank-table td,.bolao-rank-table th{padding:4px 3px;font-size:9px}
-  .bolao-rank-pts{font-size:13px}
-  .bolao-rank-name{font-size:10px}
-}
 </style>
 </head>
 <body>
@@ -616,7 +520,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 </div>
 <div class="tabs" role="tablist">
   <div class="tab" data-tab="bolao" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🎯</span><span class="tab-label">Bolão</span></div>
-  <!-- Hoje merged into Jogos (v19.16) -->
+  <div class="tab" data-tab="hoje" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📅</span><span class="tab-label">Hoje</span></div>
   <div class="tab active" data-tab="jogos" role="tab" aria-selected="true" tabindex="0"><span class="tab-icon">⚽</span><span class="tab-label">Jogos</span></div>
   <div class="tab" data-tab="grupos" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📊</span><span class="tab-label">Grupos</span></div>
   <div class="tab" data-tab="mata-mata" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🏆</span><span class="tab-label">Mata-Mata</span></div>
@@ -625,11 +529,13 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="tab" data-tab="regras" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📖</span><span class="tab-label">Regras</span></div>
   <div class="tab" data-tab="bolao-estatisticas" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📊</span><span class="tab-label">Estatísticas</span></div>
 </div>
-<div class="countdown-bar" id="countdown-bar"><span class="countdown-label">&#9201; Próximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados" style="display:none"></span></div>
 <div class="content active" id="tab-jogos">
+  <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">&#9201; Próximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados" style="display:none"></span></div>
   <div class="filters" id="filter-bar"></div>
-  <div id="hero-live" style="display:none"></div>
-  <div id="games-list" class="dyn-content"><div class="skeleton-card"><div class="s-score"><div class="skeleton s-line" style="width:40px;height:28px"></div><div class="skeleton s-line" style="width:20px;height:28px"></div><div class="skeleton s-line" style="width:40px;height:28px"></div></div><div class="skeleton s-line"></div><div class="skeleton s-line" style="width:40%"></div></div><div class="skeleton-card"><div class="s-score"><div class="skeleton s-line" style="width:40px;height:28px"></div><div class="skeleton s-line" style="width:20px;height:28px"></div><div class="skeleton s-line" style="width:40px;height:28px"></div></div><div class="skeleton s-line"></div><div class="skeleton s-line" style="width:40%"></div></div><div class="skeleton-card"><div class="s-score"><div class="skeleton s-line" style="width:40px;height:28px"></div><div class="skeleton s-line" style="width:20px;height:28px"></div><div class="skeleton s-line" style="width:40px;height:28px"></div></div><div class="skeleton s-line"></div><div class="skeleton s-line" style="width:40%"></div></div></div>
+  <div id="games-list" class="dyn-content"></div>
+</div>
+<div class="content" id="tab-hoje">
+  <div id="hoje-list" class="dyn-content"></div>
 </div>
 <div class="content" id="tab-grupos">
   <div class="groups-grid dyn-content" id="groups-grid"></div>
@@ -685,8 +591,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="bolao-section" id="bolao-login-section">
     <div class="bolao-section-title">Entrar no bolão</div>
     <div class="bolao-login">
-       <div><label>Seu nome</label><input type="text" id="bolao-name" placeholder="Nome e Sobrenome" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();bolaoLogin()}"></div>
-       <div><label>Senha</label><input type="password" id="bolao-pass" placeholder="Senha" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();bolaoLogin()}"></div>
+      <div><label>Seu nome</label><input type="text" id="bolao-name" placeholder="Nome e Sobrenome" autocomplete="off"></div>
+      <div><label>Senha</label><input type="password" id="bolao-pass" placeholder="Senha" autocomplete="off"></div>
       <div class="cf-turnstile" data-sitekey="0x4AAAAAADj0kWY7cUoZ_uwS" data-theme="dark" data-size="normal" id="bolao-turnstile"></div>
       <button class="btn" onclick="bolaoLogin()" style="height:36px;padding:0 18px;font-size:13px">Entrar</button>
       <button class="btn" onclick="bolaoRegister()" style="height:36px;padding:0 18px;font-size:13px;background:var(--gold);color:#000">Criar conta</button>
@@ -702,7 +608,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
         <div class="bolao-special-card">
           <label>Campeão da Copa (+50 pts)</label>
           <form autocomplete="off" style="display:contents" onsubmit="return false">
-             <input type="text" id="bolao-champion" list="bolao-champion-list" placeholder="Digite o nome do time..." autocomplete="nope" spellcheck="false" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('bolao-special-btn').click()}">
+            <input type="text" id="bolao-champion" list="bolao-champion-list" placeholder="Digite o nome do time..." autocomplete="nope" spellcheck="false">
           </form>
           <datalist id="bolao-champion-list"></datalist>
           <div class="bolao-pick-saved" id="bolao-champion-saved"></div>
@@ -710,7 +616,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
         <div class="bolao-special-card">
           <label>Artilheiro (+20 pts / +10 se empatado)</label>
           <form autocomplete="off" style="display:contents" onsubmit="return false">
-             <input type="text" id="bolao-scorer" list="bolao-scorer-list" placeholder="Digite o nome do jogador..." autocomplete="nope" spellcheck="false" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('bolao-special-btn').click()}">
+            <input type="text" id="bolao-scorer" list="bolao-scorer-list" placeholder="Digite o nome do jogador..." autocomplete="nope" spellcheck="false">
           </form>
           <datalist id="bolao-scorer-list"></datalist>
           <div class="bolao-pick-saved" id="bolao-scorer-saved"></div>
@@ -769,29 +675,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div id="diag-timeline-hash" style="margin-bottom:12px;font-size:13px;line-height:1.6"></div>
   <div id="diag-scores" style="margin-bottom:12px;font-size:13px;line-height:1.6"></div>
 </div>
-<!-- Bottom Navigation (mobile <768px) -->
-<div class="bottom-nav" id="bottom-nav" role="navigation" aria-label="Navegação principal">
-  <div class="nav-btn active" id="nav-jogos" data-tab="jogos" onclick="navClick.call(this)" tabindex="0" role="button"><span class="nav-icon">⚽</span><span class="nav-label">Jogos</span></div>
-  <div class="nav-btn" id="nav-grupos" data-tab="grupos" onclick="navClick.call(this)" tabindex="-1" role="button"><span class="nav-icon">📊</span><span class="nav-label">Grupos</span></div>
-  <div class="nav-btn" id="nav-mata-mata" data-tab="mata-mata" onclick="navClick.call(this)" tabindex="-1" role="button"><span class="nav-icon">🏆</span><span class="nav-label">Mata-Mata</span></div>
-  <div class="nav-btn" id="nav-bolao" data-tab="bolao" onclick="navClick.call(this)" tabindex="-1" role="button"><span class="nav-icon">🎯</span><span class="nav-label">Bolão</span></div>
-  <div class="nav-btn" id="nav-mais" onclick="maisOpen()" tabindex="-1" role="button" aria-haspopup="true"><span class="nav-icon">☰</span><span class="nav-label">Mais</span></div>
-</div>
-<!-- Mais menu overlay -->
-<div class="mais-overlay" id="mais-overlay" style="display:none" onclick="maisClose()">
-  <div class="mais-menu" onclick="event.stopPropagation()">
-    <div class="mais-item" data-tab="artilheiros" onclick="navClick.call(this)" role="button" tabindex="0">🥇 Artilheiros</div>
-    <div class="mais-item" data-tab="convocados" onclick="navClick.call(this)" role="button" tabindex="-1">👥 Convocados</div>
-    <div class="mais-item" data-tab="bolao-estatisticas" onclick="navClick.call(this)" role="button" tabindex="-1">📊 Estatísticas</div>
-    <div class="mais-item" data-tab="regras" onclick="navClick.call(this)" role="button" tabindex="-1">📖 Regras</div>
-  </div>
-</div>
-<script>const GAMES = [{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"África do Sul","d":"11/06 Qui","n":1,"f":"Grupo A","sb":"","t":"16:00","s":"Azteca – Cidade do México","sa":"","a":"México"},{"br":"CazéTV","b":"República Tcheca","d":"11/06 Qui","n":2,"f":"Grupo A","sb":"","t":"23:00","s":"Akron – Guadalajara","sa":"","a":"Coreia do Sul"},{"br":"CazéTV","b":"Bósnia","d":"12/06 Sex","n":3,"f":"Grupo B","sb":"","t":"16:00","s":"BMO Field – Toronto","sa":"","a":"Canadá"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Paraguai","d":"12/06 Sex","n":4,"f":"Grupo D","sb":"","t":"22:00","s":"SoFi – Los Angeles","sa":"","a":"Estados Unidos"},{"br":"CazéTV","b":"Suíça","d":"13/06 Sáb","n":5,"f":"Grupo B","sb":"","t":"16:00","s":"Levi's – San Francisco","sa":"","a":"Catar"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Marrocos","d":"13/06 Sáb","n":6,"f":"Grupo C","sb":"","t":"19:00","s":"MetLife – Nova Jersey","sa":"","a":"Brasil"},{"br":"CazéTV","b":"Escócia","d":"13/06 Sáb","n":7,"f":"Grupo C","sb":"","t":"22:00","s":"Gillette – Boston","sa":"","a":"Haiti"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Turquia","d":"14/06 Dom","n":8,"f":"Grupo D","sb":"","t":"01:00","s":"BC Place – Vancouver","sa":"","a":"Austrália"},{"br":"CazéTV","b":"Curaçao","d":"14/06 Dom","n":9,"f":"Grupo E","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"Alemanha"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Japão","d":"14/06 Dom","n":10,"f":"Grupo F","sb":"","t":"17:00","s":"AT&T – Dallas","sa":"","a":"Holanda"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Equador","d":"14/06 Dom","n":11,"f":"Grupo E","sb":"","t":"20:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"Costa do Marfim"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Tunísia","d":"14/06 Dom","n":12,"f":"Grupo F","sb":"","t":"23:00","s":"BBVA – Monterrey","sa":"","a":"Suécia"},{"br":"CazéTV","b":"Cabo Verde","d":"15/06 Seg","n":13,"f":"Grupo H","sb":"","t":"13:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"Espanha"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Egito","d":"15/06 Seg","n":14,"f":"Grupo G","sb":"","t":"16:00","s":"Lumen – Seattle","sa":"","a":"Bélgica"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Uruguai","d":"15/06 Seg","n":15,"f":"Grupo H","sb":"","t":"19:00","s":"Hard Rock – Miami","sa":"","a":"Arábia Saudita"},{"br":"CazéTV","b":"Nova Zelândia","d":"15/06 Seg","n":16,"f":"Grupo G","sb":"","t":"22:00","s":"SoFi – Los Angeles","sa":"","a":"Irã"},{"br":"CazéTV","b":"Argélia","d":"16/06 Ter","n":17,"f":"Grupo I","sb":"","t":"22:00","s":"Arrowhead – Kansas City","sa":"","a":"Argentina"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Senegal","d":"16/06 Ter","n":18,"f":"Grupo J","sb":"","t":"16:00","s":"MetLife – Nova Jersey","sa":"","a":"França"},{"br":"CazéTV","b":"Noruega","d":"16/06 Ter","n":19,"f":"Grupo J","sb":"","t":"19:00","s":"Gillette – Boston","sa":"","a":"Iraque"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Jordânia","d":"17/06 Qua","n":20,"f":"Grupo I","sb":"","t":"01:00","s":"Levi's – San Francisco","sa":"","a":"Áustria"},{"br":"CazéTV","b":"RD Congo","d":"17/06 Qua","n":21,"f":"Grupo K","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"Portugal"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Croácia","d":"17/06 Qua","n":22,"f":"Grupo L","sb":"","t":"17:00","s":"AT&T – Dallas","sa":"","a":"Inglaterra"},{"br":"CazéTV","b":"Panamá","d":"17/06 Qua","n":23,"f":"Grupo L","sb":"","t":"20:00","s":"BMO Field – Toronto","sa":"","a":"Gana"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Colômbia","d":"17/06 Qua","n":24,"f":"Grupo K","sb":"","t":"23:00","s":"Azteca – Cidade do México","sa":"","a":"Uzbequistão"},{"br":"CazéTV","b":"África do Sul","d":"18/06 Qui","n":25,"f":"Grupo A","sb":"","t":"13:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"República Tcheca"},{"br":"CazéTV","b":"Bósnia","d":"18/06 Qui","n":26,"f":"Grupo B","sb":"","t":"16:00","s":"SoFi – Los Angeles","sa":"","a":"Suíça"},{"br":"CazéTV","b":"Catar","d":"18/06 Qui","n":27,"f":"Grupo B","sb":"","t":"19:00","s":"BC Place – Vancouver","sa":"","a":"Canadá"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Coreia do Sul","d":"18/06 Qui","n":28,"f":"Grupo A","sb":"","t":"22:00","s":"Akron – Guadalajara","sa":"","a":"México"},{"br":"CazéTV","b":"Paraguai","d":"19/06 Sex","n":29,"f":"Grupo D","sb":"","t":"01:00","s":"Levi's – San Francisco","sa":"","a":"Turquia"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Austrália","d":"19/06 Sex","n":30,"f":"Grupo D","sb":"","t":"16:00","s":"Lumen – Seattle","sa":"","a":"Estados Unidos"},{"br":"CazéTV","b":"Marrocos","d":"19/06 Sex","n":31,"f":"Grupo C","sb":"","t":"19:00","s":"Gillette – Boston","sa":"","a":"Escócia"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Haiti","d":"19/06 Sex","n":32,"f":"Grupo C","sb":"","t":"21:30","s":"Lincoln Fin. – Filadélfia","sa":"","a":"Brasil"},{"br":"CazéTV","b":"Suécia","d":"20/06 Sáb","n":33,"f":"Grupo F","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"Holanda"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Costa do Marfim","d":"20/06 Sáb","n":34,"f":"Grupo E","sb":"","t":"17:00","s":"BMO Field – Toronto","sa":"","a":"Alemanha"},{"br":"CazéTV","b":"Curaçao","d":"20/06 Sáb","n":35,"f":"Grupo E","sb":"","t":"21:00","s":"Arrowhead – Kansas City","sa":"","a":"Equador"},{"br":"CazéTV","b":"Japão","d":"21/06 Dom","n":36,"f":"Grupo F","sb":"","t":"01:00","s":"BBVA – Monterrey","sa":"","a":"Tunísia"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Arábia Saudita","d":"21/06 Dom","n":37,"f":"Grupo H","sb":"","t":"13:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"Espanha"},{"br":"CazéTV","b":"Irã","d":"21/06 Dom","n":38,"f":"Grupo G","sb":"","t":"16:00","s":"SoFi – Los Angeles","sa":"","a":"Bélgica"},{"br":"CazéTV","b":"Cabo Verde","d":"21/06 Dom","n":39,"f":"Grupo H","sb":"","t":"19:00","s":"Hard Rock – Miami","sa":"","a":"Uruguai"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Egito","d":"21/06 Dom","n":40,"f":"Grupo G","sb":"","t":"22:00","s":"BC Place – Vancouver","sa":"","a":"Nova Zelândia"},{"br":"CazéTV","b":"Áustria","d":"22/06 Seg","n":41,"f":"Grupo I","sb":"","t":"14:00","s":"AT&T – Dallas","sa":"","a":"Argentina"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Iraque","d":"22/06 Seg","n":42,"f":"Grupo J","sb":"","t":"18:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"França"},{"br":"CazéTV","b":"Senegal","d":"22/06 Seg","n":43,"f":"Grupo J","sb":"","t":"21:00","s":"MetLife – Nova Jersey","sa":"","a":"Noruega"},{"br":"CazéTV","b":"Argélia","d":"23/06 Ter","n":44,"f":"Grupo I","sb":"","t":"00:00","s":"Levi's – San Francisco","sa":"","a":"Jordânia"},{"br":"CazéTV","b":"Uzbequistão","d":"23/06 Ter","n":45,"f":"Grupo K","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"Portugal"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Gana","d":"23/06 Ter","n":46,"f":"Grupo L","sb":"","t":"17:00","s":"Gillette – Boston","sa":"","a":"Inglaterra"},{"br":"CazéTV","b":"Croácia","d":"23/06 Ter","n":47,"f":"Grupo L","sb":"","t":"20:00","s":"BMO Field – Toronto","sa":"","a":"Panamá"},{"br":"CazéTV","b":"RD Congo","d":"23/06 Ter","n":48,"f":"Grupo K","sb":"","t":"23:00","s":"Akron – Guadalajara","sa":"","a":"Colômbia"},{"br":"CazéTV","b":"Catar","d":"24/06 Qua","n":50,"f":"Grupo B","sb":"","t":"16:00","s":"Lumen – Seattle","sa":"","a":"Bósnia"},{"br":"CazéTV","b":"Canadá","d":"24/06 Qua","n":49,"f":"Grupo B","sb":"","t":"16:00","s":"BC Place – Vancouver","sa":"","a":"Suíça"},{"br":"CazéTV","b":"Haiti","d":"24/06 Qua","n":52,"f":"Grupo C","sb":"","t":"19:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"Marrocos"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Brasil","d":"24/06 Qua","n":51,"f":"Grupo C","sb":"","t":"19:00","s":"Hard Rock – Miami","sa":"","a":"Escócia"},{"br":"CazéTV","b":"Coreia do Sul","d":"24/06 Qua","n":54,"f":"Grupo A","sb":"","t":"22:00","s":"BBVA – Monterrey","sa":"","a":"África do Sul"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"México","d":"24/06 Qua","n":53,"f":"Grupo A","sb":"","t":"22:00","s":"Azteca – Cidade do México","sa":"","a":"República Tcheca"},{"br":"CazéTV","b":"Costa do Marfim","d":"25/06 Qui","n":56,"f":"Grupo E","sb":"","t":"17:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"Curaçao"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Alemanha","d":"25/06 Qui","n":55,"f":"Grupo E","sb":"","t":"17:00","s":"MetLife – Nova Jersey","sa":"","a":"Equador"},{"br":"CazéTV","b":"Holanda","d":"25/06 Qui","n":58,"f":"Grupo F","sb":"","t":"20:00","s":"Arrowhead – Kansas City","sa":"","a":"Tunísia"},{"br":"CazéTV","b":"Suécia","d":"25/06 Qui","n":57,"f":"Grupo F","sb":"","t":"20:00","s":"AT&T – Dallas","sa":"","a":"Japão"},{"br":"CazéTV","b":"Austrália","d":"25/06 Qui","n":60,"f":"Grupo D","sb":"","t":"23:00","s":"Levi's – San Francisco","sa":"","a":"Paraguai"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Estados Unidos","d":"25/06 Qui","n":59,"f":"Grupo D","sb":"","t":"23:00","s":"SoFi – Los Angeles","sa":"","a":"Turquia"},{"br":"CazéTV","b":"Iraque","d":"26/06 Sex","n":62,"f":"Grupo J","sb":"","t":"16:00","s":"BMO Field – Toronto","sa":"","a":"Senegal"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"França","d":"26/06 Sex","n":61,"f":"Grupo J","sb":"","t":"16:00","s":"Gillette – Boston","sa":"","a":"Noruega"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Espanha","d":"26/06 Sex","n":64,"f":"Grupo H","sb":"","t":"21:00","s":"Akron – Guadalajara","sa":"","a":"Uruguai"},{"br":"CazéTV","b":"Arábia Saudita","d":"26/06 Sex","n":63,"f":"Grupo H","sb":"","t":"21:00","s":"NRG – Houston","sa":"","a":"Cabo Verde"},{"br":"CazéTV","b":"Bélgica","d":"27/06 Sáb","n":66,"f":"Grupo G","sb":"","t":"00:00","s":"BC Place – Vancouver","sa":"","a":"Nova Zelândia"},{"br":"CazéTV","b":"Irã","d":"27/06 Sáb","n":65,"f":"Grupo G","sb":"","t":"00:00","s":"Lumen – Seattle","sa":"","a":"Egito"},{"br":"CazéTV","b":"Gana","d":"27/06 Sáb","n":68,"f":"Grupo L","sb":"","t":"18:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"Croácia"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Inglaterra","d":"27/06 Sáb","n":67,"f":"Grupo L","sb":"","t":"18:00","s":"MetLife – Nova Jersey","sa":"","a":"Panamá"},{"br":"CazéTV","b":"Uzbequistão","d":"27/06 Sáb","n":70,"f":"Grupo K","sb":"","t":"20:30","s":"Mercedes-Benz – Atlanta","sa":"","a":"RD Congo"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Portugal","d":"27/06 Sáb","n":69,"f":"Grupo K","sb":"","t":"20:30","s":"Hard Rock – Miami","sa":"","a":"Colômbia"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Argentina","d":"27/06 Sáb","n":72,"f":"Grupo I","sb":"","t":"23:00","s":"AT&T – Dallas","sa":"","a":"Jordânia"},{"br":"CazéTV","b":"Áustria","d":"27/06 Sáb","n":71,"f":"Grupo I","sb":"","t":"23:00","s":"Arrowhead – Kansas City","sa":"","a":"Argélia"},{"br":"CazéTV","b":"2° Grupo B","d":"28/06 Dom","n":73,"f":"Rodada de 32","sb":"","t":"21:00","s":"SoFi – Los Angeles","sa":"","a":"2° Grupo A"},{"br":"CazéTV","b":"2° Grupo F","d":"29/06 Seg","n":76,"f":"Rodada de 32","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"1° Grupo C"},{"br":"CazéTV","b":"0","d":"29/06 Seg","n":74,"f":"Rodada de 32","sb":"","t":"17:30","s":"Gillette – Boston","sa":"","a":"1° Grupo E"},{"br":"CazéTV","b":"2° Grupo C","d":"29/06 Seg","n":75,"f":"Rodada de 32","sb":"","t":"22:00","s":"BBVA – Monterrey","sa":"","a":"1° Grupo F"},{"br":"CazéTV","b":"2° Grupo I","d":"30/06 Ter","n":78,"f":"Rodada de 32","sb":"","t":"14:00","s":"AT&T – Dallas","sa":"","a":"2° Grupo E"},{"br":"CazéTV","b":"0","d":"30/06 Ter","n":77,"f":"Rodada de 32","sb":"","t":"18:00","s":"MetLife – Nova Jersey","sa":"","a":"1° Grupo I"},{"br":"CazéTV","b":"0","d":"30/06 Ter","n":79,"f":"Rodada de 32","sb":"","t":"22:00","s":"Azteca – Cidade do México","sa":"","a":"1° Grupo A"},{"br":"CazéTV","b":"0","d":"01/07 Qua","n":80,"f":"Rodada de 32","sb":"","t":"13:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"1° Grupo L"},{"br":"CazéTV","b":"0","d":"01/07 Qua","n":82,"f":"Rodada de 32","sb":"","t":"17:00","s":"Lumen – Seattle","sa":"","a":"1° Grupo G"},{"br":"CazéTV","b":"0","d":"01/07 Qua","n":81,"f":"Rodada de 32","sb":"","t":"21:00","s":"Levi's – San Francisco","sa":"","a":"1° Grupo D"},{"br":"CazéTV","b":"2° Grupo J","d":"02/07 Qui","n":84,"f":"Rodada de 32","sb":"","t":"16:00","s":"SoFi – Los Angeles","sa":"","a":"1° Grupo H"},{"br":"CazéTV","b":"2° Grupo L","d":"02/07 Qui","n":83,"f":"Rodada de 32","sb":"","t":"20:00","s":"BMO Field – Toronto","sa":"","a":"2° Grupo K"},{"br":"CazéTV","b":"0","d":"03/07 Sex","n":85,"f":"Rodada de 32","sb":"","t":"00:00","s":"BC Place – Vancouver","sa":"","a":"1° Grupo B"},{"br":"CazéTV","b":"2° Grupo G","d":"03/07 Sex","n":88,"f":"Rodada de 32","sb":"","t":"15:00","s":"AT&T – Dallas","sa":"","a":"2° Grupo D"},{"br":"CazéTV","b":"2° Grupo H","d":"03/07 Sex","n":86,"f":"Rodada de 32","sb":"","t":"19:00","s":"Hard Rock – Miami","sa":"","a":"1° Grupo J"},{"br":"CazéTV","b":"0","d":"03/07 Sex","n":87,"f":"Rodada de 32","sb":"","t":"22:30","s":"Arrowhead – Kansas City","sa":"","a":"1° Grupo K"},{"br":"CazéTV","b":"V. Jogo 74","d":"04/07 Sáb","n":89,"f":"Oitavas de Final","sb":"","t":"18:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"V. Jogo 73"},{"br":"CazéTV","b":"V. Jogo 76","d":"04/07 Sáb","n":90,"f":"Oitavas de Final","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"V. Jogo 75"},{"br":"CazéTV","b":"V. Jogo 78","d":"05/07 Dom","n":91,"f":"Oitavas de Final","sb":"","t":"17:00","s":"MetLife – Nova Jersey","sa":"","a":"V. Jogo 77"},{"br":"CazéTV","b":"V. Jogo 80","d":"05/07 Dom","n":92,"f":"Oitavas de Final","sb":"","t":"21:00","s":"Azteca – Cidade do México","sa":"","a":"V. Jogo 79"},{"br":"CazéTV","b":"V. Jogo 82","d":"06/07 Seg","n":93,"f":"Oitavas de Final","sb":"","t":"16:00","s":"AT&T – Dallas","sa":"","a":"V. Jogo 81"},{"br":"CazéTV","b":"V. Jogo 84","d":"06/07 Seg","n":94,"f":"Oitavas de Final","sb":"","t":"21:00","s":"Lumen – Seattle","sa":"","a":"V. Jogo 83"},{"br":"CazéTV","b":"V. Jogo 86","d":"07/07 Ter","n":95,"f":"Oitavas de Final","sb":"","t":"13:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"V. Jogo 85"},{"br":"CazéTV","b":"V. Jogo 88","d":"07/07 Ter","n":96,"f":"Oitavas de Final","sb":"","t":"17:00","s":"BC Place – Vancouver","sa":"","a":"V. Jogo 87"},{"br":"CazéTV","b":"V. Jogo 90","d":"09/07 Qui","n":97,"f":"Quartas de Final","sb":"","t":"17:00","s":"Gillette – Boston","sa":"","a":"V. Jogo 89"},{"br":"CazéTV","b":"V. Jogo 92","d":"10/07 Sex","n":98,"f":"Quartas de Final","sb":"","t":"14:00","s":"SoFi – Los Angeles","sa":"","a":"V. Jogo 91"},{"br":"CazéTV","b":"V. Jogo 94","d":"11/07 Sáb","n":99,"f":"Quartas de Final","sb":"","t":"16:00","s":"Hard Rock – Miami","sa":"","a":"V. Jogo 93"},{"br":"CazéTV","b":"V. Jogo 96","d":"11/07 Sáb","n":100,"f":"Quartas de Final","sb":"","t":"20:00","s":"Arrowhead – Kansas City","sa":"","a":"V. Jogo 95"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"V. Jogo 98","d":"14/07 Ter","n":101,"f":"Semifinal","sb":"","t":"16:00","s":"AT&T – Dallas","sa":"","a":"V. Jogo 97"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"V. Jogo 100","d":"15/07 Qua","n":102,"f":"Semifinal","sb":"","t":"16:00","s":"MetLife – Nova Jersey","sa":"","a":"V. Jogo 99"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Perd. Jogo 102","d":"18/07 Sáb","n":103,"f":"3º Lugar","sb":"","t":"18:00","s":"Lumen – Seattle","sa":"","a":"Perd. Jogo 101"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"V. Jogo 102","d":"19/07 Dom","n":104,"f":"Final","sb":"","t":"16:00","s":"MetLife – Nova Jersey","sa":"","a":"V. Jogo 101"}]
+<script>const GAMES = [{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"África do Sul","d":"11/06 Qui","n":1,"f":"Grupo A","sb":"","t":"16:00","s":"Azteca – Cidade do México","sa":"","a":"México"},{"br":"CazéTV","b":"República Tcheca","d":"11/06 Qui","n":2,"f":"Grupo A","sb":"","t":"23:00","s":"Akron – Guadalajara","sa":"","a":"Coreia do Sul"},{"br":"CazéTV","b":"Bósnia","d":"12/06 Sex","n":3,"f":"Grupo B","sb":"","t":"16:00","s":"BMO Field – Toronto","sa":"","a":"Canadá"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Paraguai","d":"12/06 Sex","n":4,"f":"Grupo D","sb":"","t":"22:00","s":"SoFi – Los Angeles","sa":"","a":"Estados Unidos"},{"br":"CazéTV","b":"Suíça","d":"13/06 Sáb","n":5,"f":"Grupo B","sb":"","t":"16:00","s":"Levi\u0027s – San Francisco","sa":"","a":"Catar"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Marrocos","d":"13/06 Sáb","n":6,"f":"Grupo C","sb":"","t":"19:00","s":"MetLife – Nova Jersey","sa":"","a":"Brasil"},{"br":"CazéTV","b":"Escócia","d":"13/06 Sáb","n":7,"f":"Grupo C","sb":"","t":"22:00","s":"Gillette – Boston","sa":"","a":"Haiti"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Turquia","d":"14/06 Dom","n":8,"f":"Grupo D","sb":"","t":"01:00","s":"BC Place – Vancouver","sa":"","a":"Austrália"},{"br":"CazéTV","b":"Curaçao","d":"14/06 Dom","n":9,"f":"Grupo E","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"Alemanha"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Japão","d":"14/06 Dom","n":10,"f":"Grupo F","sb":"","t":"17:00","s":"AT\u0026T – Dallas","sa":"","a":"Holanda"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Equador","d":"14/06 Dom","n":11,"f":"Grupo E","sb":"","t":"20:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"Costa do Marfim"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Tunísia","d":"14/06 Dom","n":12,"f":"Grupo F","sb":"","t":"23:00","s":"BBVA – Monterrey","sa":"","a":"Suécia"},{"br":"CazéTV","b":"Cabo Verde","d":"15/06 Seg","n":13,"f":"Grupo H","sb":"","t":"13:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"Espanha"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Egito","d":"15/06 Seg","n":14,"f":"Grupo G","sb":"","t":"16:00","s":"Lumen – Seattle","sa":"","a":"Bélgica"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Uruguai","d":"15/06 Seg","n":15,"f":"Grupo H","sb":"","t":"19:00","s":"Hard Rock – Miami","sa":"","a":"Arábia Saudita"},{"br":"CazéTV","b":"Nova Zelândia","d":"15/06 Seg","n":16,"f":"Grupo G","sb":"","t":"22:00","s":"SoFi – Los Angeles","sa":"","a":"Irã"},{"br":"CazéTV","b":"Argélia","d":"16/06 Ter","n":17,"f":"Grupo I","sb":"","t":"14:00","s":"Arrowhead – Kansas City","sa":"","a":"Argentina"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Senegal","d":"16/06 Ter","n":18,"f":"Grupo J","sb":"","t":"16:00","s":"MetLife – Nova Jersey","sa":"","a":"França"},{"br":"CazéTV","b":"Noruega","d":"16/06 Ter","n":19,"f":"Grupo J","sb":"","t":"19:00","s":"Gillette – Boston","sa":"","a":"Iraque"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Jordânia","d":"17/06 Qua","n":20,"f":"Grupo I","sb":"","t":"01:00","s":"Levi\u0027s – San Francisco","sa":"","a":"Áustria"},{"br":"CazéTV","b":"RD Congo","d":"17/06 Qua","n":21,"f":"Grupo K","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"Portugal"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Croácia","d":"17/06 Qua","n":22,"f":"Grupo L","sb":"","t":"17:00","s":"AT\u0026T – Dallas","sa":"","a":"Inglaterra"},{"br":"CazéTV","b":"Panamá","d":"17/06 Qua","n":23,"f":"Grupo L","sb":"","t":"20:00","s":"BMO Field – Toronto","sa":"","a":"Gana"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Colômbia","d":"17/06 Qua","n":24,"f":"Grupo K","sb":"","t":"23:00","s":"Azteca – Cidade do México","sa":"","a":"Uzbequistão"},{"br":"CazéTV","b":"África do Sul","d":"18/06 Qui","n":25,"f":"Grupo A","sb":"","t":"13:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"República Tcheca"},{"br":"CazéTV","b":"Bósnia","d":"18/06 Qui","n":26,"f":"Grupo B","sb":"","t":"16:00","s":"SoFi – Los Angeles","sa":"","a":"Suíça"},{"br":"CazéTV","b":"Catar","d":"18/06 Qui","n":27,"f":"Grupo B","sb":"","t":"19:00","s":"BC Place – Vancouver","sa":"","a":"Canadá"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Coreia do Sul","d":"18/06 Qui","n":28,"f":"Grupo A","sb":"","t":"22:00","s":"Akron – Guadalajara","sa":"","a":"México"},{"br":"CazéTV","b":"Paraguai","d":"19/06 Sex","n":29,"f":"Grupo D","sb":"","t":"01:00","s":"Levi\u0027s – San Francisco","sa":"","a":"Turquia"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Austrália","d":"19/06 Sex","n":30,"f":"Grupo D","sb":"","t":"16:00","s":"Lumen – Seattle","sa":"","a":"Estados Unidos"},{"br":"CazéTV","b":"Marrocos","d":"19/06 Sex","n":31,"f":"Grupo C","sb":"","t":"19:00","s":"Gillette – Boston","sa":"","a":"Escócia"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Haiti","d":"19/06 Sex","n":32,"f":"Grupo C","sb":"","t":"22:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"Brasil"},{"br":"CazéTV","b":"Suécia","d":"20/06 Sáb","n":33,"f":"Grupo F","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"Holanda"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Costa do Marfim","d":"20/06 Sáb","n":34,"f":"Grupo E","sb":"","t":"17:00","s":"BMO Field – Toronto","sa":"","a":"Alemanha"},{"br":"CazéTV","b":"Curaçao","d":"20/06 Sáb","n":35,"f":"Grupo E","sb":"","t":"21:00","s":"Arrowhead – Kansas City","sa":"","a":"Equador"},{"br":"CazéTV","b":"Japão","d":"21/06 Dom","n":36,"f":"Grupo F","sb":"","t":"01:00","s":"BBVA – Monterrey","sa":"","a":"Tunísia"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Arábia Saudita","d":"21/06 Dom","n":37,"f":"Grupo H","sb":"","t":"13:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"Espanha"},{"br":"CazéTV","b":"Irã","d":"21/06 Dom","n":38,"f":"Grupo G","sb":"","t":"16:00","s":"SoFi – Los Angeles","sa":"","a":"Bélgica"},{"br":"CazéTV","b":"Cabo Verde","d":"21/06 Dom","n":39,"f":"Grupo H","sb":"","t":"19:00","s":"Hard Rock – Miami","sa":"","a":"Uruguai"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Egito","d":"21/06 Dom","n":40,"f":"Grupo G","sb":"","t":"22:00","s":"BC Place – Vancouver","sa":"","a":"Nova Zelândia"},{"br":"CazéTV","b":"Áustria","d":"22/06 Seg","n":41,"f":"Grupo I","sb":"","t":"14:00","s":"AT\u0026T – Dallas","sa":"","a":"Argentina"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Iraque","d":"22/06 Seg","n":42,"f":"Grupo J","sb":"","t":"18:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"França"},{"br":"CazéTV","b":"Senegal","d":"22/06 Seg","n":43,"f":"Grupo J","sb":"","t":"21:00","s":"MetLife – Nova Jersey","sa":"","a":"Noruega"},{"br":"CazéTV","b":"Argélia","d":"23/06 Ter","n":44,"f":"Grupo I","sb":"","t":"00:00","s":"Levi\u0027s – San Francisco","sa":"","a":"Jordânia"},{"br":"CazéTV","b":"Uzbequistão","d":"23/06 Ter","n":45,"f":"Grupo K","sb":"","t":"14:00","s":"NRG – Houston","sa":"","a":"Portugal"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Gana","d":"23/06 Ter","n":46,"f":"Grupo L","sb":"","t":"17:00","s":"Gillette – Boston","sa":"","a":"Inglaterra"},{"br":"CazéTV","b":"Croácia","d":"23/06 Ter","n":47,"f":"Grupo L","sb":"","t":"20:00","s":"BMO Field – Toronto","sa":"","a":"Panamá"},{"br":"CazéTV","b":"RD Congo","d":"23/06 Ter","n":48,"f":"Grupo K","sb":"","t":"23:00","s":"Akron – Guadalajara","sa":"","a":"Colômbia"},{"br":"CazéTV","b":"Catar","d":"24/06 Qua","n":50,"f":"Grupo B","sb":"","t":"16:00","s":"Lumen – Seattle","sa":"","a":"Bósnia"},{"br":"CazéTV","b":"Canadá","d":"24/06 Qua","n":49,"f":"Grupo B","sb":"","t":"16:00","s":"BC Place – Vancouver","sa":"","a":"Suíça"},{"br":"CazéTV","b":"Haiti","d":"24/06 Qua","n":52,"f":"Grupo C","sb":"","t":"19:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"Marrocos"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Brasil","d":"24/06 Qua","n":51,"f":"Grupo C","sb":"","t":"19:00","s":"Hard Rock – Miami","sa":"","a":"Escócia"},{"br":"CazéTV","b":"Coreia do Sul","d":"24/06 Qua","n":54,"f":"Grupo A","sb":"","t":"22:00","s":"BBVA – Monterrey","sa":"","a":"África do Sul"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"México","d":"24/06 Qua","n":53,"f":"Grupo A","sb":"","t":"22:00","s":"Azteca – Cidade do México","sa":"","a":"República Tcheca"},{"br":"CazéTV","b":"Costa do Marfim","d":"25/06 Qui","n":56,"f":"Grupo E","sb":"","t":"17:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"Curaçao"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Alemanha","d":"25/06 Qui","n":55,"f":"Grupo E","sb":"","t":"17:00","s":"MetLife – Nova Jersey","sa":"","a":"Equador"},{"br":"CazéTV","b":"Holanda","d":"25/06 Qui","n":58,"f":"Grupo F","sb":"","t":"20:00","s":"Arrowhead – Kansas City","sa":"","a":"Tunísia"},{"br":"CazéTV","b":"Suécia","d":"25/06 Qui","n":57,"f":"Grupo F","sb":"","t":"20:00","s":"AT\u0026T – Dallas","sa":"","a":"Japão"},{"br":"CazéTV","b":"Austrália","d":"25/06 Qui","n":60,"f":"Grupo D","sb":"","t":"23:00","s":"Levi\u0027s – San Francisco","sa":"","a":"Paraguai"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Estados Unidos","d":"25/06 Qui","n":59,"f":"Grupo D","sb":"","t":"23:00","s":"SoFi – Los Angeles","sa":"","a":"Turquia"},{"br":"CazéTV","b":"Iraque","d":"26/06 Sex","n":62,"f":"Grupo J","sb":"","t":"16:00","s":"BMO Field – Toronto","sa":"","a":"Senegal"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"França","d":"26/06 Sex","n":61,"f":"Grupo J","sb":"","t":"16:00","s":"Gillette – Boston","sa":"","a":"Noruega"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Espanha","d":"26/06 Sex","n":64,"f":"Grupo H","sb":"","t":"21:00","s":"Akron – Guadalajara","sa":"","a":"Uruguai"},{"br":"CazéTV","b":"Arábia Saudita","d":"26/06 Sex","n":63,"f":"Grupo H","sb":"","t":"21:00","s":"NRG – Houston","sa":"","a":"Cabo Verde"},{"br":"CazéTV","b":"Bélgica","d":"27/06 Sáb","n":66,"f":"Grupo G","sb":"","t":"00:00","s":"BC Place – Vancouver","sa":"","a":"Nova Zelândia"},{"br":"CazéTV","b":"Irã","d":"27/06 Sáb","n":65,"f":"Grupo G","sb":"","t":"00:00","s":"Lumen – Seattle","sa":"","a":"Egito"},{"br":"CazéTV","b":"Gana","d":"27/06 Sáb","n":68,"f":"Grupo L","sb":"","t":"18:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"Croácia"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Inglaterra","d":"27/06 Sáb","n":67,"f":"Grupo L","sb":"","t":"18:00","s":"MetLife – Nova Jersey","sa":"","a":"Panamá"},{"br":"CazéTV","b":"Uzbequistão","d":"27/06 Sáb","n":70,"f":"Grupo K","sb":"","t":"20:30","s":"Mercedes-Benz – Atlanta","sa":"","a":"RD Congo"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Portugal","d":"27/06 Sáb","n":69,"f":"Grupo K","sb":"","t":"20:30","s":"Hard Rock – Miami","sa":"","a":"Colômbia"},{"br":"Globo · SporTV · CazéTV · Globoplay","b":"Argentina","d":"27/06 Sáb","n":72,"f":"Grupo I","sb":"","t":"23:00","s":"AT\u0026T – Dallas","sa":"","a":"Jordânia"},{"br":"CazéTV","b":"Áustria","d":"27/06 Sáb","n":71,"f":"Grupo I","sb":"","t":"23:00","s":"Arrowhead – Kansas City","sa":"","a":"Argélia"},{"br":"CazéTV","b":"2° Grupo B","d":"28/06 Dom","n":73,"f":"Rodada de 32","sb":"","t":"20:00","s":"SoFi – Los Angeles","sa":"","a":"2° Grupo A"},{"br":"CazéTV","b":"2° Grupo F","d":"29/06 Seg","n":76,"f":"Rodada de 32","sb":"","t":"13:00","s":"NRG – Houston","sa":"","a":"1° Grupo C"},{"br":"CazéTV","b":"0","d":"29/06 Seg","n":74,"f":"Rodada de 32","sb":"","t":"17:30","s":"Gillette – Boston","sa":"","a":"1° Grupo E"},{"br":"CazéTV","b":"2° Grupo C","d":"29/06 Seg","n":75,"f":"Rodada de 32","sb":"","t":"21:00","s":"BBVA – Monterrey","sa":"","a":"1° Grupo F"},{"br":"CazéTV","b":"2° Grupo I","d":"30/06 Ter","n":78,"f":"Rodada de 32","sb":"","t":"13:00","s":"AT\u0026T – Dallas","sa":"","a":"2° Grupo E"},{"br":"CazéTV","b":"0","d":"30/06 Ter","n":77,"f":"Rodada de 32","sb":"","t":"17:00","s":"MetLife – Nova Jersey","sa":"","a":"1° Grupo I"},{"br":"CazéTV","b":"0","d":"30/06 Ter","n":79,"f":"Rodada de 32","sb":"","t":"21:00","s":"Azteca – Cidade do México","sa":"","a":"1° Grupo A"},{"br":"CazéTV","b":"0","d":"01/07 Qua","n":80,"f":"Rodada de 32","sb":"","t":"12:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"1° Grupo L"},{"br":"CazéTV","b":"0","d":"01/07 Qua","n":82,"f":"Rodada de 32","sb":"","t":"16:00","s":"Lumen – Seattle","sa":"","a":"1° Grupo G"},{"br":"CazéTV","b":"0","d":"01/07 Qua","n":81,"f":"Rodada de 32","sb":"","t":"20:00","s":"Levi\u0027s – San Francisco","sa":"","a":"1° Grupo D"},{"br":"CazéTV","b":"2° Grupo J","d":"02/07 Qui","n":84,"f":"Rodada de 32","sb":"","t":"15:00","s":"SoFi – Los Angeles","sa":"","a":"1° Grupo H"},{"br":"CazéTV","b":"2° Grupo L","d":"02/07 Qui","n":83,"f":"Rodada de 32","sb":"","t":"19:00","s":"BMO Field – Toronto","sa":"","a":"2° Grupo K"},{"br":"CazéTV","b":"0","d":"02/07 Qui","n":85,"f":"Rodada de 32","sb":"","t":"23:00","s":"BC Place – Vancouver","sa":"","a":"1° Grupo B"},{"br":"CazéTV","b":"2° Grupo G","d":"03/07 Sex","n":88,"f":"Rodada de 32","sb":"","t":"14:00","s":"AT\u0026T – Dallas","sa":"","a":"2° Grupo D"},{"br":"CazéTV","b":"2° Grupo H","d":"03/07 Sex","n":86,"f":"Rodada de 32","sb":"","t":"18:00","s":"Hard Rock – Miami","sa":"","a":"1° Grupo J"},{"br":"CazéTV","b":"0","d":"03/07 Sex","n":87,"f":"Rodada de 32","sb":"","t":"21:30","s":"Arrowhead – Kansas City","sa":"","a":"1° Grupo K"},{"br":"CazéTV","b":"V. Jogo 74","d":"04/07 Sáb","n":89,"f":"Oitavas de Final","sb":"","t":"18:00","s":"Lincoln Fin. – Filadélfia","sa":"","a":"V. Jogo 73"},{"br":"CazéTV","b":"V. Jogo 76","d":"04/07 Sáb","n":90,"f":"Oitavas de Final","sb":"","t":"22:00","s":"NRG – Houston","sa":"","a":"V. Jogo 75"},{"br":"CazéTV","b":"V. Jogo 78","d":"05/07 Dom","n":91,"f":"Oitavas de Final","sb":"","t":"17:00","s":"MetLife – Nova Jersey","sa":"","a":"V. Jogo 77"},{"br":"CazéTV","b":"V. Jogo 80","d":"05/07 Dom","n":92,"f":"Oitavas de Final","sb":"","t":"21:00","s":"Azteca – Cidade do México","sa":"","a":"V. Jogo 79"},{"br":"CazéTV","b":"V. Jogo 82","d":"06/07 Seg","n":93,"f":"Oitavas de Final","sb":"","t":"17:00","s":"AT\u0026T – Dallas","sa":"","a":"V. Jogo 81"},{"br":"CazéTV","b":"V. Jogo 84","d":"06/07 Seg","n":94,"f":"Oitavas de Final","sb":"","t":"21:00","s":"Lumen – Seattle","sa":"","a":"V. Jogo 83"},{"br":"CazéTV","b":"V. Jogo 86","d":"07/07 Ter","n":95,"f":"Oitavas de Final","sb":"","t":"13:00","s":"Mercedes-Benz – Atlanta","sa":"","a":"V. Jogo 85"},{"br":"CazéTV","b":"V. Jogo 88","d":"07/07 Ter","n":96,"f":"Oitavas de Final","sb":"","t":"17:00","s":"BC Place – Vancouver","sa":"","a":"V. Jogo 87"},{"br":"CazéTV","b":"V. Jogo 90","d":"09/07 Qui","n":97,"f":"Quartas de Final","sb":"","t":"17:00","s":"Gillette – Boston","sa":"","a":"V. Jogo 89"},{"br":"CazéTV","b":"V. Jogo 92","d":"10/07 Sex","n":98,"f":"Quartas de Final","sb":"","t":"15:00","s":"SoFi – Los Angeles","sa":"","a":"V. Jogo 91"},{"br":"CazéTV","b":"V. Jogo 94","d":"11/07 Sáb","n":99,"f":"Quartas de Final","sb":"","t":"17:00","s":"Hard Rock – Miami","sa":"","a":"V. Jogo 93"},{"br":"CazéTV","b":"V. Jogo 96","d":"11/07 Sáb","n":100,"f":"Quartas de Final","sb":"","t":"21:00","s":"Arrowhead – Kansas City","sa":"","a":"V. Jogo 95"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"V. Jogo 98","d":"14/07 Ter","n":101,"f":"Semifinal","sb":"","t":"21:00","s":"AT\u0026T – Dallas","sa":"","a":"V. Jogo 97"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"V. Jogo 100","d":"15/07 Qua","n":102,"f":"Semifinal","sb":"","t":"21:00","s":"MetLife – Nova Jersey","sa":"","a":"V. Jogo 99"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"Perd. Jogo 102","d":"18/07 Sáb","n":103,"f":"3º Lugar","sb":"","t":"17:00","s":"Lumen – Seattle","sa":"","a":"Perd. Jogo 101"},{"br":"Globo · SporTV · CazéTV · SBT · Globoplay · Ge TV","b":"V. Jogo 102","d":"19/07 Dom","n":104,"f":"Final","sb":"","t":"15:00","s":"MetLife – Nova Jersey","sa":"","a":"V. Jogo 101"}]
 const GROUPS = {"A":["África do Sul","Coreia do Sul","México","República Tcheca"],"B":["Bósnia","Canadá","Catar","Suíça"],"C":["Brasil","Escócia","Haiti","Marrocos"],"D":["Austrália","Estados Unidos","Paraguai","Turquia"],"E":["Alemanha","Costa do Marfim","Curaçao","Equador"],"F":["Holanda","Japão","Suécia","Tunísia"],"G":["Bélgica","Egito","Irã","Nova Zelândia"],"H":["Arábia Saudita","Cabo Verde","Espanha","Uruguai"],"I":["Argentina","Argélia","Áustria","Jordânia"],"J":["França","Iraque","Noruega","Senegal"],"K":["Colômbia","Portugal","RD Congo","Uzbequistão"],"L":["Croácia","Gana","Inglaterra","Panamá"]}
 ;
 const PLAYERS = {};
-var _PLAYER_CLUB={};
-var _expandedGames={};
 var GAME_BY_ID={};GAMES.forEach(function(g){GAME_BY_ID[g.n]=g;});
 var BAK_KEYS=['copa2026_data','copa2026_bak1','copa2026_bak2'];
 function _loadPersistent(){
@@ -841,7 +728,7 @@ const BRACKET_ROUNDS = ["Rodada de 32","Oitavas de Final","Quartas de Final","Se
 function gameUTC(g){try{var p=g.d.split(" ")[0].split("/"),tp=g.t.split(":");if(p.length<2||tp.length<2)return null;return new Date(Date.UTC(2026,parseInt(p[1],10)-1,parseInt(p[0],10),parseInt(tp[0],10)+3,parseInt(tp[1],10)))}catch(e){return null}}
 function toBRT(g){try{var gd=gameUTC(g);if(!gd)return'';var br=new Date(gd-10800000);return br.getUTCHours().toString().padStart(2,'0')+':'+br.getUTCMinutes().toString().padStart(2,'0')}catch(e){return''}}
 
-function flag(t){var c=FLAG_ISO[t];return c?'<span class="flag-bg" style="background-image:url(https://flagcdn.com/24x18/'+c+'.png)"></span>':'<span class="flag-fallback">\u{1F3F3}\uFE0F</span>'}
+function flag(t){var c=FLAG_ISO[t];return c?'<img class="flag-bg" src="https://flagcdn.com/24x18/'+c+'.png" alt="" width="24" height="18" loading="lazy" decoding="async">':'<span class="flag-fallback" style="display:inline-block;width:24px;height:18px">\u{1F3F3}\uFE0F</span>'}
 function broadcastBadge(br){if(!br)return'';var m={'Globo':'logo_globo.png','SporTV':'logo_sportv.png','Caz\u00e9TV':'logo_cazetv.png','SBT':'logo_sbt.png','N Sports':'logo_nsports.png','Globoplay':'logo_globoplay.png','Ge TV':'logo_getv.png'};return br.split(/\u00b7/).map(function(c){c=c.trim();if(!c)return'';var k=m[c];var cls=c==='Caz\u00e9TV'?' caze':'';return k?'<span class="br-badge"><img class="br-logo'+cls+'" src="'+k+'" alt="'+c+'" loading="lazy" decoding="async">'+c+'</span>':'<span class="br-badge">'+c+'</span>'}).filter(function(s){return s}).join('')}
 function teamRow(n,c){return'<div class="team-row"><span class="flag">'+flag(n)+'</span><span class="team-name'+c+'">'+esc(n)+'</span></div>'}
 function _resolvedTeamRow(placeholder,gameNum,side){
@@ -914,69 +801,42 @@ setTimeout(function(){
     });
   });
 },200);
-var MAIS_TABS=['artilheiros','convocados','bolao-estatisticas','regras'];
-function switchTab(tab){
-  window.scrollTo(0,0);
+function tabClick(){
+  var tab=this.dataset.tab;
   try{localStorage.setItem('copa2026_tab',tab)}catch(e){}
   if(window.location.hash!=='#'+tab)window.location.hash=tab;
-  // Update bottom nav active state (mobile)
-  document.querySelectorAll(".nav-btn").forEach(function(n){n.classList.remove("active")});
-  if(MAIS_TABS.indexOf(tab)>=0){var mb=document.getElementById("nav-mais");if(mb)mb.classList.add("active")}
-  else{var nb=document.getElementById("nav-"+tab);if(nb)nb.classList.add("active")}
-  // Update top tabs active state (desktop)
   document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");t.setAttribute("aria-selected","false");t.tabIndex=-1});
   document.querySelectorAll(".content").forEach(function(c){c.classList.remove("active")});
-  var ce=document.getElementById("tab-"+tab);if(ce)ce.classList.add("active");
-  var tt=document.querySelector('.tab[data-tab="'+tab+'"]');
-  if(tt){tt.classList.add("active");tt.setAttribute("aria-selected","true");tt.tabIndex=0;try{tt.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})}catch(e){}}
-  // Render tab content
+  this.classList.add("active");this.setAttribute("aria-selected","true");this.tabIndex=0;
+  document.getElementById("tab-"+tab).classList.add("active");
+  // Rola o menu para mostrar a tab ativa (importante no celular)
+  try{this.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})}catch(e){}
+  if(tab==="hoje")renderHoje();
   if(tab==="grupos")renderGroups();
   if(tab==="mata-mata")renderBracket();
   if(tab==="artilheiros")renderScorers();
   if(tab==="bolao")bolaoInit();
   if(tab==="bolao-estatisticas")renderBolaoStats();
   if(tab==="convocados"){if(!FIFA_MAP_READY)initFifaMaps();renderSquads();if(_rsTimer)clearTimeout(_rsTimer);if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100){_rsTimer=setTimeout(function(){renderSquads();if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100)_rsTimer=setTimeout(renderSquads,4000)},2000)}}
+}
+function switchTab(tab){
+  try{localStorage.setItem('copa2026_tab',tab)}catch(e){}
+  if(window.location.hash!=='#'+tab)window.location.hash=tab;
+  document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");t.setAttribute("aria-selected","false");t.tabIndex=-1});
+  document.querySelectorAll(".content").forEach(function(c){c.classList.remove("active")});
+  document.getElementById("tab-"+tab).classList.add("active");
+  if(tab==="jogos"||tab==="hoje")_scrolledToLive=false;
+  if(tab==="hoje")renderHoje();
   if(tab==="diagnostico")renderDiagnostico();
 }
-function tabClick(){switchTab(this.dataset.tab)}
-function navClick(){maisClose();switchTab(this.dataset.tab)}
-function maisOpen(){var el=document.getElementById("mais-overlay");if(el)el.style.display="flex"}
-function maisClose(){var el=document.getElementById("mais-overlay");if(el)el.style.display="none"}
-// Swipe entre abas (mobile)
-var ENABLE_SWIPE=true,SWIPE_TABS=['jogos','grupos','mata-mata','bolao','artilheiros','convocados','bolao-estatisticas','regras'],_touchSX=0,_touchSY=0;
-document.addEventListener('touchstart',function(e){_touchSX=e.touches[0].clientX;_touchSY=e.touches[0].clientY},{passive:true});
-document.addEventListener('touchend',function(e){
-  if(!ENABLE_SWIPE)return;
-  var t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'))return;
-  var dx=e.changedTouches[0].clientX-_touchSX,dy=e.changedTouches[0].clientY-_touchSY;
-  if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)*0.5)return;
-  var cur=document.querySelector('.nav-btn.active')||document.querySelector('.tab.active');
-  if(!cur)return;
-  var idx=SWIPE_TABS.indexOf(cur.dataset.tab||(cur.getAttribute&&cur.getAttribute('data-tab')));
-  if(idx<0)return;
-  var ni=dx>0?idx-1:idx+1;
-  if(ni<0||ni>=SWIPE_TABS.length)return;
-  var nb=document.querySelector('.nav-btn[data-tab="'+SWIPE_TABS[ni]+'"]');
-  if(nb)navClick.call(nb);else{var tb=document.querySelector('.tab[data-tab="'+SWIPE_TABS[ni]+'"]');if(tb)tabClick.call(tb)}
-},{passive:true});
 document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",tabClick)});
-window.addEventListener("hashchange",function(){
-  var h=window.location.hash.replace('#','');
-  if(h==='hoje')h='jogos';
-  if(h&&VALID_TABS.indexOf(h)>=0){
-    if(h==='diagnostico'){switchTab('diagnostico');return}
-    var nb=document.querySelector('.nav-btn[data-tab="'+h+'"]');
-    if(nb&&!nb.classList.contains("active")){navClick.call(nb);return}
-    var t=document.querySelector('.tab[data-tab="'+h+'"]');
-    if(t&&!t.classList.contains("active"))t.click()
-  }
-});
+window.addEventListener("hashchange",function(){var h=window.location.hash.replace('#','');if(h&&VALID_TABS.indexOf(h)>=0){if(h==='diagnostico'){switchTab('diagnostico');return}var t=document.querySelector('.tab[data-tab="'+h+'"]');if(t&&!t.classList.contains("active"))t.click()}});
 
 var currentFilter="all";
 function setFilter(f,e){
   document.querySelectorAll(".filter-btn").forEach(function(b){b.classList.remove("active")});
   if(e&&e.currentTarget)e.currentTarget.classList.add("active");
-  currentFilter=f;renderGames(f);
+  currentFilter=f;_scrolledToLive=false;renderGames(f);
 }
 var _LIVE_WINDOW=10800000;
 function gameIsPast(g){
@@ -1010,7 +870,7 @@ function isGameLive(g){
     return now>=kickoff&&now<=new Date(kickoff.getTime()+_LIVE_WINDOW);
   }catch(e){return false}
 }
-
+var _scrolledToLive=false;
 if('scrollRestoration'in history)history.scrollRestoration='manual';
 function renderGames(filter){
   var el=document.getElementById("games-list");
@@ -1022,56 +882,31 @@ function renderGames(filter){
   if(filter==="ko")games=games.filter(function(g){return g.f&&!g.f.startsWith("Grupo")});
   else if(filter!=="all")games=games.filter(function(g){return g.f===GROUP_NAMES[filter]||g.f===filter});
   games.sort(function(a,b){var da=a.d.split(' ')[0].split('/'),db=b.d.split(' ')[0].split('/'),ca=parseInt(da[1])*100+parseInt(da[0]),cb=parseInt(db[1])*100+parseInt(db[0]);if(ca!==cb)return ca-cb;var ta=a.t.split(':'),tb=b.t.split(':'),tca=parseInt(ta[0])*60+parseInt(ta[1]),tcb=parseInt(tb[0])*60+parseInt(tb[1]);return tca-tcb});
-  if(filter!=="all"){dynRender(el,games.map(function(g){return renderGameCard(g)}).join(""));return}
-  // "all": organiza em seções temporais
-  var now=new Date(),dd=("0"+now.getDate()).slice(-2),mm=("0"+(now.getMonth()+1)).slice(-2),today=dd+"/"+mm;
-  var live=[],todayGames=[],upcoming=[],past=[];
-  games.forEach(function(g){
-    if(isGameLive(g))live.push(g);
-    else if(gameIsPast(g))past.push(g);
-    else if(g.d.indexOf(today)===0)todayGames.push(g);
-    else upcoming.push(g);
-  });
-  // Hero AO VIVO
-  var heroEl=document.getElementById("hero-live");
-  if(heroEl){
-    if(live.length){
-      heroEl.style.display="";
-      heroEl.innerHTML='<div class="hero-live-inner">'+live.map(function(g){return '<div class="hero-card-wrap">'+renderGameCard(g)+'</div>'}).join("")+'</div>';
-    }else{heroEl.style.display="none";heroEl.innerHTML="";}
-  }
-  // Seções
-  var parts=[];
-  if(past.length)parts.push('<div class="past-link" onclick="scrollToPast()">\u2B07 Ir para jogos anteriores</div>');
-  if(todayGames.length)parts.push('<div class="section-header section-today">\uD83D\uDCC5 HOJE</div>'+todayGames.map(function(g){return renderGameCard(g)}).join(""));
-  if(upcoming.length)parts.push('<div class="section-header section-upcoming">\u23F3 PR\u00D3XIMOS</div>'+upcoming.map(function(g){return renderGameCard(g)}).join(""));
-  if(past.length)parts.push('<div id="section-past" class="section-header section-past">\u2705 ANTERIORES<button class="expand-all-btn" onclick="expandAllPast()">Expandir todos</button></div>'+past.map(function(g){return renderGameCard(g)}).join(""));
-  dynRender(el,parts.length?parts.join(""):_emptyState('\u26BD','Nenhum jogo encontrado','N\u00E3o h\u00E1 partidas programadas para esta data.'));
+  if(filter==="all"){dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""));if(games.length&&!_scrolledToLive){setTimeout(function(){_scrolledToLive=true;var first=null;for(var i=0;i<games.length;i++){if(!gameIsPast(games[i])){first=games[i];break}}if(first){var el=document.getElementById('g-'+first.n);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}},300)}}else{dynRender(el, games.map(function(g){return renderGameCard(g)}).join(""))}
 }
-function toggleGameCard(el){
-  var card=el&&el.closest?el.closest('.game-card'):null;
+function renderHoje(){
+  var el=document.getElementById("hoje-list");if(!el)return;
+  var now=new Date();
+  var dd=("0"+now.getDate()).slice(-2),mm=("0"+(now.getMonth()+1)).slice(-2),todayStr=dd+"/"+mm;
+  var games=GAMES.filter(function(g){return g.d&&g.d.indexOf(todayStr)===0});
+  if(!games.length){dynRender(el,'<div style="text-align:center;padding:40px;color:var(--muted);font-size:15px"><div style="font-size:36px;margin-bottom:12px">&#128197;</div>Sem jogos hoje</div>');return}
+  games.sort(function(a,b){var ta=a.t.split(":"),tb=b.t.split(":");return(parseInt(ta[0],10)*60+parseInt(ta[1],10))-(parseInt(tb[0],10)*60+parseInt(tb[1],10))});
+  dynRender(el,games.map(function(g){return renderGameCard(g)}).join(""));
+}
+function toggleGameCard(btn){
+  var card=btn.closest('.game-card');
   if(!card)return;
-  var gid=parseInt(card.id.replace('g-',''),10);
-  var isExpand=card.getAttribute('data-collapsed')==='true';
-  if(isExpand){
+  if(card.getAttribute('data-collapsed')==='true'){
     card.setAttribute('data-collapsed','false');
     card.classList.remove('collapsed');
-    _expandedGames[gid]=true;
+    btn.textContent='-';
     setTimeout(function(){card.scrollIntoView({behavior:'smooth',block:'nearest'})},50);
   }else{
     card.setAttribute('data-collapsed','true');
     card.classList.add('collapsed');
-    delete _expandedGames[gid];
+    btn.textContent='+';
   }
-  var btn=card.querySelector('.expand-btn');
-  if(btn)btn.textContent=isExpand?'-':'+';
 }
-function expandAllPast(){
-  var any=false;
-  GAMES.forEach(function(g){if(gameIsPast(g)){_expandedGames[g.n]=true;any=true}});
-  if(any)renderGames(currentFilter);
-}
-function scrollToPast(){var el=document.getElementById('section-past');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
 function dynRender(el, html){
   // Ignorar badges do relogio na comparacao (conteudo dinamico do countdown)
   var cur=el.innerHTML.replace(/<div class="live-clock[^>]*>[^<]*<\/div>/g,'');
@@ -1161,8 +996,8 @@ function renderGameCard(g){
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
   
-  var past=currentFilter==="all"&&gameIsPast(g)&&!_expandedGames[gn];
-    return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true" onclick="toggleGameCard(this)"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info"><span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+(typeof REFEREES[gn]==='string'?REFEREES[gn]:REFEREES[gn].name+(REFEREES[gn].country?' '+flag(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country)+' '+(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country):''))+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score"><span class="score-display">'+(sa!==''?sa:'-')+'</span><span class="score-x">\u00d7</span><span class="score-display">'+(sb!==''?sb:'-')+'</span></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.pen?'<div class="pen-result"><span class="pen-badge">'+flag(s.pen==='a'?g.a:g.b)+' Venceu nos p\u00ean.</span></div>':'')+'<div class="goal-events">'+events.map(function(x){
+  var past=currentFilter==="all"&&gameIsPast(g);
+    return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info">'+(live?'<span class="live-label">\u25cf AO VIVO</span> ': "")+'<span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn" onclick="toggleGameCard(this)">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+(typeof REFEREES[gn]==='string'?REFEREES[gn]:REFEREES[gn].name+(REFEREES[gn].country?' '+flag(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country)+' '+(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country):''))+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score"><span class="score-display">'+(sa!==''?sa:'-')+'</span><span class="score-x">\u00d7</span><span class="score-display">'+(sb!==''?sb:'-')+'</span></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.pen?'<div class="pen-result"><span class="pen-badge">'+flag(s.pen==='a'?g.a:g.b)+' Venceu nos p\u00ean.</span></div>':'')+'<div class="goal-events">'+events.map(function(x){
     if(x.type==='goal'){
       var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
       var tn=x.display==='a'?g.a:g.b;
@@ -1256,9 +1091,11 @@ function updateCountdown(){
     var timeStr=hh+"h "+mm.toString().padStart(2,"0")+"m";
     cards.push('<div class="countdown-event'+(idx===0?' next-up':'')+'">'+(idx===0?'<span class="countdown-event-num" style="color:var(--gold)">\u25ba</span>':'<span class="countdown-event-num">#'+g.n+'</span>')+'<span class="countdown-event-teams">'+g.a+" vs "+g.b+'</span><span class="countdown-event-time">'+timeStr+'</span><span class="countdown-event-date">'+g.t+' Bras.</span></div>');
   });
-  var _html=cards.join("");
-  if(!cards.length&&!liveGames.length){_html='<div class="countdown-event"><span class="countdown-event-teams">\u{1F3C6} Copa encerrada \u2014 obrigado por acompanhar!</span></div>';}
-  if(_html!==updateCountdown._lastStr){updateCountdown._lastStr=_html;evts.innerHTML=_html;}
+  if(!cards.length&&!liveGames.length){
+    evts.innerHTML='<div class="countdown-event"><span class="countdown-event-teams">\u{1F3C6} Copa encerrada \u2014 obrigado por acompanhar!</span></div>';
+  }else{
+    evts.innerHTML=cards.join("");
+  }
 }
 function scheduleCountdown(){
   updateCountdown();
@@ -1307,7 +1144,6 @@ function renderGroups(){
 
 function renderThirdPlaced(){
   var tbody=document.getElementById("third-table");if(!tbody)return;
-  var isMobile=window.innerWidth<768;
   var third=[];
   GROUP_ORDER.forEach(function(letter){
     var teams=GROUPS[letter];if(!teams)return;
@@ -1334,11 +1170,7 @@ function renderThirdPlaced(){
     }
   });
   third.sort(function(a,b){if(b.pts!==a.pts)return b.pts-a.pts;if(b.sg!==a.sg)return b.sg-a.sg;if(b.gf!==a.gf)return b.gf-a.gf;return a.team.localeCompare(b.team)});
-  if(isMobile){
-    tbody.innerHTML='<tr><th>#</th><th style="text-align:left">Grupo</th><th style="text-align:left">Seleção</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th><th>Status</th></tr>'+third.map(function(t,i){var q=i<8,sg=t.sg;return'<tr><td colspan="12"><div class="mob-third-row"><span class="third-status">'+(q?"\u2705":"\u274C")+'</span><span class="pos-badge pos-'+(Math.min(i,3)+1)+'">'+(i+1)+'</span><span class="mob-flag">'+flag(t.team)+'</span><span class="mob-third-team"><span class="mob-third-group">'+GROUP_NAMES[t.group]+' · </span>'+esc(t.team)+'</span><span class="mob-pts"><strong>'+t.pts+'</strong></span><div class="mob-details">J'+t.gp+' • V'+t.w+' • E'+t.d+' • D'+t.l+' • SG '+(sg>0?'+'+sg:sg)+'</div></div></td></tr>'}).join("");
-  }else{
-    tbody.innerHTML='<tr><th>#</th><th style="text-align:left">Grupo</th><th style="text-align:left">Sele\u00e7\u00e3o</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th><th>Status</th></tr>'+third.map(function(t,i){var q=i<8;return'<tr><td>'+(i+1)+'</td><td style="text-align:left">'+GROUP_NAMES[t.group]+'</td><td style="text-align:left">'+flag(t.team)+' '+t.team+'</td><td><strong>'+t.pts+'</strong></td><td>'+t.gp+'</td><td>'+t.w+'</td><td>'+t.d+'</td><td>'+t.l+'</td><td>'+t.gf+'</td><td>'+t.ga+'</td><td>'+t.sg+'</td><td class="'+(q?"third-qualify":"third-elim")+'">'+(q?"\u2705 Classificado":"\u274C Eliminado")+'</td></tr>'}).join("");
-  }
+  tbody.innerHTML='<tr><th>#</th><th style="text-align:left">Grupo</th><th style="text-align:left">Sele\u00e7\u00e3o</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th><th>Status</th></tr>'+third.map(function(t,i){var q=i<8;return'<tr><td>'+(i+1)+'</td><td style="text-align:left">'+GROUP_NAMES[t.group]+'</td><td style="text-align:left">'+flag(t.team)+' '+t.team+'</td><td><strong>'+t.pts+'</strong></td><td>'+t.gp+'</td><td>'+t.w+'</td><td>'+t.d+'</td><td>'+t.l+'</td><td>'+t.gf+'</td><td>'+t.ga+'</td><td>'+t.sg+'</td><td class="'+(q?"third-qualify":"third-elim")+'">'+(q?"\u2705 Classificado":"\u274C Eliminado")+'</td></tr>'}).join("");
 }
 
 // ===== BRACKET: resolução dinâmica de placeholders =====
@@ -1622,15 +1454,13 @@ function renderBracketTree(){
 function renderScorers(){
   var el=document.getElementById("scorers-list"),m={};
   Object.keys(goals).forEach(function(gid){
-    var g=GAME_BY_ID[parseInt(gid)];
     Object.keys(goals[gid]).forEach(function(t){
       goals[gid][t].forEach(function(gl){
         if(gl.type==="own")return;
-        var teamName=g?(t==='a'?g.a:g.b):'';
-        if(!m[gl.pname])m[gl.pname]={name:gl.pname,goals:0,assists:0,team:teamName};
+        if(!m[gl.pname])m[gl.pname]={name:gl.pname,goals:0,assists:0};
         m[gl.pname].goals++;
         if(gl.aname){
-          if(!m[gl.aname])m[gl.aname]={name:gl.aname,goals:0,assists:0,team:teamName};
+          if(!m[gl.aname])m[gl.aname]={name:gl.aname,goals:0,assists:0};
           m[gl.aname].assists++;
         }
       });
@@ -1639,7 +1469,7 @@ function renderScorers(){
   var gls=Object.values(m).filter(function(p){return p.goals>0}).sort(function(a,b){return b.goals-a.goals});
   var ast=Object.values(m).filter(function(p){return p.assists>0}).sort(function(a,b){return b.assists-a.assists});
   var medals=["rank-gold","rank-silver","rank-bronze"];
-  function tbl(title,icon,data,k){if(!data.length)return'';return'<div style="flex:1;min-width:260px"><h3 style="color:var(--gold);margin-bottom:8px;text-align:center">'+icon+' '+title+'</h3><table class="scorers-table"><tr><th>#</th><th>Jogador</th><th style="text-align:center">'+title+'</th></tr>'+data.map(function(s,i){return'<tr><td class="rank '+(medals[i]||"")+'">'+(i+1)+'</td><td>'+flag(s.team)+' <strong>'+s.name+'</strong> <span style="color:var(--muted);font-size:11px">'+(_PLAYER_CLUB[s.name]||s.team)+'</span></td><td style="text-align:center;font-weight:700;font-size:14px">'+s[k]+'</td></tr>'}).join("")+'</table></div>'}
+  function tbl(title,icon,data,k){if(!data.length)return'';return'<div style="flex:1;min-width:260px"><h3 style="color:var(--gold);margin-bottom:8px;text-align:center">'+icon+' '+title+'</h3><table class="scorers-table"><tr><th>#</th><th>Jogador</th><th style="text-align:center">'+title+'</th></tr>'+data.map(function(s,i){return'<tr><td class="rank '+(medals[i]||"")+'">'+(i+1)+'</td><td>'+s.name+'</td><td style="text-align:center;font-weight:700;font-size:14px">'+s[k]+'</td></tr>'}).join("")+'</table></div>'}
   var t=tbl('Artilheiros','\u26BD',gls,'goals')+tbl('Assist\u00eancias','\uD83D\uDC5F',ast,'assists');
   dynRender(el, t?'<div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center">'+t+'</div>':'<p style="text-align:center;color:#555;padding:40px">Nenhum gol registrado ainda. Adicione placares nos Jogos!</p>');
 }
@@ -1813,12 +1643,9 @@ function _mergeDeep(target,src){
 function _onPlayersLoaded(data){
   _mergeDeep(PLAYERS,data);
   PLAYERS_READY=true;
-  Object.keys(PLAYERS).forEach(function(tm){(PLAYERS[tm]||[]).forEach(function(p){_PLAYER_CLUB[p.name]=p.club})});
+  // Se aba Convocados estiver ativa, re-renderizar com dados reais
   var activeTab=document.querySelector('.tab.active');
-  if(activeTab){
-    if(activeTab.dataset.tab==='convocados'){renderSquads();}
-    if(activeTab.dataset.tab==='artilheiros'){renderScorers();}
-  }
+  if(activeTab&&activeTab.dataset.tab==='convocados'){renderSquads();}
 }
 
 function _onPhotosLoaded(data){
@@ -2103,12 +1930,6 @@ function processTimeline(idMatch,gameId){
         var storeSide=isOwn?(teamSide==='a'?'b':'a'):teamSide;
 
         var info=FIFA_PLAYER_MAP[e.IdPlayer];
-        // Validar que o jogador do gol é do time correto
-        if(info&&info.team){
-          var _gt=scoredForHome?game.a:game.b;
-          var _pt=isOwn?(_gt===game.a?game.b:game.a):_gt;
-          if(info.team!==_pt)info=null;
-        }
         if(!info&&e.EventDescription&&e.EventDescription[0]){
           var desc=e.EventDescription[0].Description||'';
           var nm=desc.match(/^(.+?)\s*\(/);
@@ -2127,18 +1948,17 @@ function processTimeline(idMatch,gameId){
 
         var goalType=(e.Type===41)?'pen':'gol';
         var min=e.MatchMinute?(e.MatchMinute.replace(/'/g,'')):(''+idx);
-        // Assistência: validar que é do mesmo time do gol
+        // Assistência: AssistPlayerId direto da FIFA ou fallback Type===1 anterior
         var aNum=null,aName=null;
-        var _gt=scoredForHome?game.a:game.b,_pt=isOwn?(_gt===game.a?game.b:game.a):_gt;
         if(e.AssistPlayerId){
           var ai=FIFA_PLAYER_MAP[e.AssistPlayerId];
-          if(ai&&(!ai.team||ai.team===_pt)){aNum=ai.num;aName=ai.pname;}
+          if(ai){aNum=ai.num;aName=ai.pname;}
         }
         if(!aNum){
           for(var j=idx-1;j>=0;j--){
             if(allEvents[j].Type===1){
               var ai2=FIFA_PLAYER_MAP[allEvents[j].IdPlayer];
-              if(ai2&&(!ai2.team||ai2.team===_pt)){aNum=ai2.num;aName=ai2.pname;}break;
+              if(ai2){aNum=ai2.num;aName=ai2.pname;}break;
             }
           }
         }
@@ -2283,29 +2103,14 @@ function renderDiagnostico(){
 
 // --- Polling automático da FIFA API ---
 initFifaMaps();
-(function(){var FAST=10000,SLOW=60000,iv=FAST,_pollFails=0,_pollTimer=null;function poll(){if(_pollTimer)clearTimeout(_pollTimer);var endedBefore=Object.keys(MATCH_ENDED).length;fetchFifaScores(8000).then(function(m){
-  _pollFails=0;
+(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){var endedBefore=Object.keys(MATCH_ENDED).length;fetchFifaScores(8000).then(function(m){
+  // Re-render sempre que a poll completa (dynRender só mexe no DOM se mudou)
   saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();renderHoje();
   if(Object.keys(MATCH_ENDED).length!==endedBefore)setTimeout(checkAutoSnapshot,500);
-  if(m&&Object.keys(m).length){mergeScores(m)}else{_bolaoFetch('/scores').then(function(d){if(d&&d.scores&&d.scores.length){var sm={};d.scores.forEach(function(s){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];var abbA=FIFA_TEAM_REV[g.a],abbB=FIFA_TEAM_REV[g.b];if((abbA===s.home_team&&abbB===s.away_team)||(abbA===s.away_team&&abbB===s.home_team)){sm[g.n]={a:abbA===s.home_team?s.goals_home:s.goals_away,b:abbA===s.home_team?s.goals_away:s.goals_home};break}}});if(Object.keys(sm).length)mergeScores(sm)}}).catch(function(e){console.warn('Fallback scores failed:',e&&e.message?e.message:'');})}}
-).catch(function(err){
-  _pollFails=Math.min(_pollFails+1,6);iv=Math.min(FAST*Math.pow(2,_pollFails),120000);
-  console.warn('FIFA poll error (%s), backoff %dms:',_pollFails,iv,err&&err.message?err.message:'');
-});
-var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);if(live||recent){processTimeline(id,g.n);if(live)hasLive=true}})};iv=_pollFails>0?iv:(hasLive?FAST:SLOW);_pollTimer=setTimeout(poll,iv)}
-fetchFifaScores(8000);_pollTimer=setTimeout(poll,FAST);
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,100)}});
-window.addEventListener('focus',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,200)});
-window.addEventListener('pagehide',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=null});
-// Cleanup memória a cada 10min: remove hashes/events de jogos encerrados há mais de 24h
-var _memCleanTimer=setInterval(function(){
-  var cut=Date.now()-86400000,rem=0;
-  Object.keys(TIMELINE_HASH).forEach(function(k){var g=FIFA_MATCH_META[k];if(g&&g.gameIdx){var gn=parseInt(g.gameIdx,10);var gd=GAME_BY_ID[gn]&&gameUTC(GAME_BY_ID[gn]);if(gd&&gd.getTime()<cut){delete TIMELINE_HASH[k];rem++}}});
-  Object.keys(PROCESSED_EVENTS).forEach(function(k){var g=FIFA_MATCH_META[k];if(g&&g.gameIdx){var gn=parseInt(g.gameIdx,10);var gd=GAME_BY_ID[gn]&&gameUTC(GAME_BY_ID[gn]);if(gd&&gd.getTime()<cut){delete PROCESSED_EVENTS[k];rem++}}});
-  Object.keys(MATCH_MINUTE).forEach(function(k){var g=FIFA_MATCH_META[k];if(g&&g.gameIdx){var gn=parseInt(g.gameIdx,10);var gd=GAME_BY_ID[gn]&&gameUTC(GAME_BY_ID[gn]);if(gd&&gd.getTime()<cut){delete MATCH_MINUTE[k];rem++}}});
-  if(rem)console.log('Memory cleanup: removed',rem,'stale entries');
-},600000);
-})();
+  if(m&&Object.keys(m).length){mergeScores(m)}else{_bolaoFetch('/scores').then(function(d){if(d&&d.scores&&d.scores.length){var sm={};d.scores.forEach(function(s){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];var abbA=FIFA_TEAM_REV[g.a],abbB=FIFA_TEAM_REV[g.b];if((abbA===s.home_team&&abbB===s.away_team)||(abbA===s.away_team&&abbB===s.home_team)){sm[g.n]={a:abbA===s.home_team?s.goals_home:s.goals_away,b:abbA===s.home_team?s.goals_away:s.goals_home};break}}});if(Object.keys(sm).length)mergeScores(sm)}}).catch(function(e){console.warn('Fallback scores failed:',e&&e.message?e.message:'');})}});
+var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);if(live||recent){processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST);
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(poll,100)});
+window.addEventListener('focus',function(){setTimeout(poll,200)});})();
 
 
 
@@ -2324,12 +2129,11 @@ var REPLACED_PLAYERS={
   "Cho Wi-je":"Substituiu Cho Yu-min (fratura no p\u00e9)",
   "Herman Johansson":"Substituiu Emil Holm (les\u00e3o muscular)"
 };
-var VALID_TABS=['jogos','grupos','mata-mata','artilheiros','convocados','regras','bolao-estatisticas','bolao','diagnostico'];
+var VALID_TABS=['jogos','hoje','grupos','mata-mata','artilheiros','convocados','regras','bolao-estatisticas','bolao','diagnostico'];
 setTimeout(function(){
   try{
     var saved=window.location.hash.replace('#','')||localStorage.getItem('copa2026_tab');
-    if(saved==='hoje')saved='jogos';
-    if(saved&&VALID_TABS.indexOf(saved)>=0){if(saved==='diagnostico'){switchTab('diagnostico')}else{var nb=document.querySelector('.nav-btn[data-tab="'+saved+'"]');if(nb){navClick.call(nb)}else{var tb=document.querySelector('.tab[data-tab="'+saved+'"]');if(tb)tb.click()}}}
+    if(saved&&VALID_TABS.indexOf(saved)>=0){if(saved==='diagnostico'){switchTab('diagnostico')}else{var tab=document.querySelector('.tab[data-tab="'+saved+'"]');if(tab)tab.click()}}
   }catch(e){}
 },0);
 function _fetchWikiRefs(letter,cb){
@@ -2400,7 +2204,7 @@ var _bolaoToken=null;
 var BOLAO_FIRST=6,BOLAO_FINAL=104,BOLAO_SIGNUP_GAME=32,BOLAO_TWO_H=1800000;
 var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
 var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmedStatus={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[],_bolaoKOPicks={};
-var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0;
+var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={};
 try{_bolaoSnappedGames=JSON.parse(localStorage.getItem('copa2026_snapped')||'{}')}catch(e){}
 
 function _bolaoFetch(path,method,body,retries){
@@ -2720,49 +2524,31 @@ function bolaoRenderRanking(){
   var rows=ids.map(function(id){var r=bolaoCalcTotal(id);return{id:id,name:_bolaoParticipants[id],total:r.total,exactCount:r.exactCount,resultCount:r.resultCount,bonusCount:r.bonusCount};});
   rows.sort(function(a,b){if(b.total!==a.total)return b.total-a.total;if(b.exactCount!==a.exactCount)return b.exactCount-a.exactCount;if(b.resultCount!==a.resultCount)return b.resultCount-a.resultCount;if(b.bonusCount!==a.bonusCount)return b.bonusCount-a.bonusCount;return 0});
   var medalEmoji=['&#127942;','&#129352;','&#129353;'];
-  var rankClass=['rank-gold','rank-silver','rank-bronze'];
   var tb=document.getElementById('bolao-rank-body');
   if(!tb)return;
   if(!rows.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Nenhum participante ainda</td></tr>';return;}
-  var isMobile=window.innerWidth<768;
-  if(isMobile){
-    tb.innerHTML=rows.map(function(r,i){
-      var medal=i<3?medalEmoji[i]:i+1,sp=_bolaoAllSpecials[r.id];
-      var topClass=i<3?' '+rankClass[i]:'';
-      var subLine1=r.exactCount+' exato'+(r.exactCount!==1?'s':'')+' \u00b7 '+r.resultCount+' resultado'+(r.resultCount!==1?'s':'');
-      var subLine2=sp?('\ud83c\udfc6 '+esc(sp.champion||'?')+' \u00b7 \u26bd '+esc(sp.top_scorer||'?')):'';
-      return '<tr class="mob-rank-tr"><td colspan="6">'
-        +'<div class="mob-rank-row'+topClass+'" onclick="bolaoToggleDetail(\''+r.id+'\')">'
-        +'<div class="mob-rank-main"><span class="mob-rank-pos">'+medal+'</span><span class="mob-rank-name">'+esc(r.name)+'</span><span class="mob-rank-pts">'+r.total+' <span class="pts-label">pts</span></span></div>'
-        +'<div class="mob-rank-sub">'+subLine1+'</div>'
-        +(subLine2?'<div class="mob-rank-line2">'+subLine2+'</div>':'')
-        +'</div>'
-        +'<div class="bolao-detail" id="bolao-detail-'+r.id+'"><div class="bolao-detail-inner">'+bolaoRenderDetail(r.id)+'</div></div>'
-        +'</td></tr>';
-    }).join('');
-  }else{
-    tb.innerHTML=rows.map(function(r,i){
-      var medal=i<3?medalEmoji[i]:'',sp=_bolaoAllSpecials[r.id];
-      var spText=sp?((sp.champion||'?')+' / '+(sp.top_scorer||'?')):'&mdash;';
-      return '<tr class="bolao-rank-row" onclick="bolaoToggleDetail(\''+r.id+'\')">'
-        +'<td class="bolao-rank-pos">'+medal+' '+(i+1)+'</td>'
-        +'<td class="bolao-rank-name">'+esc(r.name)+'</td>'
-        +'<td style="font-size:11px;color:var(--muted)">'+esc(spText)+'</td>'
-        +'<td class="bolao-rank-sub">'+r.exactCount+'</td>'
-        +'<td class="bolao-rank-sub">'+r.resultCount+'</td>'
-        +'<td class="bolao-rank-pts">'+r.total+'</td></tr>'
-        +'<tr class="bolao-detail" id="bolao-detail-'+r.id+'"><td colspan="6"><div class="bolao-detail-inner">'+bolaoRenderDetail(r.id)+'</div></td></tr>';
-    }).join('');
-  }
+  tb.innerHTML=rows.map(function(r,i){
+    var medal=i<3?medalEmoji[i]:'',sp=_bolaoAllSpecials[r.id];
+    var spText=sp?((sp.champion||'?')+' / '+(sp.top_scorer||'?')):'&mdash;';
+    return '<tr class="bolao-rank-row" onclick="bolaoToggleDetail(\''+r.id+'\')">'
+      +'<td class="bolao-rank-pos">'+medal+' '+(i+1)+'</td>'
+      +'<td class="bolao-rank-name">'+esc(r.name)+'</td>'
+      +'<td style="font-size:11px;color:var(--muted)">'+esc(spText)+'</td>'
+      +'<td class="bolao-rank-sub">'+r.exactCount+'</td>'
+      +'<td class="bolao-rank-sub">'+r.resultCount+'</td>'
+      +'<td class="bolao-rank-pts">'+r.total+'</td></tr>'
+      +'<tr class="bolao-detail" id="bolao-detail-'+r.id+'"><td colspan="6"><div class="bolao-detail-inner">'+bolaoRenderDetail(r.id)+'</div></td></tr>';
+  }).join('');
 }
 function bolaoToggleDetail(id){var el=document.getElementById('bolao-detail-'+id);if(el)el.classList.toggle('open')}
 function bolaoRenderDetail(pid){
-  var picks=_bolaoAllPicks[pid]||{},scored=[],future=[];
+  var picks=_bolaoAllPicks[pid]||{},items=[];
   var confirmTsDetail=_bolaoConfirmedAt[pid]?new Date(_bolaoConfirmedAt[pid]).getTime():null;
   GAMES.forEach(function(g){
     if(g.n<BOLAO_FIRST)return;
     var real=scores[g.n],pick=picks[g.n],hasReal=real&&real.a!==undefined&&real.b!==undefined,hasPick=pick&&pick.a!==undefined&&pick.b!==undefined;
     if(!hasPick&&!hasReal)return;
+    // Jogo que não pontua por confirmação tardia ou nunca confirmou
     var forfeit=false;
     var notConfirmed=!_bolaoConfirmedStatus[pid];
     if(notConfirmed&&hasReal){forfeit=true}
@@ -2773,14 +2559,10 @@ function bolaoRenderDetail(pid){
     var pickStr=hasPick?(pick.a+'x'+pick.b):'?x?',realStr=hasReal?(real.a+'x'+real.b):'';
     var ptsStr=forfeit?'<span style="color:var(--red);font-weight:600">PERDEU</span> <span style="text-decoration:line-through;opacity:.4">'+forfeitPts+' pts</span>':pts>=0?(pts+(bonus?'+'+bonus:''))+' pts':'';
     if(!hasReal)pickStr='<span style="filter:blur(3px)">'+pickStr+'</span>';
-    var card='<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">'+flag(g.a)+' '+esc(g.a)+' vs '+flag(g.b)+' '+esc(g.b)+'</div><div><span class="bolao-pick-score">Palpite: '+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">\u2192 '+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>';
-    if(hasReal){scored.push(card)}else{future.push(card)}
+    items.push('<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">#'+g.n+' '+_pn(g)+'</div><div><span class="bolao-pick-score">'+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">'+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>');
   });
-  var out='';
-  if(scored.length){out+='<div class="bolao-detail-section"><div class="bolao-detail-section-title">\u2705 PONTUADOS ('+scored.length+')</div><div class="bolao-detail-grid">'+scored.join('')+'</div></div>'}
-  if(future.length){out+='<div class="bolao-detail-section"><div class="bolao-detail-section-title">\u23f3 PR\u00d3XIMOS ('+future.length+')</div><div class="bolao-detail-grid">'+future.join('')+'</div></div>'}
-  if(!out)return '<p style="color:var(--muted);font-size:13px">Nenhum palpite ainda</p>';
-  return out;
+  if(!items.length)return '<p style="color:var(--muted);font-size:13px">Nenhum palpite ainda</p>';
+  return '<div class="bolao-detail-grid">'+items.join('')+'</div>';
 }
 function _bolaoKOHtml(g,pick,inputLocked){
   var isKO=g.f&&!g.f.startsWith('Grupo');
@@ -2790,15 +2572,15 @@ function _bolaoKOHtml(g,pick,inputLocked){
   var rB=_bolaoResolveTeam(g.b,g.n)||g.b;
   if(!inputLocked){
     var selA=_bolaoKOPicks[g.n]==='a',selB=_bolaoKOPicks[g.n]==='b';
-    var btnSt=function(sel){return sel?'background:var(--gold);color:#000;font-weight:700;border-color:var(--gold)':'background:transparent;color:var(--text);font-weight:400;border-color:var(--border)';};
+    var btnSt=function(sel){return 'border:1.5px solid '+(sel?'var(--gold)':'var(--border)')+';background:'+(sel?'rgba(255,223,0,.1)':'transparent')+';color:'+(sel?'var(--gold)':'var(--text)')+';font-weight:'+(sel?'700':'400')+';';};
     return '<div class="bsp-ko-label">Empate \u2014 quem passa?</div>'
       +'<div class="bsp-ko-btns">'
-      +'<button onclick="bolaoKOPick('+g.n+',\'a\')" class="bsp-ko-btn" style="'+btnSt(selA)+'">'+(selA?'\u2714 ':'')+flag(rA)+' '+esc(rA)+'</button>'
-      +'<button onclick="bolaoKOPick('+g.n+',\'b\')" class="bsp-ko-btn" style="'+btnSt(selB)+'">'+(selB?'\u2714 ':'')+flag(rB)+' '+esc(rB)+'</button>'
+      +'<button onclick="bolaoKOPick('+g.n+',\'a\')" class="bsp-ko-btn" style="'+btnSt(selA)+'">'+flag(rA)+' '+esc(rA)+'</button>'
+      +'<button onclick="bolaoKOPick('+g.n+',\'b\')" class="bsp-ko-btn" style="'+btnSt(selB)+'">'+flag(rB)+' '+esc(rB)+'</button>'
       +'</div>';
   }else if(_bolaoKOPicks[g.n]){
     var sel=_bolaoKOPicks[g.n]==='a'?rA:rB;
-    return '<div class="bsp-ko-confirmed">\u2714 '+flag(sel)+' '+esc(sel)+'</div>';
+    return '<div class="bsp-ko-confirmed">Passou: '+flag(sel)+' '+esc(sel)+'</div>';
   }
   return '';
 }
@@ -2858,8 +2640,7 @@ function bolaoRenderPicksGrid(){
       var pts=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);
       var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
       var col=pts===10?'var(--gold)':pts>=2?'#4ade80':'var(--red)';
-      var trophy=pts===10?' \ud83c\udfc6':'';
-      ptsHtml='<span class="bsp-pts" style="color:'+col+'">'+(pts>=0?'+':'')+pts+(bonus?'+'+bonus:'')+' pts'+trophy+'</span>';
+      ptsHtml='<div class="bsp-pts" style="color:'+col+'">'+pts+(bonus?'+'+bonus:'')+' pts</div>';
     }
     // Bloco de empate KO
     var koHtml=_bolaoKOHtml(g,pick,inputLocked);
@@ -2867,8 +2648,9 @@ function bolaoRenderPicksGrid(){
     var locked=inputLocked?' bsp-locked':'';
     var missingStyle=(!hasPick&&!isLocked)?'border:2px solid #ff1744;box-shadow:0 0 16px rgba(255,23,68,.5);':'';
     html+='<div class="bsp-card'+locked+'"'+(missingStyle?' style="'+missingStyle+'"':'')+'>'
-      +'<div class="bsp-header"><span class="bsp-phase">#'+g.n+' \u00b7 '+esc(g.f)+'</span><span class="bsp-date">'+g.d+' '+g.t+'</span></div>'
+      +'<div class="bsp-phase">'+esc(g.f)+'</div>'
       +'<div class="bsp-teams" id="bolao-teams-'+g.n+'">'+tA+' vs '+tB+'</div>'
+      +'<div class="bsp-date">'+g.d+' '+g.t+'</div>'
       +'<div class="bsp-score-row">'
       +'<input class="bsp-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2"'
       +' data-game="'+g.n+'" data-side="a"'
@@ -2883,35 +2665,21 @@ function bolaoRenderPicksGrid(){
       +(inputLocked?' readonly':'')+'>'
       +'</div>'
       +'<div id="bolao-ko-'+g.n+'">'+koHtml+'</div>'
-      +'<div class="bsp-status-pts"><span class="bsp-status" id="bsp-status-'+g.n+'">'+(inputLocked&&hasPick?'\u25cf Confirmado':'')+'</span>'+ptsHtml+'</div>'
+      +'<div class="bsp-status" id="bsp-status-'+g.n+'">'+(inputLocked&&hasPick?'Confirmado':'')+'</div>'
+      +ptsHtml
       +(inputLocked?'':bolaoMajorityHtml(g.n))
       +'</div>';
   });
-  grid.innerHTML=any?html:_emptyState('&#9917;','Nenhum jogo dispon\u00edvel para palpite','Os palpites aparecem \u00e0 medida que os jogos se aproximam. Fique de olho!');
-  grid._debounceTimers={};
-  // Event delegation: blur salva imediatamente
+  grid.innerHTML=any?html:'<p style="color:var(--muted);font-size:13px;text-align:center;padding:24px">Nenhum jogo dispon\u00edvel para palpite agora.</p>';
+  // Event delegation: um único listener captura blur de todos os inputs
   if(grid._bolaoBlurHandler)grid.removeEventListener('blur',grid._bolaoBlurHandler,true);
   grid._bolaoBlurHandler=function(e){
     var el=e.target;
     if(!el.classList||!el.classList.contains('bsp-input')||el.readOnly)return;
     var gn=parseInt(el.getAttribute('data-game'),10);
-    if(!isNaN(gn)){if(grid._debounceTimers[gn])clearTimeout(grid._debounceTimers[gn]);bolaoSavePick(gn);}
+    if(!isNaN(gn))bolaoSavePick(gn);
   };
   grid.addEventListener('blur',grid._bolaoBlurHandler,true);
-  // Input event: auto-save com debounce 1.5s (mais responsivo que blur-only)
-  if(grid._bolaoInputHandler)grid.removeEventListener('input',grid._bolaoInputHandler,true);
-  grid._bolaoInputHandler=function(e){
-    var el=e.target;
-    if(!el.classList||!el.classList.contains('bsp-input')||el.readOnly)return;
-    var gn=parseInt(el.getAttribute('data-game'),10);
-    if(isNaN(gn))return;
-    if(grid._debounceTimers[gn])clearTimeout(grid._debounceTimers[gn]);
-    grid._debounceTimers[gn]=setTimeout(function(){
-      grid._debounceTimers[gn]=null;
-      bolaoSavePick(gn);
-    },1500);
-  };
-  grid.addEventListener('input',grid._bolaoInputHandler,true);
   // Status: quantos preenchidos
   var elSum=document.getElementById('bolao-pick-summary');
   if(elSum)bolaoUpdateSummary(maxIdx);
@@ -2943,16 +2711,8 @@ function bolaoUpdateSummary(maxIdx){
     else{missing.push(esc(g.a)+' x '+esc(g.b))}
   });
   if(totalV===0){elSum.innerHTML=''}
-  else{
-    var pct=totalV>0?Math.round(filled/totalV*100):0;
-    var bar='<div style="background:rgba(255,255,255,.06);border-radius:10px;height:8px;overflow:hidden;margin:8px 0"><div style="width:'+pct+'%;height:100%;background:linear-gradient(90deg,var(--gold),#ffc107);border-radius:10px;transition:width .4s ease"></div></div>';
-    if(filled===totalV){
-      elSum.innerHTML=bar+'<div style="font-size:13px;color:var(--green);font-weight:600;text-align:center">\u2705 Todos os '+totalV+' palpites preenchidos!</div>';
-    }else{
-      var missingTxt=missing.length>5?missing.slice(0,5).join(', ')+' e mais '+(missing.length-5):missing.join(', ');
-      elSum.innerHTML=bar+'<div style="font-size:13px;color:var(--orange);font-weight:600;text-align:center">\u26a0\ufe0f '+filled+'/'+totalV+' preenchidos</div><div style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px">Faltam: '+missingTxt+'</div>';
-    }
-  }
+  else if(filled===totalV){elSum.innerHTML='<span style="color:var(--green)">\u2705 Todos os palpites preenchidos para os jogos dispon\u00edveis!</span>'}
+  else{elSum.innerHTML='<span style="color:var(--orange)">\u26a0\ufe0f '+filled+'/'+totalV+' preenchidos. Faltam: '+missing.join(', ')+'</span>'}
 }
 function bolaoSavePick(gameN){
   if(!_bolaoToken||_bolaoConfirmed)return;
@@ -3024,7 +2784,7 @@ async function bolaoSaveSpecial(){
   if(!_bolaoToken)return;
   var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);if(deadline&&new Date()>=deadline)return;
   var champion=document.getElementById('bolao-champion').value,topScorer=document.getElementById('bolao-scorer').value;
-  var btn=document.getElementById('bolao-special-btn');_btnLoading(btn,true);
+  var btn=document.getElementById('bolao-special-btn');btn.disabled=true;btn.textContent='Salvando...';
   try{
     await _bolaoFetch('/special-picks','POST',{champion:champion,topScorer:topScorer});
     _bolaoMySpecial={champion:champion,top_scorer:topScorer};
@@ -3052,7 +2812,7 @@ async function bolaoConfirmAll(){
     if(st){st.style.color='var(--red)';st.textContent='\u26a0\ufe0f Bloqueado: faltam '+missing.length+' preenchimentos:\n'+missing.slice(0,8).join(', ')+(missing.length>8?', ...e mais '+(missing.length-8):'')}
     return;
   }
-  _btnLoading(btn,true);
+  btn.disabled=true;btn.textContent='Confirmando...';
   try{
     await _bolaoFetch('/confirm','PATCH');
     _bolaoConfirmed=true;
@@ -3098,9 +2858,6 @@ async function bolaoLoadMyData(){
   _bolaoConfirmed=data.confirmed||false;
 }
 async function bolaoLoadRanking(){
-  if(_rankingCachedAt&&Date.now()-_rankingCachedAt<30000&&Object.keys(_bolaoParticipants).length){
-    bolaoRenderRanking();return;
-  }
   try{
     var maxG=0;
     GAMES.forEach(function(g){var gd=gameUTC(g);if(gd&&new Date()>=gd&&g.n>maxG)maxG=g.n});
@@ -3112,10 +2869,11 @@ async function bolaoLoadRanking(){
     _bolaoAllPicks={};(data.picks||[]).forEach(function(p){if(!_bolaoAllPicks[p.participant_id])_bolaoAllPicks[p.participant_id]={};_bolaoAllPicks[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b}});
     _bolaoAllSpecials={};(data.specialPicks||[]).forEach(function(p){_bolaoAllSpecials[p.participant_id]=p});
     _bolaoPickCounts=data.pickCounts||{};
-    _rankingCachedAt=Date.now();
     bolaoRenderRanking();
+    // Salvar cache offline do ranking para fallback
     try{localStorage.setItem('copa2026_ranking_cache',JSON.stringify({ts:Date.now(),participants:_bolaoParticipants,confirmedStatus:_bolaoConfirmedStatus,confirmedAt:_bolaoConfirmedAt,picks:_bolaoAllPicks,specials:_bolaoAllSpecials,pickCounts:_bolaoPickCounts}))}catch(e){}
   }catch(e){
+    // Tentar cache offline se disponível
     try{
       var cached=JSON.parse(localStorage.getItem('copa2026_ranking_cache')||'null');
       if(cached&&cached.participants&&Date.now()-cached.ts<3600000){
@@ -3894,74 +3652,6 @@ function bolaoStatsCompare(){
   dynRender(el,html);
 }
 
-/* ========== UTILITARIOS BLOCO1 ========== */
-function _btnLoading(btn, loading){
-  if(!btn)return;
-  if(loading){btn._ot=btn.textContent;btn.disabled=true;btn.textContent='\u23f3';}
-  else{btn.textContent=btn._ot||'';btn.disabled=false;}
-}
-function _skeleton(count, type){
-  if(type==='game'){
-    var cards=[];
-    for(var i=0;i<count;i++){
-      cards.push('<div class="skeleton-card"><div class="s-score"><div class="skeleton s-line" style="width:40px;height:28px"></div><div class="skeleton s-line" style="width:20px;height:28px"></div><div class="skeleton s-line" style="width:40px;height:28px"></div></div><div class="skeleton s-line"></div><div class="skeleton s-line" style="width:40%"></div></div>');
-    }
-    return cards.join('');
-  }
-  if(type==='rank'){
-    var html='<table class="bolao-rank-table"><thead><tr><th>#</th><th>Participante</th><th>Especiais</th><th>Exatos</th><th>Jogos</th><th>Pontos</th></tr></thead><tbody>';
-    for(var i=0;i<count;i++){
-      html+='<tr>'+Array(6).fill('<td><div class="skeleton s-line" style="width:60%;height:12px;margin:0 auto"></div></td>').join('')+'</tr>';
-    }
-    return html+'</tbody></table>';
-  }
-  if(type==='list'){
-    var items=[];
-    for(var i=0;i<count;i++){
-      items.push('<div style="display:flex;gap:8px;align-items:center;padding:6px 0"><div class="skeleton s-line" style="width:24px;height:18px;flex-shrink:0"></div><div class="skeleton s-line" style="flex:1;height:14px"></div><div class="skeleton s-line" style="width:40px;height:14px"></div></div>');
-    }
-    return items.join('');
-  }
-  return '';
-}
-function _emptyState(icon, title, msg){
-  return '<div style="text-align:center;padding:48px 20px;color:var(--muted)"><div style="font-size:48px;margin-bottom:16px;opacity:.5">'+icon+'</div><div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px">'+title+'</div><div style="font-size:13px;line-height:1.6">'+msg+'</div></div>';
-}
-function _errState(msg, action){
-  return '<div style="text-align:center;padding:32px 20px;color:var(--muted)"><div style="font-size:36px;margin-bottom:12px;opacity:.5">\u26A0</div><div style="font-size:13px;color:var(--red);margin-bottom:12px">'+msg+'</div>'+(action||'')+'</div>';
-}
-// Enter key: bolao inputs e login
-document.addEventListener('keydown', function(e){
-  if(e.key!=='Enter')return;
-  var t=e.target;
-  // Bolao score inputs
-  if(t.classList.contains('bsp-input')&&!t.readOnly){
-    var gn=parseInt(t.getAttribute('data-game'),10);
-    if(!isNaN(gn))bolaoSavePick(gn);
-    return;
-  }
-  // Bolao login / bolao inputs (name, pass)
-  if(t.id==='bolao-name'){
-    document.getElementById('bolao-pass').focus();
-    return;
-  }
-  if(t.id==='bolao-pass'){
-    if(document.getElementById('bolao-pass').value.length>0){
-      // Se já tem senha >0, tenta login
-      bolaoLogin();
-    }else{
-      // Se não, foca no Turnstile (ignoravel) ou no botao criar conta
-      document.querySelector('.btn[onclick*="Register"]').focus();
-    }
-    return;
-  }
-  // Especiais: Enter no champion/scorer
-  if(t.id==='bolao-champion'||t.id==='bolao-scorer'){
-    var btn=document.getElementById('bolao-special-btn');
-    if(btn&&!btn.disabled)btn.click();
-    return;
-  }
-});
 var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED'&&!_refreshing){_refreshing=true;window.location.reload()}})}
 </script>
 </body>
