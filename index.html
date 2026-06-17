@@ -448,26 +448,26 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bolao-rules-toggle:hover{border-color:var(--gold)}
 
   /* ── Bolão picks grid ─────────────────────────────── */
-  .bsp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;display:flex;flex-direction:column;gap:4px}
+  .bsp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;display:flex;flex-direction:column;gap:3px}
   .bsp-card.bsp-locked{opacity:.7}
   .bsp-card.bsp-missing{border-color:var(--red);box-shadow:0 0 12px rgba(255,23,68,.3)}
   .bsp-header{display:flex;justify-content:space-between;align-items:center;gap:6px}
   .bsp-phase{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);flex-shrink:0}
   .bsp-date{font-size:10px;color:var(--muted);text-align:right;flex-shrink:0}
   .bsp-teams{font-size:13px;font-weight:600;color:var(--text);min-height:20px}
-  .bsp-score-row{display:flex;align-items:center;gap:8px;justify-content:center;margin:6px 0}
+  .bsp-score-row{display:flex;align-items:center;gap:8px;justify-content:center;margin:0}
   .bsp-input{width:44px;text-align:center;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 4px;color:var(--text);font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
   .bsp-input:focus{outline:none;border-color:var(--gold)}
   .bsp-input[readonly]{opacity:.6;cursor:not-allowed}
   .bsp-sep{color:var(--muted);font-weight:700;font-size:14px}
-  .bsp-status-pts{display:flex;justify-content:space-between;align-items:center;min-height:18px;margin-top:2px}
+  .bsp-status-pts{display:flex;justify-content:space-between;align-items:center}
   .bsp-status{font-size:11px;color:#4ade80}
   .bsp-pts{font-size:12px;font-weight:700}
-  .bsp-ko-label{font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:4px}
+  .bsp-ko-label{font-size:11px;color:var(--muted);margin-top:2px;margin-bottom:2px}
   .bsp-ko-btns{display:flex;gap:6px}
   .bsp-ko-btn{flex:1;padding:5px 6px;border-radius:6px;font-size:11px;cursor:pointer;transition:all .15s;min-height:44px}
 .btn{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}
-  .bsp-ko-confirmed{font-size:11px;color:var(--gold);margin-top:4px}
+  .bsp-ko-confirmed{font-size:11px;color:var(--gold);margin-top:2px}
   .tab:focus-visible,.filter-btn:focus-visible,.bview-btn:focus-visible,.refresh-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
 /* Mobile: ranking em cards */
@@ -504,7 +504,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bolao-stat-val{font-weight:700;color:var(--gold)}
 .bolao-confirmed-ts{font-size:11px;color:var(--muted);padding:6px 0;border-top:1px solid var(--border);margin-top:4px}
 /* Palpite da maioria */
-.bolao-majority{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px;padding-top:5px;border-top:1px solid var(--border)}
+.bolao-majority{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px;padding-top:3px;border-top:1px solid var(--border)}
 .bolao-majority-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
 .bolao-majority-opt{font-size:11px;background:rgba(255,255,255,.06);border-radius:4px;padding:2px 6px;white-space:nowrap}
 .bolao-majority-pct{font-weight:700;color:var(--gold)}
@@ -594,8 +594,9 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 }
 @media(max-width:480px){
   .bolao-picks-grid{grid-template-columns:1fr}
+  .bsp-card{padding:6px}
   .bsp-teams{font-size:11px}
-  .bsp-input{width:38px;font-size:16px;padding:6px 2px}
+  .bsp-input{width:38px;font-size:16px;padding:4px 2px}
   .bsp-status{font-size:10px}
   .bsp-pts{font-size:11px}
   .bolao-rank-table td,.bolao-rank-table th{padding:4px 3px;font-size:9px}
@@ -2882,7 +2883,7 @@ function bolaoRenderPicksGrid(){
       +' placeholder="-"'
       +(inputLocked?' readonly':'')+'>'
       +'</div>'
-      +'<div id="bolao-ko-'+g.n+'">'+koHtml+'</div>'
+      +(koHtml?'<div id="bolao-ko-'+g.n+'">'+koHtml+'</div>':'')
       +'<div class="bsp-status-pts"><span class="bsp-status" id="bsp-status-'+g.n+'">'+(inputLocked&&hasPick?'\u25cf Confirmado':'')+'</span>'+ptsHtml+'</div>'
       +(inputLocked?'':bolaoMajorityHtml(g.n))
       +'</div>';
