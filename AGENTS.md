@@ -1,6 +1,6 @@
 ﻿# Copa do Mundo 2026 � Documenta��o do Projeto
 
-**�ltima atualiza��o:** 2026-06-16 (v19.16)
+**�ltima atualiza��o:** 2026-06-16 (v19.17)
 **Reposit�rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -591,7 +591,18 @@ Toda melhoria deve:
 - **Seguranca de exclusao documentada**: secao 15 do AGENTS.md - backup obrigatorio antes de deletar, nunca deletar sem confirmar com o usuario
 - **Console Reference**: secao 17 do AGENTS.md - documentacao completa de todas as funcoes e variaveis acessiveis via DevTools
 
-### v19.16 (2026-06-16) - Merge Hoje+Jogos + Hero AO VIVO + Correcoes
+### v19.18 (2026-06-17) - 6 correcoes mobile + cache ranking + Enter key
+
+- **#1 Bandeiras CSS**: `flag()` trocada de `<img>` para `<span>` com `background-image`. Fim do flicker reportado por usuarios
+- **#2 Cards estaveis**: `_expandedGames` global preserva estado de expansao manual apos cada poll
+- **#3 Scroll-to-top**: `window.scrollTo(0,0)` no inicio de `switchTab()`
+- **#4 "Ir para anteriores" + "Expandir todos"**: link no topo da aba Jogos + botao no cabecalho ANTERIORES
+- **#5 Backoff polling**: `_pollFails` contador, exponencial 10s->120s, reseta no sucesso. `pagehide` limpa timer
+- **#6 Cleanup memoria**: `setInterval` a cada 10min remove TIMELINE_HASH/PROCESSED_EVENTS/MATCH_MINUTE de jogos encerrados ha >24h
+- **Cache ranking 30s TTL**: `_rankingCachedAt` evita fetch se cache tem <30s. Fallback localStorage com 1h
+- **Enter key**: suporte Enter no login (bolao-name/bolao-pass) e palpites especiais (bolao-champion/bolao-scorer)
+
+### v19.17 (2026-06-16) - Merge Hoje+Jogos + Hero AO VIVO + Correcoes
 
 - **Aba Hoje fundida com Jogos**: A tab "Hoje" foi removida da barra de navegacao. Bookmarks/URLs com `#hoje` sao redirecionados para `#jogos`. O contudo de "Hoje" agora aparece como secao dentro da aba Jogos
 - **Hero AO VIVO**: Quando ha jogos ao vivo, um card destacado (borda dourada, glow, badge "AO VIVO pulsante") aparece no topo da lista. Usa o mesmo mecanismo de relogio `.live-clock` dos cards normais. Sem jogos ao vivo, o hero fica oculto
@@ -599,6 +610,10 @@ Toda melhoria deve:
 - **26 horarios de jogos corrigidos** (cross-reference Exame/BBC/GE): jogos 17, 32, 85 e toda Rodada de 32 tiveram horarios ajustados para bater com as fontes oficiais
 - **SyntaxError critico corrigido**: `JSON.stringify` removeu a quebra de linha entre `GAMES[...]` e `const GROUPS`, colapsando tudo na mesma linha. `const a=[]const b={}` e SyntaxError no JS — ASI nao insere ponto-e-virgula entre duas declaracoes `const` na mesma linha. O script inteiro parava de executar, site ficava sem conteudo dinamico (jogos, grupos, bracket, artilharia)
 - **Auto-scroll removido**: `_scrolledToLive` e seu `scrollIntoView` no refresh removidos. Ao recarregar a pagina no celular, o site nao desce mais sozinho para o primeiro jogo ao vivo. Variavel `_scrolledToLive` e suas referencias deletadas (dead code)
+- **Filtros mobile horizontal**: no mobile (<480px), `.filters` agora usa `flex-wrap:nowrap;overflow-x:auto` — 1 fileira rolável em vez de 3. `min-height:32px` nos botões (vs 44px). Economia: ~88px
+- **Countdown compacto**: `padding` reduzido de 6px→4px, `min-height` de 36px→32px, `font-size` do relógio de 14px→13px, `margin-bottom` de 16px→8px. Economia: ~12px
+- **Hero AO VIVO compacto**: `padding` reduzido de `--sp-md`→`--sp-sm`, `score-display` reduzido de `--fs-lg`→`--fs-body`. Economia: ~8px
+- **Espaço vertical recuperado**: ~128px sem AO VIVO, ~148px com AO VIVO. HOJE seção começa em 30% da viewport (vs 52%) em iPhone SE
 
 ### v19.15 (2026-06-15) - Anti-piscar: badge atualiza so textContent sem recriar DOM
 
@@ -983,3 +998,4 @@ powershell
 | `PLAYERS` | 1248 jogadores carregados de players.json |
 | `PLAYER_PHOTOS` | URLs de fotos carregadas de photos.json |
 | `REFEREES` | Cache de árbitros (Wikipedia) |
+
