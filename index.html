@@ -2321,7 +2321,7 @@ var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){va
 fetchFifaScores(8000);_pollTimer=setTimeout(poll,FAST);
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,100)}});
 window.addEventListener('focus',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,200)});
-window.addEventListener('pagehide',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=null});
+window.addEventListener('pagehide',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=null;if(_bolaoDeadlineTimer){clearInterval(_bolaoDeadlineTimer);_bolaoDeadlineTimer=null}});
 // Cleanup memória a cada 10min: remove hashes/events de jogos encerrados há mais de 24h
 var _memCleanTimer=setInterval(function(){
   var cut=Date.now()-86400000,rem=0;
@@ -2425,7 +2425,7 @@ var _bolaoToken=null;
 var BOLAO_FIRST=6,BOLAO_FINAL=104,BOLAO_SIGNUP_GAME=32,BOLAO_TWO_H=1800000;
 var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
 var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmedStatus={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[],_bolaoKOPicks={};
-var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0;
+var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0,_bolaoDeadlineTimer=null;
 try{_bolaoSnappedGames=JSON.parse(localStorage.getItem('copa2026_snapped')||'{}')}catch(e){}
 
 function _bolaoFetch(path,method,body,retries){
@@ -2445,6 +2445,19 @@ function _bolaoFetch(path,method,body,retries){
   });
 }
 function _bolaoDeadline(gameN){var g=GAME_BY_ID[gameN];if(!g)return null;var gd=gameUTC(g);return gd?new Date(gd.getTime()-BOLAO_TWO_H):null}
+function _bolaoUpdateDeadline(el,deadline){
+  if(!el||!deadline)return;
+  var now=new Date();
+  if(deadline>now){
+    var d=deadline-now,dd=Math.floor(d/86400000),dh=Math.floor((d%86400000)/3600000),dm=Math.floor((d%3600000)/60000),ds=Math.floor((d%60000)/1000);
+    el.textContent='\u23f0 Prazo para alterar palpites especiais: '+dd+'d '+dh+'h '+dm+'m '+ds+'s (fecha 2h antes do jogo #32 \u2014 Haiti vs Brasil)';
+    el.style.color='';
+  }else{
+    el.textContent='\u26a0\ufe0f Prazo encerrado \u2014 palpites especiais bloqueados';
+    el.style.color='var(--red)';
+    if(_bolaoDeadlineTimer){clearInterval(_bolaoDeadlineTimer);_bolaoDeadlineTimer=null;}
+  }
+}
 function _bolaoFinalChampion(){return _winnerOf(BOLAO_FINAL)}
 function _bolaoTopScorer(){
   var m={};Object.keys(goals||{}).forEach(function(gid){Object.keys(goals[gid]).forEach(function(t){goals[gid][t].forEach(function(gl){if(gl.type==='own')return;if(!m[gl.pname])m[gl.pname]=0;m[gl.pname]++})})});
@@ -3044,13 +3057,15 @@ function bolaoPopulateSpecials(){
     champSel.readOnly=true;scorerSel.readOnly=true;
     if(btn){btn.disabled=true;btn.textContent='Bloqueado \u2014 prazo encerrado'}
   }
-  // Atualizar deadline
+  // Atualizar deadline com contador dinâmico
   var dlEl=document.getElementById('bolao-special-deadline');
-  if(dlEl&&deadline){
-    if(deadline>new Date()){
-      var d=deadline-new Date(),dd=Math.floor(d/86400000),dh=Math.floor((d%86400000)/3600000),dm=Math.floor((d%3600000)/60000);
-      dlEl.textContent='\u23f0 Fecha em '+dd+'d '+dh+'h '+dm+'m (2h antes do jogo #32 \u2014 Haiti vs Brasil)';
-    }else{dlEl.textContent='\u26a0 Fechado';dlEl.style.color='var(--red)'}
+  if(dlEl){
+    if(_bolaoDeadlineTimer)clearInterval(_bolaoDeadlineTimer);
+    _bolaoDeadlineTimer=null;
+    if(deadline){
+      _bolaoUpdateDeadline(dlEl,deadline);
+      _bolaoDeadlineTimer=setInterval(_bolaoUpdateDeadline,1000,dlEl,deadline);
+    }else{dlEl.textContent='';}
   }
   if(myChamp)document.getElementById('bolao-champion-saved').textContent=myChamp;
   if(myScorer)document.getElementById('bolao-scorer-saved').textContent=myScorer;
