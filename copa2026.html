@@ -93,6 +93,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .hero-live-inner .game-card .score-display{font-size:var(--fs-lg)}
 .hero-live-inner .game-card .game-info::before{content:'• AO VIVO';font-size:10px;font-weight:700;letter-spacing:1px;color:var(--red);display:block;margin-bottom:3px;animation:pulse .8s infinite}
 .section-header{font-size:var(--fs-sm);font-weight:700;padding:8px 4px 4px;margin:12px 0 4px;border-bottom:1px solid var(--border);color:var(--muted);letter-spacing:1px}
+.past-link{font-size:var(--fs-xs);color:var(--gold);cursor:pointer;display:inline-block;margin-bottom:6px;padding:4px 0}
+.past-link:hover{text-decoration:underline}
+.expand-all-btn{font-size:10px;color:var(--muted);cursor:pointer;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:12px;padding:3px 12px;margin-left:8px;font-family:inherit;vertical-align:middle}
+.expand-all-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
 .game-num{font-size:var(--fs-xs);color:var(--muted);text-align:center;font-weight:600;opacity:.5}
 .game-info{font-size:var(--fs-xs);color:var(--muted);line-height:1.5}
 .game-phase{font-size:9px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:2px}
@@ -125,7 +129,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .team-pending{font-style:italic;opacity:.6}
 .sus-badge{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;color:#ff9100;background:rgba(255,145,0,.12);padding:1px 5px;border-radius:4px;margin-left:4px;cursor:help;line-height:1.4}
 .flag{font-size:clamp(14px,2.5vw,20px);line-height:1;display:inline-flex;align-items:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
-.flag-bg,.flag-fallback{display:inline-block;width:24px;height:18px;border-radius:2px;vertical-align:middle;flex-shrink:0}
+.flag-bg,.flag-fallback{display:inline-block;width:24px;height:18px;border-radius:2px;vertical-align:middle;flex-shrink:0;background-size:contain;background-repeat:no-repeat;background-position:center}
 .team-name{font-weight:500;color:var(--text);font-size:clamp(11px,1.7vw,15px)}
 .team-name.brazil{color:var(--gold);font-weight:700}
 .goal-events{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:3px;padding:6px 0 0;border-top:1px solid rgba(255,255,255,.04);margin-top:2px}
@@ -773,6 +777,7 @@ const GROUPS = {"A":["África do Sul","Coreia do Sul","México","República Tche
 ;
 const PLAYERS = {};
 var _PLAYER_CLUB={};
+var _expandedGames={};
 var GAME_BY_ID={};GAMES.forEach(function(g){GAME_BY_ID[g.n]=g;});
 var BAK_KEYS=['copa2026_data','copa2026_bak1','copa2026_bak2'];
 function _loadPersistent(){
@@ -822,7 +827,7 @@ const BRACKET_ROUNDS = ["Rodada de 32","Oitavas de Final","Quartas de Final","Se
 function gameUTC(g){try{var p=g.d.split(" ")[0].split("/"),tp=g.t.split(":");if(p.length<2||tp.length<2)return null;return new Date(Date.UTC(2026,parseInt(p[1],10)-1,parseInt(p[0],10),parseInt(tp[0],10)+3,parseInt(tp[1],10)))}catch(e){return null}}
 function toBRT(g){try{var gd=gameUTC(g);if(!gd)return'';var br=new Date(gd-10800000);return br.getUTCHours().toString().padStart(2,'0')+':'+br.getUTCMinutes().toString().padStart(2,'0')}catch(e){return''}}
 
-function flag(t){var c=FLAG_ISO[t];return c?'<img class="flag-bg" src="https://flagcdn.com/24x18/'+c+'.png" alt="" width="24" height="18" loading="lazy" decoding="async">':'<span class="flag-fallback" style="display:inline-block;width:24px;height:18px">\u{1F3F3}\uFE0F</span>'}
+function flag(t){var c=FLAG_ISO[t];return c?'<span class="flag-bg" style="background-image:url(https://flagcdn.com/24x18/'+c+'.png)"></span>':'<span class="flag-fallback">\u{1F3F3}\uFE0F</span>'}
 function broadcastBadge(br){if(!br)return'';var m={'Globo':'logo_globo.png','SporTV':'logo_sportv.png','Caz\u00e9TV':'logo_cazetv.png','SBT':'logo_sbt.png','N Sports':'logo_nsports.png','Globoplay':'logo_globoplay.png','Ge TV':'logo_getv.png'};return br.split(/\u00b7/).map(function(c){c=c.trim();if(!c)return'';var k=m[c];var cls=c==='Caz\u00e9TV'?' caze':'';return k?'<span class="br-badge"><img class="br-logo'+cls+'" src="'+k+'" alt="'+c+'" loading="lazy" decoding="async">'+c+'</span>':'<span class="br-badge">'+c+'</span>'}).filter(function(s){return s}).join('')}
 function teamRow(n,c){return'<div class="team-row"><span class="flag">'+flag(n)+'</span><span class="team-name'+c+'">'+esc(n)+'</span></div>'}
 function _resolvedTeamRow(placeholder,gameNum,side){
@@ -897,6 +902,7 @@ setTimeout(function(){
 },200);
 var MAIS_TABS=['artilheiros','convocados','bolao-estatisticas','regras'];
 function switchTab(tab){
+  window.scrollTo(0,0);
   try{localStorage.setItem('copa2026_tab',tab)}catch(e){}
   if(window.location.hash!=='#'+tab)window.location.hash=tab;
   // Update bottom nav active state (mobile)
@@ -1005,27 +1011,36 @@ function renderGames(filter){
   }
   // Seções
   var parts=[];
+  if(past.length)parts.push('<div class="past-link" onclick="scrollToPast()">\u2B07 Ir para jogos anteriores</div>');
   if(todayGames.length)parts.push('<div class="section-header section-today">\uD83D\uDCC5 HOJE</div>'+todayGames.map(function(g){return renderGameCard(g)}).join(""));
   if(upcoming.length)parts.push('<div class="section-header section-upcoming">\u23F3 PR\u00D3XIMOS</div>'+upcoming.map(function(g){return renderGameCard(g)}).join(""));
-  if(past.length)parts.push('<div class="section-header section-past">\u2705 ANTERIORES</div>'+past.map(function(g){return renderGameCard(g)}).join(""));
+  if(past.length)parts.push('<div id="section-past" class="section-header section-past">\u2705 ANTERIORES<button class="expand-all-btn" onclick="expandAllPast()">Expandir todos</button></div>'+past.map(function(g){return renderGameCard(g)}).join(""));
   dynRender(el,parts.length?parts.join(""):_emptyState('\u26BD','Nenhum jogo encontrado','N\u00E3o h\u00E1 partidas programadas para esta data.'));
 }
 function toggleGameCard(el){
   var card=el&&el.closest?el.closest('.game-card'):null;
   if(!card)return;
+  var gid=parseInt(card.id.replace('g-',''),10);
   var isExpand=card.getAttribute('data-collapsed')==='true';
   if(isExpand){
     card.setAttribute('data-collapsed','false');
     card.classList.remove('collapsed');
+    _expandedGames[gid]=true;
     setTimeout(function(){card.scrollIntoView({behavior:'smooth',block:'nearest'})},50);
   }else{
     card.setAttribute('data-collapsed','true');
     card.classList.add('collapsed');
+    delete _expandedGames[gid];
   }
-  // Atualizar texto do botao interno se existir
   var btn=card.querySelector('.expand-btn');
   if(btn)btn.textContent=isExpand?'-':'+';
 }
+function expandAllPast(){
+  var any=false;
+  GAMES.forEach(function(g){if(gameIsPast(g)){_expandedGames[g.n]=true;any=true}});
+  if(any)renderGames(currentFilter);
+}
+function scrollToPast(){var el=document.getElementById('section-past');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
 function dynRender(el, html){
   // Ignorar badges do relogio na comparacao (conteudo dinamico do countdown)
   var cur=el.innerHTML.replace(/<div class="live-clock[^>]*>[^<]*<\/div>/g,'');
@@ -1115,7 +1130,7 @@ function renderGameCard(g){
   var hasScore=s.a!==undefined&&s.b!==undefined;
   var live=isGameLive(g);
   
-  var past=currentFilter==="all"&&gameIsPast(g);
+  var past=currentFilter==="all"&&gameIsPast(g)&&!_expandedGames[gn];
     return'<div class="game-card'+(live?" live":"")+(past?' collapsed':'')+'" id="g-'+gn+'"'+(past?' data-collapsed="true" onclick="toggleGameCard(this)"':'')+'><div class="game-num">#'+gn+(live?'<div class="live-dot"></div>':"")+'</div><div class="game-info"><span class="game-phase '+phaseClass+'">'+(g.f||"Mata-Mata")+'</span>'+(past?'<button class="expand-btn">+</button>':'')+'<div class="game-stadium">'+g.s+'</div><div>'+g.d+' \u00b7 '+g.t+' Bras\u00edlia</div>'+(REFEREES[gn]?'<div class="game-referee">\u00c1rbitro: '+(typeof REFEREES[gn]==='string'?REFEREES[gn]:REFEREES[gn].name+(REFEREES[gn].country?' '+flag(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country)+' '+(REF_COUNTRY[REFEREES[gn].country]||REFEREES[gn].country):''))+'</div>':'')+'<div class="game-broadcast">'+broadcastBadge(g.br)+'</div></div><div class="team-col">'+_resolvedTeamRow(g.a,g.n,'a')+susBadgeA+'</div><div class="game-score"><span class="score-display">'+(sa!==''?sa:'-')+'</span><span class="score-x">\u00d7</span><span class="score-display">'+(sb!==''?sb:'-')+'</span></div><div class="team-col">'+_resolvedTeamRow(g.b,g.n,'b')+susBadgeB+'</div>'+(s&&s.pen?'<div class="pen-result"><span class="pen-badge">'+flag(s.pen==='a'?g.a:g.b)+' Venceu nos p\u00ean.</span></div>':'')+'<div class="goal-events">'+events.map(function(x){
     if(x.type==='goal'){
       var gl=x.data,tc="type-"+gl.type,tl={gol:"Gol",pen:"P\u00ean",falta:"F.Dir",own:"G.C."}[gl.type]||gl.type;
@@ -2237,14 +2252,29 @@ function renderDiagnostico(){
 
 // --- Polling automático da FIFA API ---
 initFifaMaps();
-(function(){var FAST=10000,SLOW=60000,iv=FAST;function poll(){var endedBefore=Object.keys(MATCH_ENDED).length;fetchFifaScores(8000).then(function(m){
-  // Re-render sempre que a poll completa (dynRender só mexe no DOM se mudou)
+(function(){var FAST=10000,SLOW=60000,iv=FAST,_pollFails=0,_pollTimer=null;function poll(){if(_pollTimer)clearTimeout(_pollTimer);var endedBefore=Object.keys(MATCH_ENDED).length;fetchFifaScores(8000).then(function(m){
+  _pollFails=0;
   saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();renderHoje();
   if(Object.keys(MATCH_ENDED).length!==endedBefore)setTimeout(checkAutoSnapshot,500);
-  if(m&&Object.keys(m).length){mergeScores(m)}else{_bolaoFetch('/scores').then(function(d){if(d&&d.scores&&d.scores.length){var sm={};d.scores.forEach(function(s){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];var abbA=FIFA_TEAM_REV[g.a],abbB=FIFA_TEAM_REV[g.b];if((abbA===s.home_team&&abbB===s.away_team)||(abbA===s.away_team&&abbB===s.home_team)){sm[g.n]={a:abbA===s.home_team?s.goals_home:s.goals_away,b:abbA===s.home_team?s.goals_away:s.goals_home};break}}});if(Object.keys(sm).length)mergeScores(sm)}}).catch(function(e){console.warn('Fallback scores failed:',e&&e.message?e.message:'');})}});
-var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);if(live||recent){processTimeline(id,g.n);if(live)hasLive=true}})};iv=hasLive?FAST:SLOW;setTimeout(poll,iv)}fetchFifaScores(8000);setTimeout(poll,FAST);
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(poll,100)});
-window.addEventListener('focus',function(){setTimeout(poll,200)});})();
+  if(m&&Object.keys(m).length){mergeScores(m)}else{_bolaoFetch('/scores').then(function(d){if(d&&d.scores&&d.scores.length){var sm={};d.scores.forEach(function(s){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];var abbA=FIFA_TEAM_REV[g.a],abbB=FIFA_TEAM_REV[g.b];if((abbA===s.home_team&&abbB===s.away_team)||(abbA===s.away_team&&abbB===s.home_team)){sm[g.n]={a:abbA===s.home_team?s.goals_home:s.goals_away,b:abbA===s.home_team?s.goals_away:s.goals_home};break}}});if(Object.keys(sm).length)mergeScores(sm)}}).catch(function(e){console.warn('Fallback scores failed:',e&&e.message?e.message:'');})}}
+).catch(function(err){
+  _pollFails=Math.min(_pollFails+1,6);iv=Math.min(FAST*Math.pow(2,_pollFails),120000);
+  console.warn('FIFA poll error (%s), backoff %dms:',_pollFails,iv,err&&err.message?err.message:'');
+});
+var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);if(live||recent){processTimeline(id,g.n);if(live)hasLive=true}})};iv=_pollFails>0?iv:(hasLive?FAST:SLOW);_pollTimer=setTimeout(poll,iv)}
+fetchFifaScores(8000);_pollTimer=setTimeout(poll,FAST);
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,100)}});
+window.addEventListener('focus',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,200)});
+window.addEventListener('pagehide',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=null});
+// Cleanup memória a cada 10min: remove hashes/events de jogos encerrados há mais de 24h
+var _memCleanTimer=setInterval(function(){
+  var cut=Date.now()-86400000,rem=0;
+  Object.keys(TIMELINE_HASH).forEach(function(k){var g=FIFA_MATCH_META[k];if(g&&g.gameIdx){var gn=parseInt(g.gameIdx,10);var gd=GAME_BY_ID[gn]&&gameUTC(GAME_BY_ID[gn]);if(gd&&gd.getTime()<cut){delete TIMELINE_HASH[k];rem++}}});
+  Object.keys(PROCESSED_EVENTS).forEach(function(k){var g=FIFA_MATCH_META[k];if(g&&g.gameIdx){var gn=parseInt(g.gameIdx,10);var gd=GAME_BY_ID[gn]&&gameUTC(GAME_BY_ID[gn]);if(gd&&gd.getTime()<cut){delete PROCESSED_EVENTS[k];rem++}}});
+  Object.keys(MATCH_MINUTE).forEach(function(k){var g=FIFA_MATCH_META[k];if(g&&g.gameIdx){var gn=parseInt(g.gameIdx,10);var gd=GAME_BY_ID[gn]&&gameUTC(GAME_BY_ID[gn]);if(gd&&gd.getTime()<cut){delete MATCH_MINUTE[k];rem++}}});
+  if(rem)console.log('Memory cleanup: removed',rem,'stale entries');
+},600000);
+})();
 
 
 
