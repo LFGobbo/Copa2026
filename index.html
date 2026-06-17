@@ -358,6 +358,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .squads-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:48px 0;color:var(--muted);font-size:14px;}
 .loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes deadlinePulse{0%,100%{border-color:var(--gold);box-shadow:0 0 15px rgba(255,223,0,.15)}50%{border-color:var(--orange);box-shadow:0 0 30px rgba(255,145,0,.3)}}
 
 /* Bracket melhorado */
 .bracket-team.pending{color:var(--muted);font-style:italic;font-size:10px;}
@@ -694,10 +695,6 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       <button id="bolao-participar-btn" disabled onclick="bolaoJoin()">Participar</button>
     </div>
   </div>
-  <div class="bolao-section" id="bolao-public-deadline" style="background:var(--card);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;text-align:center">
-    <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:4px">⏳ Palpites Especiais</div>
-    <div id="bolao-public-deadline-count" style="font-size:11px;color:var(--muted)">Carregando...</div>
-  </div>
   <div class="bolao-section" id="bolao-login-section">
     <div class="bolao-section-title">Entrar no bolão</div>
     <div class="bolao-login">
@@ -754,6 +751,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       </div>
       <div id="bolao-confirmed-banner" class="bolao-confirm-banner">Seus palpites estão confirmados e não podem mais ser alterados.</div>
     </div>
+  </div>
+  <div class="bolao-section" id="bolao-public-deadline" style="background:linear-gradient(135deg,rgba(255,223,0,.08),rgba(255,145,0,.04));border:2px solid var(--gold);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;text-align:center;animation:deadlinePulse 2s ease-in-out infinite">
+    <div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">⏳ Palpites Especiais</div>
+    <div id="bolao-public-deadline-count" style="font-size:11px;color:var(--text);font-weight:600">Carregando...</div>
   </div>
   <div class="bolao-section">
     <div class="bolao-section-title">Ranking geral</div>
