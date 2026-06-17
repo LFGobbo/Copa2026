@@ -2566,16 +2566,15 @@ function _bolaoWinnerOf(gameN,picks){
   if(!g)return null;
   var s=_bolaoGetScore(gameN,picks);
   if(!s)return null;
-  // Resolver o placeholder para o time real antes de retornar
-  if(s.a>s.b)return _bolaoResolveTeam(g.a,gameN,picks)||null;
-  if(s.b>s.a)return _bolaoResolveTeam(g.b,gameN,picks)||null;
-  // Empate: só KO tem escolha
+  if(s.a>s.b)return _bolaoResolveTeam(g.a,gameN,picks)||g.a;
+  if(s.b>s.a)return _bolaoResolveTeam(g.b,gameN,picks)||g.b;
   var isGroup=g.f&&g.f.startsWith('Grupo');
   if(isGroup)return null;
   var ko=_bolaoKOPicks[gameN];
-  if(ko==='a')return _bolaoResolveTeam(g.a,gameN,picks)||null;
-  if(ko==='b')return _bolaoResolveTeam(g.b,gameN,picks)||null;
-  return null;
+  if(ko==='a')return _bolaoResolveTeam(g.a,gameN,picks)||g.a;
+  if(ko==='b')return _bolaoResolveTeam(g.b,gameN,picks)||g.b;
+  // Draw sem KO pick: retorna o placeholder pra n�o quebrar cascata
+  return g.a;
 }
 
 // Resolve placeholder no contexto do bolão
@@ -2912,7 +2911,12 @@ function bolaoRenderPicksGrid(){
       var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
       var col=pts===10?'var(--gold)':pts>=2?'#4ade80':'var(--red)';
       var trophy=pts===10?' \ud83c\udfc6':'';
-      ptsHtml='<span class="bsp-pts" style="color:'+col+'">'+(pts>=0?'+':'')+pts+(bonus?'+'+bonus:'')+' pts'+trophy+'</span>';
+      ptsHtml='<div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap">'
+        +'<span style="font-size:11px;color:var(--muted)">'+pick.a+'-'+pick.b+'</span>'
+        +'<span style="font-size:10px;color:var(--muted)">\u2192</span>'
+        +'<span style="font-size:12px;font-weight:700;color:var(--text)">'+real.a+'-'+real.b+'</span>'
+        +'<span class="bsp-pts" style="color:'+col+'">'+(pts>=0?'+':'')+pts+(bonus?'+'+bonus:'')+' pts'+trophy+'</span>'
+        +'</div>';
     }
     // Bloco de empate KO
     var koHtml=_bolaoKOHtml(g,pick,inputLocked);
