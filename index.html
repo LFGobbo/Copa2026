@@ -671,8 +671,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="bolao-section" id="bolao-login-section">
     <div class="bolao-section-title">Entrar no bolão</div>
     <div class="bolao-login">
-      <div><label>Seu nome</label><input type="text" id="bolao-name" placeholder="Nome e Sobrenome" autocomplete="off"></div>
-      <div><label>Senha</label><input type="password" id="bolao-pass" placeholder="Senha" autocomplete="off"></div>
+       <div><label>Seu nome</label><input type="text" id="bolao-name" placeholder="Nome e Sobrenome" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();bolaoLogin()}"></div>
+       <div><label>Senha</label><input type="password" id="bolao-pass" placeholder="Senha" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();bolaoLogin()}"></div>
       <div class="cf-turnstile" data-sitekey="0x4AAAAAADj0kWY7cUoZ_uwS" data-theme="dark" data-size="normal" id="bolao-turnstile"></div>
       <button class="btn" onclick="bolaoLogin()" style="height:36px;padding:0 18px;font-size:13px">Entrar</button>
       <button class="btn" onclick="bolaoRegister()" style="height:36px;padding:0 18px;font-size:13px;background:var(--gold);color:#000">Criar conta</button>
@@ -688,7 +688,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
         <div class="bolao-special-card">
           <label>Campeão da Copa (+50 pts)</label>
           <form autocomplete="off" style="display:contents" onsubmit="return false">
-            <input type="text" id="bolao-champion" list="bolao-champion-list" placeholder="Digite o nome do time..." autocomplete="nope" spellcheck="false">
+             <input type="text" id="bolao-champion" list="bolao-champion-list" placeholder="Digite o nome do time..." autocomplete="nope" spellcheck="false" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('bolao-special-btn').click()}">
           </form>
           <datalist id="bolao-champion-list"></datalist>
           <div class="bolao-pick-saved" id="bolao-champion-saved"></div>
@@ -696,7 +696,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
         <div class="bolao-special-card">
           <label>Artilheiro (+20 pts / +10 se empatado)</label>
           <form autocomplete="off" style="display:contents" onsubmit="return false">
-            <input type="text" id="bolao-scorer" list="bolao-scorer-list" placeholder="Digite o nome do jogador..." autocomplete="nope" spellcheck="false">
+             <input type="text" id="bolao-scorer" list="bolao-scorer-list" placeholder="Digite o nome do jogador..." autocomplete="nope" spellcheck="false" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('bolao-special-btn').click()}">
           </form>
           <datalist id="bolao-scorer-list"></datalist>
           <div class="bolao-pick-saved" id="bolao-scorer-saved"></div>
