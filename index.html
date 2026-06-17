@@ -2506,7 +2506,7 @@ function _bolaoGroupStandings(letter,picks){
   var teams=GROUPS[letter]||[],pts={},gp={},gf={},ga={};
   teams.forEach(function(t){pts[t]=0;gp[t]=0;gf[t]=0;ga[t]=0;});
   GAMES.filter(function(g){return g.f===GROUP_NAMES[letter];}).forEach(function(g){
-    var s=_bolaoGetScore(g.n,picks);
+    var s=_bolaoGetScore(g.n,picks)||(scores[g.n]&&scores[g.n].a!==undefined?{a:scores[g.n].a,b:scores[g.n].b}:null);
     if(s){
       gp[g.a]++;gp[g.b]++;
       gf[g.a]+=s.a;ga[g.a]+=s.b;
@@ -2519,7 +2519,7 @@ function _bolaoGroupStandings(letter,picks){
   var anyPlayed=teams.some(function(t){return gp[t]>0;});
   if(!anyPlayed)return null;
   var groupGames=GAMES.filter(function(g){return g.f===GROUP_NAMES[letter];});
-  var finished=groupGames.every(function(g){return !!_bolaoGetScore(g.n,picks);});
+  var finished=groupGames.every(function(g){return !!_bolaoGetScore(g.n,picks)||(scores[g.n]&&scores[g.n].a!==undefined);});
   var sorted=teams.slice().sort(function(a,b){
     if(pts[b]!==pts[a])return pts[b]-pts[a];
     var gdA=gf[a]-ga[a],gdB=gf[b]-ga[b];
@@ -2529,7 +2529,7 @@ function _bolaoGroupStandings(letter,picks){
     if(h2h.length){
       var hpA=0,hpB=0;
       h2h.forEach(function(g){
-        var s=_bolaoGetScore(g.n,picks);
+        var s=_bolaoGetScore(g.n,picks)||(scores[g.n]&&scores[g.n].a!==undefined?{a:scores[g.n].a,b:scores[g.n].b}:null);
         if(s){if(g.a===a){if(s.a>s.b)hpA+=3;else if(s.a<s.b)hpB+=3;else{hpA++;hpB++;}}
         else{if(s.b>s.a)hpA+=3;else if(s.b<s.a)hpB+=3;else{hpA++;hpB++;}}}
       });
@@ -2911,10 +2911,8 @@ function bolaoRenderPicksGrid(){
       var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
       var col=pts===10?'var(--gold)':pts>=2?'#4ade80':'var(--red)';
       var trophy=pts===10?' \ud83c\udfc6':'';
-      ptsHtml='<div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap">'
-        +'<span style="font-size:11px;color:var(--muted)">'+pick.a+'-'+pick.b+'</span>'
-        +'<span style="font-size:10px;color:var(--muted)">\u2192</span>'
-        +'<span style="font-size:12px;font-weight:700;color:var(--text)">'+real.a+'-'+real.b+'</span>'
+      ptsHtml='<div style="display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;margin-top:2px">'
+        +'<span style="font-size:13px;font-weight:700;color:var(--text)">'+real.a+'-'+real.b+'</span>'
         +'<span class="bsp-pts" style="color:'+col+'">'+(pts>=0?'+':'')+pts+(bonus?'+'+bonus:'')+' pts'+trophy+'</span>'
         +'</div>';
     }
