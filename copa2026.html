@@ -772,6 +772,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 const GROUPS = {"A":["África do Sul","Coreia do Sul","México","República Tcheca"],"B":["Bósnia","Canadá","Catar","Suíça"],"C":["Brasil","Escócia","Haiti","Marrocos"],"D":["Austrália","Estados Unidos","Paraguai","Turquia"],"E":["Alemanha","Costa do Marfim","Curaçao","Equador"],"F":["Holanda","Japão","Suécia","Tunísia"],"G":["Bélgica","Egito","Irã","Nova Zelândia"],"H":["Arábia Saudita","Cabo Verde","Espanha","Uruguai"],"I":["Argentina","Argélia","Áustria","Jordânia"],"J":["França","Iraque","Noruega","Senegal"],"K":["Colômbia","Portugal","RD Congo","Uzbequistão"],"L":["Croácia","Gana","Inglaterra","Panamá"]}
 ;
 const PLAYERS = {};
+var _PLAYER_CLUB={};
 var GAME_BY_ID={};GAMES.forEach(function(g){GAME_BY_ID[g.n]=g;});
 var BAK_KEYS=['copa2026_data','copa2026_bak1','copa2026_bak2'];
 function _loadPersistent(){
@@ -1573,8 +1574,7 @@ function renderBracketTree(){
 }
 
 function renderScorers(){
-  var el=document.getElementById("scorers-list"),m={},_pClub={};
-  Object.keys(PLAYERS||{}).forEach(function(tm){(PLAYERS[tm]||[]).forEach(function(p){_pClub[p.name]=p.club})});
+  var el=document.getElementById("scorers-list"),m={};
   Object.keys(goals).forEach(function(gid){
     var g=GAME_BY_ID[parseInt(gid)];
     Object.keys(goals[gid]).forEach(function(t){
@@ -1593,7 +1593,7 @@ function renderScorers(){
   var gls=Object.values(m).filter(function(p){return p.goals>0}).sort(function(a,b){return b.goals-a.goals});
   var ast=Object.values(m).filter(function(p){return p.assists>0}).sort(function(a,b){return b.assists-a.assists});
   var medals=["rank-gold","rank-silver","rank-bronze"];
-  function tbl(title,icon,data,k){if(!data.length)return'';return'<div style="flex:1;min-width:260px"><h3 style="color:var(--gold);margin-bottom:8px;text-align:center">'+icon+' '+title+'</h3><table class="scorers-table"><tr><th>#</th><th>Jogador</th><th style="text-align:center">'+title+'</th></tr>'+data.map(function(s,i){return'<tr><td class="rank '+(medals[i]||"")+'">'+(i+1)+'</td><td>'+flag(s.team)+' <strong>'+s.name+'</strong> <span style="color:var(--muted);font-size:11px">'+(_pClub[s.name]||s.team)+'</span></td><td style="text-align:center;font-weight:700;font-size:14px">'+s[k]+'</td></tr>'}).join("")+'</table></div>'}
+  function tbl(title,icon,data,k){if(!data.length)return'';return'<div style="flex:1;min-width:260px"><h3 style="color:var(--gold);margin-bottom:8px;text-align:center">'+icon+' '+title+'</h3><table class="scorers-table"><tr><th>#</th><th>Jogador</th><th style="text-align:center">'+title+'</th></tr>'+data.map(function(s,i){return'<tr><td class="rank '+(medals[i]||"")+'">'+(i+1)+'</td><td>'+flag(s.team)+' <strong>'+s.name+'</strong> <span style="color:var(--muted);font-size:11px">'+(_PLAYER_CLUB[s.name]||s.team)+'</span></td><td style="text-align:center;font-weight:700;font-size:14px">'+s[k]+'</td></tr>'}).join("")+'</table></div>'}
   var t=tbl('Artilheiros','\u26BD',gls,'goals')+tbl('Assist\u00eancias','\uD83D\uDC5F',ast,'assists');
   dynRender(el, t?'<div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center">'+t+'</div>':'<p style="text-align:center;color:#555;padding:40px">Nenhum gol registrado ainda. Adicione placares nos Jogos!</p>');
 }
@@ -1767,9 +1767,12 @@ function _mergeDeep(target,src){
 function _onPlayersLoaded(data){
   _mergeDeep(PLAYERS,data);
   PLAYERS_READY=true;
-  // Se aba Convocados estiver ativa, re-renderizar com dados reais
+  Object.keys(PLAYERS).forEach(function(tm){(PLAYERS[tm]||[]).forEach(function(p){_PLAYER_CLUB[p.name]=p.club})});
   var activeTab=document.querySelector('.tab.active');
-  if(activeTab&&activeTab.dataset.tab==='convocados'){renderSquads();}
+  if(activeTab){
+    if(activeTab.dataset.tab==='convocados'){renderSquads();}
+    if(activeTab.dataset.tab==='artilheiros'){renderScorers();}
+  }
 }
 
 function _onPhotosLoaded(data){
