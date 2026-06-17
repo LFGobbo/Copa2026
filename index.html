@@ -180,6 +180,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .rank-gold{color:#ffd700}
 .rank-silver{color:#c0c0c0}
 .rank-bronze{color:#cd7f32}
+/* Colorir nome e valor do top 3 */
+.rank-gold+td,.rank-gold+td+td{color:#ffd700}
+.rank-silver+td,.rank-silver+td+td{color:#c0c0c0}
+.rank-bronze+td,.rank-bronze+td+td{color:#cd7f32}
 .third-container{max-width:650px;margin:20px auto 0}
 .third-title{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:10px;text-align:center}
 .third-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius)}
@@ -480,10 +484,6 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .mob-rank-pts{font-size:20px;font-weight:800;color:var(--gold);flex-shrink:0;min-width:30px;text-align:right}
 .mob-rank-pts .pts-label{font-size:11px;font-weight:400;color:var(--muted)}
 .mob-rank-sub{font-size:11px;color:var(--muted);margin-top:4px}
-/* Top 3 premium */
-.rank-gold{border:2px solid var(--gold);background:rgba(255,223,0,.06);box-shadow:0 0 20px rgba(255,223,0,.1)}
-.rank-silver{border:2px solid #c0c0c0;background:rgba(200,200,220,.05);box-shadow:0 0 15px rgba(200,200,220,.08)}
-.rank-bronze{border:2px solid #cd7f32;background:rgba(205,127,50,.04);box-shadow:0 0 12px rgba(205,127,50,.06)}
 /* Líder com destaque */
 .rank-first{padding:12px 14px}
 .rank-first .mob-rank-name{font-size:15px;font-weight:800}
