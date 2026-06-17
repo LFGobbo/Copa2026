@@ -2566,15 +2566,14 @@ function _bolaoWinnerOf(gameN,picks){
   if(!g)return null;
   var s=_bolaoGetScore(gameN,picks);
   if(!s)return null;
-  if(s.a>s.b)return _bolaoResolveTeam(g.a,gameN,picks)||g.a;
-  if(s.b>s.a)return _bolaoResolveTeam(g.b,gameN,picks)||g.b;
+  if(s.a>s.b)return _bolaoResolveTeam(g.a,gameN,picks);
+  if(s.b>s.a)return _bolaoResolveTeam(g.b,gameN,picks);
   var isGroup=g.f&&g.f.startsWith('Grupo');
   if(isGroup)return null;
   var ko=_bolaoKOPicks[gameN];
-  if(ko==='a')return _bolaoResolveTeam(g.a,gameN,picks)||g.a;
-  if(ko==='b')return _bolaoResolveTeam(g.b,gameN,picks)||g.b;
-  // Draw sem KO pick: retorna o placeholder pra n�o quebrar cascata
-  return g.a;
+  if(ko==='a')return _bolaoResolveTeam(g.a,gameN,picks);
+  if(ko==='b')return _bolaoResolveTeam(g.b,gameN,picks);
+  return null;
 }
 
 // Resolve placeholder no contexto do bolão
