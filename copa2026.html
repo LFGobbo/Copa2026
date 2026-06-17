@@ -1079,9 +1079,21 @@ function toggleGameCard(el){
   if(btn)btn.textContent=isExpand?'-':'+';
 }
 function expandAllPast(){
-  var any=false;
-  GAMES.forEach(function(g){if(gameIsPast(g)){_expandedGames[g.n]=true;any=true}});
-  if(any)renderGames(currentFilter);
+  var pastGames=GAMES.filter(function(g){return gameIsPast(g);});
+  // Check if all past games are currently expanded
+  var allExpanded=pastGames.every(function(g){return _expandedGames[g.n];});
+  pastGames.forEach(function(g){
+    if(allExpanded){
+      delete _expandedGames[g.n];
+      var card=document.getElementById('g-'+g.n);
+      if(card){card.setAttribute('data-collapsed','true');card.classList.add('collapsed');var btn=card.querySelector('.expand-btn');if(btn)btn.textContent='+';}
+    }else{
+      _expandedGames[g.n]=true;
+    }
+  });
+  var btn=document.querySelector('.expand-all-btn');
+  if(btn)btn.textContent=allExpanded?'Expandir todos':'Recolher todos';
+  if(!allExpanded)renderGames(currentFilter);
 }
 function scrollToPast(){var el=document.getElementById('section-past');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
 function dynRender(el, html){
