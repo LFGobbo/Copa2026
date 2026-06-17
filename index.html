@@ -928,6 +928,23 @@ function tabClick(){switchTab(this.dataset.tab)}
 function navClick(){maisClose();switchTab(this.dataset.tab)}
 function maisOpen(){var el=document.getElementById("mais-overlay");if(el)el.style.display="flex"}
 function maisClose(){var el=document.getElementById("mais-overlay");if(el)el.style.display="none"}
+// Swipe entre abas (mobile)
+var ENABLE_SWIPE=true,SWIPE_TABS=['jogos','grupos','mata-mata','bolao','artilheiros','convocados','bolao-estatisticas','regras'],_touchSX=0,_touchSY=0;
+document.addEventListener('touchstart',function(e){_touchSX=e.touches[0].clientX;_touchSY=e.touches[0].clientY},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(!ENABLE_SWIPE)return;
+  var t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'))return;
+  var dx=e.changedTouches[0].clientX-_touchSX,dy=e.changedTouches[0].clientY-_touchSY;
+  if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)*0.5)return;
+  var cur=document.querySelector('.nav-btn.active')||document.querySelector('.tab.active');
+  if(!cur)return;
+  var idx=SWIPE_TABS.indexOf(cur.dataset.tab||(cur.getAttribute&&cur.getAttribute('data-tab')));
+  if(idx<0)return;
+  var ni=dx>0?idx-1:idx+1;
+  if(ni<0||ni>=SWIPE_TABS.length)return;
+  var nb=document.querySelector('.nav-btn[data-tab="'+SWIPE_TABS[ni]+'"]');
+  if(nb)navClick.call(nb);else{var tb=document.querySelector('.tab[data-tab="'+SWIPE_TABS[ni]+'"]');if(tb)tabClick.call(tb)}
+},{passive:true});
 document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",tabClick)});
 window.addEventListener("hashchange",function(){
   var h=window.location.hash.replace('#','');
