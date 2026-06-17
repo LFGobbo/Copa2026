@@ -607,8 +607,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="tab" data-tab="regras" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📖</span><span class="tab-label">Regras</span></div>
   <div class="tab" data-tab="bolao-estatisticas" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📊</span><span class="tab-label">Estatísticas</span></div>
 </div>
+<div class="countdown-bar" id="countdown-bar"><span class="countdown-label">&#9201; Próximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados" style="display:none"></span></div>
 <div class="content active" id="tab-jogos">
-  <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">&#9201; Próximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados" style="display:none"></span></div>
   <div class="filters" id="filter-bar"></div>
   <div id="hero-live" style="display:none"></div>
   <div id="games-list" class="dyn-content"><div class="skeleton-card"><div class="s-score"><div class="skeleton s-line" style="width:40px;height:28px"></div><div class="skeleton s-line" style="width:20px;height:28px"></div><div class="skeleton s-line" style="width:40px;height:28px"></div></div><div class="skeleton s-line"></div><div class="skeleton s-line" style="width:40%"></div></div><div class="skeleton-card"><div class="s-score"><div class="skeleton s-line" style="width:40px;height:28px"></div><div class="skeleton s-line" style="width:20px;height:28px"></div><div class="skeleton s-line" style="width:40px;height:28px"></div></div><div class="skeleton s-line"></div><div class="skeleton s-line" style="width:40%"></div></div><div class="skeleton-card"><div class="s-score"><div class="skeleton s-line" style="width:40px;height:28px"></div><div class="skeleton s-line" style="width:20px;height:28px"></div><div class="skeleton s-line" style="width:40px;height:28px"></div></div><div class="skeleton s-line"></div><div class="skeleton s-line" style="width:40%"></div></div></div>
@@ -1575,13 +1575,15 @@ function renderBracketTree(){
 function renderScorers(){
   var el=document.getElementById("scorers-list"),m={};
   Object.keys(goals).forEach(function(gid){
+    var g=GAME_BY_ID[parseInt(gid)];
     Object.keys(goals[gid]).forEach(function(t){
       goals[gid][t].forEach(function(gl){
         if(gl.type==="own")return;
-        if(!m[gl.pname])m[gl.pname]={name:gl.pname,goals:0,assists:0};
+        var teamName=g?(t==='a'?g.a:g.b):'';
+        if(!m[gl.pname])m[gl.pname]={name:gl.pname,goals:0,assists:0,team:teamName};
         m[gl.pname].goals++;
         if(gl.aname){
-          if(!m[gl.aname])m[gl.aname]={name:gl.aname,goals:0,assists:0};
+          if(!m[gl.aname])m[gl.aname]={name:gl.aname,goals:0,assists:0,team:teamName};
           m[gl.aname].assists++;
         }
       });
@@ -1590,7 +1592,7 @@ function renderScorers(){
   var gls=Object.values(m).filter(function(p){return p.goals>0}).sort(function(a,b){return b.goals-a.goals});
   var ast=Object.values(m).filter(function(p){return p.assists>0}).sort(function(a,b){return b.assists-a.assists});
   var medals=["rank-gold","rank-silver","rank-bronze"];
-  function tbl(title,icon,data,k){if(!data.length)return'';return'<div style="flex:1;min-width:260px"><h3 style="color:var(--gold);margin-bottom:8px;text-align:center">'+icon+' '+title+'</h3><table class="scorers-table"><tr><th>#</th><th>Jogador</th><th style="text-align:center">'+title+'</th></tr>'+data.map(function(s,i){return'<tr><td class="rank '+(medals[i]||"")+'">'+(i+1)+'</td><td>'+s.name+'</td><td style="text-align:center;font-weight:700;font-size:14px">'+s[k]+'</td></tr>'}).join("")+'</table></div>'}
+  function tbl(title,icon,data,k){if(!data.length)return'';return'<div style="flex:1;min-width:260px"><h3 style="color:var(--gold);margin-bottom:8px;text-align:center">'+icon+' '+title+'</h3><table class="scorers-table"><tr><th>#</th><th>Jogador</th><th style="text-align:center">'+title+'</th></tr>'+data.map(function(s,i){return'<tr><td class="rank '+(medals[i]||"")+'">'+(i+1)+'</td><td>'+flag(s.team)+' <strong>'+s.name+'</strong> <span style="color:var(--muted);font-size:11px">'+s.team+'</span></td><td style="text-align:center;font-weight:700;font-size:14px">'+s[k]+'</td></tr>'}).join("")+'</table></div>'}
   var t=tbl('Artilheiros','\u26BD',gls,'goals')+tbl('Assist\u00eancias','\uD83D\uDC5F',ast,'assists');
   dynRender(el, t?'<div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center">'+t+'</div>':'<p style="text-align:center;color:#555;padding:40px">Nenhum gol registrado ainda. Adicione placares nos Jogos!</p>');
 }
