@@ -128,6 +128,9 @@ async function handle(req) {
       if (!user) return error('Token invalido', 401);
       var body = await req.json();
       if (!body.picks || !body.picks.length) return error('picks obrigatorio');
+      // Verificar se o participante está confirmado (bloqueia alteração)
+      var part = await supaFetch("participants?id=eq." + user.sub + "&select=confirmed");
+      if (part && part.length && part[0].confirmed) return error('Conta confirmada — palpites bloqueados', 403);
       for (var i = 0; i < body.picks.length; i++) {
         var pick = body.picks[i];
         // Deletar pick existente (caso seja atualização) e inserir novo

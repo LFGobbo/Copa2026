@@ -3864,7 +3864,7 @@ function renderBolaoStats(){
   if(s.community&&s.community.gameDist){
     var gd=s.community.gameDist,gdn=Object.keys(gd);
     if(gdn.length){
-      parts.push('<div class="bstats-section"><div class="bstats-section-title" title="Como a galera apostou em cada jogo">🌎 Palpite da Maioria</div><div class="bstats-hint">Percentual de palpites por resultado em cada jogo</div><div class="bstats-table-wrap"><table class="bstats-rank"><tr><th>Jogo</th><th>Mandante</th><th>Empate</th><th>Visitante</th><th>Total</th></tr>');
+      parts.push('<div class="bstats-section"><div class="bstats-section-title" title="Como a galera apostou em cada jogo">🌎 Palpite da Maioria</div><div class="bstats-hint">Percentual de palpites por resultado em cada jogo</div><div class="bstats-table-wrap" style="max-height:320px;overflow-y:auto"><table class="bstats-rank"><tr><th>Jogo</th><th>Mandante</th><th>Empate</th><th>Visitante</th><th>Total</th></tr>');
       gdn.sort(function(a,b){return a-b;}).forEach(function(gn){
         var d=gd[gn],g=GAME_BY_ID[gn];
         if(!g)return;
