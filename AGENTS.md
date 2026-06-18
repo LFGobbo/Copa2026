@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 ? Documenta??o do Projeto
 
-**?ltima atualiza??o:** 2026-06-18 (v19.27)
+**?ltima atualiza??o:** 2026-06-18 (v19.30)
 **Reposit?rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -13,7 +13,7 @@ Aplica??o web autossuficiente (single HTML) para acompanhar a Copa do Mundo 2026
 
 - 48 sele??es, 12 grupos (A?L), 104 jogos
 - Placar ao vivo via FIFA API + entrada manual
-- Grupos com classifica??o din?mica (6 crit?rios de desempate, incluindo H2H)
+- Grupos com classifica??o din?mica (7 crit?rios de desempate, H2H primeiro, fair play, ranking FIFA)
 - Mata-mata com bracket autom?tico (propaga??o de resultados)
 - Artilharia e assist?ncias
 - Convocados (1248 jogadores) com fotos e busca
@@ -293,7 +293,7 @@ cards = {
 
 | Fun??o | Descri??o |
 |---|---|
-| `_groupStandings(letter)` | Classifica??o do grupo (6 crit?rios: P ? GD ? GF ? H2H P ? H2H GD ? H2H GF) |
+| `_groupStandings(letter)` | Classifica??o do grupo (7 crit?rios FIFA 2026: P ? H2H P/SG/GF ? GD ? GF ? fair play ? ranking FIFA) |
 | `_rankedThirds()` | 8 melhores 3?s colocados |
 | `_winnerOf(n)` | Vencedor de um jogo (com p?naltis) |
 | `_loserOf(n)` | Perdedor de um jogo |
@@ -573,6 +573,34 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v19.30 (2026-06-18) - Bracket do mata-mata corrigido conforme oficial FIFA 2026
+- **Round of 16 pares corrigidos**: G89=W74xW77, G90=W73xW75, G91=W76xW78, G93=W83xW84, G94=W81xW82, G95=W86xW88, G96=W85xW87 (antes estavam com oponentes trocados, o que propagava times errados para QF/SF/Final)
+- **Semifinal 2 venue** (G102): MetLife-Nova Jersey -> Mercedes-Benz-Atlanta
+- **3o lugar venue** (G103): Lumen-Seattle -> Hard Rock-Miami
+- **Bracket completo conferido** vs 3 fontes oficiais: FIFA.com (knockout stage article), ESPN bracket, FOX Sports bracket
+- **Sync copa2026.html**
+
+### v19.29 (2026-06-18) - Ordem dos criterios de desempate corrigida para FIFA 2026
+- **H2H passa a ser step one**: confronto direto (pts/SG/GF) resolvido antes do saldo geral, conforme regulamento FIFA 2026 (antes era GD/GF geral primeiro, depois H2H)
+- **Fair play adicionado**: cartoes amarelos (-1pt) e vermelhos (-3pt) contam como 5o criterio de desempate
+- **Ranking FIFA substitui sorteio**: `FIFA_RANK` constante com ranking de junho/2026 das 48 selecoes
+- **Edicao anterior do ranking**: se mesmo ranking (teoricamente impossivel), usa edicoes anteriores
+- **3os colocados**: `_rankedThirds()` e `_bolaoRankedThirds()` agora incluem fair play + FIFA ranking
+- **`_resolveGroupOrder` reescrita**: estrutura recursiva por blocos, 5 fases (H2H/geral/fair-play/ranking/alpha)
+- **`_groupStandings`**: calcula `cond` (conduct score) por time a partir de `cards[]`
+- **Regras atualizadas**: texto dos criterios de desempate na aba Regras
+- **`FIFA_RANK`**: 48 selecoes ranqueadas (Argentina #1, Brasil #6, etc.)
+- **Sync copa2026.html**
+
+### v19.28 (2026-06-18) - Corrige horarios de 5 jogos vs schedule oficial FIFA
+- Game 29 (Turquia x Paraguai): 01:00 -> 00:00
+- Game 73 (Rodada de 32, SoFi/LA): 21:00 -> 16:00
+- Game 98 (Quartas, SoFi/LA): 14:00 -> 16:00
+- Game 99 (Quartas, Hard Rock/Miami): 16:00 -> 18:00
+- Game 100 (Quartas, Arrowhead/KC): 20:00 -> 22:00
+- Cross-check completo de 104 jogos vs worldcupschedule.app (UTC->BRT) e kickoffclock.com CSV oficial
+- Sync copa2026.html
 
 ### v19.27 (2026-06-18) - Bloco 1 final: todos os 10 itens da varredura corrigidos
 - **Item 1 (RLS)**: `supabase-rls-fix.sql` — reabilita RLS nas 4 tabelas, policies seguras

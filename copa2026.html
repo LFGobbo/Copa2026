@@ -167,6 +167,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bracket-title{font-size:var(--fs-xs);color:var(--gold);text-align:center;margin-bottom:6px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;opacity:.9}
 .bracket-game{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:4px;font-size:var(--fs-xs);text-align:center}
 .bracket-game.final-round{border-color:var(--gold);background:linear-gradient(135deg,var(--card),rgba(255,223,0,.04));box-shadow:0 0 20px rgba(255,223,0,.06)}
+.bracket-gamenum{font-size:9px;color:var(--muted);text-align:left;margin-bottom:2px;letter-spacing:.3px}
 .bracket-team{font-weight:500;font-size:var(--fs-xs);display:flex;align-items:center;justify-content:center;gap:4px}
 .bracket-score{font-weight:800;font-size:var(--fs-sm);color:var(--gold);padding:2px 0}
 .bracket-tree{display:none;width:100%;overflow-x:auto}
@@ -1337,11 +1338,14 @@ function renderGroups(){
     });
     var sorted=teams.slice().sort(function(a,b){
       if(pts[b]!==pts[a])return pts[b]-pts[a];
+      var h2h=GAMES.filter(function(g){return g.f===GROUP_NAMES[letter]&&((g.a===a&&g.b===b)||(g.a===b&&g.b===a))});
+      if(h2h.length){var hpA=0,hpB=0,hgaA=0,hgaB=0,hgfA=0,hgfB=0;h2h.forEach(function(g){var s=scores[g.n];if(s&&s.a!==undefined&&s.b!==undefined){if(g.a===a&&g.b===b){hgfA+=s.a;hgaA+=s.b;hgfB+=s.b;hgaB+=s.a;if(s.a>s.b)hpA+=3;else if(s.a<s.b)hpB+=3;else{hpA+=1;hpB+=1}}else{hgfA+=s.b;hgaA+=s.a;hgfB+=s.a;hgaB+=s.b;if(s.b>s.a)hpA+=3;else if(s.b<s.a)hpB+=3;else{hpA+=1;hpB+=1}}}});if(hpA!==hpB)return hpB-hpA;if((hgfB-hgaB)!==(hgfA-hgaA))return(hgfB-hgaB)-(hgfA-hgaA);if(hgfB!==hgfA)return hgfB-hgfA;}
       var gdA=gf[a]-ga[a],gdB=gf[b]-ga[b];
       if(gdB!==gdA)return gdB-gdA;
       if(gf[b]!==gf[a])return gf[b]-gf[a];
-      var h2h=GAMES.filter(function(g){return g.f===GROUP_NAMES[letter]&&((g.a===a&&g.b===b)||(g.a===b&&g.b===a))});
-      if(h2h.length){var hpA=0,hpB=0,hgaA=0,hgaB=0,hgfA=0,hgfB=0;h2h.forEach(function(g){var s=scores[g.n];if(s&&s.a!==undefined&&s.b!==undefined){if(g.a===a&&g.b===b){hgfA+=s.a;hgaA+=s.b;hgfB+=s.b;hgaB+=s.a;if(s.a>s.b)hpA+=3;else if(s.a<s.b)hpB+=3;else{hpA+=1;hpB+=1}}else{hgfA+=s.b;hgaA+=s.a;hgfB+=s.a;hgaB+=s.b;if(s.b>s.a)hpA+=3;else if(s.b<s.a)hpB+=3;else{hpA+=1;hpB+=1}}}});if(hpA!==hpB)return hpB-hpA;if((hgfB-hgaB)!==(hgfA-hgaA))return(hgfB-hgaB)-(hgfA-hgaA);if(hgfB!==hgfA)return hgfB-hgfA;}
+      var condA=0,condB=0;GAMES.filter(function(g){return g.f===GROUP_NAMES[letter]}).forEach(function(g){var c=cards[g.n];if(!c)return;[g.a,g.b].forEach(function(t,i){var side=i===0?'a':'b';(c[side]||[]).forEach(function(ev){if(t===a){if(ev.type==='yellow')condA+=1;else if(ev.type==='red'||ev.type==='second-yellow')condA+=3;}if(t===b){if(ev.type==='yellow')condB+=1;else if(ev.type==='red'||ev.type==='second-yellow')condB+=3;}})});});
+      if(condA!==condB)return condA-condB;
+      if((FIFA_RANK[a]||999)!==(FIFA_RANK[b]||999))return(FIFA_RANK[a]||999)-(FIFA_RANK[b]||999);
       return a.localeCompare(b);
     });
     return'<div class="group-card"><div class="group-title group-'+letter+'">'+GROUP_NAMES[letter]+'</div><table class="group-table"><tr><th>#</th><th style="text-align:left">Time</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th></tr>'+sorted.map(function(t,i){return'<tr class="'+(t==="Brasil"?" brazil-row":"")+'"><td><span class="pos-badge pos-'+(i+1)+'">'+(i+1)+'</span></td><td style="text-align:left">'+flag(t)+' '+t+'</td><td><strong>'+pts[t]+'</strong></td><td>'+gp[t]+'</td><td>'+w[t]+'</td><td>'+d[t]+'</td><td>'+l[t]+'</td><td>'+gf[t]+'</td><td>'+ga[t]+'</td><td>'+(gf[t]-ga[t])+'</td></tr>'}).join("")+'</table></div>';
@@ -1370,6 +1374,9 @@ function renderThirdPlaced(){
       var gdA=gf[a]-ga[a],gdB=gf[b]-ga[b];
       if(gdB!==gdA)return gdB-gdA;
       if(gf[b]!==gf[a])return gf[b]-gf[a];
+      var condA=0,condB=0;GAMES.filter(function(g){return g.f===GROUP_NAMES[letter]}).forEach(function(g){var c=cards[g.n];if(!c)return;[g.a,g.b].forEach(function(t,i){var side=i===0?'a':'b';(c[side]||[]).forEach(function(ev){if(t===a){if(ev.type==='yellow')condA+=1;else if(ev.type==='red'||ev.type==='second-yellow')condA+=3;}if(t===b){if(ev.type==='yellow')condB+=1;else if(ev.type==='red'||ev.type==='second-yellow')condB+=3;}})});});
+      if(condA!==condB)return condA-condB;
+      if((FIFA_RANK[a]||999)!==(FIFA_RANK[b]||999))return(FIFA_RANK[a]||999)-(FIFA_RANK[b]||999);
       return a.localeCompare(b);
     });
     if(sorted.length>=3){
@@ -1666,6 +1673,7 @@ function renderBracketCards(){
         var hasScore=s.a!==undefined&&s.b!==undefined;
         var wA=hasScore&&s.a>s.b,wB=hasScore&&s.b>s.a;
         return'<div class="bracket-game'+(isFinal?' final-round':'')+'">'
+          +'<div class="bracket-gamenum">#'+g.n+'</div>'
           +'<div class="'+clsA+(wA?' winner':'')+'"><span class="home-badge" title="Mandante">\u{1F3DF}</span> '+rA.flag+' '+rA.name+'</div>'
           +'<div class="bracket-score'+(hasScore?' has-score':'')+'">'+(hasScore?sa+' \u00d7 '+sb:'\u2013 \u00d7 \u2013')+'</div>'
           +'<div class="'+clsB+(wB?' winner':'')+'">'+rB.flag+' '+rB.name+'</div>'
