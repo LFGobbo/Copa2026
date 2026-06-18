@@ -8,6 +8,9 @@ $ErrorActionPreference = "Stop"
 
 function Die($m) { Write-Host "`n[ERRO] $m" -ForegroundColor Red; exit 1 }
 
+# ── Config ─────────────────────────────────────────
+$CRON_SECRET = "9xf0Dra4XZhg3NEKiSIVAs85QYuM7nLv"
+
 # ── Lê o token ────────────────────────────────────
 $token = $null
 if (Test-Path $TokenFile) { $token = (Get-Content $TokenFile -Raw).Trim() }
@@ -33,16 +36,43 @@ if (-not $acct.success) { Die "Token invalido: $($acct.errors[0].message)" }
 $accountId = $acct.result[0].id
 Write-Host "[OK] Account ID: $accountId" -ForegroundColor Green
 
-# ── Sobe o script (formato Service Worker) ────────
+# ── Sobe o script com env vars (multipart metadata) ──
 $script = Get-Content $ScriptFile -Raw -Encoding UTF8
 $url = "https://api.cloudflare.com/client/v4/accounts/$accountId/workers/scripts/$WorkerName"
 
-Write-Host "[...] Enviando $ScriptFile -> $WorkerName ..." -ForegroundColor Yellow
+$boundary = [Guid]::NewGuid().ToString()
+$nl = [Environment]::NewLine
+
+$bodyParts = @()
+# Part 1: script
+$bodyParts += "--$boundary"
+$bodyParts += 'Content-Disposition: form-data; name="script"; filename="worker.js"'
+$bodyParts += 'Content-Type: application/javascript'
+$bodyParts += ''
+$bodyParts += $script
+# Part 2: metadata (bindings/env vars)
+$meta = @{
+  body_part = "script"
+  bindings = @(
+    @{ type = "secret_text"; name = "CRON_SECRET"; text = $CRON_SECRET }
+  )
+}
+$metaJson = $meta | ConvertTo-Json -Compress
+$bodyParts += "--$boundary"
+$bodyParts += 'Content-Disposition: form-data; name="metadata"'
+$bodyParts += 'Content-Type: application/json'
+$bodyParts += ''
+$bodyParts += $metaJson
+$bodyParts += "--$boundary--"
+
+$multipartBody = ($bodyParts -join $nl) + $nl
+
+Write-Host "[...] Enviando $ScriptFile -> $WorkerName (com CRON_SECRET) ..." -ForegroundColor Yellow
 try {
   $resp = Invoke-RestMethod -Uri $url -Method Put `
     -Headers @{ Authorization = "Bearer $token" } `
-    -ContentType "application/javascript" `
-    -Body $script
+    -ContentType "multipart/form-data; boundary=$boundary" `
+    -Body $multipartBody
 } catch {
   $code = $_.Exception.Response.StatusCode.value__
   try { $msg = ($_.ErrorDetails.Message | ConvertFrom-Json).errors[0].message } catch { $msg = $_.Exception.Message }
@@ -50,4 +80,4 @@ try {
 }
 if (-not $resp.success) { Die "$($resp.errors[0].message)" }
 
-Write-Host "[OK] $WorkerName deployado com sucesso!" -ForegroundColor Green
+Write-Host "[OK] $WorkerName deployado com sucesso (CRON_SECRET configurado)!" -ForegroundColor Green
