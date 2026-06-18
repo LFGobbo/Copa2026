@@ -150,13 +150,19 @@ async function handle(req) {
     var token = auth.replace('Bearer ', '');
     var user = null;
     if (token) {
-      var parts = token.split('.');
-      if (parts.length === 3) {
-        var vsig = await sha256(parts[0] + '.' + parts[1] + '.' + JWT_SECRET);
-        if (vsig === parts[2]) {
-          var p = JSON.parse(atob(parts[1]));
-          if (p.exp > Math.floor(Date.now() / 1000)) user = p;
+      try {
+        var parts = token.split('.');
+        if (parts.length === 3) {
+          var vsig = await sha256(parts[0] + '.' + parts[1] + '.' + JWT_SECRET);
+          if (vsig === parts[2]) {
+            var p = JSON.parse(atob(parts[1]));
+            if (p.exp > Math.floor(Date.now() / 1000)) user = p;
+          }
         }
+      } catch (e) {
+        // Token malformado (payload nao e' JSON valido, ou base64 invalido) --
+        // tratar como nao-autenticado sem crashar o Worker inteiro.
+        user = null;
       }
     }
 

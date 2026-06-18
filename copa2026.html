@@ -1124,37 +1124,41 @@ function dynRender(el, html){
   el.innerHTML = html;
 }
 function getSuspensions(forGame){
-  // Simula jogos ANTERIORES a forGame para saber quem cumpre suspensão AGORA
-  var state={}; // team -> player -> {yellows:int, suspended:bool, redCard:bool}
+  var state={};
   GAMES.slice().sort(function(a,b){return a.n-b.n}).forEach(function(g){
     var gn=g.n;
     if(gn>=forGame)return;
-    var c=cards[gn];if(!c)return;
     // Reset após quartas (jogo 100): zera amarelos mas vermelhos continuam
     if(gn===100){
       Object.keys(state).forEach(function(tn){
         Object.keys(state[tn]).forEach(function(pn){
           var ps=state[tn][pn];
           ps.yellows=0;
-          if(!ps.redCard)ps.suspended=false; // suspensão por amarelo expira
+          if(!ps.redCard)ps.suspended=false;
         });
       });
     }
-    // Quem estava suspenso CUMPRE a suspensão NESTE jogo → libera
+    // Quem estava suspenso CUMPRE a suspensão quando o time joga neste jogo → libera.
+    // IMPORTANTE: este bloco roda para TODOS os jogos do time (mesmo sem cartões),
+    // pois a cumpriu-suspensão deve ser liberada independente de haver ou não cartões
+    // naquele jogo. O bug anterior estava em ter esse bloco dentro do "if(!c) return;",
+    // o que fazia jogadores suspensos nunca serem liberados se o jogo de cumprimento
+    // não tivesse eventos de cartão.
     ['a','b'].forEach(function(side){
       var tn=side==='a'?g.a:g.b;
       if(state[tn])Object.keys(state[tn]).forEach(function(pn){
-        if(state[tn][pn].suspended){state[tn][pn].suspended=false;state[tn][pn].yellows=0;state[tn][pn].redCard=false}
+        if(state[tn][pn].suspended){state[tn][pn].suspended=false;state[tn][pn].yellows=0;state[tn][pn].redCard=false;}
       });
     });
     // Processa cartões DESTE jogo (afetam o PRÓXIMO)
+    var c=cards[gn];if(!c)return;
     ['a','b'].forEach(function(side){
       var tn=side==='a'?g.a:g.b,list=c[side];if(!list)return;
       list.forEach(function(card){
         if(!state[tn])state[tn]={};
         if(!state[tn][card.pname])state[tn][card.pname]={yellows:0,suspended:false,redCard:false};
         if(card.type==='yellow')state[tn][card.pname].yellows++;
-        if(card.type==='red'){state[tn][card.pname].yellows=99;state[tn][card.pname].redCard=true}
+        if(card.type==='red'){state[tn][card.pname].yellows=99;state[tn][card.pname].redCard=true;}
       });
     });
     // Marca quem acabou de atingir critério → suspenso no PRÓXIMO jogo
@@ -1163,7 +1167,7 @@ function getSuspensions(forGame){
         var ps=state[tn][pn];
         if(!ps.suspended&&(ps.yellows>=2||ps.yellows===99)){
           ps.suspended=true;
-          ps.yellows=0; // zera ao ser suspenso
+          ps.yellows=0;
         }
       });
     });
@@ -1267,28 +1271,28 @@ function updateCountdown(){
       timeStr=rawStr+"'";
     }else{
       // rawMin da API é a fonte da verdade. Só calcula por kickoff quando não há dado.
-      var disp;
+      var dispMin;
       if(rawMin>0){
-        disp=rawMin;
+        dispMin=rawMin;
         if(kickoffMs){
           var refTime=kickoffMs;
           var secondKick=id&&MATCH_SECOND_KICKOFF[id]?MATCH_SECOND_KICKOFF[id].getTime():null;
           if(secondKick)refTime=secondKick-2700000;
           var run=Math.max(0,Math.floor((now.getTime()-refTime)/60000));
           var drift=Math.max(0,run-rawMin);
-          if(drift<3)disp=rawMin+drift; // avanço gradual até 3min entre polls
+          if(drift<3)dispMin=rawMin+drift;
         }
       }else{
         var secondKick=id&&MATCH_SECOND_KICKOFF[id]?MATCH_SECOND_KICKOFF[id].getTime():null;
         var refTime=secondKick||kickoffMs;
-        if(!refTime){disp=0;}else{
+        if(!refTime){dispMin=0;}else{
           var run=Math.max(0,Math.floor((now.getTime()-refTime)/60000));
           if(secondKick)run+=45;
-          disp=Math.min(run,105);
+          dispMin=Math.min(run,105);
         }
       }
-      timeStr=disp<=90?disp+"'":disp<=105?'90+'+(disp-90)+"'":'120+'+(disp-105)+"'";
-      if(disp>135)timeStr='135+';
+      timeStr=dispMin<=90?dispMin+"'":dispMin<=105?'90+'+(dispMin-90)+"'":'120+'+(dispMin-105)+"'";
+      if(dispMin>135)timeStr='135+';
     }
     // Injetar badge dentro do .game-score (order:-1 no flex)
     if(id&&!MATCH_ENDED[id]){try{var cel=document.getElementById('live-clock-'+g.n);if(!cel){var scDiv=document.querySelector('#g-'+g.n+' .game-score');if(scDiv){var b=document.createElement('div');b.id='live-clock-'+g.n;b.className='live-clock';var sp=document.createElement('span');sp.textContent=timeStr;b.appendChild(sp);scDiv.insertBefore(b,scDiv.firstChild);}}else{var sp=cel.querySelector('span');if(sp&&sp.textContent!==timeStr)sp.textContent=timeStr;}}catch(e){}}
@@ -1922,7 +1926,9 @@ function _loadJSON(filename,cb,errcb){
 
 function _mergeDeep(target,src){
   Object.keys(src).forEach(function(k){
-    if(typeof src[k]==='object'&&!Array.isArray(src[k])&&target[k]){
+    // src[k]===null: typeof null==='object' mas Object.keys(null) crasha.
+    // Tratar null como valor escalar (atribuição direta), nao como objeto a mesclar.
+    if(src[k]!==null&&typeof src[k]==='object'&&!Array.isArray(src[k])&&target[k]){
       _mergeDeep(target[k],src[k]);
     }else{
       target[k]=src[k];
@@ -2247,10 +2253,17 @@ function processTimeline(idMatch,gameId){
           var nm=desc.match(/^(.+?)\s*\(/);
           if(nm){
             var parsedName=nm[1].trim();
+            var parsedNorm=parsedName.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+            var parsedParts=parsedNorm.split(' ');
+            var parsedFirst=parsedParts[0],parsedLast=parsedParts[parsedParts.length-1];
             var squad=PLAYERS[isOwn?(scoredForHome?game.b:game.a):(scoredForHome?game.a:game.b)]||[];
             for(var pi=0;pi<squad.length;pi++){
-              var lastName=parsedName.split(' ').pop().toUpperCase();
-              if(squad[pi].name.toUpperCase().indexOf(lastName)>=0){
+              var ourNorm=squad[pi].name.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+              var ourParts=ourNorm.split(' ');
+              var ourFirst=ourParts[0],ourLast=ourParts[ourParts.length-1];
+              // Exigir que primeiro E ultimo nome coincidam (mesmo criterio de fetchSquads)
+              // para evitar atribuir gol a jogador errado quando sobrenomes coincidem no mesmo time
+              if(ourFirst===parsedFirst&&ourLast===parsedLast){
                 info={num:squad[pi].num,pname:squad[pi].name};break;
               }
             }
@@ -2430,14 +2443,16 @@ fetchFifaScores(8000);_pollTimer=setTimeout(poll,FAST);
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,100)}});
 window.addEventListener('focus',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,200)});
 window.addEventListener('pagehide',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=null});
-// Cleanup memória a cada 10min: remove hashes/events de jogos encerrados há mais de 24h
-var _memCleanTimer=setInterval(function(){
+// Cleanup de memória a cada 10min: remove hashes/events de jogos encerrados há >24h
+// Usa setTimeout recursivo em vez de setInterval para ser mais controlável e parável
+(function _memClean(){
   var cut=Date.now()-86400000,rem=0;
   Object.keys(TIMELINE_HASH).forEach(function(k){var g=FIFA_MATCH_META[k];if(g&&g.gameIdx){var gn=parseInt(g.gameIdx,10);var gd=GAME_BY_ID[gn]&&gameUTC(GAME_BY_ID[gn]);if(gd&&gd.getTime()<cut){delete TIMELINE_HASH[k];rem++}}});
   Object.keys(PROCESSED_EVENTS).forEach(function(k){var g=FIFA_MATCH_META[k];if(g&&g.gameIdx){var gn=parseInt(g.gameIdx,10);var gd=GAME_BY_ID[gn]&&gameUTC(GAME_BY_ID[gn]);if(gd&&gd.getTime()<cut){delete PROCESSED_EVENTS[k];rem++}}});
   Object.keys(MATCH_MINUTE).forEach(function(k){var g=FIFA_MATCH_META[k];if(g&&g.gameIdx){var gn=parseInt(g.gameIdx,10);var gd=GAME_BY_ID[gn]&&gameUTC(GAME_BY_ID[gn]);if(gd&&gd.getTime()<cut){delete MATCH_MINUTE[k];rem++}}});
   if(rem)console.log('Memory cleanup: removed',rem,'stale entries');
-},600000);
+  setTimeout(_memClean,600000);
+})();
 })();
 
 
@@ -3791,7 +3806,8 @@ function computeBolaoStats(){
       var p=s.perId[id];var pr=pk.a>pk.b?'h':(pk.a<pk.b?'a':'d');
       var ex=(pk.a===rs.a&&pk.b===rs.b),res=(pr===ar);
       p.gameN++;p.dist[pr]++;p.gPred+=pk.a+pk.b;p.gAct+=rs.a+rs.b;
-      var pts=0;if(ex)pts=10;else if(res){if(Math.max(pk.a,pk.b)===Math.max(rs.a,rs.b))pts=6;else if(Math.min(pk.a,pk.b)===Math.min(rs.a,rs.b))pts=4;else pts=2}
+      // Usar bolaoCalcPickPts (fonte da verdade) em vez de lógica duplicada inline
+      var pts=bolaoCalcPickPts(pk.a,pk.b,rs.a,rs.b);if(pts<0)pts=0;
       if(ex)p.exact++;else if(res)p.result++;else p.wrong++;
       if(!ex&&!res&&Math.abs((pk.a+pk.b)-(rs.a+rs.b))===1)p.nearMiss++;
       if(ex||res){p.streak++;if(p.streak>p.streakMax)p.streakMax=p.streak}else p.streak=0;
@@ -3815,7 +3831,7 @@ function computeBolaoStats(){
     ids.forEach(function(id){
       var points=evoById[id],positions=[];
       for(var ri=0;ri<rounds.length;ri++){
-        var ranked=ids.map(function(iid){return{id:iid,pts:evoById[iid][ri]};}).sort(function(a,b){return b.pts-a.pts;});
+        var ranked=ids.map(function(iid){return{id:iid,pts:evoById[iid][ri]||0};}).sort(function(a,b){return b.pts-a.pts;});
         var pos=1;ranked.some(function(r,j){if(r.id===id){pos=j+1;return true}return false;});
         positions.push(pos);
       }
