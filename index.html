@@ -42,7 +42,6 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .content.active{display:block}
 .bottom-nav{display:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-@keyframes deadlinePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.85;transform:scale(1.01)}}
 .filters{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
 @keyframes skeleton-pulse{0%{opacity:.6}50%{opacity:.3}100%{opacity:.6}}
 .skeleton{background:linear-gradient(90deg,rgba(255,255,255,.06) 25%,rgba(255,255,255,.1) 50%,rgba(255,255,255,.06) 75%);background-size:200% 100%;animation:skeleton-pulse 1.5s ease-in-out infinite;border-radius:6px;color:transparent!important;pointer-events:none;user-select:none;min-height:1em}
@@ -179,19 +178,12 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .scorers-table tr:last-child td{border-bottom:none}
 .rank{font-weight:800;font-size:15px;text-align:center!important;width:40px}
 .rank-gold{color:#ffd700}
-.rank-silver{color:#c0c0c0;text-shadow:0 0 6px rgba(192,192,192,.35)}
+.rank-silver{color:#c0c0c0}
 .rank-bronze{color:#cd7f32}
 /* Colorir nome e valor do top 3 */
 .rank-gold+td,.rank-gold+td+td{color:#ffd700}
-.rank-silver+td,.rank-silver+td+td{color:#c0c0c0;text-shadow:0 0 6px rgba(192,192,192,.35)}
+.rank-silver+td,.rank-silver+td+td{color:#c0c0c0}
 .rank-bronze+td,.rank-bronze+td+td{color:#cd7f32}
-/* Bolão ranking - top 3 cores */
-.rank-gold .mob-rank-name,.rank-gold .mob-rank-pts{color:#ffd700!important}
-.rank-silver .mob-rank-name,.rank-silver .mob-rank-pts{color:#c0c0c0!important;text-shadow:0 0 6px rgba(192,192,192,.35)!important}
-.rank-bronze .mob-rank-name,.rank-bronze .mob-rank-pts{color:#cd7f32!important}
-tr.rank-gold td.bolao-rank-name,tr.rank-gold td.bolao-rank-pts{color:#ffd700}
-tr.rank-silver td.bolao-rank-name,tr.rank-silver td.bolao-rank-pts{color:#c0c0c0;text-shadow:0 0 6px rgba(192,192,192,.35)}
-tr.rank-bronze td.bolao-rank-name,tr.rank-bronze td.bolao-rank-pts{color:#cd7f32}
 .third-container{max-width:650px;margin:20px auto 0}
 .third-title{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:10px;text-align:center}
 .third-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius)}
@@ -399,7 +391,7 @@ tr.rank-bronze td.bolao-rank-name,tr.rank-bronze td.bolao-rank-pts{color:#cd7f32
 .bolao-rank-row:hover td{background:rgba(255,255,255,.03)}
 .bolao-rank-pos{font-weight:700;color:var(--muted);width:36px}
 .bolao-rank-name{font-weight:600;color:var(--text)}
-.bolao-rank-pts{font-weight:800;color:var(--text);font-size:15px;text-align:right}
+.bolao-rank-pts{font-weight:800;color:var(--gold);font-size:15px;text-align:right}
 .bolao-rank-sub{font-size:11px;color:var(--muted)}
 .bolao-detail{display:none;background:rgba(0,0,0,.2)}
 .bolao-detail.open{display:table-row}
@@ -759,11 +751,6 @@ tr.rank-bronze td.bolao-rank-name,tr.rank-bronze td.bolao-rank-pts{color:#cd7f32
       <div id="bolao-confirmed-banner" class="bolao-confirm-banner">Seus palpites estão confirmados e não podem mais ser alterados.</div>
     </div>
   </div>
-  <div class="bolao-section" id="bolao-public-deadline" style="background:#c9a84c;border:3px solid #b8943a;border-radius:var(--radius);padding:18px 20px;margin-bottom:20px;text-align:center;box-shadow:0 0 50px rgba(201,168,76,.3);animation:deadlinePulse 1.5s ease-in-out infinite">
-    <div style="font-size:15px;font-weight:900;color:#1a1a0a;margin-bottom:6px;text-transform:uppercase;letter-spacing:2px">&#9200;&#65039; PALPITES ESPECIAIS</div>
-    <div id="bolao-public-deadline-count" style="font-size:14px;color:#1a1a0a;font-weight:700">Carregando...</div>
-    <div style="font-size:11px;color:rgba(26,26,10,.6);margin-top:6px">Campe&atilde;o: +50 pts &middot; Artilheiro: +20/+10 pts</div>
-  </div>
   <div class="bolao-section">
     <div class="bolao-section-title">Ranking geral</div>
     <table class="bolao-rank-table">
@@ -929,15 +916,29 @@ setTimeout(function(){
     if(!db)return;
     Promise.all([_idbLoad('s'),_idbLoad('g'),_idbLoad('c')]).then(function(r){
       var idbS=r[0],idbG=r[1],idbC=r[2],changed=false;
-      if(idbS&&typeof idbS==='object'){
-        Object.keys(idbS).forEach(function(k){if(!scores[k]){scores[k]=idbS[k];changed=true;}});
+      // Merge IndexedDB <-> memoria: antes só preenchia chaves AUSENTES (first-write-wins),
+      // entao se o localStorage carregasse um valor mais antigo/incompleto e o IndexedDB tivesse
+      // um valor mais completo para a MESMA chave (ex: placar de pênaltis adicionado depois),
+      // o dado mais completo do IndexedDB era descartado silenciosamente. Sem um timestamp por
+      // chave (mudança de schema maior, fora de escopo aqui), usamos como proxy seguro: se a
+      // chave já existe nos dois lados, mesclar os campos que estão no IndexedDB e ausentes na
+      // memória, em vez de ignorar o valor do IndexedDB por completo.
+      function _mergeIdb(target,idbObj){
+        if(!idbObj||typeof idbObj!=='object')return false;
+        var changedAny=false;
+        Object.keys(idbObj).forEach(function(k){
+          if(!target[k]){target[k]=idbObj[k];changedAny=true;return}
+          if(typeof target[k]==='object'&&typeof idbObj[k]==='object'){
+            Object.keys(idbObj[k]).forEach(function(f){
+              if(target[k][f]===undefined&&idbObj[k][f]!==undefined){target[k][f]=idbObj[k][f];changedAny=true}
+            });
+          }
+        });
+        return changedAny;
       }
-      if(idbG&&typeof idbG==='object'){
-        Object.keys(idbG).forEach(function(k){if(!goals[k]){goals[k]=idbG[k];changed=true;}});
-      }
-      if(idbC&&typeof idbC==='object'){
-        Object.keys(idbC).forEach(function(k){if(!cards[k]){cards[k]=idbC[k];changed=true;}});
-      }
+      if(_mergeIdb(scores,idbS))changed=true;
+      if(_mergeIdb(goals,idbG))changed=true;
+      if(_mergeIdb(cards,idbC))changed=true;
       if(changed){
         saveState();
         if(typeof renderGames==='function'&&typeof currentFilter!=='undefined'){renderGames(currentFilter);renderGroups();renderBracket();renderScorers();renderHoje();}
@@ -2065,9 +2066,15 @@ function initFifaMaps(){
       return
     }}
   }catch(e){}
-  function fetchSquads(){
+  function fetchSquads(calendarRetries){
+    calendarRetries=calendarRetries!==undefined?calendarRetries:5;
     var ids=Object.keys(FIFA_TEAM_IDS||{});
-    if(!ids.length){fetchCalendar().then(fetchSquads);return}
+    if(!ids.length){
+      if(calendarRetries<=0){console.warn('fetchSquads: FIFA_TEAM_IDS continua vazio apos tentativas maximas de fetchCalendar, desistindo.');return}
+      var delay=Math.pow(2,5-calendarRetries)*1000;
+      setTimeout(function(){fetchCalendar().then(function(){fetchSquads(calendarRetries-1)})},delay);
+      return
+    }
     var idx=0,fifaPhotosByName={},fifaPhotosByTeamNum={},fifaPhotosByTeamName={};
     function norm(s){return s.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
     function next(){
@@ -2416,7 +2423,7 @@ var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){va
 fetchFifaScores(8000);_pollTimer=setTimeout(poll,FAST);
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,100)}});
 window.addEventListener('focus',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,200)});
-window.addEventListener('pagehide',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=null;if(_bolaoDeadlineTimer){clearInterval(_bolaoDeadlineTimer);_bolaoDeadlineTimer=null}if(_bolaoPublicDeadlineTimer){clearInterval(_bolaoPublicDeadlineTimer);_bolaoPublicDeadlineTimer=null}});
+window.addEventListener('pagehide',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=null});
 // Cleanup memória a cada 10min: remove hashes/events de jogos encerrados há mais de 24h
 var _memCleanTimer=setInterval(function(){
   var cut=Date.now()-86400000,rem=0;
@@ -2520,7 +2527,7 @@ var _bolaoToken=null;
 var BOLAO_FIRST=6,BOLAO_FINAL=104,BOLAO_SIGNUP_GAME=32,BOLAO_TWO_H=7200000;
 var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
 var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmedStatus={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[],_bolaoKOPicks={};
-var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0,_bolaoDeadlineTimer=null,_bolaoPublicDeadlineTimer=null;
+var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0;
 try{_bolaoSnappedGames=JSON.parse(localStorage.getItem('copa2026_snapped')||'{}')}catch(e){}
 
 function _bolaoFetch(path,method,body,retries){
@@ -2540,19 +2547,6 @@ function _bolaoFetch(path,method,body,retries){
   });
 }
 function _bolaoDeadline(gameN){var g=GAME_BY_ID[gameN];if(!g)return null;var gd=gameUTC(g);return gd?new Date(gd.getTime()-BOLAO_TWO_H):null}
-function _bolaoUpdateDeadline(el,deadline){
-  if(!el||!deadline)return;
-  var now=new Date();
-  if(deadline>now){
-    var d=deadline-now,dd=Math.floor(d/86400000),dh=Math.floor((d%86400000)/3600000),dm=Math.floor((d%3600000)/60000),ds=Math.floor((d%60000)/1000);
-    el.textContent='\u23f0 Prazo para alterar palpites especiais: '+dd+'d '+dh+'h '+dm+'m '+ds+'s (fecha 2h antes do jogo #32 \u2014 Haiti vs Brasil)';
-    el.style.color='';
-  }else{
-    el.textContent='\u26a0\ufe0f Prazo encerrado \u2014 palpites especiais bloqueados';
-    el.style.color='var(--red)';
-    if(_bolaoDeadlineTimer){clearInterval(_bolaoDeadlineTimer);_bolaoDeadlineTimer=null;}
-  }
-}
 function _bolaoFinalChampion(){return _winnerOf(BOLAO_FINAL)}
 function _bolaoTopScorer(){
   var m={};Object.keys(goals||{}).forEach(function(gid){Object.keys(goals[gid]).forEach(function(t){goals[gid][t].forEach(function(gl){if(gl.type==='own')return;if(!m[gl.pname])m[gl.pname]=0;m[gl.pname]++})})});
@@ -2868,9 +2862,8 @@ function bolaoRenderRanking(){
       var medal=i<3?medalEmoji[i]:'',sp=_bolaoAllSpecials[r.id];
       var spText=sp?((sp.champion||'?')+' / '+(sp.top_scorer||'?')):'&mdash;';
       var isUser=r.id===_bolaoParticipantId;
-      var topClass=i<3?' '+rankClass[i]:'';
       var userClass=isUser?' bolao-rank-self':'';
-      return '<tr class="bolao-rank-row'+topClass+userClass+'" onclick="bolaoToggleDetail(\''+r.id+'\')">'
+      return '<tr class="bolao-rank-row'+userClass+'" onclick="bolaoToggleDetail(\''+r.id+'\')">'
         +'<td class="bolao-rank-pos">'+medal+' '+(i+1)+'</td>'
         +'<td class="bolao-rank-name">'+esc(r.name)+'</td>'
         +'<td style="font-size:11px;color:var(--muted)">'+esc(spText)+'</td>'
@@ -3356,16 +3349,6 @@ function bolaoInit(){
   }else{
     var diff=deadline-now,days=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),mmin=Math.floor((diff%3600000)/60000);
     el.textContent=days>0?'Inscri\u00e7\u00f5es abertas \u2014 encerram em '+days+'d '+h+'h':h>0?'Inscri\u00e7\u00f5es abertas \u2014 encerram em '+h+'h '+mmin+'m':'Inscri\u00e7\u00f5es encerram em menos de 1 hora!';
-  }
-  // Deadline p\u00fablico (vis\u00edvel sem login)
-  var pdEl=document.getElementById('bolao-public-deadline-count');
-  if(pdEl){
-    if(_bolaoPublicDeadlineTimer){clearInterval(_bolaoPublicDeadlineTimer);_bolaoPublicDeadlineTimer=null;}
-    var pdd=_bolaoDeadline(BOLAO_SIGNUP_GAME);
-    if(pdd){
-      _bolaoUpdateDeadline(pdEl,pdd);
-      _bolaoPublicDeadlineTimer=setInterval(_bolaoUpdateDeadline,1000,pdEl,pdd);
-    }else{pdEl.textContent=''}
   }
 }
 // --- Simulação: bolaoSimular() no console ---

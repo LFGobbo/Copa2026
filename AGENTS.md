@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 ? Documenta??o do Projeto
 
-**?ltima atualiza??o:** 2026-06-17 (v19.21b)
+**?ltima atualiza??o:** 2026-06-18 (v19.27)
 **Reposit?rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -71,7 +71,7 @@ index.html (ou copa2026.html)
 | `copa2026.html` | ~336KB | C?pia id?ntica (compatibilidade) |
 | `players.json` | ~116KB | 1248 jogadores (48 times ? 26) |
 | `photos.json` | ~174KB | 951 URLs de fotos (Wikipedia + FIFA) |
-| `sw.js` | 2KB | Service Worker v20 |
+| `sw.js` | 2.7KB | Service Worker v21 (fallback só navigate) |
 | `bola_t.png` | 36KB | Bola Trionda (redimensionada) |
 | `mascote1_t.png` | ~41KB | Mascote principal |
 | `mascote2_t.png` | ~41KB | Mascote secund?rio |
@@ -573,6 +573,21 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v19.27 (2026-06-18) - Bloco 1 final: todos os 10 itens da varredura corrigidos
+- **Item 1 (RLS)**: `supabase-rls-fix.sql` — reabilita RLS nas 4 tabelas, policies seguras
+- **Item 2 (Worker validação)**: Worker v19.10 com `BOLAO_GAMES`, `gameUTC()`, `bolaoDeadline()`, validação server-side de prazo e completude
+- **Item 3 (Anexo C)**: `_ANNEXC_MATRIX` inline (495 combinações) + `_resolveGroupOrder` com H2H e alphabetical tiebreaker
+- **Item 4 (Desempate cíclico)**: `_resolveGroupOrder` detecta blocos empatados, aplica H2H completo, fallback alfabético determinístico
+- **Item 5 (Matching artilheiro)**: `matchName` com `.normalize('NFD')` e comparação exata (substitui `indexOf`)
+- **Item 6 (Threshold 2h30)**: `_LIVE_WINDOW=10800000` (3h) unificado, comentário documentando a correção
+- **Item 7 (Backup Worker)**: `deploy-worker.ps1` agora faz `Copy-Item $ScriptFile $backupFile -Force` antes de cada deploy
+- **Item 8 (SW mascarar erros)**: `sw.js` v21 com `e.request.mode==='navigate'` restringe fallback HTML a navegações
+- **Item 9 (Retry sem limite)**: `fetchSquads(calendarRetries)` com max 5 tentativas + exponential backoff
+- **Item 10 (IndexedDB merge)**: Merge preservado (escrita simultânea em localStorage + IndexedDB via `saveState()`)
+- **Bloco 1 UX**: Bottom navigation (`nav-bar`), skeleton screens, spinner loading, full-card tap, touch targets 44px, auto-save debounce 1.5s, empty/error states, progress bar bolão, estatísticas (individuais, comparação, zebra, evolução)
+- **Worker deploy automático**: `deploy-worker.ps1` copia `bolao-worker.js.backup` antes de subir
+- **`bolao-worker.js.backup` sincronizado** pelo próprio script de deploy
 
 ### v19.10 (2026-06-14) - Ajustes finais + Correcoes de Live/Ao Vivo
 

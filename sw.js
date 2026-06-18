@@ -1,4 +1,4 @@
-﻿var C='copa2026-v20';
+var C='copa2026-v21';
 var STATIC=['bola_t.png','mascote1_t.png','mascote2_t.png','mascote3_t.png','logo_globo.png','logo_sportv.png','logo_cazetv.png','logo_sbt.png','logo_nsports.png','logo_globoplay.png','logo_getv.png'];
 var DATA=['players.json','photos.json'];
 
@@ -45,9 +45,18 @@ self.addEventListener('fetch',function(e){
     return;
   }
 
-  // Demais requests (FIFA API, imagens externas): Network First com fallback
-  e.respondWith(
-    fetch(e.request).catch(function(){return caches.match('index.html');})
-  );
+  // Demais requests (FIFA API, imagens externas, Worker do bolao): Network First.
+  // O fallback para index.html SO se aplica a navegacoes de pagina (e.request.mode==='navigate'),
+  // nunca a chamadas de API/fetch programatico -- antes, qualquer falha de rede numa chamada
+  // cross-origin (ex: Worker do bolao ou API da FIFA) era silenciosamente substituida pelo HTML
+  // da pagina, fazendo o codigo que espera JSON falhar de forma confusa ao tentar fazer parse.
+  // Agora, chamadas de API que falham simplesmente propagam o erro de rede normalmente.
+  if(e.request.mode==='navigate'){
+    e.respondWith(
+      fetch(e.request).catch(function(){return caches.match('index.html');})
+    );
+    return;
+  }
+  e.respondWith(fetch(e.request));
 });
 

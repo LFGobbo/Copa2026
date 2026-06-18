@@ -15,6 +15,14 @@ if (-not $token) { $token = $env:CF_API_TOKEN }
 if (-not $token) { Die "Token nao encontrado. Crie '$TokenFile' ou defina env CF_API_TOKEN" }
 if (-not (Test-Path $ScriptFile)) { Die "Arquivo '$ScriptFile' nao encontrado" }
 
+# ── Backup local antes de cada deploy ──────────────
+# (AGENTS.md documenta este passo; antes nao existia de fato neste script -- adicionado para
+# que a documentacao reflita o comportamento real, e para sempre ter uma copia do que estava
+# em produção antes de cada novo deploy.)
+$backupFile = "$ScriptFile.backup"
+Copy-Item $ScriptFile $backupFile -Force
+Write-Host "[OK] Backup criado: $backupFile" -ForegroundColor Green
+
 # ── Autentica ──────────────────────────────────────
 Write-Host "[...] Autenticando no Cloudflare..." -ForegroundColor Yellow
 try {
