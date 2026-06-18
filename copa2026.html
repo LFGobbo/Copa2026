@@ -2049,7 +2049,7 @@ if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){map[g.n]={};if(g.a===h){map[g.n].a=hs
 
 function mergeScores(map){if(!map||Object.keys(map).length===0)return false;var changed=false;
 Object.keys(map).forEach(function(id){var s=map[id],na=parseInt(s.a,10),nb=parseInt(s.b,10);if(isNaN(na)||isNaN(nb))return;
-if(!scores[id])scores[id]={};if(scores[id].a!==na||scores[id].b!==nb||(s.pen&&scores[id].pen!==s.pen))changed=true;scores[id].a=na;scores[id].b=nb;if(s.pen)scores[id].pen=s.pen});
+if(!scores[id])scores[id]={};if(scores[id].a!==na||scores[id].b!==nb||(s.pen&&scores[id].pen!==s.pen)||(!s.pen&&scores[id].pen))changed=true;scores[id].a=na;scores[id].b=nb;if(s.pen)scores[id].pen=s.pen;else delete scores[id].pen});
 if(changed){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();renderHoje();setTimeout(checkAutoSnapshot,500)}return changed}
 
 function _hide(ab){
