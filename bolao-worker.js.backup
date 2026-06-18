@@ -101,6 +101,8 @@ async function handle(req) {
     if (method === 'POST' && path === '/register') {
       var body = await req.json();
       if (!body.name || !body.password) return error('name e password obrigatorios');
+      var trimmedName = body.name.trim();
+      if (!trimmedName) return error('name e password obrigatorios');
 
       // Verificar captcha apenas se enviado (opcional)
       if (body.turnstileToken) {
@@ -112,12 +114,20 @@ async function handle(req) {
         if (!tdata.success) return error('Captcha invalido', 403);
       }
 
-      var existing = await supaFetch("participants?name=eq." + encodeURIComponent(body.name) + "&select=id");
-      if (existing && existing.length) return error('Nome ja cadastrado', 409);
+      // Checagem case/acento-insensitive no SERVIDOR (nao so no client) -- evita contas
+      // duplicadas como "João" / "joão" / "JOAO " que pareceriam a mesma pessoa no ranking
+      // mas teriam IDs e palpites totalmente separados. O client ja tem uma checagem similar
+      // (_bolaoFindSimilarName), mas ela depende da lista de participantes ja estar carregada
+      // em memoria e pode ser contornada chamando a API diretamente -- esta e a barreira real.
+      var allNames = await supaFetch("participants?select=name");
+      var normalize = function (s) { return s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
+      var normTarget = normalize(trimmedName);
+      var dupe = (allNames || []).find(function (p) { return normalize(p.name) === normTarget; });
+      if (dupe) return error('Nome ja cadastrado (ou muito similar a "' + dupe.name + '")', 409);
 
       var hash = await sha256(body.password + ':' + JWT_SECRET);
-      await supaFetch('participants', 'POST', { name: body.name, password: hash, confirmed: false });
-      var np = await supaFetch("participants?name=eq." + encodeURIComponent(body.name) + "&select=id,name");
+      await supaFetch('participants', 'POST', { name: trimmedName, password: hash, confirmed: false });
+      var np = await supaFetch("participants?name=eq." + encodeURIComponent(trimmedName) + "&select=id,name");
       return json({ id: np[0].id, name: np[0].name }, 201);
     }
 
@@ -281,6 +291,16 @@ async function handle(req) {
     if (method === 'DELETE' && path === '/reset') {
       var ak = req.headers.get('X-Admin-Key') || '';
       if (ak !== ADMIN_KEY) return error('Admin key invalida', 403);
+      // Esta acao apaga TODOS os participantes/picks/special_picks/pick_history do bolao,
+      // sem possibilidade de desfazer. Antes nao havia nenhum log nem segunda confirmacao --
+      // se a ADMIN_KEY fosse vazada ou usada por engano, o bolao inteiro era destruido sem
+      // deixar rastro de quem/quando. Agora exigimos um header extra de confirmacao explicita
+      // e registramos a acao nos logs do Worker (visiveis em tempo real no dashboard do
+      // Cloudflare, sem precisar de infraestrutura nova).
+      if (req.headers.get('X-Confirm-Reset') !== 'CONFIRMO-RESET-TOTAL') {
+        return error('Reset requer header X-Confirm-Reset: CONFIRMO-RESET-TOTAL para confirmar a intencao', 400);
+      }
+      console.log('[AUDIT] DELETE /reset executado em ' + new Date().toISOString() + ' a partir de IP ' + (req.headers.get('CF-Connecting-IP') || 'desconhecido'));
       // picks e pick_history usam BIGSERIAL (id bigint), participants usa UUID, special_picks usa BIGSERIAL
       await supaFetch("picks?id=gte.0", 'DELETE');
       await supaFetch("special_picks?id=gte.0", 'DELETE');
@@ -297,6 +317,7 @@ async function handle(req) {
       if (h !== ADMIN_HASH) return error('Admin pass invalida', 403);
       var parts = await supaFetch("participants?name=eq." + encodeURIComponent(body.name) + "&select=id,name,confirmed");
       if (!parts || !parts.length) return error('Participante nao encontrado', 404);
+      console.log('[AUDIT] PATCH /admin/unlock para "' + parts[0].name + '" em ' + new Date().toISOString());
       await supaFetch("participants?id=eq." + parts[0].id, 'PATCH', { confirmed: false });
       return json({ ok: true });
     }
@@ -392,7 +413,18 @@ async function handle(req) {
     }
 
     // GET /app — proxy do site (backup se GitHub Pages cair)
-    if (method === 'GET' && (path === '/app' || path.match(/\.(png|json)$/))) {
+    // Restrito a uma allowlist de arquivos estaticos conhecidos do projeto -- antes,
+    // QUALQUER path terminando em .png/.json era aceito e repassado para o GitHub Pages
+    // sem validacao (ex: /../../x.json, ou paths arbitrarios longos), o que permitia abusar
+    // do proxy/cache do Worker com paths que nao correspondem a nenhum arquivo real do site.
+    var APP_PROXY_ALLOWLIST = [
+      'bola_t.png','mascote1_t.png','mascote2_t.png','mascote3_t.png',
+      'logo_globo.png','logo_sportv.png','logo_cazetv.png','logo_sbt.png',
+      'logo_nsports.png','logo_globoplay.png','logo_getv.png',
+      'players.json','photos.json'
+    ];
+    var isAppProxyAsset = APP_PROXY_ALLOWLIST.indexOf(path.replace(/^\//,'')) >= 0;
+    if (method === 'GET' && (path === '/app' || isAppProxyAsset)) {
       var ghUrl = 'https://lfgobbo.github.io/Copa2026/' + (path === '/app' ? '' : path.replace(/^\//,''));
       var cacheKey = ghUrl;
       var cache = await caches.open('copa2026-proxy');

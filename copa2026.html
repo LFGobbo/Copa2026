@@ -3369,7 +3369,7 @@ async function bolaoReseta(){
   var adminKey=prompt('Digite a chave de admin:');
   if(!adminKey)return;
   try{
-    await fetch(BOLAO_WORKER+'/reset',{method:'DELETE',headers:{'X-Admin-Key':adminKey}});
+    await fetch(BOLAO_WORKER+'/reset',{method:'DELETE',headers:{'X-Admin-Key':adminKey,'X-Confirm-Reset':'CONFIRMO-RESET-TOTAL'}});
     ['copa2026_data','copa2026_bak1','copa2026_bak2','copa2026_teampicks'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
     GAMES.forEach(function(g){delete scores[g.n]});
     console.log('Tudo limpo. Recarregando...');
