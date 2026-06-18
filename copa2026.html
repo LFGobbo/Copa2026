@@ -695,10 +695,6 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       <button id="bolao-participar-btn" disabled onclick="bolaoJoin()">Participar</button>
     </div>
   </div>
-  <div class="bolao-section" id="bolao-public-deadline" style="background:linear-gradient(135deg,rgba(255,223,0,.08),rgba(255,145,0,.04));border:2px solid var(--gold);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;text-align:center;animation:deadlinePulse 2s ease-in-out infinite">
-    <div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">&#9200; Palpites Especiais</div>
-    <div id="bolao-public-deadline-count" style="font-size:11px;color:var(--text);font-weight:600">Carregando...</div>
-  </div>
   <div class="bolao-section" id="bolao-login-section">
     <div class="bolao-section-title">Entrar no bolão</div>
     <div class="bolao-login">
@@ -755,6 +751,11 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       </div>
       <div id="bolao-confirmed-banner" class="bolao-confirm-banner">Seus palpites estão confirmados e não podem mais ser alterados.</div>
     </div>
+  </div>
+  <div class="bolao-section" id="bolao-public-deadline" style="background:linear-gradient(135deg,rgba(255,223,0,.12),rgba(255,145,0,.06));border:3px solid var(--gold);border-radius:var(--radius);padding:18px 20px;margin-bottom:20px;text-align:center;animation:deadlinePulse 1.5s ease-in-out infinite;box-shadow:0 0 40px rgba(255,223,0,.15)">
+    <div style="font-size:15px;font-weight:900;color:var(--gold);margin-bottom:6px;text-transform:uppercase;letter-spacing:2px">&#9200;&#65039; PALPITES ESPECIAIS</div>
+    <div id="bolao-public-deadline-count" style="font-size:14px;color:var(--text);font-weight:700">Carregando...</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px">Campe&atilde;o: +50 pts &middot; Artilheiro: +20/+10 pts</div>
   </div>
   <div class="bolao-section">
     <div class="bolao-section-title">Ranking geral</div>
@@ -2532,6 +2533,19 @@ function _bolaoFetch(path,method,body,retries){
   });
 }
 function _bolaoDeadline(gameN){var g=GAME_BY_ID[gameN];if(!g)return null;var gd=gameUTC(g);return gd?new Date(gd.getTime()-BOLAO_TWO_H):null}
+function _bolaoUpdateDeadline(el,deadline){
+  if(!el||!deadline)return;
+  var now=new Date();
+  if(deadline>now){
+    var d=deadline-now,dd=Math.floor(d/86400000),dh=Math.floor((d%86400000)/3600000),dm=Math.floor((d%3600000)/60000),ds=Math.floor((d%60000)/1000);
+    el.textContent='\u23f0 Prazo para alterar palpites especiais: '+dd+'d '+dh+'h '+dm+'m '+ds+'s (fecha 2h antes do jogo #32 \u2014 Haiti vs Brasil)';
+    el.style.color='';
+  }else{
+    el.textContent='\u26a0\ufe0f Prazo encerrado \u2014 palpites especiais bloqueados';
+    el.style.color='var(--red)';
+    if(_bolaoDeadlineTimer){clearInterval(_bolaoDeadlineTimer);_bolaoDeadlineTimer=null;}
+  }
+}
 function _bolaoFinalChampion(){return _winnerOf(BOLAO_FINAL)}
 function _bolaoTopScorer(){
   var m={};Object.keys(goals||{}).forEach(function(gid){Object.keys(goals[gid]).forEach(function(t){goals[gid][t].forEach(function(gl){if(gl.type==='own')return;if(!m[gl.pname])m[gl.pname]=0;m[gl.pname]++})})});
