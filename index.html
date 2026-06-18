@@ -1054,7 +1054,7 @@ function renderGames(filter){
   var games=GAMES;
   if(filter==="ko")games=games.filter(function(g){return g.f&&!g.f.startsWith("Grupo")});
   else if(filter!=="all")games=games.filter(function(g){return g.f===GROUP_NAMES[filter]||g.f===filter});
-  games.sort(function(a,b){var da=a.d.split(' ')[0].split('/'),db=b.d.split(' ')[0].split('/'),ca=parseInt(da[1])*100+parseInt(da[0]),cb=parseInt(db[1])*100+parseInt(db[0]);if(ca!==cb)return ca-cb;var ta=a.t.split(':'),tb=b.t.split(':'),tca=parseInt(ta[0])*60+parseInt(ta[1]),tcb=parseInt(tb[0])*60+parseInt(tb[1]);return tca-tcb});
+  games.sort(function(a,b){var da=a.d.split(' ')[0].split('/'),db=b.d.split(' ')[0].split('/'),ca=parseInt(da[1],10)*100+parseInt(da[0],10),cb=parseInt(db[1],10)*100+parseInt(db[0],10);if(ca!==cb)return ca-cb;var ta=a.t.split(':'),tb=b.t.split(':'),tca=parseInt(ta[0],10)*60+parseInt(ta[1],10),tcb=parseInt(tb[0],10)*60+parseInt(tb[1],10);return tca-tcb});
   if(filter!=="all"){dynRender(el,games.map(function(g){return renderGameCard(g)}).join(""));return}
   // "all": organiza em seções temporais
   var now=new Date(),dd=("0"+now.getDate()).slice(-2),mm=("0"+(now.getMonth()+1)).slice(-2),today=dd+"/"+mm;
@@ -2682,7 +2682,7 @@ function _bolaoWinnerOf(gameN,picks){
   // Empate: só KO tem escolha
   var isGroup=g.f&&g.f.startsWith('Grupo');
   if(isGroup)return null;
-  var ko=_bolaoKOPicks[gameN];
+  var ko=picks&&picks[gameN]&&picks[gameN].ko?picks[gameN].ko:_bolaoKOPicks[gameN];
   if(ko==='a')return _bolaoResolveTeam(g.a,gameN,picks)||null;
   if(ko==='b')return _bolaoResolveTeam(g.b,gameN,picks)||null;
   return null;
@@ -3295,7 +3295,7 @@ async function bolaoLoadRanking(){
     _bolaoParticipants={};(data.participants||[]).forEach(function(p){_bolaoParticipants[p.id]=p.name});
     _bolaoConfirmedStatus={};(data.participants||[]).forEach(function(p){_bolaoConfirmedStatus[p.id]=p.confirmed||false});
     _bolaoConfirmedAt={};(data.participants||[]).forEach(function(p){if(p.confirmed_at)_bolaoConfirmedAt[p.id]=p.confirmed_at});
-    _bolaoAllPicks={};(data.picks||[]).forEach(function(p){if(!_bolaoAllPicks[p.participant_id])_bolaoAllPicks[p.participant_id]={};_bolaoAllPicks[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b}});
+    _bolaoAllPicks={};(data.picks||[]).forEach(function(p){if(!_bolaoAllPicks[p.participant_id])_bolaoAllPicks[p.participant_id]={};_bolaoAllPicks[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b,ko:p.ko_pick}});
     _bolaoAllSpecials={};(data.specialPicks||[]).forEach(function(p){_bolaoAllSpecials[p.participant_id]=p});
     _bolaoPickCounts=data.pickCounts||{};
     _rankingCachedAt=Date.now();
