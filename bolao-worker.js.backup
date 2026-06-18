@@ -345,6 +345,10 @@ async function handle(req) {
       var cached = (await supaFetch('majority_cache?game_n=eq.' + gn + '&select=data,updated_at')) || [];
       if (cached.length) return json({ game_n: parseInt(gn), data: cached[0].data, updated_at: cached[0].updated_at, cached: true });
       var picks = (await supaFetch('picks?game_n=eq.' + gn + '&select=goals_a,goals_b&limit=10000')) || [];
+      // Excluir picks ainda nao preenchidos (goals_a/goals_b nulos) -- antes eram contados
+      // como um placar literal "nullxnull", distorcendo o total e podendo aparecer na tela
+      // do usuario como um placar real entre os mais votados.
+      picks = picks.filter(function(p) { return p.goals_a !== null && p.goals_a !== undefined && p.goals_b !== null && p.goals_b !== undefined; });
       var total = picks.length;
       if (!total) return json({ game_n: parseInt(gn), data: [], total: 0 });
       var counts = {};
@@ -364,6 +368,7 @@ async function handle(req) {
       var gn2 = gnbody.game_n;
       if (!gn2) return error('game_n obrigatorio');
       var picks2 = (await supaFetch('picks?game_n=eq.' + gn2 + '&select=goals_a,goals_b&limit=10000')) || [];
+      picks2 = picks2.filter(function(p) { return p.goals_a !== null && p.goals_a !== undefined && p.goals_b !== null && p.goals_b !== undefined; });
       var total2 = picks2.length;
       var counts2 = {};
       picks2.forEach(function(p) { var k = p.goals_a + 'x' + p.goals_b; counts2[k] = (counts2[k] || 0) + 1; });
