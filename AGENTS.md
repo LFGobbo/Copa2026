@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 ? Documenta??o do Projeto
 
-**?ltima atualiza??o:** 2026-06-18 (v19.26)
+**?ltima atualiza??o:** 2026-06-17 (v19.21b)
 **Reposit?rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -24,7 +24,7 @@ Aplica??o web autossuficiente (single HTML) para acompanhar a Copa do Mundo 2026
 
 ### Restri??es
 
-- HTML principal (~242KB) com dados essenciais inline (`GAMES`, `GROUPS`)
+- HTML principal (~336KB) com dados essenciais inline (`GAMES`, `GROUPS`)
 - Dados pesados (`PLAYERS` ~116KB, `PLAYER_PHOTOS` ~174KB) em JSON externo
 - Zero depend?ncias, zero build steps
 - Dados extra?dos de `Copa_2026_Completa.xlsx` (3 sheets)
@@ -35,9 +35,9 @@ Aplica??o web autossuficiente (single HTML) para acompanhar a Copa do Mundo 2026
 
 ```
 index.html (ou copa2026.html)
-+-- CSS inline (~240 linhas) ? design system completo, responsivo, dark theme
++-- CSS inline (~480 linhas) ? design system completo, responsivo, dark theme
 +-- HTML est?tico (~200 linhas) ? header, tabs, content containers, popups
-+-- JS inline (~1900 linhas) ? toda a l?gica da aplica??o
++-- JS inline (~2500 linhas) ? toda a l?gica da aplica??o
 ?
 +-- players.json       ? 1248 jogadores (carregado via XHR ass?ncrono)
 +-- photos.json        ? 951 URLs de fotos (carregado via XHR ass?ncrono)
@@ -67,8 +67,8 @@ index.html (ou copa2026.html)
 
 | Arquivo | Tamanho | Fun??o |
 |---|---|---|
-| `index.html` | ~242KB | App principal (deploy GitHub Pages) |
-| `copa2026.html` | ~242KB | C?pia id?ntica (compatibilidade) |
+| `index.html` | ~336KB | App principal (deploy GitHub Pages) |
+| `copa2026.html` | ~336KB | C?pia id?ntica (compatibilidade) |
 | `players.json` | ~116KB | 1248 jogadores (48 times ? 26) |
 | `photos.json` | ~174KB | 951 URLs de fotos (Wikipedia + FIFA) |
 | `sw.js` | 2KB | Service Worker v20 |
@@ -85,8 +85,6 @@ index.html (ou copa2026.html)
 | `logo_getv.png` | ? | Logo Ge TV |
 | `AGENTS.md` | ? | Esta documenta??o |
 | `LEVANTAMENTO_TECNICO.md` | ? | An?lise t?cnica detalhada |
-| `supabase-rls-fix.sql` | 4.9KB | Reabilita RLS nas 4 tabelas com policies seguras |
-| `third_place_matrix_2026.json` | 190KB | 495 combina??es de 3?s lugares (Anexo C FIFA) |
 | `opencode.json` | ? | Configura??o OpenCode |
 | `.gitignore` | ? | Regras git |
 
@@ -576,45 +574,6 @@ Toda melhoria deve:
 
 ## 13. Version History
 
-### v19.26 (2026-06-18) - Worker v19.10 + RLS fix + Anexo C + deadline 2h
-- **Worker atualizado para v19.10**: adiciona `BOLAO_GAMES` inline no Worker, fun??es `gameUTC()`/`bolaoDeadline()`, valida??o server-side de prazo (rejeita palpites ap?s deadline mesmo chamando API direto), valida??o de confirma??o no servidor
-- **`supabase-rls-fix.sql`**: script SQL reabilita RLS nas 4 tabelas, cria policies de leitura p?blica e bloqueio de escrita via anon key, cria view `participants_public` sem a coluna password
-- **`third_place_matrix_2026.json`**: 495 combina??es de 3?s lugares (Anexo C FIFA) para resolu??o do bracket
-- **Deadline bol?o revertido para 2h**: `BOLAO_TWO_H=7200000` e `BOLAO_DEADLINE_MS=7200000` (estava 30min no v19.11)
-- **`bolao-worker.js.backup` sincronizado** com a vers?o v19.10
-
-### v19.25 (2026-06-17) - Ouro/prata/bronze na tabela do bolao
-- Cores gold/silver/bronze no nome e pontos do top 3 na tabela de ranking do bolao (igual artilheiros)
-
-### v19.24 (2026-06-17) - Seguranca Worker + scroll Palpite da Maioria
-- Worker: verifica se participante confirmou antes de aceitar alteracao de palpites (403 se confirmado)
-- Palpite da Maioria: max-height 320px com overflow-y auto
-
-### v19.23 (2026-06-17) - Reverte _bolaoWinnerOf fallback, mantem groupStandings
-- Reverte propagacao de placeholder que causava nomes errados nos jogos 96/99
-- Mantem fallback para scores reais em _bolaoGroupStandings
-
-### v19.22 (2026-06-17) - groupStandings fallback real scores + placar real no card
-- _bolaoGroupStandings usa placar real como fallback quando usuario nao tem palpite
-- Placar real (ex: "2-1 +4 pts") exibido no card de palpite
-
-### v19.21 (2026-06-17) - Fix cascata KO + placar real no card
-- _bolaoWinnerOf retorna placeholder ao inves de null para nao quebrar cascata
-- Placar real exibido junto aos pontos no card de palpite
-
-### v19.20 (2026-06-17) - Deadline banner em cima do ranking + pulse animado
-- Banner movido para acima do ranking geral
-- Animacao pulse na borda (ouro -> laranja) e box-shadow
-
-### v19.19 (2026-06-17) - Public deadline banner visivel sem login
-- Banner de prazo dos palpites especiais aparece antes do login
-- Timer separado _bolaoPublicDeadlineTimer para nao conflitar com o timer logado
-
-### v19.18 (2026-06-17) - Contador regressivo dinamico prazo especiais bolao
-- _bolaoUpdateDeadline() atualiza a cada segundo
-- _bolaoDeadlineTimer limpo ao sair da pagina
-- Mensagem clara: "Prazo para alterar palpites especiais: Xd Xh Xm Xs"
-
 ### v19.10 (2026-06-14) - Ajustes finais + Correcoes de Live/Ao Vivo
 
 - **Scroll bouncing corrigido**: _scrolledToLive flag global so permite scroll-into-view na primeira renderizacao. Resetado ao trocar filtro ou clicar na aba Jogos. Elimina salto a cada polling
@@ -631,6 +590,37 @@ Toda melhoria deve:
 - **backup-supabase.ps1**: script PowerShell que faz dump de todas as 6 tabelas do Supabase para JSONs em /backups/
 - **Seguranca de exclusao documentada**: secao 15 do AGENTS.md - backup obrigatorio antes de deletar, nunca deletar sem confirmar com o usuario
 - **Console Reference**: secao 17 do AGENTS.md - documentacao completa de todas as funcoes e variaveis acessiveis via DevTools
+
+### v19.21b (2026-06-17) - Reverte colunas desktop + remove diff/LIDER do mobile
+
+- **Desktop**: Colunas voltam ao original (Especiais | Exatos | Jogos | Pontos) — 6 colunas. Sem coluna Desempenho, sem coluna Distancia, sem "(líder)" no nome
+- **Mobile**: Subtitulo apenas metricas (`3ex · 5res`) — sem "LÍDER", sem "−N pts"
+- **Mantidos** `rank-first` (leader maior/padding), `mob-rank-self` (borda azul + "VOCÊ ·"), `bolao-rank-self` (fundo azul + "VOCÊ ·") — melhorias visuais sem afetar colunas
+- Legenda do ranking restaurada para Especiais/Exatos/Jogos/Pontos
+
+### v19.21a (2026-06-17) - Ranking: Desempenho coluna, Opcao B mobile, rank-first, mob-rank-self, especiais no expandido (PARCIALMENTE REVERTIDO via v19.21b)
+
+- **BREAKING**: Tabela de ranking reestruturada de 6 colunas para 5 (REVERTIDO em v19.21b)
+- **Mobile Opcao B**: Subtitulo linha unica com LÍDER e diferenca (REMOVIDO em v19.21b)
+- **Desempenho coluna** (REVERTIDO em v19.21b)
+- **NOVO (mantido)**: `rank-first` — líder com padding 12px, nome 15px/800, pts 22px
+- **NOVO (mantido)**: `mob-rank-self` — borda azul + "VOCÊ ·" via `::before`
+- **NOVO (mantido)**: `bolao-rank-self` — fundo azul desktop + "VOCÊ ·" via `::before`
+- **NOVO (mantido)**: Especiais removidos do card ranking principal, movidos para `bolaoRenderDetail()` (secao "🏆 PALPITES ESPECIAIS")
+- **Dead code**: `mob-rank-line2` CSS removido
+
+### v19.20 (2026-06-17) - Compactacao vertical cards bolao + estados visuais
+
+- **Compactacao vertical ~20-30%**: `bsp-card` padding 12->8px, gap 4->3px, `bsp-score-row` margin 0, `bolao-ko` so renderizado se tem conteudo, `bsp-ko-label` margin 4->2px, `bolao-majority` margin/padding 5->3px, input padding 6->4px (<480px), card padding 6px (<480px)
+- **Sistema de estados visuais**: borda esquerda 4px colorida — `bsp-card-missing` (vermelho+glow), `bsp-card-result` (verde #4ade80), `bsp-card-exact` (ouro+glow), `bsp-card-final` (ouro+glow forte). Inline missingStyle substituido por classe CSS. `bsp-locked` opacity 0.7->0.9
+- Tag `pre-bolao-mobile-redesign` criada antes das alteracoes
+
+### v19.19 (2026-06-17) - Bolao mobile UX: top3 premium, ranking 2 linhas, status+pts, KO checkmark, detalhes separados
+
+- **Top 3 premium**: classes `rank-gold/silver/bronze` com borda 2px + bg sutil + box-shadow glow
+- **Subtitulo ranking em 2 linhas**: status+pts na mesma linha (`bsp-status-pts` flex), fase+data na mesma linha (`bsp-header` compacto)
+- **KO com checkmark**: botao selecionado ganha ✔️ + fundo dourado
+- **Detalhes expandidos separados**: "PONTUADOS" e "PRÓXIMOS" como secoes distintas
 
 ### v19.18 (2026-06-17) - 6 correcoes mobile + cache ranking + Enter key
 
