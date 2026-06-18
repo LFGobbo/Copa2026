@@ -1402,43 +1402,63 @@ function renderThirdPlaced(){
 // pts/gf/ga: objetos {time: valor} com totais gerais do grupo
 // groupGames: lista de jogos do grupo (cada um com .n, .a, .b)
 // getScore: function(gameNum) -> {a,b} ou null/undefined se o jogo ainda não tem placar
-function _resolveGroupOrder(teams,pts,gf,ga,groupGames,getScore){
-  var withMetrics=teams.map(function(t){return{team:t,pts:pts[t],sg:gf[t]-ga[t],gf:gf[t]};});
-  withMetrics.sort(function(a,b){
-    if(b.pts!==a.pts)return b.pts-a.pts;
-    if(b.sg!==a.sg)return b.sg-a.sg;
-    if(b.gf!==a.gf)return b.gf-a.gf;
-    return 0;
-  });
+var FIFA_RANK={"Argentina":1,"Espanha":2,"Fran\u00e7a":3,"Inglaterra":4,"Portugal":5,"Brasil":6,"Marrocos":7,"Holanda":8,"B\u00e9lgica":9,"Alemanha":10,"Cro\u00e1cia":11,"Col\u00f4mbia":13,"M\u00e9xico":14,"Senegal":15,"Uruguai":16,"Estados Unidos":17,"Jap\u00e3o":18,"Su\u00ed\u00e7a":19,"Ir\u00e3":20,"Turquia":22,"Equador":23,"\u00c1ustria":24,"Coreia do Sul":25,"Austr\u00e1lia":27,"Arg\u00e9lia":28,"Egito":29,"Canad\u00e1":30,"Noruega":31,"Costa do Marfim":33,"Panam\u00e1":34,"Su\u00e9cia":38,"Rep\u00fablica Tcheca":40,"Paraguai":41,"Esc\u00f3cia":42,"Tun\u00edsia":45,"RD Congo":46,"Uzbequist\u00e3o":50,"Catar":56,"Iraque":57,"\u00c1frica do Sul":60,"Ar\u00e1bia Saudita":61,"Jord\u00e2nia":63,"B\u00f3snia":64,"Cabo Verde":67,"Gana":73,"Cura\u00e7ao":82,"Haiti":83,"Nova Zel\u00e2ndia":85};
+
+function _resolveGroupOrder(teams,pts,gf,ga,groupGames,getScore,getConduct){
+  var withPts=teams.map(function(t){return{team:t,pts:pts[t]};});
+  withPts.sort(function(a,b){return b.pts-a.pts;});
   var blocks=[],i=0;
-  while(i<withMetrics.length){
+  while(i<withPts.length){
     var j=i+1;
-    while(j<withMetrics.length&&withMetrics[j].pts===withMetrics[i].pts&&withMetrics[j].sg===withMetrics[i].sg&&withMetrics[j].gf===withMetrics[i].gf){j++;}
-    blocks.push(withMetrics.slice(i,j));
+    while(j<withPts.length&&withPts[j].pts===withPts[i].pts)j++;
+    blocks.push(withPts.slice(i,j).map(function(x){return x.team;}));
     i=j;
   }
   var result=[];
-  blocks.forEach(function(block){
-    if(block.length===1){result.push(block[0].team);return;}
-    var blockTeams=block.map(function(b){return b.team;});
-    var miniPts={},miniGf={},miniGa={};
-    blockTeams.forEach(function(t){miniPts[t]=0;miniGf[t]=0;miniGa[t]=0;});
-    groupGames.forEach(function(g){
-      if(blockTeams.indexOf(g.a)<0||blockTeams.indexOf(g.b)<0)return;
-      var s=getScore(g.n);
-      if(!s||s.a===undefined||s.b===undefined)return;
-      miniGf[g.a]+=s.a;miniGa[g.a]+=s.b;miniGf[g.b]+=s.b;miniGa[g.b]+=s.a;
-      if(s.a>s.b)miniPts[g.a]+=3;else if(s.a<s.b)miniPts[g.b]+=3;else{miniPts[g.a]++;miniPts[g.b]++;}
-    });
-    blockTeams.sort(function(a,b){
-      if(miniPts[b]!==miniPts[a])return miniPts[b]-miniPts[a];
-      var sgA=miniGf[a]-miniGa[a],sgB=miniGf[b]-miniGa[b];
-      if(sgB!==sgA)return sgB-sgA;
-      if(miniGf[b]!==miniGf[a])return miniGf[b]-miniGf[a];
-      return a.localeCompare(b);
-    });
-    blockTeams.forEach(function(t){result.push(t);});
-  });
+  function resolveBlock(block,phase){
+    if(block.length<=1){if(block.length===1)result.push(block[0]);return;}
+    var cmp;
+    if(phase===0){
+      var h2hPts={},h2hGf={},h2hGa={};
+      block.forEach(function(t){h2hPts[t]=0;h2hGf[t]=0;h2hGa[t]=0;});
+      groupGames.forEach(function(g){
+        if(block.indexOf(g.a)<0||block.indexOf(g.b)<0)return;
+        var s=getScore(g.n);if(!s||s.a===undefined||s.b===undefined)return;
+        h2hGf[g.a]+=s.a;h2hGa[g.a]+=s.b;h2hGf[g.b]+=s.b;h2hGa[g.b]+=s.a;
+        if(s.a>s.b)h2hPts[g.a]+=3;else if(s.a<s.b)h2hPts[g.b]+=3;else{h2hPts[g.a]++;h2hPts[g.b]++;}
+      });
+      cmp=function(a,b){
+        if(h2hPts[b]!==h2hPts[a])return h2hPts[b]-h2hPts[a];
+        var sa=h2hGf[a]-h2hGa[a],sb=h2hGf[b]-h2hGa[b];
+        if(sb!==sa)return sb-sa;
+        if(h2hGf[b]!==h2hGf[a])return h2hGf[b]-h2hGf[a];
+        return 0;
+      };
+    }else if(phase===1){
+      cmp=function(a,b){
+        var sa=gf[a]-ga[a],sb=gf[b]-ga[b];
+        if(sb!==sa)return sb-sa;
+        if((gf[b]||0)!==(gf[a]||0))return(gf[b]||0)-(gf[a]||0);
+        return 0;
+      };
+    }else if(phase===2){
+      cmp=function(a,b){return(getConduct(a)||0)-(getConduct(b)||0);};
+    }else if(phase===3){
+      cmp=function(a,b){return(FIFA_RANK[a]||999)-(FIFA_RANK[b]||999);};
+    }else{
+      var sorted=block.slice().sort();sorted.forEach(function(t){result.push(t);});return;
+    }
+    var sorted=block.slice().sort(cmp);
+    var subBlocks=[],k=0;
+    while(k<sorted.length){
+      var l=k+1;
+      while(l<sorted.length&&cmp(sorted[k],sorted[l])===0)l++;
+      subBlocks.push(sorted.slice(k,l));
+      k=l;
+    }
+    subBlocks.forEach(function(sub){resolveBlock(sub,phase+1);});
+  }
+  blocks.forEach(function(b){resolveBlock(b,0);});
   return result;
 }
 
@@ -1452,12 +1472,23 @@ function _groupStandings(letter){
       if(s.a>s.b)pts[g.a]+=3;else if(s.a<s.b)pts[g.b]+=3;else{pts[g.a]++;pts[g.b]++;}
     }
   });
-  // Verificar se o grupo terminou (todos jogaram todos os jogos)
   var groupGames=GAMES.filter(function(g){return g.f===GROUP_NAMES[letter];});
   var finished=groupGames.every(function(g){var s=scores[g.n];return s&&s.a!==undefined&&s.b!==undefined;});
+  var cond={};
+  teams.forEach(function(t){cond[t]=0;});
+  groupGames.forEach(function(g){
+    var c=cards[g.n];if(!c)return;
+    [g.a,g.b].forEach(function(t,i){
+      var side=i===0?'a':'b';(c[side]||[]).forEach(function(ev){
+        if(ev.type==='yellow')cond[t]+=1;
+        else if(ev.type==='red')cond[t]+=3;
+        else if(ev.type==='second-yellow')cond[t]+=3;
+      });
+    });
+  });
   return{
-    teams:_resolveGroupOrder(teams,pts,gf,ga,groupGames,function(n){return scores[n];}),
-    pts:pts,gf:gf,ga:ga,gp:gp,finished:finished
+    teams:_resolveGroupOrder(teams,pts,gf,ga,groupGames,function(n){return scores[n];},function(t){return cond[t];}),
+    pts:pts,gf:gf,ga:ga,gp:gp,finished:finished,cond:cond
   };
 }
 
@@ -1469,12 +1500,14 @@ function _rankedThirds(){
     if(st.teams.length<3)return;
     var t=st.teams[2];
     var pts=st.pts[t]||0,gf=st.gf[t]||0,ga=st.ga[t]||0;
-    thirds.push({team:t,group:letter,pts:pts,sg:gf-ga,gf:gf,gp:st.gp[t]||0,finished:st.finished});
+    thirds.push({team:t,group:letter,pts:pts,sg:gf-ga,gf:gf,gp:st.gp[t]||0,finished:st.finished,cond:st.cond?st.cond[t]:0});
   });
   thirds.sort(function(a,b){
     if(b.pts!==a.pts)return b.pts-a.pts;
     if(b.sg!==a.sg)return b.sg-a.sg;
     if(b.gf!==a.gf)return b.gf-a.gf;
+    if((a.cond||0)!==(b.cond||0))return(a.cond||0)-(b.cond||0);
+    if((FIFA_RANK[a.team]||999)!==(FIFA_RANK[b.team]||999))return(FIFA_RANK[a.team]||999)-(FIFA_RANK[b.team]||999);
     return a.team.localeCompare(b.team);
   });
   var top8=thirds.slice(0,8);
@@ -1893,7 +1926,7 @@ document.querySelectorAll(".bview-btn").forEach(function(b){b.addEventListener("
 })});
 
 
-document.getElementById("rules-content").innerHTML='<h2>Formato do Torneio</h2><div class="highlight"><p>Copa do Mundo FIFA 2026 \u2014 48 sele\u00e7\u00f5es, 12 grupos de 4 times cada. Avan\u00e7am para o mata-mata os 2 melhores de cada grupo (24) + os 8 melhores terceiros colocados, totalizando 32 equipes na Rodada de 32.</p></div><h3>Fase de Grupos</h3><ul><li>Cada time joga 3 partidas dentro do grupo.</li><li>Vit\u00f3ria = 3 pontos, Empate = 1 ponto, Derrota = 0 pontos.</li><li>Crit\u00e9rios de desempate: 1) pontos, 2) saldo de gols, 3) gols marcados, 4) confronto direto, 5) fair play, 6) sorteio.</li></ul><h3>Mata-Mata</h3><ul><li>Rodada de 32: 16 jogos, eliminat\u00f3ria simples.</li><li>Oitavas de final: 8 jogos.</li><li>Quartas de final: 4 jogos.</li><li>Semifinal: 2 jogos.</li><li>Disputa do 3\u00b0 lugar: 1 jogo.</li><li>Final: 1 jogo.</li><li>Em caso de empate no mata-mata, h\u00e1 prorroga\u00e7\u00e3o (30 min) e, se necess\u00e1rio, p\u00eanaltis.</li></ul><h2>Pa\u00edses-sede</h2><p>Canad\u00e1, M\u00e9xico e Estados Unidos \u2014 16 cidades-sede ao todo.</p><p>Abertura: Est\u00e1dio Azteca, Cidade do M\u00e9xico.</p><p>Final: MetLife Stadium, Nova Jersey (East Rutherford).</p><h2>Calend\u00e1rio</h2><p>11 de junho a 19 de julho de 2026.</p><hr><h2>\u26BD Regras 2026 \u2014 Novidades</h2><div class="highlight"><p>A Copa de 2026 traz v\u00e1rias mudan\u00e7as de regras aprovadas pela IFAB e adotadas pela FIFA. Confira as principais:</p></div><h3>\u2699\uFE0F Impedimento Semi-Autom\u00e1tico (SAOT)</h3><ul><li>Tecnologia que usa 12 c\u00e2meras de rastreamento \u00f3sseo + sensor no miolo da bola inteligente (Trionda).</li><li>Determina automaticamente a posi\u00e7\u00e3o de cada jogador no momento do passe, gerando um modelo 3D em tempo real.</li><li>A decis\u00e3o \u00e9 enviada ao VAR em segundos; o \u00e1rbitro pode revisar ou aceitar automaticamente.</li><li>Substitui o sistema manual de tra\u00e7ado de linhas usado em 2022.</li></ul><h3>\ud83D\udCF9 VAR Expandido (\u00c1rbitro de V\u00eddeo)</h3><ul><li>Revis\u00e3o obrigat\u00f3ria para: gols, p\u00eanaltis, cart\u00f5es vermelhos diretos, confus\u00e3o de identidade.</li><li>NOVO 2026: revis\u00e3o dispon\u00edvel tamb\u00e9m para: <strong>impedimentos em lances de gol</strong>, <strong>contato dentro da \u00e1rea duvidoso</strong>, <strong>m\u00e3o na bola em finaliza\u00e7\u00e3o</strong>.</li><li>O \u00e1rbitro pode usar o monitor de campo (RRA) para revisar pessoalmente.</li><li>Torcedores no est\u00e1dio e na transmiss\u00e3o veem as imagens do VAR + \u00e1udio da cabine em tempo real.</li></ul><h3>\ud83C\udfac C\u00e2mera Corporal no \u00c1rbitro</h3><ul><li>Estreia em Copas: cada \u00e1rbitro de campo usa uma c\u00e2mera no peito (RefCam).</li><li>\u00c1udio e v\u00eddeo capturados s\u00e3o usados para documenta\u00e7\u00e3o, mas N\u00c3O s\u00e3o transmitidos ao vivo.</li><li>Funciona como fonte extra para a Comiss\u00e3o de Arbitragem ap\u00f3s a partida.</li></ul><h3>\u23F1\uFE0F Novas Regras de Tempo</h3><ul><li><strong>Regra dos 8 segundos para o goleiro</strong>: O goleiro tem 8s para soltar a bola (antes eram 6s). Se exceder, escanteio para o advers\u00e1rio.</li><li><strong>Regra dos 5 segundos no lateral</strong>: O jogador tem at\u00e9 5s para cobrar o lateral (nova, aprovada pela IFAB). Ap\u00f3s 5s, a posse passa para o outro time.</li><li><strong>Regra dos 10 segundos na substitui\u00e7\u00e3o</strong>: O substituto deve entrar em at\u00e9 10s ap\u00f3s o jogador sair. Acr\u00e9scimo de tempo \u00e9 adicionado se houver demora.</li></ul><h3>\uD83D\uDD34 Cart\u00e3o Vermelho Direto por Conduta Antidesportiva</h3><ul><li><strong>Cobrir a boca ao falar com o \u00e1rbitro</strong>: gesto considerado desrespeitoso, pass\u00edvel de cart\u00e3o amarelo ou vermelho se reiterado.</li><li><strong>Protesto com abandono do campo</strong>: jogador que sai do campo em protesto e se recusa a voltar pode levar vermelho direto.</li><li><strong>Capitanato obrigat\u00f3rio</strong>: apenas o capit\u00e3o pode falar com o \u00e1rbitro. Qualquer outro jogador que discuta leva amarelo.</li></ul><h3>\u26A1 Outras Mudan\u00e7as</h3><ul><li><strong>Bola oficial Trionda</strong>: com sensor IMU de 500Hz conectado ao SAOT, detecta toques ilegais (m\u00e3o na bola) e posse.</li><li><strong>Acr\u00e9scimos de tempo mais rigorosos</strong>: todas as paralisa\u00e7\u00f5es (gols, substitui\u00e7\u00f5es, cart\u00f5es, VAR) s\u00e3o cronometradas e adicionadas ao fim de cada tempo.</li><li><strong>5 substitui\u00e7\u00f5es por jogo</strong> (em 3 janelas, mais intervalo), mantido de 2022.</li><li><strong>Seguran\u00e7a contra invas\u00e3o de campo</strong>: torcedor que invadir o campo \u00e9 pass\u00edvel de pris\u00e3o imediata e o clube/time pode ser multado.</li></ul><hr><h2>\uD83D\uDFE8 Regras de Cart\u00f5es e Suspens\u00e3o</h2><div class="highlight"><p>Regras de ac\u00famulo de cart\u00f5es v\u00e1lidas para a Copa do Mundo 2026:</p></div><ul><li><strong>2 cart\u00f5es amarelos = suspens\u00e3o autom\u00e1tica</strong>: Um jogador que receber dois cart\u00f5es amarelos em partidas diferentes cumpre suspens\u00e3o no jogo seguinte.</li><li><strong>Cart\u00e3o vermelho direto</strong>: suspens\u00e3o autom\u00e1tica por no m\u00ednimo 1 jogo, podendo ser estendida pela Comiss\u00e3o Disciplinar da FIFA.</li><li><strong>Zeragem ap\u00f3s as quartas de final</strong>: todos os cart\u00f5es amarelos s\u00e3o zerados ap\u00f3s a rodada de quartas de final. Jogadores que chegarem \u00e0 semifinal com 1 cart\u00e3o amarelo n\u00e3o correm risco de suspens\u00e3o por ac\u00famulo na final.</li><li><strong>Jogador pendurado</strong>: jogador com 1 cart\u00e3o amarelo acumulado est\u00e1 \"pendurado\" e ser\u00e1 suspenso se receber mais 1 amarelo.</li><li><strong>Vermelhos diretos n\u00e3o zeram</strong>: cart\u00f5es vermelhos diretos (e suas suspens\u00f5es) continuam v\u00e1lidos mesmo ap\u00f3s a zeragem dos amarelos.</li><li><strong>Expuls\u00f5es na partida final</strong>: cart\u00f5es vermelhos na final podem resultar em suspens\u00e3o para a primeira partida da pr\u00f3xima competi\u00e7\u00e3o internacional da sele\u00e7\u00e3o.</li></ul><hr><p><small>Fontes: IFAB Laws of the Game 2025/26, FIFA Circular #1894, FIFA World Cup 2026 Regulations.</small></p>';
+document.getElementById("rules-content").innerHTML='<h2>Formato do Torneio</h2><div class="highlight"><p>Copa do Mundo FIFA 2026 \u2014 48 sele\u00e7\u00f5es, 12 grupos de 4 times cada. Avan\u00e7am para o mata-mata os 2 melhores de cada grupo (24) + os 8 melhores terceiros colocados, totalizando 32 equipes na Rodada de 32.</p></div><h3>Fase de Grupos</h3><ul><li>Cada time joga 3 partidas dentro do grupo.</li><li>Vit\u00f3ria = 3 pontos, Empate = 1 ponto, Derrota = 0 pontos.</li><li>Crit\u00e9rios de desempate (ordem FIFA 2026): 1\u00ba) pontos, 2\u00ba) confronto direto (pts \u2192 SG \u2192 GF), 3\u00ba) saldo de gols geral, 4\u00ba) gols marcados geral, 5\u00ba) fair play (cart\u00f5es), 6\u00ba) ranking FIFA, 7\u00ba) edi\u00e7\u00e3o anterior do ranking.</li></ul><h3>Mata-Mata</h3><ul><li>Rodada de 32: 16 jogos, eliminat\u00f3ria simples.</li><li>Oitavas de final: 8 jogos.</li><li>Quartas de final: 4 jogos.</li><li>Semifinal: 2 jogos.</li><li>Disputa do 3\u00b0 lugar: 1 jogo.</li><li>Final: 1 jogo.</li><li>Em caso de empate no mata-mata, h\u00e1 prorroga\u00e7\u00e3o (30 min) e, se necess\u00e1rio, p\u00eanaltis.</li></ul><h2>Pa\u00edses-sede</h2><p>Canad\u00e1, M\u00e9xico e Estados Unidos \u2014 16 cidades-sede ao todo.</p><p>Abertura: Est\u00e1dio Azteca, Cidade do M\u00e9xico.</p><p>Final: MetLife Stadium, Nova Jersey (East Rutherford).</p><h2>Calend\u00e1rio</h2><p>11 de junho a 19 de julho de 2026.</p><hr><h2>\u26BD Regras 2026 \u2014 Novidades</h2><div class="highlight"><p>A Copa de 2026 traz v\u00e1rias mudan\u00e7as de regras aprovadas pela IFAB e adotadas pela FIFA. Confira as principais:</p></div><h3>\u2699\uFE0F Impedimento Semi-Autom\u00e1tico (SAOT)</h3><ul><li>Tecnologia que usa 12 c\u00e2meras de rastreamento \u00f3sseo + sensor no miolo da bola inteligente (Trionda).</li><li>Determina automaticamente a posi\u00e7\u00e3o de cada jogador no momento do passe, gerando um modelo 3D em tempo real.</li><li>A decis\u00e3o \u00e9 enviada ao VAR em segundos; o \u00e1rbitro pode revisar ou aceitar automaticamente.</li><li>Substitui o sistema manual de tra\u00e7ado de linhas usado em 2022.</li></ul><h3>\ud83D\udCF9 VAR Expandido (\u00c1rbitro de V\u00eddeo)</h3><ul><li>Revis\u00e3o obrigat\u00f3ria para: gols, p\u00eanaltis, cart\u00f5es vermelhos diretos, confus\u00e3o de identidade.</li><li>NOVO 2026: revis\u00e3o dispon\u00edvel tamb\u00e9m para: <strong>impedimentos em lances de gol</strong>, <strong>contato dentro da \u00e1rea duvidoso</strong>, <strong>m\u00e3o na bola em finaliza\u00e7\u00e3o</strong>.</li><li>O \u00e1rbitro pode usar o monitor de campo (RRA) para revisar pessoalmente.</li><li>Torcedores no est\u00e1dio e na transmiss\u00e3o veem as imagens do VAR + \u00e1udio da cabine em tempo real.</li></ul><h3>\ud83C\udfac C\u00e2mera Corporal no \u00c1rbitro</h3><ul><li>Estreia em Copas: cada \u00e1rbitro de campo usa uma c\u00e2mera no peito (RefCam).</li><li>\u00c1udio e v\u00eddeo capturados s\u00e3o usados para documenta\u00e7\u00e3o, mas N\u00c3O s\u00e3o transmitidos ao vivo.</li><li>Funciona como fonte extra para a Comiss\u00e3o de Arbitragem ap\u00f3s a partida.</li></ul><h3>\u23F1\uFE0F Novas Regras de Tempo</h3><ul><li><strong>Regra dos 8 segundos para o goleiro</strong>: O goleiro tem 8s para soltar a bola (antes eram 6s). Se exceder, escanteio para o advers\u00e1rio.</li><li><strong>Regra dos 5 segundos no lateral</strong>: O jogador tem at\u00e9 5s para cobrar o lateral (nova, aprovada pela IFAB). Ap\u00f3s 5s, a posse passa para o outro time.</li><li><strong>Regra dos 10 segundos na substitui\u00e7\u00e3o</strong>: O substituto deve entrar em at\u00e9 10s ap\u00f3s o jogador sair. Acr\u00e9scimo de tempo \u00e9 adicionado se houver demora.</li></ul><h3>\uD83D\uDD34 Cart\u00e3o Vermelho Direto por Conduta Antidesportiva</h3><ul><li><strong>Cobrir a boca ao falar com o \u00e1rbitro</strong>: gesto considerado desrespeitoso, pass\u00edvel de cart\u00e3o amarelo ou vermelho se reiterado.</li><li><strong>Protesto com abandono do campo</strong>: jogador que sai do campo em protesto e se recusa a voltar pode levar vermelho direto.</li><li><strong>Capitanato obrigat\u00f3rio</strong>: apenas o capit\u00e3o pode falar com o \u00e1rbitro. Qualquer outro jogador que discuta leva amarelo.</li></ul><h3>\u26A1 Outras Mudan\u00e7as</h3><ul><li><strong>Bola oficial Trionda</strong>: com sensor IMU de 500Hz conectado ao SAOT, detecta toques ilegais (m\u00e3o na bola) e posse.</li><li><strong>Acr\u00e9scimos de tempo mais rigorosos</strong>: todas as paralisa\u00e7\u00f5es (gols, substitui\u00e7\u00f5es, cart\u00f5es, VAR) s\u00e3o cronometradas e adicionadas ao fim de cada tempo.</li><li><strong>5 substitui\u00e7\u00f5es por jogo</strong> (em 3 janelas, mais intervalo), mantido de 2022.</li><li><strong>Seguran\u00e7a contra invas\u00e3o de campo</strong>: torcedor que invadir o campo \u00e9 pass\u00edvel de pris\u00e3o imediata e o clube/time pode ser multado.</li></ul><hr><h2>\uD83D\uDFE8 Regras de Cart\u00f5es e Suspens\u00e3o</h2><div class="highlight"><p>Regras de ac\u00famulo de cart\u00f5es v\u00e1lidas para a Copa do Mundo 2026:</p></div><ul><li><strong>2 cart\u00f5es amarelos = suspens\u00e3o autom\u00e1tica</strong>: Um jogador que receber dois cart\u00f5es amarelos em partidas diferentes cumpre suspens\u00e3o no jogo seguinte.</li><li><strong>Cart\u00e3o vermelho direto</strong>: suspens\u00e3o autom\u00e1tica por no m\u00ednimo 1 jogo, podendo ser estendida pela Comiss\u00e3o Disciplinar da FIFA.</li><li><strong>Zeragem ap\u00f3s as quartas de final</strong>: todos os cart\u00f5es amarelos s\u00e3o zerados ap\u00f3s a rodada de quartas de final. Jogadores que chegarem \u00e0 semifinal com 1 cart\u00e3o amarelo n\u00e3o correm risco de suspens\u00e3o por ac\u00famulo na final.</li><li><strong>Jogador pendurado</strong>: jogador com 1 cart\u00e3o amarelo acumulado est\u00e1 \"pendurado\" e ser\u00e1 suspenso se receber mais 1 amarelo.</li><li><strong>Vermelhos diretos n\u00e3o zeram</strong>: cart\u00f5es vermelhos diretos (e suas suspens\u00f5es) continuam v\u00e1lidos mesmo ap\u00f3s a zeragem dos amarelos.</li><li><strong>Expuls\u00f5es na partida final</strong>: cart\u00f5es vermelhos na final podem resultar em suspens\u00e3o para a primeira partida da pr\u00f3xima competi\u00e7\u00e3o internacional da sele\u00e7\u00e3o.</li></ul><hr><p><small>Fontes: IFAB Laws of the Game 2025/26, FIFA Circular #1894, FIFA World Cup 2026 Regulations.</small></p>';
 
 
 // === Loader de dados externos (players.json + photos.json) ===
@@ -2622,6 +2655,7 @@ function _bolaoRankedThirds(picks){
     if(b.pts!==a.pts)return b.pts-a.pts;
     if(b.sg!==a.sg)return b.sg-a.sg;
     if(b.gf!==a.gf)return b.gf-a.gf;
+    if((FIFA_RANK[a.team]||999)!==(FIFA_RANK[b.team]||999))return(FIFA_RANK[a.team]||999)-(FIFA_RANK[b.team]||999);
     return a.team.localeCompare(b.team);
   });
   return thirds.slice(0,8);
