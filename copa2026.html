@@ -389,6 +389,9 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bolao-rank-table{width:100%;border-collapse:collapse;background:var(--card);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
 .bolao-rank-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);background:rgba(0,0,0,.3)}
 .bolao-rank-row td{padding:10px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;vertical-align:middle;cursor:pointer;transition:background .15s}
+.bolao-rank-row.rank-gold .bolao-rank-name,.bolao-rank-row.rank-gold .bolao-rank-pts{color:#ffd700}
+.bolao-rank-row.rank-silver .bolao-rank-name,.bolao-rank-row.rank-silver .bolao-rank-pts{color:#c0c0c0}
+.bolao-rank-row.rank-bronze .bolao-rank-name,.bolao-rank-row.rank-bronze .bolao-rank-pts{color:#cd7f32}
 .bolao-rank-row:hover td{background:rgba(255,255,255,.03)}
 .bolao-rank-pos{font-weight:700;color:var(--muted);width:36px}
 .bolao-rank-name{font-weight:600;color:var(--text)}
@@ -2787,7 +2790,8 @@ function bolaoRenderRanking(){
       var spText=sp?((sp.champion||'?')+' / '+(sp.top_scorer||'?')):'&mdash;';
       var isUser=r.id===_bolaoParticipantId;
       var userClass=isUser?' bolao-rank-self':'';
-      return '<tr class="bolao-rank-row'+userClass+'" onclick="bolaoToggleDetail(\''+r.id+'\')">'
+      var rkClass=i<3?' rank-'+['gold','silver','bronze'][i]:'';
+      return '<tr class="bolao-rank-row'+rkClass+userClass+'" onclick="bolaoToggleDetail(\''+r.id+'\')">'
         +'<td class="bolao-rank-pos">'+medal+' '+(i+1)+'</td>'
         +'<td class="bolao-rank-name">'+esc(r.name)+'</td>'
         +'<td style="font-size:11px;color:var(--muted)">'+esc(spText)+'</td>'
