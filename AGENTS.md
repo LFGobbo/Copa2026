@@ -749,7 +749,7 @@ Toda melhoria deve:
 - **`bolaoLoadMajority` adicionada**: carrega dados da maioria e re-renderiza grid de palpites
 - **`_bolaoFetch` com retry e backoff**: 3 tentativas com delay exponencial (1s, 2s, 4s) para recupera??o de falhas tempor?rias Worker/Supabase
 - **Worker `/health`**: endpoint de monitoramento `GET /health` ? `{ok: true, uptime: ...}`
-- **Worker `/cron`**: endpoint para cron jobs externos (keepalive Supabase + poll FIFA + snapshot). Protegido por `?secret=ADMIN_KEY`. Configurar em cron-job.org a cada 5 min
+- **Worker `/cron`**: endpoint para cron jobs externos (keepalive Supabase + poll FIFA + snapshot). Protegido por `?secret=CRON_SECRET`. Configurado via Cron Trigger nativo do Cloudflare (`*/5 * * * *`) — não precisa mais de cron-job.org
 - **Worker `/scores`**: proxy para tabela `live_scores` do Supabase ? scores centralizados da FIFA
 - **Tabela `live_scores`**: cache centralizado de placares no Supabase, populado pelo Worker Cron
 - **Cache offline do ranking**: `localStorage` guarda ?ltimo ranking bem-sucedido (TTL 1h). Se Worker offline, mostra ranking cacheado com indicador "? Dados offline"

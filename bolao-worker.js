@@ -13,6 +13,10 @@
 addEventListener('fetch', function (event) {
   event.respondWith(handle(event.request));
 });
+addEventListener('scheduled', function (event) {
+  var cronSecret = (typeof CRON_SECRET !== 'undefined' && CRON_SECRET) ? CRON_SECRET : ADMIN_KEY;
+  event.waitUntil(handle(new Request('https://worker/cron?secret=' + cronSecret + '&task=all')));
+});
 
 var CORS = {
   'Access-Control-Allow-Origin': '*',
