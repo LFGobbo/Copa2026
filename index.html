@@ -185,6 +185,13 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .rank-gold+td,.rank-gold+td+td{color:#ffd700}
 .rank-silver+td,.rank-silver+td+td{color:#c0c0c0}
 .rank-bronze+td,.rank-bronze+td+td{color:#cd7f32}
+/* Bolão ranking - top 3 cores */
+.rank-gold .mob-rank-name,.rank-gold .mob-rank-pts{color:#ffd700!important}
+.rank-silver .mob-rank-name,.rank-silver .mob-rank-pts{color:#c0c0c0!important}
+.rank-bronze .mob-rank-name,.rank-bronze .mob-rank-pts{color:#cd7f32!important}
+tr.rank-gold td.bolao-rank-name,tr.rank-gold td.bolao-rank-pts{color:#ffd700}
+tr.rank-silver td.bolao-rank-name,tr.rank-silver td.bolao-rank-pts{color:#c0c0c0}
+tr.rank-bronze td.bolao-rank-name,tr.rank-bronze td.bolao-rank-pts{color:#cd7f32}
 .third-container{max-width:650px;margin:20px auto 0}
 .third-title{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:10px;text-align:center}
 .third-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius)}
@@ -2861,8 +2868,9 @@ function bolaoRenderRanking(){
       var medal=i<3?medalEmoji[i]:'',sp=_bolaoAllSpecials[r.id];
       var spText=sp?((sp.champion||'?')+' / '+(sp.top_scorer||'?')):'&mdash;';
       var isUser=r.id===_bolaoParticipantId;
+      var topClass=i<3?' '+rankClass[i]:'';
       var userClass=isUser?' bolao-rank-self':'';
-      return '<tr class="bolao-rank-row'+userClass+'" onclick="bolaoToggleDetail(\''+r.id+'\')">'
+      return '<tr class="bolao-rank-row'+topClass+userClass+'" onclick="bolaoToggleDetail(\''+r.id+'\')">'
         +'<td class="bolao-rank-pos">'+medal+' '+(i+1)+'</td>'
         +'<td class="bolao-rank-name">'+esc(r.name)+'</td>'
         +'<td style="font-size:11px;color:var(--muted)">'+esc(spText)+'</td>'
