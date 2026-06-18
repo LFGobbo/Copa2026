@@ -1,11 +1,14 @@
-// Cloudflare Worker — Copa2026 Bolão (v19.10 — fix de seguranca: validacao server-side de prazo)
+// Cloudflare Worker — Copa2026 Bolão (v19.11 — cron snapshot real, batch upsert, secrets separados)
 // ENV vars (configurar no dashboard):
 //   SUPABASE_URL  — https://etbezmraylbvlnycltha.supabase.co
 //   SUPABASE_KEY  — service_role key (NÃO a anônima!)
 //   TURNSTILE_SEC — Secret key do Turnstile
 //   JWT_SECRET    — Qualquer string para assinar tokens
-//   ADMIN_KEY     — Chave secreta para reset
+//   ADMIN_KEY     — Chave secreta para reset/unlock (endpoints administrativos destrutivos)
 //   ADMIN_HASH    — SHA-256('BolaoAdmin2026!' + ':' + JWT_SECRET)
+//   CRON_SECRET   — Chave separada para o endpoint /cron (cron-job.org ou CF Cron)
+//                   Use um valor DIFERENTE de ADMIN_KEY para isolar permissões:
+//                   quem tem CRON_SECRET pode disparar o cron, mas NÃO pode resetar o bolão.
 
 addEventListener('fetch', function (event) {
   event.respondWith(handle(event.request));
@@ -395,18 +398,21 @@ async function handle(req) {
       if (!round) return error('round obrigatorio');
       var ranking = snap.ranking;
       if (!ranking || !ranking.length) return error('ranking obrigatorio');
-      for (var i = 0; i < ranking.length; i++) {
-        var entry = ranking[i];
-        await supaFetch('ranking_snapshots?on_conflict=participant_id,round', 'POST', {
+      // Batch upsert via PostgREST (array no body) em vez de N requests sequenciais --
+      // antes, cada participante gerava um round-trip separado ao Supabase, o que
+      // podia causar timeout do Worker com 20+ participantes (30s CPU limit do CF).
+      var batchData = ranking.map(function(entry) {
+        return {
           participant_id: entry.participant_id,
           round: round,
           position: entry.position,
           points: entry.points,
           exact_count: entry.exact_count || 0,
           result_count: entry.result_count || 0
-        });
-      }
-      return json({ ok: true, round: round, count: ranking.length });
+        };
+      });
+      await supaFetch('ranking_snapshots?on_conflict=participant_id,round', 'POST', batchData);
+      return json({ ok: true, round: round, count: batchData.length });
     }
 
     // GET /evolution?participantId=...
@@ -474,8 +480,11 @@ async function handle(req) {
 
     // GET /cron — tarefas agendadas (chamado via cron-job.org ou Cloudflare Cron)
     if (method === 'GET' && path === '/cron') {
+      // Usa CRON_SECRET em vez de ADMIN_KEY para isolar permissoes.
+      // Fallback para ADMIN_KEY se CRON_SECRET ainda nao estiver configurado.
+      var expectedCronSecret = (typeof CRON_SECRET !== 'undefined' && CRON_SECRET) ? CRON_SECRET : ADMIN_KEY;
       var cronSecret = url.searchParams.get('secret') || '';
-      if (cronSecret !== ADMIN_KEY) return error('Cron secret invalido', 403);
+      if (cronSecret !== expectedCronSecret) return error('Cron secret invalido', 403);
 
       var task = url.searchParams.get('task') || '';
       var results = {};
@@ -521,20 +530,97 @@ async function handle(req) {
         } catch (e) { results.fifa = 'fail: ' + e.message; }
       }
 
-      // snapshot: calcular ranking e gravar (para cada jogo encerrado)
+      // snapshot: calcular ranking real com placares da FIFA (live_scores no Supabase)
       if (task === 'snapshot' || task === 'all') {
         try {
-          var participants = (await supaFetch('participants?select=id,name,confirmed,confirmed_at')) || [];
-          if (participants.length) {
-            var now2 = new Date().toISOString();
-            for (var p = 0; p < participants.length; p++) {
-              var pid = participants[p].id;
-              // Placeholder: snapshot real precisa dos scores no Supabase
-              // Por enquanto apenas registra que o participante existe
-              results.snapshot = (results.snapshot || 0) + 1;
-            }
+          // Mapa game_key (homeAbbr_awayAbbr) -> game_n para jogos de grupo.
+          // Gerado a partir de GAMES + FIFA_TEAM_MAP do index.html. Cobre 72 jogos (grupos).
+          // Jogos de mata-mata nao tem abreviacoes fixas (times sao placeholders) -- esses
+          // sao pontuados pelo frontend via checkAutoSnapshot quando encerram.
+          var GAME_KEY_MAP = {"MEX_RSA":1,"KOR_CZE":2,"CAN_BIH":3,"USA_PAR":4,"QAT_SUI":5,"BRA_MAR":6,"HAI_SCO":7,"AUS_TUR":8,"GER_CUW":9,"NED_JPN":10,"CIV_ECU":11,"SWE_TUN":12,"ESP_CPV":13,"BEL_EGY":14,"KSA_URU":15,"IRN_NZL":16,"ARG_ALG":17,"FRA_SEN":18,"IRQ_NOR":19,"AUT_JOR":20,"POR_COD":21,"ENG_CRO":22,"GHA_PAN":23,"UZB_COL":24,"CZE_RSA":25,"SUI_BIH":26,"CAN_QAT":27,"MEX_KOR":28,"TUR_PAR":29,"USA_AUS":30,"SCO_MAR":31,"BRA_HAI":32,"NED_SWE":33,"GER_CIV":34,"ECU_CUW":35,"TUN_JPN":36,"ESP_KSA":37,"BEL_IRN":38,"URU_CPV":39,"NZL_EGY":40,"ARG_AUT":41,"FRA_IRQ":42,"NOR_SEN":43,"JOR_ALG":44,"POR_UZB":45,"ENG_GHA":46,"PAN_CRO":47,"COL_COD":48,"BIH_QAT":50,"SUI_CAN":49,"MAR_HAI":52,"SCO_BRA":51,"RSA_KOR":54,"CZE_MEX":53,"CUW_CIV":56,"ECU_GER":55,"TUN_NED":58,"JPN_SWE":57,"PAR_AUS":60,"TUR_USA":59,"SEN_IRQ":62,"NOR_FRA":61,"URU_ESP":64,"CPV_KSA":63,"NZL_BEL":66,"EGY_IRN":65,"CRO_GHA":68,"PAN_ENG":67,"COD_UZB":70,"COL_POR":69,"JOR_ARG":72,"ALG_AUT":71};
+
+          // Funcao de pontuacao: identica ao bolaoCalcPickPts do frontend
+          function calcPts(pA,pB,rA,rB){
+            if(pA===null||pA===undefined||pB===null||pB===undefined)return -1;
+            if(rA===null||rA===undefined||rB===null||rB===undefined)return -1;
+            if(pA===rA&&pB===rB)return 10;
+            var pr=Math.sign(pA-pB),rr=Math.sign(rA-rB);
+            if(pr!==rr)return 0;
+            if(Math.max(pA,pB)===Math.max(rA,rB))return 6;
+            if(Math.min(pA,pB)===Math.min(rA,rB))return 4;
+            return 2;
           }
-          results.snapshot = (results.snapshot || 0) + ' participants checked';
+
+          // 1. Buscar placares reais do Supabase (gravados pelo task=fifa)
+          var liveScores = (await supaFetch('live_scores?select=game_key,goals_home,goals_away')) || [];
+          // Montar mapa game_n -> {a, b}
+          var realScores = {};
+          liveScores.forEach(function(s) {
+            var gn = GAME_KEY_MAP[s.game_key];
+            if (gn) realScores[gn] = { a: s.goals_home, b: s.goals_away };
+          });
+
+          // 2. Buscar participantes confirmados
+          var snapParticipants = (await supaFetch('participants?select=id,name,confirmed,confirmed_at&confirmed=eq.true')) || [];
+          if (!snapParticipants.length) { results.snapshot = 'nenhum participante confirmado'; }
+          else if (!Object.keys(realScores).length) { results.snapshot = 'nenhum placar disponivel em live_scores (rodar task=fifa primeiro)'; }
+          else {
+            // 3. Buscar todos os picks (paginado)
+            var snapPicks = [];
+            try {
+              var spBase = SUPABASE_URL + '/rest/v1/picks?select=participant_id,game_n,goals_a,goals_b';
+              var spOpts = { method:'GET', headers:{ apikey:SUPABASE_KEY, Authorization:'Bearer '+SUPABASE_KEY, 'Content-Type':'application/json' } };
+              for (var pg=0; pg<20; pg++) {
+                spOpts.headers['Range'] = (pg*1000)+'-'+((pg+1)*1000-1);
+                var spr = await fetch(spBase, spOpts);
+                if (!spr.ok && spr.status !== 206) break;
+                var spb = await spr.json() || [];
+                if (!spb.length) break;
+                snapPicks = snapPicks.concat(spb);
+                if (spb.length < 1000) break;
+              }
+            } catch(e) {}
+
+            var picksByPid = {};
+            snapPicks.forEach(function(p) {
+              if (!picksByPid[p.participant_id]) picksByPid[p.participant_id] = {};
+              picksByPid[p.participant_id][p.game_n] = p;
+            });
+
+            // 4. Calcular pontuacao por participante
+            var rows = snapParticipants.map(function(part) {
+              var myPicks = picksByPid[part.id] || {};
+              var total = 0, exactCount = 0, resultCount = 0;
+              var confirmTs = part.confirmed_at ? new Date(part.confirmed_at).getTime() : null;
+              Object.keys(realScores).forEach(function(gn) {
+                var gnNum = parseInt(gn, 10);
+                // Verificar se confirmou antes do jogo comecar
+                // (usando deadline = kickoff - 2h, igual ao BOLAO_TWO_H do frontend)
+                var dl = bolaoDeadline(gnNum);
+                if (dl && confirmTs && (dl.getTime() + BOLAO_DEADLINE_MS) < confirmTs) return; // confirmou apos o kickoff
+                var pick = myPicks[gnNum];
+                if (!pick || pick.goals_a === null || pick.goals_b === null) return;
+                var real = realScores[gn];
+                var pts = calcPts(pick.goals_a, pick.goals_b, real.a, real.b);
+                if (pts < 0) return;
+                total += pts;
+                if (pts === 10) exactCount++;
+                else if (pts >= 2) resultCount++;
+              });
+              return { participant_id: part.id, points: total, exact_count: exactCount, result_count: resultCount, position: 0 };
+            });
+            rows.sort(function(a,b){ return b.points-a.points || b.exact_count-a.exact_count || b.result_count-a.result_count; });
+            rows.forEach(function(r,i){ r.position=i+1; });
+
+            // 5. Batch upsert no Supabase (PostgREST aceita array no body com on_conflict)
+            var round = url.searchParams.get('round') || String(Math.max.apply(null, Object.keys(realScores).map(Number)));
+            var snapData = rows.map(function(r){
+              return { participant_id:r.participant_id, round:parseInt(round,10), position:r.position,
+                       points:r.points, exact_count:r.exact_count, result_count:r.result_count };
+            });
+            await supaFetch('ranking_snapshots?on_conflict=participant_id,round', 'POST', snapData);
+            results.snapshot = rows.length+' participants, round='+round+', '+Object.keys(realScores).length+' scored games';
+          }
         } catch (e) { results.snapshot = 'fail: ' + e.message; }
       }
 
