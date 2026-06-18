@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 ? Documenta??o do Projeto
 
-**?ltima atualiza??o:** 2026-06-17 (v19.25)
+**?ltima atualiza??o:** 2026-06-18 (v19.26)
 **Reposit?rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -85,6 +85,8 @@ index.html (ou copa2026.html)
 | `logo_getv.png` | ? | Logo Ge TV |
 | `AGENTS.md` | ? | Esta documenta??o |
 | `LEVANTAMENTO_TECNICO.md` | ? | An?lise t?cnica detalhada |
+| `supabase-rls-fix.sql` | 4.9KB | Reabilita RLS nas 4 tabelas com policies seguras |
+| `third_place_matrix_2026.json` | 190KB | 495 combina??es de 3?s lugares (Anexo C FIFA) |
 | `opencode.json` | ? | Configura??o OpenCode |
 | `.gitignore` | ? | Regras git |
 
@@ -573,6 +575,13 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v19.26 (2026-06-18) - Worker v19.10 + RLS fix + Anexo C + deadline 2h
+- **Worker atualizado para v19.10**: adiciona `BOLAO_GAMES` inline no Worker, fun??es `gameUTC()`/`bolaoDeadline()`, valida??o server-side de prazo (rejeita palpites ap?s deadline mesmo chamando API direto), valida??o de confirma??o no servidor
+- **`supabase-rls-fix.sql`**: script SQL reabilita RLS nas 4 tabelas, cria policies de leitura p?blica e bloqueio de escrita via anon key, cria view `participants_public` sem a coluna password
+- **`third_place_matrix_2026.json`**: 495 combina??es de 3?s lugares (Anexo C FIFA) para resolu??o do bracket
+- **Deadline bol?o revertido para 2h**: `BOLAO_TWO_H=7200000` e `BOLAO_DEADLINE_MS=7200000` (estava 30min no v19.11)
+- **`bolao-worker.js.backup` sincronizado** com a vers?o v19.10
 
 ### v19.25 (2026-06-17) - Ouro/prata/bronze na tabela do bolao
 - Cores gold/silver/bronze no nome e pontos do top 3 na tabela de ranking do bolao (igual artilheiros)

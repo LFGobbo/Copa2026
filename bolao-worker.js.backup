@@ -1,4 +1,4 @@
-// Cloudflare Worker — Copa2026 Bolão (v19.9)
+// Cloudflare Worker — Copa2026 Bolão (v19.10 — fix de seguranca: validacao server-side de prazo)
 // ENV vars (configurar no dashboard):
 //   SUPABASE_URL  — https://etbezmraylbvlnycltha.supabase.co
 //   SUPABASE_KEY  — service_role key (NÃO a anônima!)
@@ -16,6 +16,33 @@ var CORS = {
   'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Admin-Key',
 };
+
+// ── Dados mínimos do calendário (espelha GAMES do index.html) ──
+// Usado SOMENTE para validar prazos de palpite no servidor (deadline check).
+// Mantenha sincronizado com o array GAMES do index.html se as datas/horários mudarem.
+var BOLAO_GAMES = [{"n":1,"d":"11/06 Qui","t":"16:00","f":"Grupo A"},{"n":2,"d":"11/06 Qui","t":"23:00","f":"Grupo A"},{"n":3,"d":"12/06 Sex","t":"16:00","f":"Grupo B"},{"n":4,"d":"12/06 Sex","t":"22:00","f":"Grupo D"},{"n":5,"d":"13/06 Sáb","t":"16:00","f":"Grupo B"},{"n":6,"d":"13/06 Sáb","t":"19:00","f":"Grupo C"},{"n":7,"d":"13/06 Sáb","t":"22:00","f":"Grupo C"},{"n":8,"d":"14/06 Dom","t":"01:00","f":"Grupo D"},{"n":9,"d":"14/06 Dom","t":"14:00","f":"Grupo E"},{"n":10,"d":"14/06 Dom","t":"17:00","f":"Grupo F"},{"n":11,"d":"14/06 Dom","t":"20:00","f":"Grupo E"},{"n":12,"d":"14/06 Dom","t":"23:00","f":"Grupo F"},{"n":13,"d":"15/06 Seg","t":"13:00","f":"Grupo H"},{"n":14,"d":"15/06 Seg","t":"16:00","f":"Grupo G"},{"n":15,"d":"15/06 Seg","t":"19:00","f":"Grupo H"},{"n":16,"d":"15/06 Seg","t":"22:00","f":"Grupo G"},{"n":17,"d":"16/06 Ter","t":"22:00","f":"Grupo I"},{"n":18,"d":"16/06 Ter","t":"16:00","f":"Grupo J"},{"n":19,"d":"16/06 Ter","t":"19:00","f":"Grupo J"},{"n":20,"d":"17/06 Qua","t":"01:00","f":"Grupo I"},{"n":21,"d":"17/06 Qua","t":"14:00","f":"Grupo K"},{"n":22,"d":"17/06 Qua","t":"17:00","f":"Grupo L"},{"n":23,"d":"17/06 Qua","t":"20:00","f":"Grupo L"},{"n":24,"d":"17/06 Qua","t":"23:00","f":"Grupo K"},{"n":25,"d":"18/06 Qui","t":"13:00","f":"Grupo A"},{"n":26,"d":"18/06 Qui","t":"16:00","f":"Grupo B"},{"n":27,"d":"18/06 Qui","t":"19:00","f":"Grupo B"},{"n":28,"d":"18/06 Qui","t":"22:00","f":"Grupo A"},{"n":29,"d":"19/06 Sex","t":"01:00","f":"Grupo D"},{"n":30,"d":"19/06 Sex","t":"16:00","f":"Grupo D"},{"n":31,"d":"19/06 Sex","t":"19:00","f":"Grupo C"},{"n":32,"d":"19/06 Sex","t":"21:30","f":"Grupo C"},{"n":33,"d":"20/06 Sáb","t":"14:00","f":"Grupo F"},{"n":34,"d":"20/06 Sáb","t":"17:00","f":"Grupo E"},{"n":35,"d":"20/06 Sáb","t":"21:00","f":"Grupo E"},{"n":36,"d":"21/06 Dom","t":"01:00","f":"Grupo F"},{"n":37,"d":"21/06 Dom","t":"13:00","f":"Grupo H"},{"n":38,"d":"21/06 Dom","t":"16:00","f":"Grupo G"},{"n":39,"d":"21/06 Dom","t":"19:00","f":"Grupo H"},{"n":40,"d":"21/06 Dom","t":"22:00","f":"Grupo G"},{"n":41,"d":"22/06 Seg","t":"14:00","f":"Grupo I"},{"n":42,"d":"22/06 Seg","t":"18:00","f":"Grupo J"},{"n":43,"d":"22/06 Seg","t":"21:00","f":"Grupo J"},{"n":44,"d":"23/06 Ter","t":"00:00","f":"Grupo I"},{"n":45,"d":"23/06 Ter","t":"14:00","f":"Grupo K"},{"n":46,"d":"23/06 Ter","t":"17:00","f":"Grupo L"},{"n":47,"d":"23/06 Ter","t":"20:00","f":"Grupo L"},{"n":48,"d":"23/06 Ter","t":"23:00","f":"Grupo K"},{"n":50,"d":"24/06 Qua","t":"16:00","f":"Grupo B"},{"n":49,"d":"24/06 Qua","t":"16:00","f":"Grupo B"},{"n":52,"d":"24/06 Qua","t":"19:00","f":"Grupo C"},{"n":51,"d":"24/06 Qua","t":"19:00","f":"Grupo C"},{"n":54,"d":"24/06 Qua","t":"22:00","f":"Grupo A"},{"n":53,"d":"24/06 Qua","t":"22:00","f":"Grupo A"},{"n":56,"d":"25/06 Qui","t":"17:00","f":"Grupo E"},{"n":55,"d":"25/06 Qui","t":"17:00","f":"Grupo E"},{"n":58,"d":"25/06 Qui","t":"20:00","f":"Grupo F"},{"n":57,"d":"25/06 Qui","t":"20:00","f":"Grupo F"},{"n":60,"d":"25/06 Qui","t":"23:00","f":"Grupo D"},{"n":59,"d":"25/06 Qui","t":"23:00","f":"Grupo D"},{"n":62,"d":"26/06 Sex","t":"16:00","f":"Grupo J"},{"n":61,"d":"26/06 Sex","t":"16:00","f":"Grupo J"},{"n":64,"d":"26/06 Sex","t":"21:00","f":"Grupo H"},{"n":63,"d":"26/06 Sex","t":"21:00","f":"Grupo H"},{"n":66,"d":"27/06 Sáb","t":"00:00","f":"Grupo G"},{"n":65,"d":"27/06 Sáb","t":"00:00","f":"Grupo G"},{"n":68,"d":"27/06 Sáb","t":"18:00","f":"Grupo L"},{"n":67,"d":"27/06 Sáb","t":"18:00","f":"Grupo L"},{"n":70,"d":"27/06 Sáb","t":"20:30","f":"Grupo K"},{"n":69,"d":"27/06 Sáb","t":"20:30","f":"Grupo K"},{"n":72,"d":"27/06 Sáb","t":"23:00","f":"Grupo I"},{"n":71,"d":"27/06 Sáb","t":"23:00","f":"Grupo I"},{"n":73,"d":"28/06 Dom","t":"21:00","f":"Rodada de 32"},{"n":76,"d":"29/06 Seg","t":"14:00","f":"Rodada de 32"},{"n":74,"d":"29/06 Seg","t":"17:30","f":"Rodada de 32"},{"n":75,"d":"29/06 Seg","t":"22:00","f":"Rodada de 32"},{"n":78,"d":"30/06 Ter","t":"14:00","f":"Rodada de 32"},{"n":77,"d":"30/06 Ter","t":"18:00","f":"Rodada de 32"},{"n":79,"d":"30/06 Ter","t":"22:00","f":"Rodada de 32"},{"n":80,"d":"01/07 Qua","t":"13:00","f":"Rodada de 32"},{"n":82,"d":"01/07 Qua","t":"17:00","f":"Rodada de 32"},{"n":81,"d":"01/07 Qua","t":"21:00","f":"Rodada de 32"},{"n":84,"d":"02/07 Qui","t":"16:00","f":"Rodada de 32"},{"n":83,"d":"02/07 Qui","t":"20:00","f":"Rodada de 32"},{"n":85,"d":"03/07 Sex","t":"00:00","f":"Rodada de 32"},{"n":88,"d":"03/07 Sex","t":"15:00","f":"Rodada de 32"},{"n":86,"d":"03/07 Sex","t":"19:00","f":"Rodada de 32"},{"n":87,"d":"03/07 Sex","t":"22:30","f":"Rodada de 32"},{"n":89,"d":"04/07 Sáb","t":"18:00","f":"Oitavas de Final"},{"n":90,"d":"04/07 Sáb","t":"14:00","f":"Oitavas de Final"},{"n":91,"d":"05/07 Dom","t":"17:00","f":"Oitavas de Final"},{"n":92,"d":"05/07 Dom","t":"21:00","f":"Oitavas de Final"},{"n":93,"d":"06/07 Seg","t":"16:00","f":"Oitavas de Final"},{"n":94,"d":"06/07 Seg","t":"21:00","f":"Oitavas de Final"},{"n":95,"d":"07/07 Ter","t":"13:00","f":"Oitavas de Final"},{"n":96,"d":"07/07 Ter","t":"17:00","f":"Oitavas de Final"},{"n":97,"d":"09/07 Qui","t":"17:00","f":"Quartas de Final"},{"n":98,"d":"10/07 Sex","t":"14:00","f":"Quartas de Final"},{"n":99,"d":"11/07 Sáb","t":"16:00","f":"Quartas de Final"},{"n":100,"d":"11/07 Sáb","t":"20:00","f":"Quartas de Final"},{"n":101,"d":"14/07 Ter","t":"16:00","f":"Semifinal"},{"n":102,"d":"15/07 Qua","t":"16:00","f":"Semifinal"},{"n":103,"d":"18/07 Sáb","t":"18:00","f":"3º Lugar"},{"n":104,"d":"19/07 Dom","t":"16:00","f":"Final"}];
+var BOLAO_GAME_BY_ID = {};
+BOLAO_GAMES.forEach(function (g) { BOLAO_GAME_BY_ID[g.n] = g; });
+var BOLAO_FIRST = 6;
+var BOLAO_DEADLINE_MS = 7200000; // 2 horas antes do jogo (espelha BOLAO_TWO_H do frontend)
+
+// Calcula o instante UTC de início do jogo a partir de g.d ("DD/MM Dia") e g.t ("HH:MM", horário de Brasília UTC-3)
+function gameUTC(g) {
+  try {
+    var p = g.d.split(' ')[0].split('/');
+    var tp = g.t.split(':');
+    if (p.length < 2 || tp.length < 2) return null;
+    return new Date(Date.UTC(2026, parseInt(p[1], 10) - 1, parseInt(p[0], 10), parseInt(tp[0], 10) + 3, parseInt(tp[1], 10)));
+  } catch (e) { return null; }
+}
+
+// Retorna o deadline (instante a partir do qual o palpite NÃO pode mais ser salvo/alterado)
+function bolaoDeadline(gameN) {
+  var g = BOLAO_GAME_BY_ID[gameN];
+  if (!g) return null;
+  var gd = gameUTC(g);
+  return gd ? new Date(gd.getTime() - BOLAO_DEADLINE_MS) : null;
+}
 
 function json(data, status) {
   return new Response(JSON.stringify(data), {
@@ -128,17 +155,24 @@ async function handle(req) {
       if (!user) return error('Token invalido', 401);
       var body = await req.json();
       if (!body.picks || !body.picks.length) return error('picks obrigatorio');
-      // Verificar se o participante está confirmado (bloqueia alteração)
-      var part = await supaFetch("participants?id=eq." + user.sub + "&select=confirmed");
-      if (part && part.length && part[0].confirmed) return error('Conta confirmada — palpites bloqueados', 403);
+      var rejected = [];
+      var now = Date.now();
       for (var i = 0; i < body.picks.length; i++) {
         var pick = body.picks[i];
+        var dl = bolaoDeadline(pick.game_n);
+        // Se não há jogo conhecido ou não há deadline calculável, rejeita por segurança
+        // (evita aceitar palpites para game_n inválidos/inexistentes).
+        if (!dl) { rejected.push(pick.game_n); continue; }
+        if (now >= dl.getTime()) { rejected.push(pick.game_n); continue; }
         // Deletar pick existente (caso seja atualização) e inserir novo
         await supaFetch("picks?participant_id=eq." + user.sub + "&game_n=eq." + pick.game_n, 'DELETE').catch(function(){});
         await supaFetch('picks', 'POST', { participant_id: user.sub, game_n: pick.game_n, goals_a: pick.goals_a, goals_b: pick.goals_b, ko_pick: pick.ko_pick || null });
         await supaFetch('pick_history', 'POST', { participant_id: user.sub, game_n: pick.game_n, goals_a: pick.goals_a, goals_b: pick.goals_b, ko_pick: pick.ko_pick || null });
       }
-      return json({ ok: true });
+      if (rejected.length === body.picks.length) {
+        return error('Prazo encerrado ou jogo invalido para todos os palpites enviados: ' + rejected.join(','), 403);
+      }
+      return json({ ok: true, rejected: rejected.length ? rejected : undefined });
     }
 
     // GET /mypicks
@@ -211,6 +245,34 @@ async function handle(req) {
     // PATCH /confirm
     if (method === 'PATCH' && path === '/confirm') {
       if (!user) return error('Token invalido', 401);
+      // Validacao server-side: todos os jogos do bolao (>= BOLAO_FIRST) cujo prazo
+      // ainda nao passou precisam ter palpite preenchido antes de poder confirmar.
+      // Isso espelha a validacao que o frontend ja faz (bolaoConfirmAll), mas agora
+      // tambem e' aplicada no servidor, que e' a unica barreira que nao pode ser
+      // contornada chamando a API diretamente.
+      var existingPicks = (await supaFetch("picks?participant_id=eq." + user.sub + "&select=game_n,goals_a,goals_b,ko_pick")) || [];
+      var picksByGame = {};
+      existingPicks.forEach(function (p) { picksByGame[p.game_n] = p; });
+      var nowConfirm = Date.now();
+      var missingGames = [];
+      for (var gi = 0; gi < BOLAO_GAMES.length; gi++) {
+        var bg = BOLAO_GAMES[gi];
+        if (bg.n < BOLAO_FIRST) continue;
+        var bgDeadline = bolaoDeadline(bg.n);
+        if (!bgDeadline || nowConfirm >= bgDeadline.getTime()) continue; // jogo ja travado, nao exigimos mais
+        var bp = picksByGame[bg.n];
+        if (!bp || bp.goals_a === null || bp.goals_a === undefined || bp.goals_b === null || bp.goals_b === undefined) {
+          missingGames.push(bg.n);
+          continue;
+        }
+        var isKO = bg.f && bg.f.indexOf('Grupo') !== 0;
+        if (isKO && bp.goals_a === bp.goals_b && !bp.ko_pick) {
+          missingGames.push(bg.n);
+        }
+      }
+      if (missingGames.length) {
+        return error('Faltam palpites para confirmar: jogos ' + missingGames.join(','), 400);
+      }
       await supaFetch("participants?id=eq." + user.sub, 'PATCH', { confirmed: true, confirmed_at: new Date().toISOString() });
       return json({ ok: true });
     }
