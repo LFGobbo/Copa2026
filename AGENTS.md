@@ -576,7 +576,7 @@ saveState()
 6. **Arquivos id?nticos**: `index.html` e `copa2026.html` devem ter mesmo conte?do
 7. **Toda altera??o de renderiza??o**: testar no navegador (F12), nunca no PowerShell. PowerShell nao executa JS.
 8. **Var?aveis `var` em callbacks**: se declarar dentro de um callback (ex: `.map()`), ela NAO existe em outro callback. Prefira `const`/`let` ou declare fora.
-9. **Erro "Erro ao carregar X" ? abra o DevTools**: o erro verdadeiro esta no Console. Nao teorize sobre backend/servidor sem verificar.
+9. **Erro "Erro ao carregar X" ? abra o DevTools**: o erro verdadeiro esta no Console. Nao teorize sobre backend/servidor sem verificar. A mensagem "Erro ao carregar ranking. Verifique sua conex?o." e gen?rica — um `try/catch` converte qualquer exce??o (ReferenceError, TypeError, etc.) na mesma frase. Um HTTP 200 da API nao significa que o frontend esta funcionando.
 
 ### Verifica??o de regress?o
 
@@ -972,6 +972,8 @@ Antes de propor qualquer solu??o para um bug de l?gica JS:
 **Teoria do agente:** "Worker esta com problema ? Cloudflare PAT Challenge ? DNS ? CORS ? Supabase fora do ar."
 **Realidade:** `ReferenceError: topClass is not defined` no frontend. O fetch do ranking funcionava perfeitamente, mas a fun??o `bolaoRenderRanking()` quebrava ao montar o HTML porque `topClass` s? foi declarada no branch mobile, nao no desktop.
 
+**Importante:** a mensagem "Erro ao carregar ranking. Verifique sua conex?o." ? **gen?rica** — ela aparece sempre que qualquer exce??o acontecer dentro do `try/catch` do `bolaoLoadRanking()`, seja um erro de rede OU um bug de JavaScript. Uma ReferenceError na renderiza??o vira a mesma mensagem que um HTTP 500.
+
 **A li??o:** quando o erro diz "Erro ao carregar ranking" e:
 - PowerShell `Invoke-RestMethod` retorna 200
 - Worker `/health` retorna 200
@@ -1123,6 +1125,10 @@ powershell
 ### 19.1 topClass ReferenceError (bug mais recente)
 
 **O que aconteceu:** Commit 480747e adicionou destaque top-3 (gold/silver/bronze) no ranking do bolao. A variavel `topClass` foi declarada apenas no branch mobile (`if(isMobile){...}`) mas usada tambem no branch desktop (`else{...}`). Como `var` escopa pra funcao anonima do `.map()` callback, o desktop tentava ler uma variavel inexistente.
+
+**Sintoma:** "Erro ao carregar ranking. Verifique sua conex?o."
+**Teoria do agente:** "Worker esta com problema ? Cloudflare PAT Challenge ? DNS ? CORS ? Supabase fora do ar."
+**Realidade:** `ReferenceError: topClass is not defined` no frontend. O fetch do ranking funcionava perfeitamente, mas a fun??o `bolaoRenderRanking()` quebrava ao montar o HTML porque `topClass` s? foi declarada no branch mobile, nao no desktop.
 
 **Cadeia de erros:**
 1. Altere`i` a renderizacao do ranking (commit 480747e) para adicionar classes gold/silver/bronze
