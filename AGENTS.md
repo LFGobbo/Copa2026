@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 ? Documenta??o do Projeto
 
-**?ltima atualiza??o:** 2026-06-18 (v19.31)
+**?ltima atualiza??o:** 2026-06-18 (v19.33)
 **Reposit?rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -574,6 +574,9 @@ saveState()
 4. **Strings JS com aspas escapadas**: `onerror="this.style.display=\'none\'"` (n?o `'none''`)
 5. **Estrutura HTML v?lida**: tags balanceadas, sem atributos engolidos
 6. **Arquivos id?nticos**: `index.html` e `copa2026.html` devem ter mesmo conte?do
+7. **Toda altera??o de renderiza??o**: testar no navegador (F12), nunca no PowerShell. PowerShell nao executa JS.
+8. **Var?aveis `var` em callbacks**: se declarar dentro de um callback (ex: `.map()`), ela NAO existe em outro callback. Prefira `const`/`let` ou declare fora.
+9. **Erro "Erro ao carregar X" ? abra o DevTools**: o erro verdadeiro esta no Console. Nao teorize sobre backend/servidor sem verificar.
 
 ### Verifica??o de regress?o
 
@@ -587,6 +590,17 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v19.33 (2026-06-18) - Postmortem: topClass ReferenceError + env vars wipe
+
+- **Bug real do "Erro ao carregar ranking" era um ReferenceError no frontend**: `topClass` declarado apenas no branch mobile do `.map()` mas usado no branch desktop. `var` escopa pra funcao anonima do callback, nao pro `if`. Resultado: `ReferenceError: topClass is not defined` ao renderizar ranking em telas >768px. O `try/catch` geral convertia num genérico "Erro ao carregar ranking".
+- **Causa raiz**: commit 480747e adicionou `topClass` apenas no branch mobile (linha 2899) sem adicionar no branch desktop (linha 2917). Testei via PowerShell (que nao executa JS) e tirei conclusoes sem abrir o navegador.
+- **Licao**: "testei via PowerShell, o Worker retorna 200, entao nao e o Worker" ignorou que o problema podia ser no frontend. Se tivesse aberto o DevTools antes de teorizar, teria visto o ReferenceError em 30 segundos.
+- **Worker env vars perdidas**: deploy com `bindings: []` (multipart vazio) no commit f6548d6 destruiu TODAS as 7 env vars do Worker. O multipart SOBRESCREVE bindings, nao faz merge.
+- **Worker env vars restauradas**: deploy manual com metadata JSON contendo todas as 7 bindings (incluindo `text` field para `secret_text`, que a API exige). Confirmado via endpoint `/debug` que todas as 7 estao definidas.
+- **Erro 10021 no multipart**: tentativa de colocar `secret_text` em partes separadas da metadata (sem `text` no JSON) causa erro `10021: binding.binding for unexpected type`. A API exige `text` no metadata JSON para TODOS os tipos de binding, inclusive `secret_text`.
+- **Supabase `live_scores` nao existe**: tabela `public.live_scores` mencionada no Worker endpoint `/scores` nunca foi criada. Supabase retorna 404 PGRST205.
+- **31 participantes** (de 33 originais; Cristhian Rodriguez e Thiago Gondim deletados apos confirmacao via Supabase backup)
 
 ### v19.30 (2026-06-18) - Bracket do mata-mata corrigido conforme oficial FIFA 2026
 - **Round of 16 pares corrigidos**: G89=W74xW77, G90=W73xW75, G91=W76xW78, G93=W83xW84, G94=W81xW82, G95=W86xW88, G96=W85xW87 (antes estavam com oponentes trocados, o que propagava times errados para QF/SF/Final)
@@ -942,6 +956,7 @@ _bAdm('BolaoAdmin2026!', 'Nome do Participante')
 ## 15. Regra de Ouro (Debug)
 
 **Nunca teorize sobre bugs ? teste com dados reais primeiro.**
+**Nunca conclua que "nao e o frontend" sem abrir o DevTools.**
 
 Antes de propor qualquer solu??o para um bug de l?gica JS:
 1. Extrair as fun??es afetadas do `index.html`
@@ -950,6 +965,19 @@ Antes de propor qualquer solu??o para um bug de l?gica JS:
 4. S? ent?o corrigir
 
 *Exemplo: o bug `_bolaoWinnerOf` semanas de debug teriam sido evitadas rodando `node /tmp/test_bolao.js` que mostrou imediatamente `Winner jogo 75: '1? Grupo F'` em vez do time resolvido.*
+
+### Li??o Aprendida (v19.33 ? topClass)
+
+**Sintoma:** "Erro ao carregar ranking. Verifique sua conex?o."
+**Teoria do agente:** "Worker esta com problema ? Cloudflare PAT Challenge ? DNS ? CORS ? Supabase fora do ar."
+**Realidade:** `ReferenceError: topClass is not defined` no frontend. O fetch do ranking funcionava perfeitamente, mas a fun??o `bolaoRenderRanking()` quebrava ao montar o HTML porque `topClass` s? foi declarada no branch mobile, nao no desktop.
+
+**A li??o:** quando o erro diz "Erro ao carregar ranking" e:
+- PowerShell `Invoke-RestMethod` retorna 200
+- Worker `/health` retorna 200
+- Supabase esta online
+
+**O problema E NO FRONTEND.** Abra o DevTools (F12 ? Console) antes de teorizar. O erro verdadeiro estava la: `ReferenceError: topClass is not defined`. Trinta segundos de diagnostico teriam salvado 4 commits de investiga??o errada.
 
 ### Comandos ?teis pelo console (F12)
 
@@ -1087,4 +1115,95 @@ powershell
 | `PLAYERS` | 1248 jogadores carregados de players.json |
 | `PLAYER_PHOTOS` | URLs de fotos carregadas de photos.json |
 | `REFEREES` | Cache de �rbitros (Wikipedia) |
+
+---
+
+## 19. Postmortem - Erros do Agente (v19.31-v19.33)
+
+### 19.1 topClass ReferenceError (bug mais recente)
+
+**O que aconteceu:** Commit 480747e adicionou destaque top-3 (gold/silver/bronze) no ranking do bolao. A variavel `topClass` foi declarada apenas no branch mobile (`if(isMobile){...}`) mas usada tambem no branch desktop (`else{...}`). Como `var` escopa pra funcao anonima do `.map()` callback, o desktop tentava ler uma variavel inexistente.
+
+**Cadeia de erros:**
+1. Altere`i` a renderizacao do ranking (commit 480747e) para adicionar classes gold/silver/bronze
+2. Coloquei `var topClass` dentro do callback mobile mas esqueci de colocar no desktop
+3. Ao testar, usei PowerShell (`Invoke-RestMethod`) que nao executa JS
+4. Conclui que "nao e o frontend" porque o Worker retornava 200
+5. Teorizei sobre Cloudflare PAT Challenge, CORS, DNS, Supabase outage
+6. Commit f6548d6 tentou "warmup iframe" para PAT Challenge ? nao resolveu
+7. Commit 28cf042 tentou iframe warmup no `bolaoInit` ? nao resolveu
+8. So resolveu quando o usuario apontou o erro exato: `topClass is not defined` na linha 2918
+
+**Impacto:** 4 commits desperdicados (f6548d6, 28cf042, 4fb2ebb, 480747e), ~2h de debug errado. Usuarios de desktop (>768px) viam "Erro ao carregar ranking" e nao conseguiam ver o ranking.
+
+**Correcao:** Adicionar `var topClass=i<3?' '+rankClass[i]:'';` no branch desktop do `bolaoRenderRanking()` (commit 394cb03).
+
+**Licao:** `var` eh escopada por funcao, nao por bloco. Se voce declara uma variavel dentro de um callback de `.map()` em um branch `if()`, ela nao existe no callback do branch `else`. E: sempre abra o DevTools antes de teorizar.
+
+---
+
+### 19.2 Worker env vars wiped (f6548d6)
+
+**O que aconteceu:** O script de deploy (`deploy-worker.ps1`) enviou `bindings: []` (array vazio) no metadata multipart. A API do Cloudflare Workers SOBRESCREVE todas as bindings existentes com o conteudo do metadata. Resultado: todas as 7 env vars (SUPABASE_URL, SUPABASE_KEY, JWT_SECRET, TURNSTILE_SEC, ADMIN_KEY, ADMIN_HASH, CRON_SECRET) foram deletadas.
+
+**Cadeia de erros:**
+1. O script de deploy original tentou colocar `secret_text` bindings em partes separadas do multipart (fora do metadata JSON)
+2. A API rejeitou com erro 10021: `binding.binding for unexpected type`
+3. Para "consertar", troquei o metadata para `bindings: []` (vazio)
+4. O deploy "passou" (HTTP 200) mas silenciosamente apagou TODAS as env vars
+5. Worker passou a retornar `Internal: SUPABASE_KEY is not defined` em todas as rotas
+6. O erro nao foi detectado imediatamente porque o iframe warmup (commit 28cf042) recebeu a culpa
+
+**Impacto:** Worker ficou offline por ~30min. Usuarios nao conseguiam logar, salvar palpites, nem ver ranking.
+
+**Correcao:** Deploy manual com metadata JSON contendo TODAS as 7 bindings, incluindo `text` field para `secret_text` (a API exige `text` no JSON para TODOS os tipos de binding, inclusive secret_text).
+
+---
+
+### 19.3 Erro 10021 no multipart (mesmo dia)
+
+**O que aconteceu:** Ao tentar corrigir o deploy, coloquei as env vars `secret_text` em partes separadas do formulario multipart (parte metadata + partes separadas para cada secret_text). A API Cloudflare Workers rejeitou com erro 10021.
+
+**Detalhe tecnico:** A API espera que TODAS as bindings estejam dentro do metadata JSON (parte `metadata` do multipart). Nao importa se `plain_text` ou `secret_text` ? tudo no mesmo JSON. A API inclusive exige um campo `text` no JSON para secret_text (que eh o valor em texto plano da env var). Tentar colocar secret_text em partes separadas da metadata causa erro.
+
+**Licao:** Nao existe "parte separada para secret_text". Tudo vai no metadata JSON. O campo `type` diferencia `plain_text` de `secret_text`.
+
+---
+
+### 19.4 Keys no codigo fonte (v19.7 e anteriores)
+
+**O que aconteceu:** Historicamente, as chaves do Supabase (SUPA_KEY, SUPA_URL) ficavam hardcoded no HTML. Na v19.7 isso foi corrigido movendo para o Worker, mas:
+- O deploy-worker.ps1 contem TODAS as 7 env vars hardcoded (incluindo SUPABASE_KEY / service_role)
+- O .supabase-key (gitignorado) tambem contem a service_role key
+- O AGENTS.md contem varias chaves (Turnstile, JWT_SECRET, ADMIN_KEY, CRON_SECRET, etc)
+
+**Risco:** Se o repositorio for publico (e eh ? github.com/LFGobbo/Copa2026), qualquer um pode ler as chaves no AGENTS.md ou no deploy-worker.ps1.
+
+**Mitigacao atual:**
+- SUPABASE_URL e Turnstile Site Key sao publicas por design
+- JWT_SECRET, TURNSTILE_SEC, ADMIN_KEY, ADMIN_HASH, CRON_SECRET estao documentadas aqui
+- SUPABASE_KEY (service_role) esta no .supabase-key (gitignorado) e hardcoded no deploy-worker.ps1
+- Idealmente, as env vars deveriam ser definidas via Cloudflare Dashboard (encrypted), nao no script
+
+---
+
+### 19.5 Supabase live_scores ausente
+
+**O que aconteceu:** O Worker endpoint `/scores` faz query na tabela `public.live_scores` que nunca foi criada no Supabase. Resultado: Supabase retorna 404 PGRST205 sempre que `/scores` eh chamado.
+
+**Impacto:** Baixo ? o endpoint foi criado como fallback para placares da FIFA. O fluxo principal (Calendar API direto) continua funcionando.
+
+**Correcao pendente:** Criar a tabela `live_scores` com schema compatível com o que o Worker espera, ou remover o endpoint se nao for usado.
+
+---
+
+### 19.6 Regras de prevencao (para o agente)
+
+1. **Toda alteracao na renderizacao deve ser testada no navegador (F12)** ? PowerShell nao executa JS. Nao adianta testar no terminal.
+2. **Se o backend retorna 200 e o frontend mostra erro, abra o Console do navegador** ? o erro verdadeiro esta la.
+3. **Nao teorize sobre Cloudflare/Supabase/CORS sem antes verificar o erro real no DevTools.**
+4. **Nunca deploye com `bindings: []`** ? isso apaga todas as env vars do Worker. O deploy SEMPRE deve incluir TODAS as bindings no metadata.
+5. **Sempre faca backup do Worker antes de deploy** (`Copy-Item bolao-worker.js bolao-worker.js.backup`).
+6. **Worker format matters**: o Worker esta em formato ES Modules (`has_modules: true`) mas usa `addEventListener` (sintaxe Service Worker classica). As env vars sao injetadas como globais, nao com `env.` prefixo. Nao mude isso.
+7. **Secret text bindings vao no metadata JSON**, nao em partes separadas. A API exige campo `text` para TODOS os tipos no JSON.
 
