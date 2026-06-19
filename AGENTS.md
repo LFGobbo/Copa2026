@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 ? Documenta??o do Projeto
 
-**?ltima atualiza??o:** 2026-06-18 (v19.33)
+**?ltima atualiza??o:** 2026-06-18 (v19.35)
 **Reposit?rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -590,6 +590,20 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v19.35 (2026-06-18) - Reconcilia??o baseada em estado, n?o em janela temporal
+
+- **Causa raiz do jogo #19 (Iraque 1?1 vs 1?4)**: race condition entre `FIFA_MATCH_IDS` e `processTimeline()`. O match ID s? era populado dentro do `.then()` da `fetchFifaScores()`, mas a decis?o de chamar `processTimeline()` era tomada fora. Na primeira poll o ID n?o existia; na segunda, a janela de 24h (`recent`) j? tinha expirado para jogos antigos. Placar parcial (1?1, half-time) congelava no localStorage sem nunca ser atualizado.
+- **`FIFA_MATCH_IDS` persistido** em `saveState()` + `_loadPersistent()`: independente do primeiro fetch para ter match IDs dispon?veis.
+- **`MATCH_FINALIZED`**: estado expl?cito por game number, setado no Type 26 (timeline), MatchStatus=0 (calendar), ou ap?s 5 falhas de fetch.
+- **`reconcileScores()`**: nova fun??o que varre jogos com placar, matchID, n?o-finalizados e n?o-processados nesta sess?o. Acionada no startup (2.5s), poll success, poll error, e ap?s `mergeScores()`.
+- **`MATCH_TIMELINE_FAILED`**: contador persistido de falhas de fetch. S? finaliza ap?s 5 falhas consecutivas + jogo >24h.
+- **`MATCH_TIMELINE_EMPTY`**: estado persistido para timeline vazia (API retornou 200 sem eventos). Cooldown de 7 dias antes de re-tentar.
+- **`_fetchingTimelines` guard**: evita chamadas duplicadas para o mesmo match ID, mesmo em cen?rios de concorr?ncia (reconcileScores + stale + live/recent no mesmo tick).
+- **`PROCESSED_EVENTS` sentinel**: `'empty'` (vazio), `'unavailable'` (falha), `N` (sucesso) — estados mutuamente exclusivos.
+- **5 cen?rios de timeline**: vazia, erro HTTP, normal, parcial+atualiza??o, concorrente — todos convergem para estado previs?vel sem retry infinito.
+- **Diverg?ncia mobile/desktop (pendente)**: placar divergentente entre dispositivos pode ocorrer se o startup reconcileScores() disparar antes do `_loadPersistent()` restaurar `FIFA_MATCH_IDS`. O bug original (#19) foi corrigido, mas monitorar se outros jogos apresentam diverg?ncia cross-device.
+- **Sync copa2026.html** e valida?ao: 0 diff entre arquivos, 2150/2150 chaves, 17 fun??es cr?ticas.
 
 ### v19.33 (2026-06-18) - Postmortem: topClass ReferenceError + env vars wipe
 
@@ -1212,4 +1226,89 @@ powershell
 5. **Sempre faca backup do Worker antes de deploy** (`Copy-Item bolao-worker.js bolao-worker.js.backup`).
 6. **Worker format matters**: o Worker esta em formato ES Modules (`has_modules: true`) mas usa `addEventListener` (sintaxe Service Worker classica). As env vars sao injetadas como globais, nao com `env.` prefixo. Nao mude isso.
 7. **Secret text bindings vao no metadata JSON**, nao em partes separadas. A API exige campo `text` para TODOS os tipos no JSON.
+
+---
+
+## 20. Arquitetura de Reconcilia??o (v19.35)
+
+### 20.1 Diagrama de fluxo
+
+```
+Calendar API (poll)
+    |
+    v
+fetchFifaScores()
+    |
+    +--> popula FIFA_MATCH_IDS[g.n], MATCH_ENDED, MATCH_STARTED
+    |
+    v
+mergeScores(map)
+    |
+    +--> atualiza scores[gameN] (incondicional)
+    +--> se MATCH_ENDED[id] -> MATCH_FINALIZED[gn]=true
+    +--> setTimeout(reconcileScores, 0)
+    |
+    v
+reconcileScores()
+    |
+    +--> varre GAMES (forEach)
+    |   +-- FIFA_MATCH_IDS[gn]?           -> sem id, skip
+    |   +-- MATCH_FINALIZED[gn]?           -> finalizado, skip
+    |   +-- MATCH_TIMELINE_EMPTY[id]?      -> cooldown 7d? skip / +7d? deleta e re-tenta
+    |   +-- scores[gn]?                    -> sem placar, skip
+    |   +-- PROCESSED_EVENTS[id]?          -> ja processado/falhou/empty nesta sessao, skip
+    |   +-- >3h passados?                  -> ao vivo/recente, skip (poll cuida)
+    |
+    +--> processTimeline(id, gn)
+            |
+            +-- _fetchingTimelines[id]? -> return (guarda concorrencia)
+            +-- fetch Timeline API
+            |   +-- vazia (200 sem events): MATCH_TIMELINE_EMPTY[id]=Date.now()
+            |   |                           PROCESSED_EVENTS[id]='empty'
+            |   +-- sucesso (events):       PROCESSED_EVENTS[id]=maxEventId
+            |   |                           MATCH_FINALIZED[gn]=true se Type 26
+            |   +-- falha:                  MATCH_TIMELINE_FAILED[id]++
+            |                               PROCESSED_EVENTS[id]='unavailable'
+            |                               MATCH_FINALIZED[gn]=true se >=5 falhas + >24h
+            |
+            +-- cleanup: delete _fetchingTimelines[id]
+```
+
+### 20.2 Estados da Timeline
+
+| Estado | `PROCESSED_EVENTS[id]` | Persistido | Gatilho |
+|---|---|---|---|
+| Nao processada | `undefined` | - | Nenhum fetch feito ainda |
+| Sucesso | `maxEventId` (numero >0) | - (sessao) | Timeline API retornou eventos |
+| Vazia | `'empty'` | MATCH_TIMELINE_EMPTY[id]=ts | Timeline 200, Event vazio |
+| Indisponivel | `'unavailable'` | MATCH_TIMELINE_FAILED[id]=N | Fetch falhou (rede/HTTP) |
+| Finalizada | N | MATCH_FINALIZED[gn]=true | Type 26 / MatchStatus=0 / 5 falhas |
+
+### 20.3 Flags e Persistencia
+
+| Flag | Persistencia | Cooldown | Limpeza |
+|---|---|---|---|
+| `FIFA_MATCH_IDS[gn]` | saveState | nenhum (imutavel) | localStorage manual |
+| `MATCH_FINALIZED[gn]` | saveState | permanente | delete manual no console |
+| `MATCH_TIMELINE_FAILED[id]` | saveState (contador) | ate 5 falhas | finaliza apos 5 |
+| `MATCH_TIMELINE_EMPTY[id]` | saveState (timestamp) | 7 dias | reconcileScores deleta se >=7d |
+| `PROCESSED_EVENTS[id]` | - em-memoria | sessao atual | page load zera |
+| `_fetchingTimelines[id]` | - em-memoria | ate fetch completar | cleanup no .then() |
+
+### 20.4 Cenarios de Falha
+
+| Cenario | Comportamento | Risco |
+|---|---|---|
+| API fora do ar no startup | reconcileScores falha em massa -> 'unavailable' -> proxima sessao retenta | Nenhum |
+| Timeline vazia (sem dados) | MATCH_TIMELINE_EMPTY com cooldown 7d -> re-tenta apos 7d | Medio - cooldown longo, sem retry infinito |
+| Timeline parcial + atualizacao | hasNew detecta incremento de EventId -> reprocessa | Baixo - ja funcionava |
+| Page reload durante fetch | Sessao nova -> retenta (idempotente) | Nenhum |
+| Multiplas abas | _fetchingTimelines independente -> possiveis duplicatas mas so leitura | Medio - sem efeito colateral |
+| Calendar API HomeTeamScore: null | mergeScores nao atualiza. reconcileScores sem score completo -> stale ate timeline chegar | Baixo |
+
+### 20.5 Divergencia Mobile/Desktop (PENDENTE)
+
+Se o startup reconcileScores() (setTimeout 2.5s) disparar antes de _loadPersistent() restaurar FIFA_MATCH_IDS, os match IDs nao estarao disponiveis -> placares podem divergir entre dispositivos se um carregar mais rapido que o outro.
+
+O bug original (#19 Iraque 1x1 vs 1x4) foi corrigido, mas monitorar se outros jogos apresentam divergencia cross-device. Caso ocorra, ajustar o timeout do startup reconcileScores ou executa-lo apos a restauracao completa dos dados.
 
