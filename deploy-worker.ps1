@@ -44,14 +44,18 @@ $accountId = $acct.result[0].id
 Write-Host "[OK] Account ID: $accountId" -ForegroundColor Green
 
 # ── Sobe o script + bindings (multipart) ──────────
-# Usamos multipart com TODAS as env vars no metadata.
+# Usamos multipart com TODAS as env vars no metadata JSON.
 # Isso evita que binds sejam apagadas (o que acontece se usarmos multipart com bindings=[]).
 # NUNCA use simple PUT (application/javascript) — ele nao preserva o formato Service Worker
 # e pode deixar o worker com has_modules=True, quebrando addEventListener.
+#
+# OBS: O campo "text" DEVE estar presente para TODOS os tipos de binding no metadata,
+# inclusive secret_text. Omitir o text causa erro 10021 "invalid or missing text property".
 $script = Get-Content $ScriptFile -Raw -Encoding UTF8
 $url = "https://api.cloudflare.com/client/v4/accounts/$accountId/workers/scripts/$WorkerName"
 
-$meta = @{ body_part = "script"; bindings = $ENV_VARS } | ConvertTo-Json -Depth 10 -Compress
+$metaObj = @{ body_part = "script"; bindings = $ENV_VARS }
+$meta = $metaObj | ConvertTo-Json -Depth 10 -Compress
 
 $boundary = [Guid]::NewGuid().ToString()
 $nl = [Environment]::NewLine
