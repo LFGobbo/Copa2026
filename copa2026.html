@@ -179,12 +179,16 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .scorers-table tr:last-child td{border-bottom:none}
 .rank{font-weight:800;font-size:15px;text-align:center!important;width:40px}
 .rank-gold{color:#ffd700}
-.rank-silver{color:#c0c0c0}
+.rank-silver{color:#e0e0e0;text-shadow:0 0 8px rgba(192,192,192,.35)}
 .rank-bronze{color:#cd7f32}
-/* Colorir nome e valor do top 3 */
+/* Colorir nome e valor do top 3 (scorers table) */
 .rank-gold+td,.rank-gold+td+td{color:#ffd700}
-.rank-silver+td,.rank-silver+td+td{color:#c0c0c0}
+.rank-silver+td,.rank-silver+td+td{color:#e0e0e0}
 .rank-bronze+td,.rank-bronze+td+td{color:#cd7f32}
+/* Colorir top 3 no bolão mobile (descendant) */
+.rank-gold .mob-rank-name,.rank-gold .mob-rank-pts{color:#ffd700}
+.rank-silver .mob-rank-name,.rank-silver .mob-rank-pts{color:#e0e0e0}
+.rank-bronze .mob-rank-name,.rank-bronze .mob-rank-pts{color:#cd7f32}
 .third-container{max-width:650px;margin:20px auto 0}
 .third-title{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:10px;text-align:center}
 .third-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius)}
@@ -392,7 +396,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bolao-rank-row:hover td{background:rgba(255,255,255,.03)}
 .bolao-rank-pos{font-weight:700;color:var(--muted);width:36px}
 .bolao-rank-name{font-weight:600;color:var(--text)}
-.bolao-rank-pts{font-weight:800;color:var(--gold);font-size:15px;text-align:right}
+.bolao-rank-pts{font-weight:800;font-size:15px;text-align:right}
 .bolao-rank-sub{font-size:11px;color:var(--muted)}
 .bolao-detail{display:none;background:rgba(0,0,0,.2)}
 .bolao-detail.open{display:table-row}
@@ -2911,12 +2915,12 @@ function bolaoRenderRanking(){
       var isUser=r.id===_bolaoParticipantId;
       var userClass=isUser?' bolao-rank-self':'';
       return '<tr class="bolao-rank-row'+userClass+'" onclick="bolaoToggleDetail(\''+r.id+'\')">'
-        +'<td class="bolao-rank-pos">'+medal+' '+(i+1)+'</td>'
-        +'<td class="bolao-rank-name">'+esc(r.name)+'</td>'
+        +'<td class="bolao-rank-pos'+topClass+'">'+medal+' '+(i+1)+'</td>'
+        +'<td class="bolao-rank-name'+topClass+'">'+esc(r.name)+'</td>'
         +'<td style="font-size:11px;color:var(--muted)">'+esc(spText)+'</td>'
         +'<td class="bolao-rank-sub">'+r.exactCount+'</td>'
         +'<td class="bolao-rank-sub">'+r.resultCount+'</td>'
-        +'<td class="bolao-rank-pts">'+r.total+'</td></tr>'
+        +'<td class="bolao-rank-pts'+topClass+'">'+r.total+'</td></tr>'
         +'<tr class="bolao-detail" id="bolao-detail-'+r.id+'"><td colspan="6"><div class="bolao-detail-inner">'+bolaoRenderDetail(r.id)+'</div></td></tr>';
     }).join('');
   }
