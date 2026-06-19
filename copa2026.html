@@ -2914,6 +2914,7 @@ function bolaoRenderRanking(){
       var spText=sp?((sp.champion||'?')+' / '+(sp.top_scorer||'?')):'&mdash;';
       var isUser=r.id===_bolaoParticipantId;
       var userClass=isUser?' bolao-rank-self':'';
+      var topClass=i<3?' '+rankClass[i]:'';
       return '<tr class="bolao-rank-row'+userClass+'" onclick="bolaoToggleDetail(\''+r.id+'\')">'
         +'<td class="bolao-rank-pos'+topClass+'">'+medal+' '+(i+1)+'</td>'
         +'<td class="bolao-rank-name'+topClass+'">'+esc(r.name)+'</td>'
