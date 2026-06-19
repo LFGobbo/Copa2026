@@ -4,3 +4,4 @@ Thumbs.db
 *.log
 .worker-token
 .supabase-key
+backups/

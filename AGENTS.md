@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 ? Documenta??o do Projeto
 
-**?ltima atualiza??o:** 2026-06-18 (v19.30)
+**?ltima atualiza??o:** 2026-06-18 (v19.31)
 **Reposit?rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -385,6 +385,20 @@ URL: https://copa2026-bolao.luizfelipegobbo.workers.dev
 Turnstile Site Key: 0x4AAAAAADj0kWY7cUoZ_uwS
 Turnstile Secret: 0x4AAAAAADj0kQff4_E5yllvUOzc2sCtF2k
 ```
+
+#### Env vars do Worker (definidas em deploy-worker.ps1)
+
+| Nome | Tipo | Onde encontrar |
+|---|---|---|
+| `SUPABASE_URL` | plain_text | `https://etbezmraylbvlnycltha.supabase.co` |
+| `SUPABASE_KEY` | secret_text | Supabase > Project Settings > API > service_role key |
+| `JWT_SECRET` | secret_text | String arbitraria (`minhachavesecreta123`) |
+| `TURNSTILE_SEC` | secret_text | Cloudflare Turnstile > copa2026-bolao > Secret Key |
+| `ADMIN_KEY` | secret_text | String arbitraria (`Copa2026-Bolao-Admin-v19`) |
+| `ADMIN_HASH` | secret_text | SHA-256(`BolaoAdmin2026!` + `:` + JWT_SECRET) |
+| `CRON_SECRET` | secret_text | String arbitraria (`9xf0Dra4XZhg3NEKiSIVAs85QYuM7nLv`) |
+
+**IMPORTANTE:** As 7 env vars est?o hardcoded em `deploy-worker.ps1`. O deploy SEMPRE envia TODAS via multipart metadata. Se adicionar uma nova env var no Worker, precisa entrar tamb?m no script de deploy. Se alterar o valor de alguma, edite o script E fa?a um novo deploy.
 
 - **`POST /register`** ? Turnstile validation + cria participante (hash server-side)
 - **`POST /login`** ? Compara senha (hash server-side), retorna JWT
@@ -1008,7 +1022,8 @@ powershell
 
 ### Notas
 - O script usa multipart/form-data para enviar o JS + metadata
-- O Worker e sobrescrito a cada deploy (versao anterior e perdida)
+- **O multipart SOBRESCREVE TODAS as bindings (env vars) existentes.** Por isso o deploy SEMPRE inclui as 7 env vars hardcoded no script. Se esquecer de incluir uma, ela some após o deploy
+- NUNCA use simple PUT (Content-Type: application/javascript) — ele nao preserva o formato Service Worker e deixa `has_modules=True`, quebrando `addEventListener`
 - Sempre manter bolao-worker.js.backup sincronizado com a ultima versao estavel
 - Backup automatico: Copy-Item bolao-worker.js bolao-worker.js.backup
 

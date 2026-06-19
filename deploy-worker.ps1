@@ -9,9 +9,19 @@ $ErrorActionPreference = "Stop"
 function Die($m) { Write-Host "`n[ERRO] $m" -ForegroundColor Red; exit 1 }
 
 # ── Config ─────────────────────────────────────────
-$CRON_SECRET = "9xf0Dra4XZhg3NEKiSIVAs85QYuM7nLv"
+# ATENCAO: Em cada deploy, TODAS as env vars sao enviadas via multipart metadata.
+# Se uma nova env var for adicionada no Worker, precisa entrar aqui TAMBEM.
+$ENV_VARS = @(
+  @{ name="SUPABASE_URL";    type="plain_text";  text="https://etbezmraylbvlnycltha.supabase.co" }
+  @{ name="SUPABASE_KEY";    type="secret_text"; text="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0YmV6bXJheWxidmxueWNsdGhhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTI3NDE0MCwiZXhwIjoyMDk2ODUwMTQwfQ.kbcmnTI-anyEaTEIf7tlo107-EL1XEWIm7bzNBGfCbs" }
+  @{ name="JWT_SECRET";      type="secret_text"; text="minhachavesecreta123" }
+  @{ name="TURNSTILE_SEC";   type="secret_text"; text="0x4AAAAAADj0kQff4_E5yllvUOzc2sCtF2k" }
+  @{ name="ADMIN_KEY";       type="secret_text"; text="Copa2026-Bolao-Admin-v19" }
+  @{ name="ADMIN_HASH";      type="secret_text"; text="96ce37787d5e040a0951f7dc3d3f724d1c66d68c3e6e2d93855bccf8e6f43786" }
+  @{ name="CRON_SECRET";     type="secret_text"; text="9xf0Dra4XZhg3NEKiSIVAs85QYuM7nLv" }
+)
 
-# ── Lê o token ────────────────────────────────────
+# ── Le o token ────────────────────────────────────
 $token = $null
 if (Test-Path $TokenFile) { $token = (Get-Content $TokenFile -Raw).Trim() }
 if (-not $token) { $token = $env:CF_API_TOKEN }
@@ -19,9 +29,6 @@ if (-not $token) { Die "Token nao encontrado. Crie '$TokenFile' ou defina env CF
 if (-not (Test-Path $ScriptFile)) { Die "Arquivo '$ScriptFile' nao encontrado" }
 
 # ── Backup local antes de cada deploy ──────────────
-# (AGENTS.md documenta este passo; antes nao existia de fato neste script -- adicionado para
-# que a documentacao reflita o comportamento real, e para sempre ter uma copia do que estava
-# em produção antes de cada novo deploy.)
 $backupFile = "$ScriptFile.backup"
 Copy-Item $ScriptFile $backupFile -Force
 Write-Host "[OK] Backup criado: $backupFile" -ForegroundColor Green
@@ -36,48 +43,37 @@ if (-not $acct.success) { Die "Token invalido: $($acct.errors[0].message)" }
 $accountId = $acct.result[0].id
 Write-Host "[OK] Account ID: $accountId" -ForegroundColor Green
 
-# ── Sobe o script com env vars (multipart metadata) ──
+# ── Sobe o script + bindings (multipart) ──────────
+# Usamos multipart com TODAS as env vars no metadata.
+# Isso evita que binds sejam apagadas (o que acontece se usarmos multipart com bindings=[]).
+# NUNCA use simple PUT (application/javascript) — ele nao preserva o formato Service Worker
+# e pode deixar o worker com has_modules=True, quebrando addEventListener.
 $script = Get-Content $ScriptFile -Raw -Encoding UTF8
 $url = "https://api.cloudflare.com/client/v4/accounts/$accountId/workers/scripts/$WorkerName"
+
+$meta = @{ body_part = "script"; bindings = $ENV_VARS } | ConvertTo-Json -Depth 10 -Compress
 
 $boundary = [Guid]::NewGuid().ToString()
 $nl = [Environment]::NewLine
 
-$bodyParts = @()
-# Part 1: script
-$bodyParts += "--$boundary"
-$bodyParts += 'Content-Disposition: form-data; name="script"; filename="worker.js"'
-$bodyParts += 'Content-Type: application/javascript'
-$bodyParts += ''
-$bodyParts += $script
-# Part 2: metadata (bindings/env vars)
-$meta = @{
-  body_part = "script"
-  bindings = @(
-    @{ type = "secret_text"; name = "CRON_SECRET"; text = $CRON_SECRET }
-  )
-}
-$metaJson = $meta | ConvertTo-Json -Compress
-$bodyParts += "--$boundary"
-$bodyParts += 'Content-Disposition: form-data; name="metadata"'
-$bodyParts += 'Content-Type: application/json'
-$bodyParts += ''
-$bodyParts += $metaJson
-$bodyParts += "--$boundary--"
+$body = "--$boundary${nl}" +
+        "Content-Disposition: form-data; name=`"script`"; filename=`"worker.js`"${nl}" +
+        "Content-Type: application/javascript${nl}${nl}$script${nl}" +
+        "--$boundary${nl}" +
+        "Content-Disposition: form-data; name=`"metadata`"${nl}${nl}$meta${nl}" +
+        "--$boundary--${nl}"
 
-$multipartBody = ($bodyParts -join $nl) + $nl
-
-Write-Host "[...] Enviando $ScriptFile -> $WorkerName (com CRON_SECRET) ..." -ForegroundColor Yellow
+Write-Host "[...] Enviando $ScriptFile -> $WorkerName (multipart com $($ENV_VARS.Count) bindings) ..." -ForegroundColor Yellow
 try {
-  $resp = Invoke-RestMethod -Uri $url -Method Put `
+  $resp = Invoke-WebRequest -Uri $url -Method Put `
     -Headers @{ Authorization = "Bearer $token" } `
     -ContentType "multipart/form-data; boundary=$boundary" `
-    -Body $multipartBody
+    -Body $body
 } catch {
   $code = $_.Exception.Response.StatusCode.value__
   try { $msg = ($_.ErrorDetails.Message | ConvertFrom-Json).errors[0].message } catch { $msg = $_.Exception.Message }
   Die "HTTP $code : $msg"
 }
-if (-not $resp.success) { Die "$($resp.errors[0].message)" }
+if ($resp.StatusCode -ge 400) { Die "HTTP $($resp.StatusCode): $($resp.Content)" }
 
-Write-Host "[OK] $WorkerName deployado com sucesso (CRON_SECRET configurado)!" -ForegroundColor Green
+Write-Host "[OK] $WorkerName deployado com sucesso!" -ForegroundColor Green
