@@ -3407,6 +3407,8 @@ async function _onLoginSuccess(res){
   else bolaoShowConfirmButton();
 }
 function bolaoInit(){
+  // Aquecer Worker antes do fetch (bypass Cloudflare PAT challenge no Edge)
+  try{var wf=document.createElement('iframe');wf.style.display='none';wf.src=BOLAO_WORKER+'/health';document.body.appendChild(wf);setTimeout(function(){try{wf.remove()}catch(e){}},4000)}catch(e){}
   bolaoLoadRanking();
   var el=document.getElementById('bolao-deadline-info');if(!el)return;
   var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);if(!deadline){el.textContent='';return}
