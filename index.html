@@ -2632,7 +2632,7 @@ var BOLAO_FIRST=6,BOLAO_FINAL=104,BOLAO_SIGNUP_GAME=32,BOLAO_TWO_H=7200000;
 var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
 var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmedStatus={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[],_bolaoKOPicks={};
 var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0;
-var BOLAO_SESSION_KEY='copa2026_session';
+var BOLAO_SESSION_KEY='copa2026_session',BOLAO_PICKS_CACHE='copa2026_mypicks_cache',BOLAO_SPECIAL_CACHE='copa2026_special_cache';
 try{_bolaoSnappedGames=JSON.parse(localStorage.getItem('copa2026_snapped')||'{}')}catch(e){}
 try{var _savedSession=JSON.parse(localStorage.getItem(BOLAO_SESSION_KEY)||'null');if(_savedSession&&_savedSession.token){_bolaoToken=_savedSession.token;_bolaoParticipantId=_savedSession.id||null;_bolaoName=_savedSession.name||null;_bolaoConfirmed=_savedSession.confirmed||false}}catch(e){}
 
@@ -2814,9 +2814,9 @@ function bolaoKOPick(gameN,side){
   if(_bolaoConfirmed)return;
   _bolaoKOPicks[gameN]=(_bolaoKOPicks[gameN]===side)?undefined:side;
   if(_bolaoKOPicks[gameN]===undefined)delete _bolaoKOPicks[gameN];
-  // Persistir localmente e no Supabase junto com os picks
+  _cacheMyPicks();
   _bolaoSaveKOPick(gameN,side);
-  _bolaoRefreshTeams(); // Atualiza times sem recriar inputs
+  _bolaoRefreshTeams();
 }
 
 async function _bolaoSaveKOPick(gameN,side){
@@ -3232,6 +3232,7 @@ function bolaoSavePick(gameN){
       delete _bolaoMyPicks[gameN];
       _bolaoBracketCache=null;
       bolaoUpdateSummary();
+      _cacheMyPicks();
       _bolaoFetch('/picks','POST',{picks:[{game_n:gameN,goals_a:null,goals_b:null,ko_pick:null}]}).catch(function(e){console.warn('Failed to clear pick:',gameN,e&&e.message?e.message:'');});
     }
     var saved=document.getElementById('bsp-status-'+gameN);
@@ -3248,6 +3249,7 @@ function bolaoSavePick(gameN){
   _bolaoBracketCache=null;
   _bolaoRefreshTeams();
   bolaoUpdateSummary();
+  _cacheMyPicks();
   _bolaoFetch('/picks','POST',{picks:[{game_n:gameN,goals_a:vA,goals_b:vB,ko_pick:koVal}]})
   .then(function(){if(saved){saved.style.color='#4ade80';saved.textContent='Salvo';}try{var el=document.querySelector('.bsp-input[data-game="'+gameN+'"]');if(el){var c=el.closest('.bsp-card');if(c)c.removeAttribute('style');}}catch(e){}})
   .catch(function(){if(saved){saved.style.color='var(--red)';saved.textContent='Erro';}});
@@ -3339,6 +3341,7 @@ async function bolaoSaveSpecial(){
   try{
     await _bolaoFetch('/special-picks','POST',{champion:champion,topScorer:topScorer});
     _bolaoMySpecial={champion:champion,top_scorer:topScorer};
+    _cacheMyPicks();
     if(champion)document.getElementById('bolao-champion-saved').textContent=champion;
     if(topScorer)document.getElementById('bolao-scorer-saved').textContent=topScorer;
     bolaoRenderSpecialStatus();
@@ -3398,16 +3401,30 @@ async function _bAdm(pass,name){
     if(_bolaoName===name){_bolaoConfirmed=false;bolaoRenderPicksGrid();bolaoShowConfirmButton();console.log('Status local atualizado.')}
   }catch(e){console.error('Erro:',e)}
 }
+function _cacheMyPicks(){
+  try{localStorage.setItem(BOLAO_PICKS_CACHE,JSON.stringify({picks:_bolaoMyPicks,koPicks:_bolaoKOPicks,special:_bolaoMySpecial}))}catch(e){}
+}
 async function bolaoLoadMyData(){
   if(!_bolaoToken)return;
+  // Carrega cache local primeiro (sincrono, instantâneo)
+  var hadCache=false;
+  try{
+    var cached=JSON.parse(localStorage.getItem(BOLAO_PICKS_CACHE)||'null');
+    if(cached&&cached.picks){
+      _bolaoMyPicks=cached.picks;_bolaoKOPicks=cached.koPicks||{};_bolaoMySpecial=cached.special||null;
+      hadCache=Object.keys(_bolaoMyPicks).length>0;
+    }
+  }catch(e){}
   var data;
   try{
     data=await _bolaoFetch('/mypicks');
   }catch(e){
     if(e.status===401){_clearSession();_bolaoToken=null;_bolaoParticipantId=null;_bolaoName=null;_bolaoConfirmed=false;_bolaoMyPicks={}}
     console.warn('Falha ao carregar palpites:',e&&e.message?e.message:'');
-    var st=document.getElementById('bolao-login-status');
-    if(st){st.className='bolao-login-status err';st.textContent='Erro ao carregar seus palpites. Tente recarregar a p\u00e1gina.'}
+    if(!hadCache){
+      var st=document.getElementById('bolao-login-status');
+      if(st){st.className='bolao-login-status err';st.textContent='Erro ao carregar seus palpites. Tente recarregar a p\u00e1gina.'}
+    }
     return;
   }
   _bolaoMyPicks={};_bolaoKOPicks={};
@@ -3417,6 +3434,7 @@ async function bolaoLoadMyData(){
   });
   _bolaoMySpecial=data.specialPicks;
   _bolaoConfirmed=data.confirmed||false;
+  _cacheMyPicks();
 }
 async function bolaoLoadRanking(){
   if(_rankingCachedAt&&Date.now()-_rankingCachedAt<30000&&Object.keys(_bolaoParticipants).length){
