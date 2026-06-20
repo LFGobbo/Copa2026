@@ -326,7 +326,7 @@ async function handle(req) {
       if (!participant.length) return error('Participante nao encontrado', 404);
       var picks = (await supaFetch('picks?participant_id=eq.' + pid + '&select=game_n,goals_a,goals_b&limit=10000')) || [];
       var sp = (await supaFetch('special_picks?participant_id=eq.' + pid + '&select=champion,top_scorer')) || [];
-      var history = (await supaFetch('pick_history?participant_id=eq.' + pid + '&select=game_n,goals_a,goals_b,changed_at&order=changed_at.desc&limit=50')) || [];
+      var history = (await supaFetch('pick_history?participant_id=eq.' + pid + '&select=game_n,goals_a,goals_b,created_at&order=created_at.desc&limit=50')) || [];
       return json({ participant: participant[0], picks: picks, special: sp[0] || null, recentHistory: history });
     }
 
