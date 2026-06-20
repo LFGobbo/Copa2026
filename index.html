@@ -474,6 +474,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .bsp-sp-badge.bsp-sp-ok{background:rgba(0,200,83,.15);color:#4ade80;border:1px solid rgba(0,200,83,.3)}
   .bsp-sp-badge.bsp-sp-partial{background:rgba(255,145,0,.15);color:var(--orange);border:1px solid rgba(255,145,0,.3)}
   .bsp-sp-badge.bsp-sp-empty{background:rgba(255,23,68,.12);color:var(--red);border:1px solid rgba(255,23,68,.25)}
+  .bsp-sp-warning.bsp-sp-partial{background:rgba(255,145,0,.12);color:var(--orange);border:1px solid rgba(255,145,0,.25)}
+  .bsp-sp-warning.bsp-sp-empty{background:rgba(255,23,68,.12);color:var(--red);border:1px solid rgba(255,23,68,.25)}
   .bsp-input:focus{outline:none;border-color:var(--gold)}
   .bsp-input[readonly]{opacity:.6;cursor:not-allowed}
   .bsp-sep{color:var(--muted);font-weight:700;font-size:14px}
@@ -718,16 +720,17 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       <span class="bolao-deadline" id="bolao-deadline-info"></span>
     </div>
   </div>
+  <!-- Special picks re-open banner (público, sem necessidade de login) -->
+  <div id="bolao-special-banner" style="display:none;background:linear-gradient(135deg,rgba(255,223,0,.12),rgba(255,193,7,.08));border:2px solid var(--gold);border-radius:var(--radius);padding:var(--sp-md);margin-bottom:var(--sp-md);text-align:center">
+    <div style="font-size:var(--fs-sm);font-weight:700;color:var(--gold);margin-bottom:6px">&#9888;&#65039; IMPORTANTE</div>
+    <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px">Pedimos desculpas pela instabilidade ocorrida nos &uacute;ltimos dias. Para garantir que ningu&eacute;m seja prejudicado, os palpites especiais foram reabertos at&eacute; <strong>segunda-feira &agrave;s 23:59</strong>. Caso voc&ecirc; j&aacute; tenha preenchido, recomendamos revisar seus palpites.</div>
+    <div id="bolao-special-countdown" style="font-size:var(--fs-lg);font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums"></div>
+    <div style="font-size:11px;color:var(--orange);margin-top:6px">Aproveite para revisar e salvar seu palpite!</div>
+  </div>
   <div id="bolao-logged-area" style="display:none">
     <div class="bolao-section">
-      <!-- Special picks re-open banner -->
-      <div id="bolao-special-banner" style="display:none;background:linear-gradient(135deg,rgba(255,223,0,.12),rgba(255,193,7,.08));border:2px solid var(--gold);border-radius:var(--radius);padding:var(--sp-md);margin-bottom:var(--sp-md);text-align:center">
-        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--gold);margin-bottom:6px">&#9888;&#65039; IMPORTANTE</div>
-        <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px">Pedimos desculpas pela instabilidade ocorrida nos &uacute;ltimos dias. Para garantir que ningu&eacute;m seja prejudicado, os palpites especiais foram reabertos at&eacute; <strong>segunda-feira &agrave;s 23:59</strong>. Caso voc&ecirc; j&aacute; tenha preenchido, recomendamos revisar seus palpites.</div>
-        <div id="bolao-special-countdown" style="font-size:var(--fs-lg);font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums"></div>
-        <div style="font-size:11px;color:var(--orange);margin-top:6px">Aproveite para revisar e salvar seu palpite!</div>
-      </div>
       <div class="bolao-section-title">Palpites especiais <span class="bsp-sp-badge" id="bolao-special-status">—</span></div>
+      <div id="bolao-special-warning" class="bsp-sp-warning" style="display:none;padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:10px;font-size:13px;font-weight:600;text-align:center"></div>
       <div id="bolao-special-deadline" style="font-size:11px;color:var(--muted);margin-bottom:8px"></div>
       <div class="bolao-special-grid">
         <div class="bolao-special-card">
@@ -2629,7 +2632,9 @@ var BOLAO_FIRST=6,BOLAO_FINAL=104,BOLAO_SIGNUP_GAME=32,BOLAO_TWO_H=7200000;
 var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
 var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmedStatus={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[],_bolaoKOPicks={};
 var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0;
+var BOLAO_SESSION_KEY='copa2026_session';
 try{_bolaoSnappedGames=JSON.parse(localStorage.getItem('copa2026_snapped')||'{}')}catch(e){}
+try{var _savedSession=JSON.parse(localStorage.getItem(BOLAO_SESSION_KEY)||'null');if(_savedSession&&_savedSession.token){_bolaoToken=_savedSession.token;_bolaoParticipantId=_savedSession.id||null;_bolaoName=_savedSession.name||null;_bolaoConfirmed=_savedSession.confirmed||false}}catch(e){}
 
 function _bolaoFetch(path,method,body,retries){
   var opts={method:method||'GET',headers:{'Content-Type':'application/json'}};
@@ -3260,31 +3265,43 @@ function bolaoRenderSpecialStatus(){
   var st=_bolaoSpecialStatus();
   el.className='bsp-sp-badge '+st.cls;
   el.textContent=st.label;
+  // Aviso inline para PARCIAL / NAO ENVIADO
+  var warn=document.getElementById('bolao-special-warning');
+  if(!warn)return;
+  if(st.cls==='bsp-sp-ok'){
+    warn.style.display='none';
+  }else{
+    warn.className='bsp-sp-warning '+st.cls;
+    warn.style.display='block';
+    if(st.cls==='bsp-sp-partial')warn.textContent='\u26a0\ufe0f Seu palpite especial est\u00e1 incompleto — preencha o que falta at\u00e9 segunda 22/06 \u00e0s 23:59.';
+    else warn.textContent='\u26a0\ufe0f Voc\u00ea ainda n\u00e3o enviou nenhum palpite especial — preencha campe\u00e3o e artilheiro at\u00e9 segunda 22/06 \u00e0s 23:59.';
+  }
+}
+function _initSpecialBanner(){
+  var banner=document.getElementById('bolao-special-banner');
+  var cdEl=document.getElementById('bolao-special-countdown');
+  if(!banner||!cdEl)return;
+  var mondayTarget=new Date('2026-06-22T23:59:00-03:00');
+  var nowSp=new Date();
+  if(nowSp<mondayTarget){
+    banner.style.display='block';
+    if(!window._specCDInterval){
+      window._specCDInterval=setInterval(function(){
+        var d=mondayTarget-new Date();
+        if(d<=0){cdEl.textContent='ENCERRADO!';banner.style.display='none';clearInterval(window._specCDInterval);window._specCDInterval=null;return}
+        var dd=Math.floor(d/86400000),dh=Math.floor((d%86400000)/3600000),dm=Math.floor((d%3600000)/60000),ds=Math.floor((d%60000)/1000);
+        cdEl.textContent=dd+'d '+dh+'h '+dm+'m '+ds+'s';
+      },1000);
+    }
+  }else{
+    banner.style.display='none';
+  }
 }
 function bolaoPopulateSpecials(){
   var champSel=document.getElementById('bolao-champion'),scorerSel=document.getElementById('bolao-scorer');
   if(!champSel||!scorerSel)return;
+  _initSpecialBanner();
   bolaoRenderSpecialStatus();
-  // Show special re-open banner with countdown to Monday June 22 2026 23:59 BRT
-  var banner=document.getElementById('bolao-special-banner');
-  var cdEl=document.getElementById('bolao-special-countdown');
-  if(banner&&cdEl){
-    var mondayTarget=new Date('2026-06-22T23:59:00-03:00');
-    var nowSp=new Date();
-    if(nowSp<mondayTarget){
-      banner.style.display='block';
-      if(!window._specCDInterval){
-        window._specCDInterval=setInterval(function(){
-          var d=mondayTarget-new Date();
-          if(d<=0){cdEl.textContent='ENCERRADO!';banner.style.display='none';clearInterval(window._specCDInterval);window._specCDInterval=null;return}
-          var dd=Math.floor(d/86400000),dh=Math.floor((d%86400000)/3600000),dm=Math.floor((d%3600000)/60000),ds=Math.floor((d%60000)/1000);
-          cdEl.textContent=dd+'d '+dh+'h '+dm+'m '+ds+'s';
-        },1000);
-      }
-    }else{
-      banner.style.display='none';
-    }
-  }
   // Deadline reaberto: segunda 22/06 23:59 BRT
   var reopenDeadline=new Date('2026-06-22T23:59:00-03:00');
   var locked=reopenDeadline&&new Date()>=reopenDeadline;
@@ -3387,6 +3404,7 @@ async function bolaoLoadMyData(){
   try{
     data=await _bolaoFetch('/mypicks');
   }catch(e){
+    if(e.status===401){_clearSession();_bolaoToken=null;_bolaoParticipantId=null;_bolaoName=null;_bolaoConfirmed=false;_bolaoMyPicks={}}
     console.warn('Falha ao carregar palpites:',e&&e.message?e.message:'');
     var st=document.getElementById('bolao-login-status');
     if(st){st.className='bolao-login-status err';st.textContent='Erro ao carregar seus palpites. Tente recarregar a p\u00e1gina.'}
@@ -3469,12 +3487,31 @@ async function bolaoRegister(){
   var st=document.getElementById('bolao-login-status');
   st.className='bolao-login-status err';st.textContent='Cadastro fechado — apenas login para participantes existentes.';
 }
+function bolaoRestoreSession(){
+  if(_bolaoToken&&_bolaoParticipantId&&_bolaoName)return;
+  try{
+    var saved=JSON.parse(localStorage.getItem(BOLAO_SESSION_KEY)||'null');
+    if(saved&&saved.token){
+      _bolaoToken=saved.token;
+      _bolaoParticipantId=saved.id||null;
+      _bolaoName=saved.name||null;
+      _bolaoConfirmed=saved.confirmed||false;
+    }
+  }catch(e){}
+}
+function _saveSession(){
+  try{localStorage.setItem(BOLAO_SESSION_KEY,JSON.stringify({token:_bolaoToken,id:_bolaoParticipantId,name:_bolaoName,confirmed:_bolaoConfirmed}))}catch(e){}
+}
+function _clearSession(){
+  try{localStorage.removeItem(BOLAO_SESSION_KEY)}catch(e){}
+}
 async function _onLoginSuccess(res){
   var st=document.getElementById('bolao-login-status');
   _bolaoToken=res.token;
   _bolaoParticipantId=res.id;
   _bolaoName=res.name;
   _bolaoConfirmed=res.confirmed||false;
+  _saveSession();
   // Resetar captcha para evitar reuso
   try{turnstile.reset(document.getElementById('bolao-turnstile'))}catch(te){}
   document.getElementById('bolao-name').readOnly=true;
@@ -3486,6 +3523,16 @@ async function _onLoginSuccess(res){
   bolaoLoadStats();
   bolaoLoadEvolution();
   try{await bolaoLoadMyData()}catch(e){}
+  // Se token expirou (session limpa), reverter UI para login
+  if(!_bolaoToken){
+    document.getElementById('bolao-name').readOnly=false;
+    document.getElementById('bolao-pass').readOnly=false;
+    document.getElementById('bolao-logged-area').style.display='none';
+    document.getElementById('bolao-stats-section').style.display='none';
+    document.getElementById('bolao-evolution-section').style.display='none';
+    if(st)st.className='bolao-login-status';st.textContent='Sess\u00e3o expirada. Fa\u00e7a login novamente.';
+    return;
+  }
   bolaoRenderPicksGrid();
   bolaoLoadMajority();
   bolaoPopulateSpecials();
@@ -3495,6 +3542,9 @@ async function _onLoginSuccess(res){
 }
 function bolaoInit(){
   bolaoLoadRanking();
+  _initSpecialBanner();
+  bolaoRestoreSession();
+  if(_bolaoToken)_onLoginSuccess({token:_bolaoToken,id:_bolaoParticipantId,name:_bolaoName,confirmed:_bolaoConfirmed});
   var el=document.getElementById('bolao-deadline-info');if(!el)return;
   var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);if(!deadline){el.textContent='';return}
   var now=new Date();
