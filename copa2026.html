@@ -505,10 +505,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .rank-first .mob-rank-pts{font-size:22px}
 /* Destaque do próprio usuário mobile */
 .mob-rank-self{border-color:var(--blue);background:rgba(68,136,255,.04)}
-.mob-rank-self .mob-rank-name::before{content:"VOC\u00ca \u00b7 ";color:var(--blue);font-weight:700}
+.mob-rank-self .mob-rank-name::before{content:"VOC\00ca \00b7 ";color:var(--blue);font-weight:700}
 /* Destaque do próprio usuário desktop */
 .bolao-rank-self td{background:rgba(68,136,255,.04)}
-.bolao-rank-self .bolao-rank-name::before{content:"VOC\u00ca \u00b7 ";color:var(--blue);font-weight:700}
+.bolao-rank-self .bolao-rank-name::before{content:"VOC\00ca \00b7 ";color:var(--blue);font-weight:700}
 @media(max-width:480px){
   .mob-rank-row{padding:8px 10px}
   .rank-first{padding:10px 12px}
@@ -2630,7 +2630,7 @@ var BOLAO_WORKER='https://copa2026-bolao.luizfelipegobbo.workers.dev'; // <-- TR
 var _bolaoToken=null;
 var BOLAO_FIRST=6,BOLAO_FINAL=104,BOLAO_SIGNUP_GAME=32,BOLAO_TWO_H=7200000;
 var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
-var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmedStatus={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[],_bolaoKOPicks={};
+var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmedStatus={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[],_bolaoKOPicks={},_bolaoPicksLoadFailed=false;
 var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0;
 var BOLAO_SESSION_KEY='copa2026_session',BOLAO_PICKS_CACHE='copa2026_mypicks_cache',BOLAO_SPECIAL_CACHE='copa2026_special_cache';
 try{_bolaoSnappedGames=JSON.parse(localStorage.getItem('copa2026_snapped')||'{}')}catch(e){}
@@ -3149,7 +3149,11 @@ function bolaoRenderPicksGrid(){
       +(inputLocked?'':bolaoMajorityHtml(g.n))
       +'</div>';
   });
-  grid.innerHTML=any?html:_emptyState('&#9917;','Nenhum jogo dispon\u00edvel para palpite','Os palpites aparecem \u00e0 medida que os jogos se aproximam. Fique de olho!');
+  if(!any&&_bolaoPicksLoadFailed){
+    grid.innerHTML=_emptyState('\u26a0\ufe0f','Erro ao carregar seus palpites','Tente recarregar a p\u00e1gina. Se o problema persistir, o servidor do bol\u00e3o pode estar temporariamente indispon\u00edvel.');
+  }else{
+    grid.innerHTML=any?html:_emptyState('&#9917;','Nenhum jogo dispon\u00edvel para palpite','Os palpites aparecem \u00e0 medida que os jogos se aproximam. Fique de olho!');
+  }
   grid._debounceTimers={};
   // Event delegation: blur salva imediatamente
   if(grid._bolaoBlurHandler)grid.removeEventListener('blur',grid._bolaoBlurHandler,true);
@@ -3415,6 +3419,7 @@ async function bolaoLoadMyData(){
       hadCache=Object.keys(_bolaoMyPicks).length>0;
     }
   }catch(e){}
+  _bolaoPicksLoadFailed=false;
   var data;
   try{
     data=await _bolaoFetch('/mypicks');
@@ -3422,6 +3427,7 @@ async function bolaoLoadMyData(){
     if(e.status===401){_clearSession();_bolaoToken=null;_bolaoParticipantId=null;_bolaoName=null;_bolaoConfirmed=false;_bolaoMyPicks={}}
     console.warn('Falha ao carregar palpites:',e&&e.message?e.message:'');
     if(!hadCache){
+      _bolaoPicksLoadFailed=true;
       var st=document.getElementById('bolao-login-status');
       if(st){st.className='bolao-login-status err';st.textContent='Erro ao carregar seus palpites. Tente recarregar a p\u00e1gina.'}
     }
