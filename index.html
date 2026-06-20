@@ -646,7 +646,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <!-- Hoje merged into Jogos (v19.16) -->
   <div class="tab active" data-tab="jogos" role="tab" aria-selected="true" tabindex="0"><span class="tab-icon">⚽</span><span class="tab-label">Jogos</span></div>
   <div class="tab" data-tab="grupos" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📋</span><span class="tab-label">Grupos</span></div>
-  <div class="tab" data-tab="mata-mata" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">⚔️</span><span class="tab-label">Mata-Mata</span></div>
+  <div class="tab" data-tab="mata-mata" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🏆</span><span class="tab-label">Mata-Mata</span></div>
   <div class="tab" data-tab="artilheiros" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">👟</span><span class="tab-label">Artilheiros</span></div>
   <div class="tab" data-tab="convocados" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">👕</span><span class="tab-label">Convocados</span></div>
   <div class="tab" data-tab="regras" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📜</span><span class="tab-label">Regras</span></div>
@@ -807,7 +807,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 <div class="bottom-nav" id="bottom-nav" role="navigation" aria-label="Navegação principal">
   <div class="nav-btn active" id="nav-jogos" data-tab="jogos" onclick="navClick.call(this)" tabindex="0" role="button"><span class="nav-icon">⚽</span><span class="nav-label">Jogos</span></div>
   <div class="nav-btn" id="nav-grupos" data-tab="grupos" onclick="navClick.call(this)" tabindex="-1" role="button"><span class="nav-icon">📋</span><span class="nav-label">Grupos</span></div>
-  <div class="nav-btn" id="nav-mata-mata" data-tab="mata-mata" onclick="navClick.call(this)" tabindex="-1" role="button"><span class="nav-icon">⚔️</span><span class="nav-label">Mata-Mata</span></div>
+  <div class="nav-btn" id="nav-mata-mata" data-tab="mata-mata" onclick="navClick.call(this)" tabindex="-1" role="button"><span class="nav-icon">🏆</span><span class="nav-label">Mata-Mata</span></div>
   <div class="nav-btn" id="nav-bolao" data-tab="bolao" onclick="navClick.call(this)" tabindex="-1" role="button"><span class="nav-icon">🎯</span><span class="nav-label">Bolão</span></div>
   <div class="nav-btn" id="nav-mais" onclick="maisOpen()" tabindex="-1" role="button" aria-haspopup="true"><span class="nav-icon">☰</span><span class="nav-label">Mais</span></div>
 </div>
@@ -3013,11 +3013,11 @@ function bolaoRenderDetail(pid){
     }
     var pts=(hasPick&&hasReal&&!wrongTeams)?bolaoCalcPickPts(pick.a,pick.b,real.a,real.b):-1,bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
     var forfeitPts=forfeit&&pts>=0?pts+(bonus||0):0;
-    var cls=forfeit||wrongTeams?'forfeit':!hasReal?'future':pts===10?'exact':pts>=2?'result':pts===0?'wrong':'future';
+    var isFinal=gameIsPast(g);var cls=forfeit||wrongTeams?'forfeit':(!hasReal||!isFinal)?'future':pts===10?'exact':pts>=2?'result':pts===0?'wrong':'future';
     var pickStr=hasPick?(pick.a+'x'+pick.b):'?x?',realStr=hasReal?(real.a+'x'+real.b):'';
     var ptsStr=forfeit?'<span style="color:var(--red);font-weight:600">PERDEU</span> <span style="text-decoration:line-through;opacity:.4">'+forfeitPts+' pts</span>'
       :wrongTeams?'<span style="color:var(--red);font-weight:600">TIME DIFERENTE</span> <span style="font-size:11px;opacity:.7">(0 pts)</span>'
-      :pts>=0?(pts+(bonus?'+'+bonus:''))+' pts':'';
+      :(pts>=0&&isFinal)?(pts+(bonus?'+'+bonus:''))+' pts':'';
     if(!hasReal)pickStr='<span style="filter:blur(3px)">'+pickStr+'</span>';
     var card='<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">'+flag(g.a)+' '+esc(g.a)+' vs '+flag(g.b)+' '+esc(g.b)+'</div><div><span class="bolao-pick-score">Palpite: '+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">\u2192 '+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>';
     if(hasReal){scored.push(card)}else{future.push(card)}
