@@ -2632,6 +2632,7 @@ var BOLAO_FIRST=6,BOLAO_FINAL=104,BOLAO_SIGNUP_GAME=32,BOLAO_TWO_H=7200000;
 var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
 var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmedStatus={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[],_bolaoKOPicks={},_bolaoPicksLoadFailed=false;
 var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0;
+var _bolaoStatsLoading=false,_bolaoStats=null;
 var BOLAO_PICKS_CACHE='copa2026_mypicks_cache';
 try{_bolaoSnappedGames=JSON.parse(localStorage.getItem('copa2026_snapped')||'{}')}catch(e){}
 
@@ -2709,7 +2710,7 @@ function _bolaoGroupStandings(letter,picks){
   if(!anyPlayed)return null;
   var groupGames=GAMES.filter(function(g){return g.f===GROUP_NAMES[letter];});
   var finished=groupGames.every(function(g){return !!_bolaoGetScore(g.n,picks);});
-  var sorted=_resolveGroupOrder(teams,pts,gf,ga,groupGames,function(n){return _bolaoGetScore(n,picks);});
+  var sorted=_resolveGroupOrder(teams,pts,gf,ga,groupGames,function(n){return _bolaoGetScore(n,picks);},function(){return 0;});
   return{teams:sorted,pts:pts,gf:gf,ga:ga,gp:gp,finished:finished};
 }
 
@@ -4319,8 +4320,4 @@ document.addEventListener('keydown', function(e){
     return;
   }
 });
-var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED'&&!_refreshing){_refreshing=true;window.location.reload()}})}
-</script>
-</body>
-</html>
-
+var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED'&&!_refreshing){_refresh
