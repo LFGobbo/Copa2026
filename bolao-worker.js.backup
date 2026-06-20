@@ -237,8 +237,12 @@ async function handle(req) {
     if (method === 'POST' && path === '/special-picks') {
       if (!user) return error('Token invalido', 401);
       var body = await req.json();
+      // Buscar valores existentes para nao sobrescrever campos nao enviados com null
+      var existing = ((await supaFetch("special_picks?participant_id=eq." + user.sub + "&select=champion,top_scorer")) || [])[0] || {};
+      var champion  = (body.champion  !== undefined && body.champion  !== '' && body.champion  !== null) ? body.champion  : (existing.champion  || null);
+      var topScorer = (body.topScorer !== undefined && body.topScorer !== '' && body.topScorer !== null) ? body.topScorer : (existing.top_scorer || null);
       await supaFetch("special_picks?participant_id=eq." + user.sub, 'DELETE').catch(function(){});
-      await supaFetch('special_picks', 'POST', { participant_id: user.sub, champion: body.champion || null, top_scorer: body.topScorer || null });
+      await supaFetch('special_picks', 'POST', { participant_id: user.sub, champion: champion, top_scorer: topScorer });
       return json({ ok: true });
     }
 

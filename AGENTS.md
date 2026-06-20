@@ -1,33 +1,34 @@
-# Copa do Mundo 2026 ? Documenta??o do Projeto
+# Copa do Mundo 2026 — Documentação do Projeto
 
-**?ltima atualiza??o:** 2026-06-20 (v19.38)
-**Reposit?rio:** `github.com/LFGobbo/Copa2026`
+**Última atualização:** 2026-06-20 (v19.37)
+**Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
 
 ---
 
-## 1. Vis?o Geral
+## 1. Visão Geral
 
-Aplica??o web autossuficiente (single HTML) para acompanhar a Copa do Mundo 2026:
+Aplicação web autossuficiente (single HTML) para acompanhar a Copa do Mundo 2026:
 
-- 48 sele??es, 12 grupos (A?L), 104 jogos
+- 48 seleções, 12 grupos (A-L), 104 jogos
+  - Bolão cobre apenas 99 jogos (os 5 primeiros já haviam começado quando o bolão abriu)
 - Placar ao vivo via FIFA API + entrada manual
-- Grupos com classifica??o din?mica (7 crit?rios de desempate, H2H primeiro, fair play, ranking FIFA)
-- Mata-mata com bracket autom?tico (propaga??o de resultados)
-- Artilharia e assist?ncias
+- Grupos com classificação dinâmica (7 critérios de desempate, H2H primeiro, fair play, ranking FIFA)
+- Mata-mata com bracket automático (propagação de resultados)
+- Artilharia e assistências
 - Convocados (1248 jogadores) com fotos e busca
 - Regras atualizadas (SAOT, VAR, 8s/5s/10s)
-- **Bol?o** integrado com Supabase (palpites, ranking, pontua??o)
+- **Bolão** integrado com Supabase (palpites, ranking, pontuação)
 - Service Worker para cache offline
-- Persist?ncia redundante (IndexedDB + 3? localStorage)
+- Persistência redundante (IndexedDB + 3 localStorage)
 
-### Restri??es
+### Restrições
 
 - HTML principal (~336KB) com dados essenciais inline (`GAMES`, `GROUPS`)
 - Dados pesados (`PLAYERS` ~116KB, `PLAYER_PHOTOS` ~174KB) em JSON externo
-- Zero depend?ncias, zero build steps
-- Dados extra?dos de `Copa_2026_Completa.xlsx` (3 sheets)
+- Zero dependências, zero build steps
+- Dados extraídos de `Copa_2026_Completa.xlsx` (3 sheets)
 
 ---
 
@@ -35,57 +36,57 @@ Aplica??o web autossuficiente (single HTML) para acompanhar a Copa do Mundo 2026
 
 ```
 index.html (ou copa2026.html)
-+-- CSS inline (~480 linhas) ? design system completo, responsivo, dark theme
-+-- HTML est?tico (~200 linhas) ? header, tabs, content containers, popups
-+-- JS inline (~2500 linhas) ? toda a l?gica da aplica??o
-?
-+-- players.json       ? 1248 jogadores (carregado via XHR ass?ncrono)
-+-- photos.json        ? 951 URLs de fotos (carregado via XHR ass?ncrono)
-?
-+-- sw.js              ? Service Worker (cache-first + stale-while-revalidate)
-?
-+-- *.png (7 logos broadcast + 4 assets) ? est?ticos cacheados pelo SW
-?
-+-- Supabase (REST API) ? Bol?o (participants, picks, special_picks)
++-- CSS inline (~480 linhas) | design system completo, responsivo, dark theme
++-- HTML estático (~200 linhas) | header, tabs, content containers, popups
++-- JS inline (~2500 linhas) | toda a lógica da aplicação
+|
++-- players.json       | 1248 jogadores (carregado via XHR assíncrono)
++-- photos.json        | 951 URLs de fotos (carregado via XHR assíncrono)
+|
++-- sw.js              | Service Worker (cache-first + stale-while-revalidate)
+|
++-- *.png (7 logos broadcast + 4 assets) | estáticos cacheados pelo SW
+|
++-- Supabase (REST API) | Bolão (participants, picks, special_picks)
 ```
 
-### Fluxo de inicializa??o
+### Fluxo de inicialização
 
 1. HTML carrega com CSS + estrutura + `GAMES`/`GROUPS` inline
 2. `_loadAllData()` dispara XHR paralelos para `players.json` e `photos.json`
-3. `initFifaMaps()` busca calend?rio FIFA, monta mapeamento de times/jogadores
+3. `initFifaMaps()` busca calendário FIFA, monta mapeamento de times/jogadores
 4. `_loadPersistent()` tenta restaurar scores/goals/cards de IndexedDB + localStorage (3 chaves)
 5. `renderGames()`, `renderGroups()`, `renderBracket()`, `renderScorers()` na tab ativa
-6. `bolaoInit()` carrega ranking do bol?o do Supabase
-7. `setInterval(updateCountdown, 1000)` ? countdown em tempo real
-8. `setInterval(fetchCalendar, pollingInterval)` ? FIFA API polling (10s com live, 60s sem)
+6. `bolaoInit()` carrega ranking do bolão do Supabase
+7. `setInterval(updateCountdown, 1000)` — countdown em tempo real
+8. `setInterval(fetchCalendar, pollingInterval)` — FIFA API polling (10s com live, 60s sem)
 9. Service Worker registrado em background
 
 ---
 
-## 3. Invent?rio de Arquivos
+## 3. Inventário de Arquivos
 
-| Arquivo | Tamanho | Fun??o |
+| Arquivo | Tamanho | Função |
 |---|---|---|
 | `index.html` | ~336KB | App principal (deploy GitHub Pages) |
-| `copa2026.html` | ~336KB | C?pia id?ntica (compatibilidade) |
-| `players.json` | ~116KB | 1248 jogadores (48 times ? 26) |
+| `copa2026.html` | ~336KB | Cópia idêntica (compatibilidade) |
+| `players.json` | ~116KB | 1248 jogadores (48 times · 26) |
 | `photos.json` | ~174KB | 951 URLs de fotos (Wikipedia + FIFA) |
 | `sw.js` | 2.7KB | Service Worker v21 (fallback só navigate) |
 | `bola_t.png` | 36KB | Bola Trionda (redimensionada) |
 | `mascote1_t.png` | ~41KB | Mascote principal |
-| `mascote2_t.png` | ~41KB | Mascote secund?rio |
-| `mascote3_t.png` | ~41KB | Mascote terci?rio |
+| `mascote2_t.png` | ~41KB | Mascote secundário |
+| `mascote3_t.png` | ~41KB | Mascote terciário |
 | `logo_globo.png` | ? | Logo Globo |
 | `logo_sportv.png` | ? | Logo SporTV |
-| `logo_cazetv.png` | ? | Logo Caz?TV (20px altura no CSS) |
+| `logo_cazetv.png` | ? | Logo CazéTV (20px altura no CSS) |
 | `logo_sbt.png` | ? | Logo SBT |
 | `logo_nsports.png` | ? | Logo N Sports |
 | `logo_globoplay.png` | ? | Logo Globoplay |
 | `logo_getv.png` | ? | Logo Ge TV |
-| `AGENTS.md` | ? | Esta documenta??o |
-| `LEVANTAMENTO_TECNICO.md` | ? | An?lise t?cnica detalhada |
-| `opencode.json` | ? | Configura??o OpenCode |
+| `AGENTS.md` | ? | Esta documentação |
+| `LEVANTAMENTO_TECNICO.md` | ? | Análise técnica detalhada |
+| `opencode.json` | ? | Configuração OpenCode |
 | `.gitignore` | ? | Regras git |
 
 ---
@@ -97,14 +98,14 @@ index.html (ou copa2026.html)
 ```js
 // Array de 104 objetos
 {
-  n: 1,                    // N?mero do jogo (1-104)
+  n: 1,                    // Número do jogo (1-104)
   f: "Grupo A",            // Fase (ou "Mata-Mata")
   d: "11/06 Qui",          // Data
-  t: "16:00",              // Hor?rio (Bras?lia, UTC-3)
-  s: "Azteca ? Cidade do M?xico",  // Est?dio
-  a: "M?xico",             // Time A (mandante)
-  b: "?frica do Sul",      // Time B (visitante)
-  br: "Globo ? SporTV ? Caz?TV ? SBT",  // Broadcasts (separador U+00B7)
+  t: "16:00",              // Horário (Brasília, UTC-3)
+  s: "Azteca · Cidade do México",  // Estádio
+  a: "México",             // Time A (mandante)
+  b: "África do Sul",      // Time B (visitante)
+  br: "Globo · SporTV · CazéTV · SBT",  // Broadcasts (separador U+00B7)
   sa: "",                  // Placar A (seed inicial, vazio)
   sb: ""                   // Placar B (seed inicial, vazio)
 }
@@ -114,9 +115,9 @@ index.html (ou copa2026.html)
 
 ```js
 const GROUPS = {
-  "A": ["?frica do Sul", "Coreia do Sul", "M?xico", "Rep?blica Tcheca"],
-  "B": ["B?snia", "Canad?", "Catar", "Su??a"],
-  // ... at? "L"
+  "A": ["África do Sul", "Coreia do Sul", "México", "República Tcheca"],
+  "B": ["Bósnia", "Canadá", "Catar", "Suíça"],
+  // ... até "L"
 }
 ```
 
@@ -132,7 +133,7 @@ const GROUPS = {
     // ... 26 jogadores por time
   ]
 }
-// Total: 48 times ? 26 jogadores = 1248
+// Total: 48 times · 26 jogadores = 1248
 ```
 
 ### 4.4 PLAYER_PHOTOS (photos.json)
@@ -144,13 +145,13 @@ const GROUPS = {
 }
 ```
 
-Tamb?m usa fallback da Squad API da FIFA (`PlayerPicture.PictureUrl`) via `FIFA_PHOTO_BY_TEAM_NUM`.
+Também usa fallback da Squad API da FIFA (`PlayerPicture.PictureUrl`) via `FIFA_PHOTO_BY_TEAM_NUM`.
 
 ### 4.5 Scores (runtime + persistido)
 
 ```js
 scores = {
-  1: { a: 2, b: 0, pen: 'a' },  // pen opcional (p?naltis)
+  1: { a: 2, b: 0, pen: 'a' },  // pen opcional (pênaltis)
   2: { a: 2, b: 1 },
   // ...
 }
@@ -162,8 +163,8 @@ scores = {
 goals = {
   1: {
     a: [
-      { key: "g_1711664400000", player: "10", pname: "Ra?l Jim?nez",
-        type: "gol", minute: 45, assist: "17", aname: "Orbel?n Pineda",
+      { key: "g_1711664400000", player: "10", pname: "Raúl Jiménez",
+        type: "gol", minute: 45, assist: "17", aname: "Orbelín Pineda",
         auto: true, team: "a" }
     ],
     b: []
@@ -179,7 +180,7 @@ goals = {
 cards = {
   1: {
     a: [
-      { key: "c_1711664400000", player: "4", pname: "Edson ?lvarez",
+      { key: "c_1711664400000", player: "4", pname: "Edson Álvarez",
         type: "yellow", minute: 32, team: "a", auto: true }
     ],
     b: []
@@ -187,11 +188,11 @@ cards = {
 }
 ```
 
-### 4.8 Suspens?es (runtime)
+### 4.8 Suspensões (runtime)
 
-`getSuspensions(gameId)` agrega cart?es de **jogos anteriores** de cada time:
-- 2 cart?es amarelos (em jogos distintos) = suspenso
-- 1 cart?o vermelho = suspenso
+`getSuspensions(gameId)` agrega cartões de **jogos anteriores** de cada time:
+- 2 cartões amarelos (em jogos distintos) = suspenso
+- 1 cartão vermelho = suspenso
 
 ---
 
@@ -201,7 +202,7 @@ cards = {
 
 - **Tema:** Dark mode com glassmorphism (fundo `#08081a`, cards `#18183a`)
 - **Tipografia:** Inter font embedded como base64 (64KB, latin subset, 400-700)
-- **Cores:** 12 cores de grupo (A?L), ouro para Brasil/destaques
+- **Cores:** 12 cores de grupo (A-L), ouro para Brasil/destaques
 - **Responsivo:** 3 breakpoints com `clamp()` fluido
 
 ### CSS Variables
@@ -225,182 +226,182 @@ cards = {
 
 ### Responsivo
 
-| Breakpoint | Mudan?as |
+| Breakpoint | Mudanças |
 |---|---|
-| `768px` | Header sem mascotes, tabs scroll?veis, popup mais largo |
+| `768px` | Header sem mascotes, tabs scrolláveis, popup mais largo |
 | `480px` | Game card com grid-template-areas, inputs menores, fonte 18px |
 
 ### Componentes principais (classes)
 
-| Classe | Fun??o |
+| Classe | Função |
 |---|---|
 | `.game-card` | Card de jogo (grid 5 colunas) |
 | `.game-card.live` | Ao vivo: borda verde + glow + pulse |
 | `.game-card.collapsed` | Jogos passados (colapsado, expande com +) |
-| `.countdown-bar` | Barra superior de pr?ximos jogos |
+| `.countdown-bar` | Barra superior de próximos jogos |
 | `.filter-btn` | Filtro de grupo (12 cores) |
-| `.group-card` | Tabela de classifica??o |
+| `.group-card` | Tabela de classificação |
 | `.bracket-tree` | SVG do mata-mata |
 | `.scorers-table` | Tabela de artilharia |
-| `.bolao-*` / `.bsp-*` | Bol?o (ranking, cards de palpite) |
-| `.popup-overlay` | Modal de gol/cart?o |
+| `.bolao-*` / `.bsp-*` | Bolão (ranking, cards de palpite) |
+| `.popup-overlay` | Modal de gol/cartão |
 
 ---
 
 ## 6. JavaScript Architecture
 
-### 6.1 N?cleo e Configura??o
+### 6.1 Núcleo e Configuração
 
-| Vari?vel / Const | Descri??o |
+| Variável / Const | Descrição |
 |---|---|
 | `GAMES` | 104 jogos (inline) |
 | `GROUPS` | 12 grupos (inline) |
 | `PLAYERS` | 1248 jogadores (carregado de players.json) |
 | `scores` `goals` `cards` | Estado runtime + persistido |
-| `REFEREES` | Cache de ?rbitros (Wikipedia) |
-| `BAK_KEYS` | 3 chaves de localStorage para redund?ncia |
-| `VALID_TABS` | Whitelist de abas v?lidas (inclui `diagnostico`) |
-| `_LIVE_WINDOW` | 10800000ms ? janela para live/past (3h cobre 90'+30'+p?naltis) |
-| `TIMELINE_HASH` | Hash de eventos da timeline para detectar corre??es da FIFA |
-| `GAME_BY_ID` | `GAME_BY_ID[g.n] = g` ? lookup direto, elimina `GAMES.find()` |
-| `MATCH_HALFTIME` | Mapa idMatch ? true (intervalo entre 1T e 2T) |
-| `MATCH_SECOND_KICKOFF` | Mapa idMatch ? Date (UTC do inicio do 2T via Type 8 ou SecondHalfKickOffTime) |
+| `REFEREES` | Cache de Árbitros (Wikipedia) |
+| `BAK_KEYS` | 3 chaves de localStorage para redundância |
+| `VALID_TABS` | Whitelist de abas válidas (inclui `diagnostico`) |
+| `_LIVE_WINDOW` | 10800000ms — janela para live/past (3h cobre 90'+30'+pênaltis) |
+| `TIMELINE_HASH` | Hash de eventos da timeline para detectar correções da FIFA |
+| `GAME_BY_ID` | `GAME_BY_ID[g.n] = g` — lookup direto, elimina `GAMES.find()` |
+| `MATCH_HALFTIME` | Mapa idMatch → true (intervalo entre 1T e 2T) |
+| `MATCH_SECOND_KICKOFF` | Mapa idMatch → Date (UTC do inicio do 2T via Type 8 ou SecondHalfKickOffTime) |
 
-### 6.2 Fun??es por Dom?nio
+### 6.2 Funções por Domínio
 
-#### Persist?ncia
+#### Persistência
 
-| Fun??o | Descri??o |
+| Função | Descrição |
 |---|---|
 | `_loadPersistent()` | Tenta 3 chaves localStorage, replica entre elas |
 | `saveState()` | IndexedDB + 3 localStorage |
 | `_openDB()` / `_idbSave()` / `_idbLoad()` | IndexedDB (store separado: s/g/c) |
 
-#### Renderiza??o
+#### Renderização
 
-| Fun??o | Descri??o |
+| Função | Descrição |
 |---|---|
-| `dynRender(el, html)` | Renderiza s? se mudou (evita flicker) |
-| `renderGames(filter)` | Lista jogos (pr?ximos primeiro, passados colapsados) |
-| `renderGameCard(g)` | Card individual (placar, times, eventos, p?naltis) |
-| `renderGroups()` | 12 tabelas de classifica??o |
-| `renderThirdPlaced()` | Tabela de melhores 3?s colocados |
+| `dynRender(el, html)` | Renderiza só se mudou (evita flicker) |
+| `renderGames(filter)` | Lista jogos (próximos primeiro, passados colapsados) |
+| `renderGameCard(g)` | Card individual (placar, times, eventos, pênaltis) |
+| `renderGroups()` | 12 tabelas de classificação |
+| `renderThirdPlaced()` | Tabela de melhores 3ºs colocados |
 | `renderBracket()` / `renderBracketCards()` / `renderBracketTree()` | Mata-mata (cards + SVG) |
-| `renderScorers()` | Artilharia + assist?ncias |
-| `renderSquads()` | Convocados com virtualiza??o (IntersectionObserver) |
+| `renderScorers()` | Artilharia + assistências |
+| `renderSquads()` | Convocados com virtualização (IntersectionObserver) |
 
 #### Bracket (Mata-Mata)
 
-| Fun??o | Descri??o |
+| Função | Descrição |
 |---|---|
-| `_groupStandings(letter)` | Classifica??o do grupo (7 crit?rios FIFA 2026: P ? H2H P/SG/GF ? GD ? GF ? fair play ? ranking FIFA) |
-| `_rankedThirds()` | 8 melhores 3?s colocados |
-| `_winnerOf(n)` | Vencedor de um jogo (com p?naltis) |
+| `_groupStandings(letter)` | Classificação do grupo (7 critérios FIFA 2026: P → H2H P/SG/GF → GD → GF → fair play → ranking FIFA) |
+| `_rankedThirds()` | 8 melhores 3ºs colocados |
+| `_winnerOf(n)` | Vencedor de um jogo (com pênaltis) |
 | `_loserOf(n)` | Perdedor de um jogo |
-| `resolveTeam(placeholder)` | Resolve slot: "1? Grupo A", "V. Jogo 73", "0" (3?) |
-| `_THIRD_SLOTS` | Mapeamento de slots de 3? nos jogos KO |
+| `resolveTeam(placeholder)` | Resolve slot: "1º Grupo A", "V. Jogo 73", "0" (3º) |
+| `_THIRD_SLOTS` | Mapeamento de slots de 3º nos jogos KO |
 
 #### Placares e Eventos
 
-| Fun??o | Descri??o |
+| Função | Descrição |
 |---|---|
 | `isGameLive(g)` | Live detection (MATCH_STARTED + 3h window) |
 | `gameIsPast(g)` | Jogo encerrado (fora janela 3h + tem placar) |
 | `gameUTC(g)` | Converte data/hora para UTC (offset fixo +3 BRT) |
 | `scoreInput()` | Handler de input de placar |
-| `addGoalUI(id, team)` / `addCardUI(id, team)` | Abre popup de gol/cart?o |
+| `addGoalUI(id, team)` / `addCardUI(id, team)` | Abre popup de gol/cartão |
 | `confirmGoal()` / `confirmCard()` | Salva evento |
 | `removeGoal(id, team, key)` / `removeCard(...)` | Remove evento |
-| `setPen(id, side)` | Define vencedor nos p?naltis |
-| `getSuspensions(forGame)` | Agrega suspens?es por time |
+| `setPen(id, side)` | Define vencedor nos pênaltis |
+| `getSuspensions(forGame)` | Agrega suspensões por time |
 
 #### FIFA API
 
-| Fun??o | Descri??o |
+| Função | Descrição |
 |---|---|
 | `fetchFifaScores(timeout)` | GET `/api/v3/calendar/matches` |
 | `mergeScores(map)` | Merge scores da FIFA nos locais |
 | `initFifaMaps()` | Mapeia team IDs, match IDs, squads |
 | `fetchCalendar()` | Polling principal (10s/60s) |
-| `processTimeline(idMatch, gameId)` | Processa Timeline API (gols, cart?es) |
+| `processTimeline(idMatch, gameId)` | Processa Timeline API (gols, cartões) |
 | `auditData()` | Compara scores locais vs FIFA |
 
 #### Convocados
 
-| Fun??o | Descri??o |
+| Função | Descrição |
 |---|---|
 | `renderSquads()` | Gera placeholders, hidrata com IntersectionObserver |
-| `getPlayerPhoto(name, team, num)` | Busca foto (Wikipedia ? FIFA Squad ? fallback bandeira) |
+| `getPlayerPhoto(name, team, num)` | Busca foto (Wikipedia → FIFA Squad → fallback bandeira) |
 | `flag(t)` | Bandeira via flagcdn.com com lazy loading |
-| `broadcastBadge(br)` | Logos de transmiss?o |
+| `broadcastBadge(br)` | Logos de transmissão |
 
-#### Utilit?rios
+#### Utilitários
 
-| Fun??o | Descri??o |
+| Função | Descrição |
 |---|---|
 | `esc(s)` | XSS escape |
 | `flag(t)` | Bandeira HTML |
 | `teamRow(n, c)` | Time + bandeira |
-| `toBRT(g)` | Hor?rio Bras?lia |
+| `toBRT(g)` | Horário Brasília |
 
 #### Countdown
 
-| Fun??o | Descri??o |
+| Função | Descrição |
 |---|---|
-| `updateCountdown()` | Atualiza a cada 1s: abertura ? AO VIVO ? pr?ximo jogo |
-| `scheduleCountdown()` | `setTimeout` recursivo ? 1s se live, 30s se n?o |
+| `updateCountdown()` | Atualiza a cada 1s: abertura → AO VIVO → próximo jogo |
+| `scheduleCountdown()` | `setTimeout` recursivo — 1s se live, 30s se não |
 
-#### ?rbitros
+#### Árbitros
 
-| Fun??o | Descri??o |
+| Função | Descrição |
 |---|---|
 | `loadAllReferees()` | Busca Wikipedia para 48 jogos, cache 6h |
 | `_fetchWikiRefs(letter, cb)` | Wikipedia action=parse |
 
-### 6.3 Fun??es de Diagn?stico
+### 6.3 Funções de Diagnóstico
 
-| Fun??o | Descri??o |
+| Função | Descrição |
 |---|---|
 | `renderDiagnostico()` | Aba oculta `#diagnostico`: mostra mapeamento FIFA, hashes de timeline, scores locais |
-| `switchTab(tab)` | Muda de aba sem `.tab` vis?vel (usado para `diagnostico`) |
+| `switchTab(tab)` | Muda de aba sem `.tab` visível (usado para `diagnostico`) |
 
 ---
 
-## 7. Bol?o (Betting Pool)
+## 7. Bolão (Betting Pool)
 
-### 7.1 Configura??o Supabase
+### 7.1 Configuração Supabase
 
 ```
 URL:  https://etbezmraylbvlnycltha.supabase.co
 Tier: Free
-Chave an?nima: (removida do front-end na v19.7 ? s? o Worker usa service_role)
+Chave anônima: (removida do front-end na v19.7 — só o Worker usa service_role)
 ```
 
 ### 7.2 Cloudflare Worker (bolao-worker.js)
 
-Middleware de seguran?a entre frontend e Supabase:
+Middleware de segurança entre frontend e Supabase:
 
 ```
 URL: https://copa2026-bolao.luizfelipegobbo.workers.dev
-Turnstile Site Key: 0x4AAAAAADj0kWY7cUoZ_uwS
-Turnstile Secret: 0x4AAAAAADj0kQff4_E5yllvUOzc2sCtF2k
+Turnstile Site Key: 0x4AAAAAADj0kWY7cUoZ_uwS (pública, vai no HTML)
+Turnstile Secret: ver CREDENCIAIS_COPA2026.md (arquivo local, fora do repositório — nunca commitar este valor)
 ```
 
-- **`POST /register`** ? Turnstile validation + cria participante (hash server-side)
-- **`POST /login`** ? Compara senha (hash server-side), retorna JWT
-- **`POST /picks`** ? Salva palpites + hist?rico (requer JWT)
-- **`GET /mypicks`** ? Palpites do usu?rio logado (requer JWT)
-- **`GET /ranking`** ? Ranking p?blico (sem auth)
-- **`POST /special-picks`** ? Campe?o + artilheiro (requer JWT)
-- **`PATCH /confirm`** ? Confirma todos os palpites (requer JWT)
-- **`PATCH /admin/unlock`** ? Desbloqueia participante (admin)
-- **`DELETE /reset`** ? Limpa tudo (admin key)
+- **`POST /register`** — Turnstile validation + cria participante (hash server-side)
+- **`POST /login`** — Compara senha (hash server-side), retorna JWT
+- **`POST /picks`** — Salva palpites + histórico (requer JWT)
+- **`GET /mypicks`** — Palpites do usuário logado (requer JWT)
+- **`GET /ranking`** — Ranking público (sem auth)
+- **`POST /special-picks`** — Campeão + artilheiro (requer JWT)
+- **`PATCH /confirm`** — Confirma todos os palpites (requer JWT)
+- **`PATCH /admin/unlock`** — Desbloqueia participante (admin)
+- **`DELETE /reset`** — Limpa tudo (admin key)
 
 ### 7.3 Tabelas
 
-| Tabela | Colunas | Fun??o |
+| Tabela | Colunas | Função |
 |---|---|---|
-| `participants` | `id (uuid), name (unique), password (sha256), confirmed (bool), created_at` | Usu?rios |
+| `participants` | `id (uuid), name (unique), password (sha256), confirmed (bool), created_at` | Usuários |
 | `picks` | `id, participant_id (fk), game_n (int), goals_a (int), goals_b (int), ko_pick (text), created_at, updated_at` | Palpites por jogo |
 | `special_picks` | `id, participant_id (fk, unique), champion (text), top_scorer (text), locked (bool)` | Palpites especiais |
 
@@ -408,77 +409,77 @@ Turnstile Secret: 0x4AAAAAADj0kQff4_E5yllvUOzc2sCtF2k
 
 - Login/cadastro com SHA-256 via `crypto.subtle`
 - Palpites por jogo (grid de inputs, trava 2h antes)
-- Palpites especiais (campe?o +50pts, artilheiro +20/+10)
-- Simula??o do bracket baseada nos palpites
-- Bot?es de desempate em KO (quem passa?)
-- Confirma??o geral (bloqueia edi??o)
-- Ranking com medalhas, pontos, detalhes expans?veis
-- Desempate: 1? mais exatos, 2? mais resultados, 3? mais b?nus
+- Palpites especiais (campeão +50pts, artilheiro +20/+10)
+- Simulação do bracket baseada nos palpites
+- Botões de desempate em KO (quem passa?)
+- Confirmação geral (bloqueia edição)
+- Ranking com medalhas, pontos, detalhes expansíveis
+- Desempate: 1º mais exatos, 2º mais resultados, 3º mais bônus
 
-### 7.4 Pontua??o
+### 7.5 Pontuação
 
 | Acerto | Pontos |
 |---|---|
 | Placar exato | 10 |
 | Resultado + gol do vencedor | 6 |
 | Resultado + gol do perdedor | 4 |
-| S? resultado (vit?ria/empate) | 2 |
+| Só resultado (vitória/empate) | 2 |
 | Errou | 0 |
-| B?nus final (placar exato na Final #104) | +20 (acumul?vel) |
-| Campe?o | +50 |
+| Bônus final (placar exato na Final #104) | +20 (acumulável) |
+| Campeão | +50 |
 | Artilheiro exato | +20 |
 | Artilheiro empatado | +10 |
 
-### 7.5 Fun??es do Bol?o
+### 7.6 Funções do Bolão
 
-| Fun??o | Descri??o |
+| Função | Descrição |
 |---|---|
 | `_supaFetch(path, method, body)` | Wrapper REST Supabase |
 | `bolaoLogin()` | Login/cadastro |
 | `bolaoSavePick(gameN)` | Salva palpite individual |
 | `bolaoKOPick(gameN, side)` | Salva desempate KO |
-| `bolaoSaveSpecial()` | Salva campe?o + artilheiro |
+| `bolaoSaveSpecial()` | Salva campeão + artilheiro |
 | `bolaoConfirmAll()` | Trava tudo |
 | `bolaoCalcPoints(...)` | Calcula pontos de um palpite |
-| `bolaoCalcTotal(participantId)` | Pontua??o total |
+| `bolaoCalcTotal(participantId)` | Pontuação total |
 | `bolaoRenderRanking()` | Ranking com medalhas |
 | `bolaoRenderPicksGrid()` | Grid de palpites |
 | `_bolaoGetBracket(picks)` | Bracket simulado |
 | `bolaoSimular()` | Gera dados de teste (9 participantes) |
 
-### 7.6 Admin
+### 7.7 Admin
 
 ```
-_bAdm('BolaoAdmin2026!', 'Nome')  ? console do DevTools
+_bAdm('BolaoAdmin2026!', 'Nome')  — console do DevTools
 ```
 
 ---
 
 ## 8. Service Worker (sw.js)
 
-**Cache name:** `copa2026-v20`
+**Cache name:** `copa2026-v21`
 
-### Estrat?gia por tipo de recurso
+### Estratégia por tipo de recurso
 
-| Recurso | Estrat?gia | Exemplos |
+| Recurso | Estratégia | Exemplos |
 |---|---|---|
-| Assets est?ticos | Cache First | `*.png` (logos, bola, mascotes) |
+| Assets estáticos | Cache First | `*.png` (logos, bola, mascotes) |
 | Dados JSON | Stale-While-Revalidate | `players.json`, `photos.json` |
 | HTML | Network First | `index.html` |
 | API externa | Network First (fallback index.html) | FIFA API, flagcdn |
 
 ### Ciclo de vida
 
-1. **Install:** pr?-cacheia assets est?ticos, `skipWaiting()`
+1. **Install:** pré-cacheia assets estáticos, `skipWaiting()`
 2. **Activate:** limpa caches antigos, `clients.claim()`, notifica `SW_UPDATED`
-3. **Fetch:** roteia conforme estrat?gia acima
-4. **Update:** vers?o nova for?a `controllerchange` ? reload autom?tico
+3. **Fetch:** roteia conforme estratégia acima
+4. **Update:** versão nova força `controllerchange` — reload automático
 
 ---
 
-## 9. Persist?ncia
+## 9. Persistência
 
-### Estrat?gia de 3 camadas
+### Estratégia de 3 camadas
 
 ```
 saveState()
@@ -488,7 +489,7 @@ saveState()
 +-- localStorage 'copa2026_bak2'
 ```
 
-### Recupera??o
+### Recuperação
 
 `_loadPersistent()` tenta as 3 chaves localStorage, replica dados entre elas se achar. `setTimeout` 200ms carrega IndexedDB e mergeia se ausente.
 
@@ -501,18 +502,18 @@ saveState()
 | Endpoint | Uso |
 |---|---|
 | `/api/v3/calendar/matches?idCompetition=17&idSeason=285023` | Scores ao vivo (polling) |
-| `/api/v3/timelines/{IdMatch}` | Eventos (gols, cart?es) |
+| `/api/v3/timelines/{IdMatch}` | Eventos (gols, cartões) |
 | `/api/v3/teams/{IdTeam}/squad?idCompetition=17&idSeason=285023` | Squad + fotos |
 
 ### Mapeamento
 
-`FIFA_TEAM_MAP` (48 entries) mapeia c?digo FIFA ? nome portugu?s. `FIFA_PLAYER_MAP` mapeia `IdPlayer` ? nossos jogadores por time + n?mero.
+`FIFA_TEAM_MAP` (48 entries) mapeia código FIFA — nome português. `FIFA_PLAYER_MAP` mapeia `IdPlayer` — nossos jogadores por time + número.
 
 ### Polling
 
-- 10s quando h? jogos ao vivo
+- 10s quando há jogos ao vivo
 - 60s sem jogos ao vivo
-- AbortController com timeout 8s (autom?tico) / 10s (manual)
+- AbortController com timeout 8s (automático) / 10s (manual)
 
 ---
 
@@ -520,67 +521,99 @@ saveState()
 
 ### Encoding
 
-- `ConvertTo-Json` no PS 5.1 faz duplo-encode UTF-8 (ex: "?" ? "?\x81")
+- `ConvertTo-Json` no PS 5.1 faz duplo-encode UTF-8 (ex: "ç" → "?\x81")
 - Broadcast separator usa `?` (U+00B7), split regex deve ser `\u00b7`
 - Arquivos salvos com `[System.IO.StreamWriter]` e `UTF8Encoding($false)` para evitar BOM
 
 ### Dados
 
-- Gol contra armazenado no time do bot?o clicado (invers?o corrigida na renderiza??o)
+- Gol contra armazenado no time do botão clicado (inversão corrigida na renderização)
 - **Gol contra truncado pelo placar**: gols contra ficam em `autoGoals[B]` mas `autoGoalsB.slice(0, finalAway)` os remove porque `finalAway=0`. Separa-se normais de contras antes da truncagem, cada grupo usa seu placar
-- `HomeTeamScore: null` no calend?rio FIFA ? placar extra?do da Timeline API
+- `HomeTeamScore: null` no calendário FIFA — placar extraído da Timeline API
 - Grupos I/J tiveram dados trocados (corrigido v11.10)
 
-### C?digo
+### Código
 
 - `onerror` em strings JS precisa de escape de aspas (`\'`)
 - `parseInt()` sem radix 10 causa bugs em mobile
 - `forEach` aninhado pode faltar `});` (quebrou processTimeline no v12)
-- `dynRender` ass?ncrono com rAF causa flicker se `slideUp` CSS anima 104 cards
-- **Chave de cart?o sem EventId**: usar minuto como identificador permite duplicatas se o mesmo cart?o for reprocessado. Usar `gameId_c_EventId` + `seenCardEvents` para deduplica??o
-- **`newEvents` vs timeline completa**: processar s? eventos novos (`EventId > lastId`) impede revalida??o de cart?es removidos pela API. A timeline completa deve ser varrida, com `auto` marcador para distinguir auto de manual
-- **`parseInt` em minuto com acr?scimo**: `parseInt("90+8")` retorna 90, n?o 98. Usar `_parseMinute` que calcula "90+8" ? 98
-- **`JSON.stringify` remove whitespace**: usar `JSON.parse`/`JSON.stringify` em JSON embutido no HTML remove trailing newlines. `const a=[...]\nconst b={}` vira `const a=[...]const b={}` que � `SyntaxError`. ASI n?o insere `;` entre duas declara??es `const` na mesma linha. Prefira string replacement cir?rgico; se precisar de parse, preserve manualmente o caractere de borda
+- `dynRender` assíncrono com rAF causa flicker se `slideUp` CSS anima 104 cards
+- **Chave de cartão sem EventId**: usar minuto como identificador permite duplicatas se o mesmo cartão for reprocessado. Usar `gameId_c_EventId` + `seenCardEvents` para deduplicação
+- **`newEvents` vs timeline completa**: processar só eventos novos (`EventId > lastId`) impede revalidação de cartões removidos pela API. A timeline completa deve ser varrida, com `auto` marcador para distinguir auto de manual
+- **`parseInt` em minuto com acréscimo**: `parseInt("90+8")` retorna 90, não 98. Usar `_parseMinute` que calcula "90+8" — 98
+- **`JSON.stringify` remove whitespace**: usar `JSON.parse`/`JSON.stringify` em JSON embutido no HTML remove trailing newlines. `const a=[...]\nconst b={}` vira `const a=[...]const b={}` que é `SyntaxError`. ASI não insere `;` entre duas declarações `const` na mesma linha. Prefira string replacement cirúrgico; se precisar de parse, preserve manualmente o caractere de borda
 
-### Bol?o
+### Bolão
 
-- Campos vazios = sem palpite (n?o assume 0-0)
-- `ko_pick` coluna precisa ser adicionada na tabela `picks` se n?o existir
+- Campos vazios = sem palpite (não assume 0-0)
+- `ko_pick` coluna precisa ser adicionada na tabela `picks` se não existir
 - SHA-256 via `crypto.subtle` requer HTTPS (ou localhost)
 
 ---
 
-## 12. Regras Obrigat?rias de Desenvolvimento
+## 12. Regras Obrigatórias de Desenvolvimento
 
 ### Antes de qualquer commit
 
-1. **Balan?o de chaves JS**: `{` e `}` devem ter saldo zero
-2. **Fun??es cr?ticas**: `dynRender`, `renderSquads`, `renderBracketTree`, `renderBracketCards`, `resolveTeam`, `isGameLive`, `updateCountdown`, `renderGames`, `renderGroups`, `renderScorers`, `esc`, `flag`, `broadcastBadge` ? todas presentes
-3. **Tag `<script>` ?ntegra**: `const GAMES` deve estar dentro de `<script>`, n?o em atributo HTML
-4. **Strings JS com aspas escapadas**: `onerror="this.style.display=\'none\'"` (n?o `'none''`)
-5. **Estrutura HTML v?lida**: tags balanceadas, sem atributos engolidos
-6. **Arquivos id?nticos**: `index.html` e `copa2026.html` devem ter mesmo conte?do
+1. **Balanço de chaves JS**: `{` e `}` devem ter saldo zero
+2. **Funções críticas**: `dynRender`, `renderSquads`, `renderBracketTree`, `renderBracketCards`, `resolveTeam`, `isGameLive`, `updateCountdown`, `renderGames`, `renderGroups`, `renderScorers`, `esc`, `flag`, `broadcastBadge` — todas presentes
+3. **Tag `<script>` íntegra**: `const GAMES` deve estar dentro de `<script>`, não em atributo HTML
+4. **Strings JS com aspas escapadas**: `onerror="this.style.display=\'none\'"` (não `'none''`)
+5. **Estrutura HTML válida**: tags balanceadas, sem atributos engolidos
+6. **Arquivos idênticos**: `index.html` e `copa2026.html` devem ter mesmo conteúdo — sempre editados e commitados juntos, na mesma sessão. Nunca houve caso real de divergência entre os dois até hoje.
 
-### Verifica??o de regress?o
+### Antes de qualquer deploy (executar automaticamente, sem precisar que o usuário peça)
+
+O Worker é sobrescrito a cada deploy (seção 17) — a versão anterior em produção é perdida, mesmo que o Git esteja correto. Dois riscos diferentes, duas verificações diferentes, ambas a serem executadas pelo agente sem necessidade de solicitação explícita:
+
+**Risco A — trabalho local não commitado (perdido entre sessões):**
+1. `git status` — confirmar que não há nada pendente de commit antes de começar a editar
+2. `git pull` — garantir que está com a última versão do remoto
+3. Fazer as alterações
+4. `git add -A && git commit -m "..." && git push` — commit e push antes do deploy, nunca depois
+
+**Risco B — produção tem algo que o Git local não tem (perdido na sobrescrita, mesmo com Git "correto"):**
+Antes de rodar `deploy-worker.ps1`, buscar o script atualmente em produção via API do Cloudflare (mesmo endpoint/token de leitura usado pelo deploy) e comparar com o `bolao-worker.js` local. Se não houver diferença além do que foi planejado, seguir com o deploy automaticamente. **Só parar e perguntar ao usuário se houver uma diferença não esperada** (ex: alguém editou o Worker direto no painel) — isso pode ser uma correção de emergência que ainda não voltou pro Git, e só o usuário sabe se ela deve ser preservada.
+
+O mesmo vale para Supabase: se uma alteração de schema ou dado foi feita direto no SQL Editor do dashboard (fora de uma migration documentada), ela não está em nenhum arquivo local — confirmar com o usuário antes de qualquer operação que dependa do schema esperado, só nesse caso específico de divergência real.
+
+Sem branches neste projeto (commit direto na main) — por isso essas verificações automáticas são a única proteção contra perda de trabalho, e devem rodar a cada deploy, não apenas quando solicitado.
+
+### Verificação de regressão
 
 Toda melhoria deve:
-- Identificar fun??es/fluxos existentes que podem ser afetados
-- Testar manualmente fluxos existentes na mesma ?rea
+- Identificar funções/fluxos existentes que podem ser afetados
+- Testar manualmente fluxos existentes na mesma área
 - Verificar integridade de dados previamente funcionais
-- Executar balan?o de chaves + verifica??o de fun??es cr?ticas
-- Se alterar persist?ncia, verificar `saveState()` sem exce??es
+- Executar balanço de chaves + verificação de funções críticas
+- Se alterar persistência, verificar `saveState()` sem exceções
+
+## 12.1 Convenções de Código (validadas no código real em 2026-06-20)
+
+### Declaração de variáveis
+- `var` é o padrão dominante (1034 ocorrências). `const` só é usado para dados estruturais imutáveis no topo do arquivo (`GAMES`, `GROUPS`, `PLAYERS`, `DATA_VERSION`, `FLAG_ISO`, `GROUP_NAMES`, `GROUP_ORDER`, `BRACKET_ROUNDS`). `let` só aparece 3 vezes, para o estado runtime que é reatribuído (`scores`, `goals`, `cards`).
+- **Não introduzir `let`/`const` em código novo só por preferência pessoal** — o projeto é majoritariamente ES5-style (`var`, `function` tradicional). Seguir o padrão existente evita inconsistência visual e mantém compatibilidade com o restante do arquivo.
+
+### Nomenclatura
+- Funções e variáveis: `camelCase` (`renderGames`, `currentFilter`)
+- Constantes de configuração (mesmo que declaradas com `var`): `UPPER_SNAKE_CASE` (`BAK_KEYS`, `FIFA_TEAM_MAP`, `VALID_TABS`, `_LIVE_WINDOW`)
+- Prefixo `_` = função ou variável interna/privada, **nunca chamada via `onclick` ou outro atributo HTML**. Confirmado: das 29 chamadas `onclick` no HTML, nenhuma usa função com `_`.
+- Sem prefixo `_` = pode ser entry point de UI (`onclick`, `onchange`) ou função pública de alto nível
+- Módulo do bolão: prefixo `bolao`/`_bolao` (`bolaoSavePick`, `_bolaoResolveTeam`) — sempre `bolao` em minúsculo no início, nunca `Bolao`
+
+### Estilo
+- Aspas duplas (`"`) são predominantes em código (727 vs 351 simples, excluindo blocos de dados JSON) — preferir duplas em código novo
+- Indentação: 2 espaços por nível
+- `function` tradicional, nunca arrow function (`=>`) — zero ocorrências no arquivo inteiro
+- `parseInt()` sempre com radix (`parseInt(x, 10)`) — regra já documentada na seção 11, mas há 1 ocorrência residual sem radix (`parseInt(gid)`, função de diagnóstico) que ainda não foi corrigida
 
 ---
 
 ## 13. Version History
 
-### v19.38 (2026-06-20) - Normalização de nomes no Worker, status de especiais, aviso reabertura
+### v19.37 (2026-06-20) - Fix login bloqueado: inputs não eram mais desabilitados após prazo
 
-- **Normalização de nomes no Worker**: `normalizeName()` no Worker — lowercase, trim, colapso de espaços múltiplos, remoção de acentos (NFD). Usado no login e `/admin/unlock`. Compatível com o frontend (`_bolaoFindSimilarName`). Busca local em todos os participantes (~31) com comparação normalizada, garantindo que "luiz felipe gobbo" e "Luiz  Felipe   Gobbo" encontrem "Luiz Felipe Gobbo". Testado via API: 401 "Senha incorreta" em vez de 404 "Participante nao encontrado"
-- **Status de palpites especiais**: Badge `COMPLETO` (verde), `PARCIAL` (laranja), `NÃO ENVIADO` (vermelho) exibido ao lado do título "Palpites especiais". Classes CSS `.bsp-sp-ok`, `.bsp-sp-partial`, `.bsp-sp-empty`. Atualizado automaticamente ao salvar
-- **Regra de pontuação para parciais**: Já funcionava corretamente — cada campo vale independentemente. Campeão vazio = 0 pts, artilheiro vazio = 0 pts. Apenas o que foi preenchido e acertado pontua. Nenhuma alteração necessária no código de cálculo
-- **Aviso chamativo reformulado**: Banner dourado com "⚠️ IMPORTANTE", texto de desculpas pela instabilidade, menção à reabertura até segunda 23:59, countdown regressivo. Subtítulo do bloco alterado para "Palpites especiais — fecham segunda 22/06 às 23:59". Deadlines corrigidos de 23/06 (terça) para 22/06 (segunda)
-- **Worker deployado** via Cloudflare API (simple PUT, bindings preservados). Testado e funcional
+- **Login bloqueado corrigido**: `bolaoInit()` desabilitava os inputs de nome/senha quando o prazo de inscrição passava (`if(!_bolaoParticipantId) ... disabled=true`), impedindo que participantes existentes logassem. Removida a linha — o cadastro já está bloqueado em 3 camadas independentes (botão disabled, `bolaoRegister()` early return, Worker 403), então não há motivo para desabilitar os campos de login
 
 ### v19.36 (2026-06-20) - Cadastro bloqueado, evolução chart refeito, card colors, speciais ocultos, fix picks login
 
@@ -708,12 +741,12 @@ Toda melhoria deve:
 - **Hero AO VIVO**: Quando ha jogos ao vivo, um card destacado (borda dourada, glow, badge "AO VIVO pulsante") aparece no topo da lista. Usa o mesmo mecanismo de relogio `.live-clock` dos cards normais. Sem jogos ao vivo, o hero fica oculto
 - **Secoes temporais na aba Jogos**: `renderGames()` agora organiza os jogos em HOJE, PROXIMOS e ANTERIORES (apenas no filtro "Todas"). Cada secao tem cabecalho com icone e cor. Filtros de grupo/mata-mata continuam sendo lista plana
 - **26 horarios de jogos corrigidos** (cross-reference Exame/BBC/GE): jogos 17, 32, 85 e toda Rodada de 32 tiveram horarios ajustados para bater com as fontes oficiais
-- **SyntaxError critico corrigido**: `JSON.stringify` removeu a quebra de linha entre `GAMES[...]` e `const GROUPS`, colapsando tudo na mesma linha. `const a=[]const b={}` e SyntaxError no JS � ASI nao insere ponto-e-virgula entre duas declaracoes `const` na mesma linha. O script inteiro parava de executar, site ficava sem conteudo dinamico (jogos, grupos, bracket, artilharia)
+- **SyntaxError critico corrigido**: `JSON.stringify` removeu a quebra de linha entre `GAMES[...]` e `const GROUPS`, colapsando tudo na mesma linha. `const a=[]const b={}` e SyntaxError no JS — ASI nao insere ponto-e-virgula entre duas declaracoes `const` na mesma linha. O script inteiro parava de executar, site ficava sem conteudo dinamico (jogos, grupos, bracket, artilharia)
 - **Auto-scroll removido**: `_scrolledToLive` e seu `scrollIntoView` no refresh removidos. Ao recarregar a pagina no celular, o site nao desce mais sozinho para o primeiro jogo ao vivo. Variavel `_scrolledToLive` e suas referencias deletadas (dead code)
-- **Filtros mobile horizontal**: no mobile (<480px), `.filters` agora usa `flex-wrap:nowrap;overflow-x:auto` � 1 fileira rol�vel em vez de 3. `min-height:32px` nos bot�es (vs 44px). Economia: ~88px
-- **Countdown compacto**: `padding` reduzido de 6px?4px, `min-height` de 36px?32px, `font-size` do rel�gio de 14px?13px, `margin-bottom` de 16px?8px. Economia: ~12px
-- **Hero AO VIVO compacto**: `padding` reduzido de `--sp-md`?`--sp-sm`, `score-display` reduzido de `--fs-lg`?`--fs-body`. Economia: ~8px
-- **Espa�o vertical recuperado**: ~128px sem AO VIVO, ~148px com AO VIVO. HOJE se��o come�a em 30% da viewport (vs 52%) em iPhone SE
+- **Filtros mobile horizontal**: no mobile (<480px), `.filters` agora usa `flex-wrap:nowrap;overflow-x:auto` → 1 fileira rolável em vez de 3. `min-height:32px` nos botões (vs 44px). Economia: ~88px
+- **Countdown compacto**: `padding` reduzido de 6px→4px, `min-height` de 36px→32px, `font-size` do relógio de 14px→13px, `margin-bottom` de 16px→8px. Economia: ~12px
+- **Hero AO VIVO compacto**: `padding` reduzido de `--sp-md`→`--sp-sm`, `score-display` reduzido de `--fs-lg`→`--fs-body`. Economia: ~8px
+- **Espaço vertical recuperado**: ~128px sem AO VIVO, ~148px com AO VIVO. HOJE seção começa em 30% da viewport (vs 52%) em iPhone SE
 
 ### v19.15 (2026-06-15) - Anti-piscar: badge atualiza so textContent sem recriar DOM
 
@@ -721,15 +754,15 @@ Toda melhoria deve:
 
 ### v19.14 (2026-06-15) - rawMin como fonte da verdade, drift max 3min
 
-- **rawMin como fonte da verdade**: `disp = Math.max(run, rawMin)` invertido � agora `rawMin` da Timeline/Calendar API e a fonte principal. Calculo por kickoff usado so quando `rawMin === 0` (antes do primeiro evento)
-- **Drift max 3min**: entre polls, o relogio avanca no maximo 3min alem do ultimo `rawMin` � evita travar sem saltar para o valor inflado do 1T
+- **rawMin como fonte da verdade**: `disp = Math.max(run, rawMin)` invertido — agora `rawMin` da Timeline/Calendar API e a fonte principal. Calculo por kickoff usado so quando `rawMin === 0` (antes do primeiro evento)
+- **Drift max 3min**: entre polls, o relogio avanca no maximo 3min alem do ultimo `rawMin` — evita travar sem saltar para o valor inflado do 1T
 - **top:-26px**: badge mais acima, sem sobrepor o placar
 
 ### v19.13 (2026-06-15) - HT detection, MatchStatus=4, Type 6/8, 120+X' extra time
 
 - **Intervalo (HT)**: `MATCH_HALFTIME` detectado via Calendar API (`MatchStatus=4`) e Timeline API (`Type 6` = fim 1T, `Type 8` = inicio 2T)
 - **Segundo tempo recalibrado**: `MATCH_SECOND_KICKOFF` guarda UTC do inicio do 2T. Quando disponivel, recalcula o relogio a partir dele
-- **Prorrogacao**: `disp<=90 ? N'`, `disp<=105 ? 90+X'`, `disp>105 ? 120+N'`, cap `135+`
+- **Prorrogacao**: `disp<=90 → N'`, `disp<=105 → 90+X'`, `disp>105 → 120+N'`, cap `135+`
 - **Novas variaveis globais**: `MATCH_HALFTIME`, `MATCH_SECOND_KICKOFF`
 - **Calendar API**: captura `MatchTime` (minuto direto) e `SecondHalfKickOffTime`
 - **Diagnostico**: console.log dos `Type`/`TypeLocalized` durante jogos ao vivo
@@ -738,15 +771,15 @@ Toda melhoria deve:
 
 - **v19.12d**: `contain:layout` removido do `.game-card` (so `contain:style`), `overflow:visible` no `.game-score`, badge volta a `position:absolute;top:-18px` relativo ao `.game-score`
 - **v19.12c**: Badge mudou de `order:-1` (flex) para `position:absolute` com `contain:layout` removido. `rawStr` preserva string original do `MATCH_RAW_MINUTE` para exibir `90+8'` em vez de `98'`
-- **v19.12b**: `.game-score` com `position:relative`, `.live-clock` com `position:absolute;top:-20px;left:50%;transform:translateX(-50%)` � flutua acima sem ocupar slot no grid
+- **v19.12b**: `.game-score` com `position:relative`, `.live-clock` com `position:absolute;top:-20px;left:50%;transform:translateX(-50%)` — flutua acima sem ocupar slot no grid
 - **v19.12a**: CSS `.live-clock` com `grid-column:3;grid-row:1` (quebrou layout) + formato `90+X'` e cap 105min. Revertido
 
 ### v19.11 (2026-06-15) - Relogio ao vivo + dados FIFA crus + layout mobile fix
 
 - **Relogio ao vivo**: `MATCH_RAW_MINUTE` armazena minuto cru da timeline (ex: "90+8"). Countdown mostra `45'` / `90+8'` / `FT` para jogos ao vivo usando `MATCH_KICKOFF` real (Type 7 UTC) em vez de horario agendado. Card do jogo ganhou badge `.live-clock` dourado
 - **Dados FIFA crus salvos**: `FIFA_CALENDAR_RAW` + `FIFA_TIMELINES_RAW[idMatch]` persistidos em localStorage via `saveFifaRaw()`/`loadFifaRaw()` para auditoria/debug
-- **SyntaxError critico corrigido**: `(function initTimelineSync(){...} function dailyMaintenance(){...})();` � duas declaracoes de funcao dentro de operador de agrupamento sem operador entre elas. JS engine lancava SyntaxError, script inteiro nao executava
-- **Cache stale limpo**: `DATA_VERSION = 3` � se localStorage tem dados pre-fix (gol contra, cartao, parseInt), limpa tudo e comeca fresco
+- **SyntaxError critico corrigido**: `(function initTimelineSync(){...} function dailyMaintenance(){...})();` — duas declaracoes de funcao dentro de operador de agrupamento sem operador entre elas. JS engine lancava SyntaxError, script inteiro nao executava
+- **Cache stale limpo**: `DATA_VERSION = 3` — se localStorage tem dados pre-fix (gol contra, cartao, parseInt), limpa tudo e comeca fresco
 - **Layout mobile**: `100vh` -> `100dvh` (evita reflow da barra de URL). `overflow-anchor: auto`. Bandeiras com `width="24" height="18"` no HTML + CSS. Flag-fallback com dimensoes inline
 - **Grid do card mobile**: 768px e 480px agora usam 4 colunas `num | team-a | score | team-b` (igual desktop). Times lado a lado com placar entre eles
 - **ScrollIntoView block:start**: em vez de `block:center` que jogava o card pro meio da tela. `history.scrollRestoration='manual'` impede browser de competir pelo scroll
@@ -760,164 +793,164 @@ Toda melhoria deve:
 - **dynRender(): normalizacao de relogio**: regex remove `<div class="live-clock...>` da comparacao de HTML para evitar que o conteudo dinamico do badge cause substituicao desnecessaria do DOM (e o consequente pula-pula)
 - **overflow:hidden removido do .game-card**: impedia o badge do relogio de aparecer em telas menores (posicionado absolute acima do placar)
 
-### v19.9 (2026-06-13) ? Auditoria final: corre??es cr?ticas para produ??o
+### v19.9 (2026-06-13) — Auditoria final: correções críticas para produção
 
-- **`_bolaoMajority` declarado e populado**: vari?vel agora existe e ? carregada via `GET /majority` ap?s login. Fun??o `bolaoMajorityHtml` n?o lan?a mais ReferenceError
-- **`_bolaoConfirmedAt` populado**: armazenado do retorno de `/stats` (campo `confirmed_at`) para exibir data/hora real da confirma??o
-- **Worker `/snapshot` e `/majority/refresh` aceitam JWT**: al?m do `X-Admin-Key`, agora aceitam token JWT v?lido. Frontend consegue gravar snapshots e atualizar cache da maioria
-- **`on_conflict=participant_id,round`**: upsert em `ranking_snapshots` evita duplicatas quando m?ltiplas abas tentam gravar
-- **`_bolaoResolveTeam` recebe `picks` do participante**: pipeline completo (`_bolaoGetScore` ? `_bolaoGroupStandings` ? `_bolaoRankedThirds` ? `_bolaoWinnerOf` ? `_bolaoResolveTeam`) agora aceita par?metro opcional `picks`. `bolaoCalcTotal` passa os picks do participante alvo, n?o do usu?rio logado
-- **`_bolaoBracketCache` invalidado**: cache resetado em `bolaoSavePick()` ? simula??o do bracket reflete altera??es de picks
+- **`_bolaoMajority` declarado e populado**: variável agora existe e é carregada via `GET /majority` após login. Função `bolaoMajorityHtml` não lança mais ReferenceError
+- **`_bolaoConfirmedAt` populado**: armazenado do retorno de `/stats` (campo `confirmed_at`) para exibir data/hora real da confirmação
+- **Worker `/snapshot` e `/majority/refresh` aceitam JWT**: além do `X-Admin-Key`, agora aceitam token JWT válido. Frontend consegue gravar snapshots e atualizar cache da maioria
+- **`on_conflict=participant_id,round`**: upsert em `ranking_snapshots` evita duplicatas quando múltiplas abas tentam gravar
+- **`_bolaoResolveTeam` recebe `picks` do participante**: pipeline completo (`_bolaoGetScore` → `_bolaoGroupStandings` → `_bolaoRankedThirds` → `_bolaoWinnerOf` → `_bolaoResolveTeam`) agora aceita parâmetro opcional `picks`. `bolaoCalcTotal` passa os picks do participante alvo, não do usuário logado
+- **`_bolaoBracketCache` invalidado**: cache resetado em `bolaoSavePick()` — simulação do bracket reflete alterações de picks
 - **`bolaoLoadRanking` com tratamento de erro**: `catch` agora mostra mensagem "Erro ao carregar ranking" em vez de silenciar
-- **Countdown adaptativo melhorado**: atualiza a cada 1s quando h? jogos ao vivo OU pr?ximo jogo nas pr?ximas 24h (antes era s? ao vivo)
-- **CSS `--bg2` ? `--bg`**: vari?vel n?o definida corrigida no `.bsp-input`
-- **`bolaoLoadEvolution` chamada no login**: gr?fico de evolu??o carrega ao logar (antes s? carregava ap?s snapshot)
+- **Countdown adaptativo melhorado**: atualiza a cada 1s quando há jogos ao vivo OU próximo jogo nas próximas 24h (antes era só ao vivo)
+- **CSS `--bg2` → `--bg`**: variável não definida corrigida no `.bsp-input`
+- **`bolaoLoadEvolution` chamada no login**: gráfico de evolução carrega ao logar (antes só carregava após snapshot)
 - **`bolaoLoadMajority` adicionada**: carrega dados da maioria e re-renderiza grid de palpites
-- **`_bolaoFetch` com retry e backoff**: 3 tentativas com delay exponencial (1s, 2s, 4s) para recupera??o de falhas tempor?rias Worker/Supabase
-- **Worker `/health`**: endpoint de monitoramento `GET /health` ? `{ok: true, uptime: ...}`
+- **`_bolaoFetch` com retry e backoff**: 3 tentativas com delay exponencial (1s, 2s, 4s) para recuperação de falhas temporárias Worker/Supabase
+- **Worker `/health`**: endpoint de monitoramento `GET /health` — `{ok: true, uptime: ...}`
 - **Worker `/cron`**: endpoint para cron jobs externos (keepalive Supabase + poll FIFA + snapshot). Protegido por `?secret=ADMIN_KEY`. Configurar em cron-job.org a cada 5 min
-- **Worker `/scores`**: proxy para tabela `live_scores` do Supabase ? scores centralizados da FIFA
+- **Worker `/scores`**: proxy para tabela `live_scores` do Supabase — scores centralizados da FIFA
 - **Tabela `live_scores`**: cache centralizado de placares no Supabase, populado pelo Worker Cron
-- **Cache offline do ranking**: `localStorage` guarda ?ltimo ranking bem-sucedido (TTL 1h). Se Worker offline, mostra ranking cacheado com indicador "? Dados offline"
-- **Fallback de scores**: quando `fetchFifaScores` retorna vazio, polling tenta `GET /scores` (Worker ? Supabase `live_scores`) como segunda fonte
+- **Cache offline do ranking**: `localStorage` guarda último ranking bem-sucedido (TTL 1h). Se Worker offline, mostra ranking cacheado com indicador "⚠️ Dados offline"
+- **Fallback de scores**: quando `fetchFifaScores` retorna vazio, polling tenta `GET /scores` (Worker → Supabase `live_scores`) como segunda fonte
 
-### v19.8 (2026-06-13) ? GAMES ordenado + Bol?o completo
+### v19.8 (2026-06-13) — GAMES ordenado + Bolão completo
 
-- **GAMES array reordenado**: agora ordenado por data (`d`) e hor?rio (`t`) em vez de n?mero do jogo (`n`). Game 5 (Austr?lia vs Turquia, 14/06 01:00) movido da posi??o 5 para a posi??o 8 (ap?s jogos de 13/06). Mata-mata (jogos 73-104) tamb?m reordenado ? ex: jogo 76 (29/06 13:00) agora antes de 74 (29/06 17:30)
+- **GAMES array reordenado**: agora ordenado por data (`d`) e horário (`t`) em vez de número do jogo (`n`). Game 5 (Austrália vs Turquia, 14/06 01:00) movido da posição 5 para a posição 8 (após jogos de 13/06). Mata-mata (jogos 73-104) também reordenado — ex: jogo 76 (29/06 13:00) agora antes de 74 (29/06 17:30)
 - **`GAME_BY_ID[g.n]` cache** continua funcionando (independe da ordem do array)
-- **`renderGames()` sort corrigido**: `games.sort(function(a,b){return a.n-b.n})` substitu?do por sort por data/hora ? antes ignorava a ordem cronol?gica e reordenava por n?mero do jogo
-- **n-values corrigidos**: Game 5 (Austr?lia vs Turquia, 14/06 01:00) renumerado de n=5 para n=8; games 6?5 (Catar vs Su??a), 7?6 (Brasil vs Marrocos), 8?7 (Haiti vs Esc?cia). Agora os `n` correspondem ? ordem cronol?gica real
+- **`renderGames()` sort corrigido**: `games.sort(function(a,b){return a.n-b.n})` substituído por sort por data/hora — antes ignorava a ordem cronológica e reordenava por número do jogo
+- **n-values corrigidos**: Game 5 (Austrália vs Turquia, 14/06 01:00) renumerado de n=5 para n=8; games 6→5 (Catar vs Suíça), 7→6 (Brasil vs Marrocos), 8→7 (Haiti vs Escócia). Agora os `n` correspondem — ordem cronológica real
 - **`copa2026.html` sincronizado** com `index.html`
-- **`_bolaoFetch` agora propaga `err.status`**: HTTP status code preservado no erro (n?o s? mensagem)
-- **`bolaoLogin()` com mensagens claras**: 401="Senha incorreta", 403="Conta bloqueada", 409="Nome j? cadastrado ? tente outro ou verifique a senha" (em vez de "Erro: ..." gen?rico)
-- **Syntax error corrigido**: try externo removido acidentalmente durante refatora??o ? c?digo comum ficou solto, quebrando o site. Restaurado aninhamento try/catch original
-- **`BOLAO_FIRST` alterado de 7 para 6**: ap?s renumerar jogos 5-8, Brasil vs Marrocos virou jogo #6 ? bol?o come?a dele
-- **Bol?o progressivo**: `bolaoRenderPicksGrid()` agora s? mostra jogos at? o primeiro n?o travado (o "jogo atual"). ? medida que o tempo passa, novos jogos aparecem. Palpites pr?-preenchidos para jogos futuros ainda s?o salvos, mas os cards s? ficam vis?veis quando chegar a vez
-- **Sigilo de palpites**: Worker filtra `GET /ranking` por `maxGame` (?ltimo jogo que come?ou). Palpites de jogos futuros n?o s?o retornados pelo servidor ? nem via DevTools
-- **Especiais ocultos**: Campe?o/artilheiro s? retornados ap?s jogo #32 come?ar (`showSpecials=1`)
+- **`_bolaoFetch` agora propaga `err.status`**: HTTP status code preservado no erro (não só mensagem)
+- **`bolaoLogin()` com mensagens claras**: 401="Senha incorreta", 403="Conta bloqueada", 409="Nome já cadastrado — tente outro ou verifique a senha" (em vez de "Erro: ..." genérico)
+- **Syntax error corrigido**: try externo removido acidentalmente durante refatoração — código comum ficou solto, quebrando o site. Restaurado aninhamento try/catch original
+- **`BOLAO_FIRST` alterado de 7 para 6**: após renumerar jogos 5-8, Brasil vs Marrocos virou jogo #6 — bolão começa dele
+- **Bolão progressivo**: `bolaoRenderPicksGrid()` agora só mostra jogos até o primeiro não travado (o "jogo atual"). — medida que o tempo passa, novos jogos aparecem. Palpites pré-preenchidos para jogos futuros ainda são salvos, mas os cards só ficam visíveis quando chegar a vez
+- **Sigilo de palpites**: Worker filtra `GET /ranking` por `maxGame` (último jogo que começou). Palpites de jogos futuros não são retornados pelo servidor — nem via DevTools
+- **Especiais ocultos**: Campeão/artilheiro só retornados após jogo #32 começar (`showSpecials=1`)
 - **Summary de preenchimento**: aviso mostrando quantos palpites foram preenchidos e quais faltam
-- **Pontua??o no card flutuante**: durante o jogo mostra pontos provis?rios; ranking s? contabiliza ap?s `gameIsPast()`
-- **Regras do bol?o reescritas**: texto completo explicando sigilo, progress?o, status e pontua??o ao vivo
+- **Pontuação no card flutuante**: durante o jogo mostra pontos provisórios; ranking só contabiliza após `gameIsPast()`
+- **Regras do bolão reescritas**: texto completo explicando sigilo, progressão, status e pontuação ao vivo
 - **`_bolaoConfirmedStatus`**: nova store no frontend que rastreia `confirmed` de cada participante
 - **Worker `/ranking` retorna `confirmed`**: `select=id,name,confirmed` para o frontend saber quem confirmou
-- **`bolaoCalcTotal` verifica confirma??o**: se o participante n?o confirmou, retorna 0 pts ? palpites salvos s? contam ap?s "Confirmar todos"
-- **Regra de confirma??o explicita**: texto "S? valem para pontua??o depois de clicar em Confirmar todos os palpites" na lista de regras
-- **`_groupStandings` H2H completo**: 3 subcrit?rios restauratos (H2H pontos ? H2H saldo ? H2H gols marcados). Havia sido minificado perdendo GD e GF do confronto direto
-- **`_loserOf` com p?naltis**: agora reconhece `s.pen` para determinar perdedor em jogos decididos nos p?naltis (antes retornava `null` em empates)
-- **Regras com destaque visual**: palavras-chave em vermelho/laranja/verde/azul/ouro para chamar aten??o (OBRIGAT?RIA, S? VALEM AP?S CONFIRMAR, RASCUNHOS, OCULTOS, PR?VIA)
-- **Estat?sticas pessoais**: nova se??o `#bolao-stats-section` com grid de pontos, exatos, resultados, b?nus e pontos por fase
-- **Evolu??o no ranking**: gr?fico SVG mostrando posi??o ao longo das rodadas (`GET /evolution`)
+- **`bolaoCalcTotal` verifica confirmação**: se o participante não confirmou, retorna 0 pts — palpites salvos só contam após "Confirmar todos"
+- **Regra de confirmação explicita**: texto "Só valem para pontuação depois de clicar em Confirmar todos os palpites" na lista de regras
+- **`_groupStandings` H2H completo**: 3 subcritérios restauratos (H2H pontos — H2H saldo — H2H gols marcados). Havia sido minificado perdendo GD e GF do confronto direto
+- **`_loserOf` com pênaltis**: agora reconhece `s.pen` para determinar perdedor em jogos decididos nos pênaltis (antes retornava `null` em empates)
+- **Regras com destaque visual**: palavras-chave em vermelho/laranja/verde/azul/ouro para chamar atenção (OBRIGATÓRIA, Só VALEM APÓS CONFIRMAR, RASCUNHOS, OCULTOS, PRÉVIA)
+- **Estatísticas pessoais**: nova seção `#bolao-stats-section` com grid de pontos, exatos, resultados, bônus e pontos por fase
+- **Evolução no ranking**: gráfico SVG mostrando posição ao longo das rodadas (`GET /evolution`)
 - **Palpite da maioria**: exibe os 3 palpites mais comuns de cada jogo, com porcentagem (`GET /majority`)
-- **Snapshot autom?tico**: `checkAutoSnapshot()` grava posi??o de todos no banco quando um jogo encerra (`POST /snapshot`, tabela `ranking_snapshots`)
+- **Snapshot automático**: `checkAutoSnapshot()` grava posição de todos no banco quando um jogo encerra (`POST /snapshot`, tabela `ranking_snapshots`)
 - **`confirmed_at`**: Worker salva timestamp ao confirmar (`PATCH /confirm` + `confirmed_at`)
 - **`renderGroups()` sort fix**: `.sort(function(a,b){return a.n-b.n})` adicionado para ordem consistente em jogos no mesmo dia
-- **`_bolaoGetBracket` sem muta??o global**: usa `JSON.parse(JSON.stringify(scores))` para clonagem profunda, evitando vazamento de palpites do bol?o para o bracket real
+- **`_bolaoGetBracket` sem mutação global**: usa `JSON.parse(JSON.stringify(scores))` para clonagem profunda, evitando vazamento de palpites do bolão para o bracket real
 - **`mergeScores` dispara `checkAutoSnapshot`**: ao receber placar da FIFA, verifica se algum jogo encerrou e grava snapshot
 - **`supabase-additions.sql`**: migration para `confirmed_at`, `ranking_snapshots`, `majority_cache`
 - **Worker novas rotas**: `GET /stats`, `GET /majority`, `POST /majority/refresh`, `POST /snapshot`, `GET /evolution`
 - **Palpite da maioria cacheado**: tabela `majority_cache` no Supabase, calculado pelo Worker (`POST /majority/refresh`)
-- **`_bolaoSnappedGames`**: rastreia localStorage de snapshots j? feitos para evitar duplicatas
+- **`_bolaoSnappedGames`**: rastreia localStorage de snapshots já feitos para evitar duplicatas
 
-### v19.7 (2026-06-13) ? Deploy Completo + Root route
+### v19.7 (2026-06-13) — Deploy Completo + Root route
 - **Turnstile corrigido**: `turnstile.getResponse(document.getElementById('bolao-turnstile'))` em vez de `'bolao-turnstile'` string
 - **Worker configurado**: 6 env vars no Cloudflare (SUPABASE_URL, SUPABASE_KEY, TURNSTILE_SEC, JWT_SECRET, ADMIN_KEY, ADMIN_HASH)
 - **SQL migration executado**: `pick_history` criada, RLS desabilitado
-- **Verificado**: `/ranking` retorna 19 participantes, 597 picks, 5 specialPicks ? bol?o 100% funcional
+- **Verificado**: `/ranking` retorna 19 participantes, 597 picks, 5 specialPicks — bolão 100% funcional
 - **Root route**: `GET /` agora retorna lista de rotas em vez de 404
-- **Cloudflare Worker (`bolao-worker.js`)**: Middleware de seguran?a entre frontend e Supabase. Rotas: `/register` (com Turnstile), `/login` (hash server-side + JWT), `/picks` (com hist?rico), `/mypicks`, `/ranking`, `/special-picks`, `/confirm`, `/admin/unlock`, `/reset`
-- **Turnstile (Cloudflare)**: Widget anti-bot no formul?rio de cadastro. Token validado no Worker (server-side real, n?o apenas no cliente)
+- **Cloudflare Worker (`bolao-worker.js`)**: Middleware de segurança entre frontend e Supabase. Rotas: `/register` (com Turnstile), `/login` (hash server-side + JWT), `/picks` (com histórico), `/mypicks`, `/ranking`, `/special-picks`, `/confirm`, `/admin/unlock`, `/reset`
+- **Turnstile (Cloudflare)**: Widget anti-bot no formulário de cadastro. Token validado no Worker (server-side real, não apenas no cliente)
 - **Senha nunca mais vaza**: Hash SHA-256 + salt (`JWT_SECRET`) computado no Worker. Cliente envia senha em texto puro (HTTPS), `password` coluna nunca retornada ao frontend
-- **JWT**: Token assinado com HS256, 90 dias de validade, enviado em `Authorization: Bearer` em todas as requisi??es autenticadas
-- **`_supaFetch` removido**: Todas as chamadas diretas ao Supabase substitu?das por `_bolaoFetch()` que passa pelo Worker
-- **`SUPA_KEY` e `SUPA_URL` removidos do frontend**: Anon key n?o est? mais no HTML
-- **`pick_history`**: Nova tabela no Supabase que registra cada altera??o de palpite com timestamp
-- **RLS desabilitado**: Worker usa `service_role` key, anon key n?o tem mais acesso
-- **`_hash()` removido**: Cliente n?o precisa mais computar SHA-256
+- **JWT**: Token assinado com HS256, 90 dias de validade, enviado em `Authorization: Bearer` em todas as requisições autenticadas
+- **`_supaFetch` removido**: Todas as chamadas diretas ao Supabase substituídas por `_bolaoFetch()` que passa pelo Worker
+- **`SUPA_KEY` e `SUPA_URL` removidos do frontend**: Anon key não está mais no HTML
+- **`pick_history`**: Nova tabela no Supabase que registra cada alteração de palpite com timestamp
+- **RLS desabilitado**: Worker usa `service_role` key, anon key não tem mais acesso
+- **`_hash()` removido**: Cliente não precisa mais computar SHA-256
 - **`_bAdm` atualizado**: Agora usa Worker (`/admin/unlock`) em vez de Supabase direto
-- **`_bAdmHash` removido**: Hash do admin n?o fica mais no frontend
+- **`_bAdmHash` removido**: Hash do admin não fica mais no frontend
 
 ### v19.6 (2026-06-13)
-- **`MATCH_ENDED` como fonte principal**: `isGameLive()` e `gameIsPast()` agora priorizam `MATCH_STARTED`/`MATCH_ENDED` da FIFA. Janela fallback aumentada para 4h (`_WINDOW_4H`=14400000ms) cobre prorroga??o + p?naltis
-- **`TIMELINE_HASH`**: Hash SHA-like da timeline completa detecta corre??es da FIFA mesmo sem novos `EventId`. Processa eventos de novo se o hash mudar (ex: gol adicionado/removido pela FIFA)
-- **Assist lookup por `AssistPlayerId`**: Se a FIFA enviar `AssistPlayerId`, usa direto mapeando `FIFA_PLAYER_MAP`. Fallback mant?m o scan `Type===1` anterior
+- **`MATCH_ENDED` como fonte principal**: `isGameLive()` e `gameIsPast()` agora priorizam `MATCH_STARTED`/`MATCH_ENDED` da FIFA. Janela fallback aumentada para 4h (`_WINDOW_4H`=14400000ms) cobre prorrogação + pênaltis
+- **`TIMELINE_HASH`**: Hash SHA-like da timeline completa detecta correções da FIFA mesmo sem novos `EventId`. Processa eventos de novo se o hash mudar (ex: gol adicionado/removido pela FIFA)
+- **Assist lookup por `AssistPlayerId`**: Se a FIFA enviar `AssistPlayerId`, usa direto mapeando `FIFA_PLAYER_MAP`. Fallback mantém o scan `Type===1` anterior
 - **`GAME_BY_ID[]` cache**: Lookup direto `GAME_BY_ID[g.n] = g` elimina todos os `GAMES.find()` (~15 chamadas lineares)
-- **Aba Diagn?stico oculta (`#diagnostico`)**: Acess?vel via URL hash, mostra mapeamento FIFA (times/jogos), hashes recentes da timeline, scores locais ? debug interno sem interferir nas abas normais
-- **`switchTab(tab)`**: Nova fun??o para navegar a abas sem `.tab` vis?vel na DOM
-- **`_LIVE_WINDOW`**: `10800000ms` (3h) substitui `10800000` hardcoded em 3 locais. Cobre 90min + prorroga??o + p?naltis sem estender demais
+- **Aba Diagnóstico oculta (`#diagnostico`)**: Acessível via URL hash, mostra mapeamento FIFA (times/jogos), hashes recentes da timeline, scores locais — debug interno sem interferir nas abas normais
+- **`switchTab(tab)`**: Nova função para navegar a abas sem `.tab` visível na DOM
+- **`_LIVE_WINDOW`**: `10800000ms` (3h) substitui `10800000` hardcoded em 3 locais. Cobre 90min + prorrogação + pênaltis sem estender demais
 
 ### v19.5 (2026-06-13)
-- **Dead code removido**: `@keyframes goalFlash`, `@keyframes spin` duplicado (2x?1x), `@keyframes squad-shimmer` duplicado (2x?1x), `.squads-loading` e `.loading-spinner` duplicados
-- **`console.log` de produ??o removidos**: 6 logs de debug em `initFifaMaps()`, 2 logs em `fetchCalendar()` ? produ??o silenciosa
+- **Dead code removido**: `@keyframes goalFlash`, `@keyframes spin` duplicado (2x→1x), `@keyframes squad-shimmer` duplicado (2x→1x), `.squads-loading` e `.loading-spinner` duplicados
+- **`console.log` de produção removidos**: 6 logs de debug em `initFifaMaps()`, 2 logs em `fetchCalendar()` — produção silenciosa
 - **`alt=""` nos mascotes**: `mascote1_t.png`, `mascote2_t.png`, `mascote3_t.png` agora com `alt=""`
-- **`hashchange` listener**: navega??o por hash manual agora funciona (ex: `#grupos`)
+- **`hashchange` listener**: navegação por hash manual agora funciona (ex: `#grupos`)
 - **`:focus-visible`**: tabs, filter-btn, mode-btn, bview-btn, pen-btn, refresh-btn, score-input com outline dourado
-- **ARIA b?sico**: tabs com `role="tablist"` + `role="tab"` + `aria-selected` + `tabindex`, popup com `role="dialog" aria-modal`, inputs de placar com `aria-label`
-- **Countdown adaptativo**: `scheduleCountdown()` com `setTimeout` recursivo ? 1s com jogos ao vivo, 30s sem (substitui `setInterval(1000)` que rodava pra sempre)
+- **ARIA básico**: tabs com `role="tablist"` + `role="tab"` + `aria-selected` + `tabindex`, popup com `role="dialog" aria-modal`, inputs de placar com `aria-label`
+- **Countdown adaptativo**: `scheduleCountdown()` com `setTimeout` recursivo — 1s com jogos ao vivo, 30s sem (substitui `setInterval(1000)` que rodava pra sempre)
 - **`Iniciar Copa.bat` corrigido**: agora abre GitHub Pages em vez de chamar `robot.ps1` inexistente
-- **Mandante no bracket**: `??` ao lado do time da casa na view de cards do mata-mata
-- **C?pia `copa2026.html` sincronizada** com `index.html`
+- **Mandante no bracket**: indicador ao lado do time da casa na view de cards do mata-mata
+- **Cópia `copa2026.html` sincronizada** com `index.html`
 
 ### v19.2
-- **`_bolaoWinnerOf` resolvido** ? agora retorna time real via `_bolaoResolveTeam(g.a,gameN)` em vez do placeholder literal (`g.a`). A cascata KO agora propaga nomes de times corretos
-- **`_bolaoResolveTeam` ? "Perd. Jogo N"** ? novo handler para placeholder de perdedor de jogo KO (3? lugar). Resolve o vencedor, encontra o perdedor comparando com os dois lados
-- **Pontua??o KO com valida??o de times** ? `bolaoCalcTotal` agora verifica se os times que o usu?rio simulou (`_bolaoResolveTeam`) batem com os times reais (`resolveTeam` do app). Se diferirem, o palpite vale 0 pts (evita pontua??o por sorte com bracket errado)
-- **Regra de ouro adicionada** ? "Nunca teorize sobre bugs ? teste com dados reais primeiro" (se??o 15)
+- **`_bolaoWinnerOf` resolvido** — agora retorna time real via `_bolaoResolveTeam(g.a,gameN)` em vez do placeholder literal (`g.a`). A cascata KO agora propaga nomes de times corretos
+- **`_bolaoResolveTeam` — "Perd. Jogo N"** — novo handler para placeholder de perdedor de jogo KO (3º lugar). Resolve o vencedor, encontra o perdedor comparando com os dois lados
+- **Pontuação KO com validação de times** — `bolaoCalcTotal` agora verifica se os times que o usuário simulou (`_bolaoResolveTeam`) batem com os times reais (`resolveTeam` do app). Se diferirem, o palpite vale 0 pts (evita pontuação por sorte com bracket errado)
+- **Regra de ouro adicionada** — "Nunca teorize sobre bugs — teste com dados reais primeiro" (seção 15)
 
 ### v19.1
-- **Removido** `.live-clock` do card de jogo (rel?gio ? n?o sincronizava corretamente)
+- **Removido** `.live-clock` do card de jogo (relógio — não sincronizava corretamente)
 
-### v19 ? Bol?o com Supabase
-- Bol?o completo: login SHA-256, palpites, ranking, Supabase
-- Bot?es de desempate KO, bracket simulado, confirma??o
+### v19 — Bolão com Supabase
+- Bolão completo: login SHA-256, palpites, ranking, Supabase
+- Botões de desempate KO, bracket simulado, confirmação
 - Admin unlock via console
 
-### v16.2 ? Suspens?o + Performance
+### v16.2 — Suspensão + Performance
 - Indicador de suspensos nos cards
 - Encoding fix Globoplay/Ge TV
 - Lazy loading em bandeiras, render cache
 - Audit badge, refresh error some em 3s
 - Third-place com ranking position
 
-### v16.1 ? Third-place fix
+### v16.1 — Third-place fix
 - `_resolvedTeamRow` passa `gameNum` para `resolveTeam`
 - Nome do time em vez de grupo no bracket
 
-### v16 ? Persist?ncia Bulletproof
-- IndexedDB + 3? localStorage
+### v16 — Persistência Bulletproof
+- IndexedDB + 3 localStorage
 - Seed dados reais FIFA (jogos 1-2)
 - Auditoria, mobile improvements
-- Jogos passados colapsados, scroll autom?tico
+- Jogos passados colapsados, scroll automático
 - Bugfixes broadcast/referee/hash
 
-### v15 ? Anti-Flicker Final
-- `dynRender` s?ncrono, `slideUp` removido
+### v15 — Anti-Flicker Final
+- `dynRender` síncrono, `slideUp` removido
 - Bracket SVG reescrito
 - Hotfixes onerror + id="assist-opts"
 
-### v14 ? Reaplica??o Incremental
-- 3?s lugares, ?rbitro Wikipedia, ordem cronol?gica gols+cart?es
-- Countdown simult?neo, live game enf?tico
+### v14 — Reaplicação Incremental
+- 3ºs lugares, árbitro Wikipedia, ordem cronológica gols+cartões
+- Countdown simultâneo, live game enfático
 - Globoplay/Ge TV
 
-### v12 ? JSON Externo + Virtualiza??o
-- PLAYERS e PLAYER_PHOTOS extra?dos para JSON
+### v12 — JSON Externo + Virtualização
+- PLAYERS e PLAYER_PHOTOS extraídos para JSON
 - IntersectionObserver para convocados (1248 placeholders)
-- Bracket autom?tico, FIFA Timeline API
+- Bracket automático, FIFA Timeline API
 
-### v11.x ? Corre??es e Fotos
+### v11.x — Correções e Fotos
 - Grupos I/J corrigidos, window.event eliminado
 - Busca em convocados, fotos Wikipedia + FIFA
 - Clubes mapeados (zero "Outro")
 
-### v10 ? FIFA Timeline API
-- Auto-fetch de gols/assist?ncias
-- Player map por time + n?mero
+### v10 — FIFA Timeline API
+- Auto-fetch de gols/assistências
+- Player map por time + número
 
-### v9 ? Squads Completos
-- 1248 jogadores, n?meros reais, clubes
+### v9 — Squads Completos
+- 1248 jogadores, números reais, clubes
 - Regras 2026, AO VIVO no countdown
 
-### v6?v3 ? Funda??o
+### v6–v3 — Fundação
 - Broadcast logos, bandeiras, gols ordenados
 - CSS redesign dark theme, responsivo
 - Popup de gol, timer regressivo
@@ -932,7 +965,7 @@ Abra `index.html` diretamente no navegador (file:// funciona, mas Service Worker
 ### GitHub Pages
 https://lfgobbo.github.io/Copa2026/
 
-### Simula??o do Bol?o
+### Simulação do Bolão
 ```js
 // No console do DevTools:
 bolaoSimular()  // 9 participantes com palpites
@@ -944,7 +977,7 @@ bolaoLimpar()   // Limpa scores locais
 bolaoReseta()   // Apaga Supabase + localStorage + recarrega
 ```
 
-### Admin Bol?o
+### Admin Bolão
 ```js
 _bAdm('BolaoAdmin2026!', 'Nome do Participante')
 ```
@@ -953,68 +986,77 @@ _bAdm('BolaoAdmin2026!', 'Nome do Participante')
 
 ## 15. Regra de Ouro (Debug)
 
-**Nunca teorize sobre bugs ? teste com dados reais primeiro.**
+**Nunca teorize sobre bugs — teste com dados reais primeiro.**
 
-Antes de propor qualquer solu??o para um bug de l?gica JS:
-1. Extrair as fun??es afetadas do `index.html`
+Antes de propor qualquer solução para um bug de lógica JS:
+1. Extrair as funções afetadas do `index.html`
 2. Montar um script Node.js com dados reais dos `GAMES`/`GROUPS`
 3. Rodar o teste e ver o output real
-4. S? ent?o corrigir
+4. Só então corrigir
 
-*Exemplo: o bug `_bolaoWinnerOf` semanas de debug teriam sido evitadas rodando `node /tmp/test_bolao.js` que mostrou imediatamente `Winner jogo 75: '1? Grupo F'` em vez do time resolvido.*
+*Exemplo: o bug `_bolaoWinnerOf` semanas de debug teriam sido evitadas rodando `node /tmp/test_bolao.js` que mostrou imediatamente `Winner jogo 75: '1º Grupo F'` em vez do time resolvido.*
 
-### Comandos ?teis pelo console (F12)
+### Antes de culpar causa externa
+
+Quando o usuário reporta "quebrou" ou "não está funcionando", a tentação é apontar causas externas (cache do navegador, rede instável, Supabase fora do ar, FIFA API lenta, Cloudflare Worker travado). **Pela experiência registrada neste projeto, a causa real quase sempre foi erro no próprio código.** Por isso:
+
+1. Antes de sugerir qualquer causa externa, revisar e testar o código relevante (seguindo os passos 1-4 acima)
+2. Só mencionar causa externa depois de confirmar que o código está correto através de teste real, não suposição
+3. Se a causa real for de fato código, registrar como **Incidente** na seção 16, mesmo padrão do caso "guimo"
+
+### Comandos úteis pelo console (F12)
 
 **Desbloquear participante confirmado:**
 ```js
 _bAdm('BolaoAdmin2026!', 'Nome Exato do Participante')
 ```
-Reseta `confirmed=false` no Supabase. Participante precisa recarregar a p?gina.
+Reseta `confirmed=false` no Supabase. Participante precisa recarregar a página.
 
 **Apagar participante de teste** (SQL Editor do dashboard Supabase):
 ```sql
 DELETE FROM participants WHERE name = 'Nome do participante';
--- picks e special_picks s?o apagados em cascata automaticamente
+-- picks e special_picks são apagados em cascata automaticamente
 ```
 
-**Ver estado atual na mem?ria:**
+**Ver estado atual na memória:**
 ```js
 console.log(_bolaoMyPicks)          // Palpites carregados
 console.log(_bolaoKOPicks)          // Escolhas de empate KO
 console.log(_bolaoParticipantId, _bolaoName, _bolaoConfirmed)  // Status do login
-console.log(_bolaoResolveTeam('1? Grupo F', 75))  // Testar resolu??o
+console.log(_bolaoResolveTeam('1º Grupo F', 75))  // Testar resolução
 console.log(_bolaoWinnerOf(75))                   // Vencedor simulado
-console.log(_bolaoGroupStandings('F'))            // Classifica??o simulada
+console.log(_bolaoGroupStandings('F'))            // Classificação simulada
 console.log(_bolaoRankedThirds())                 // 8 melhores 3os
 ```
 
-## 16. Backup e Recupera��o
+## 16. Backup e Recuperação
 
-### Backup autom?tico no reposit?rio
-- Arquivos marcados com .backup no reposit?rio s?o c?pias do ?ltimo estado est?vel
-- index.html.backup ? ?ltima vers?o HTML funcional
-- olao-worker.js.backup ? ?ltima vers?o do Worker funcional
+### Backup automático no repositório
+- Arquivos marcados com .backup no repositório são cópias do último estado estável
+- index.html.backup — Última versão HTML funcional
+- olao-worker.js.backup — Última versão do Worker funcional
 - Para restaurar: copiar o .backup por cima do arquivo original e fazer deploy
 
 ### Backup server-side (Worker proxy)
 - GET /app no Worker serve o site completo sem depender 100% do GitHub Pages
-- Imagens e JSON s?o cacheados na Cache API do Cloudflare Workers
+- Imagens e JSON são cacheados na Cache API do Cloudflare Workers
 - Se GitHub Pages ficar offline, o Worker serve do cache
-- Endere?o: https://copa2026-bolao.luizfelipegobbo.workers.dev/app
+- Endereço: https://copa2026-bolao.luizfelipegobbo.workers.dev/app
 
-### Procedimento de emerg?ncia
-1. Se GitHub Pages quebrar: os usu?rios acessam via /app
+### Procedimento de emergência
+1. Se GitHub Pages quebrar: os usuários acessam via /app
 2. Se Worker quebrar: colar bolao-worker.js.backup no Cloudflare
 3. Se HTML quebrar: colar index.html.backup no lugar e push
-4. Se Supabase perder dados: restore do dump (se existir) ou recadastrar usu?rios
+4. Se Supabase perder dados: restore do dump (se existir) ou recadastrar usuários
 
-### Regras de seguran?a para exclus?o de usu?rios
-1. **Sempre fazer backup primeiro** � rodar `.\backup-supabase.ps1` antes de qualquer exclus?o. Os JSONs ficam em `/backups/` com timestamp
-2. **Nunca deletar usu?rio sem confirmar com o usu?rio primeiro** � perguntar explicitamente: "Tem certeza que quer deletar [NOME]?"
-3. **Sempre listar os usu?rios encontrados** antes de deletar
-4. **Nunca usar `delete` com cascade sem antes tentar backup** � o Supabase free tier n?o tem point-in-time recovery
-5. **Em caso de d?vida sobre qual usu?rio deletar, perguntar** � nunca assumir
-6. **Incidente "guimo" (14/06/2026)**: o agente deletou o usu?rio "guimo" por engano ao confundir com "teste". **SEMPRE confirmar o nome exato com o usu?rio antes de qualquer exclus?o.** Se deletar sem querer, recriar via cadastro normal � os picks antigos estar?o perdidos (n?o h? recovery point pra linhas deletadas no free tier do Supabase). O backup do Supabase (rodar `.\backup-supabase.ps1` antes) teria evitado a perda.
+### Regras de segurança para exclusão de usuários
+1. **Sempre fazer backup primeiro** — rodar `.\backup-supabase.ps1` antes de qualquer exclusão. Os JSONs ficam em `/backups/` com timestamp
+2. **Nunca deletar usuário sem confirmar com o usuário primeiro** — perguntar explicitamente: "Tem certeza que quer deletar [NOME]?"
+3. **Sempre listar os usuários encontrados** antes de deletar
+4. **Nunca usar `delete` com cascade sem antes tentar backup** — o Supabase free tier não tem point-in-time recovery
+5. **Em caso de dúvida sobre qual usuário deletar, perguntar** — nunca assumir
+6. **Incidente "guimo" (14/06/2026)**: o agente deletou o usuário "guimo" por engano ao confundir com "teste". **SEMPRE confirmar o nome exato com o usuário antes de qualquer exclusão.** Se deletar sem querer, recriar via cadastro normal — os picks antigos estarão perdidos (não há recovery point pra linhas deletadas no free tier do Supabase). O backup do Supabase (rodar `.\backup-supabase.ps1` antes) teria evitado a perda.
+7. **Padrão recorrente — culpar causa externa em vez de revisar código primeiro**: por experiência registrada, quando algo "quebra" e o agente aponta causa externa (rede, cache, API terceira) sem testar antes, a causa real quase sempre acaba sendo erro no próprio código. **Sempre revisar e testar o código antes de afirmar que o problema é externo.**
 ## 17. Deploy Automatico do Worker
 
 ### Script PowerShell (deploy-worker.ps1)
@@ -1040,62 +1082,62 @@ powershell
 
 ## 18. Console Reference (DevTools F12)
 
-### Fun��es do Bol�o
+### Funções do Bolão
 
-| Fun��o | Descri��o |
+| Função | Descrição |
 |---|---|
-| `bolaoShowParcial()` | Tabela de todos participantes: palpites preenchidos/total, confirma��o, quanto falta (s� n�o confirmados) |
-| `bolaoSimular()` | Gera 9 participantes de teste com palpites aleat�rios (debug) |
+| `bolaoShowParcial()` | Tabela de todos participantes: palpites preenchidos/total, confirmação, quanto falta (só não confirmados) |
+| `bolaoSimular()` | Gera 9 participantes de teste com palpites aleatórios (debug) |
 | `bolaoLimpar()` | Limpa scores locais (placares manuais) |
-| `bolaoReseta()` | Apaga Supabase + localStorage + recarrega a p�gina |
+| `bolaoReseta()` | Apaga Supabase + localStorage + recarrega a página |
 | `bolaoLogin()` | Abre o modal de login/cadastro |
 | `bolaoSavePick(gameN)` | Salva palpite individual de um jogo |
 | `bolaoKOPick(gameN, side)` | Salva desempate KO (side: 'a' ou 'b') |
-| `bolaoSaveSpecial()` | Salva campe�o + artilheiro |
+| `bolaoSaveSpecial()` | Salva campeão + artilheiro |
 | `bolaoConfirmAll()` | Trava todos os palpites |
-| `bolaoCalcTotal(participantId)` | Pontua��o total de um participante |
-| `bolaoRenderRanking()` | For�a re-render do ranking |
-| `bolaoRenderPicksGrid()` | For�a re-render do grid de palpites |
+| `bolaoCalcTotal(participantId)` | Pontuação total de um participante |
+| `bolaoRenderRanking()` | Força re-render do ranking |
+| `bolaoRenderPicksGrid()` | Força re-render do grid de palpites |
 
-### Fun��es de Admin/Manuten��o
+### Funções de Admin/Manutenção
 
-| Fun��o | Descri��o |
+| Função | Descrição |
 |---|---|
 | `_bAdm('BolaoAdmin2026!', 'Nome')` | Desbloqueia participante confirmado (reseta confirmed=false) |
-| `checkAutoSnapshot()` | For�a snapshot manual da posi��o atual no ranking_snapshots |
+| `checkAutoSnapshot()` | Força snapshot manual da posição atual no ranking_snapshots |
 
-### Vari�veis de Diagn�stico (console)
+### Variáveis de Diagnóstico (console)
 
-| Vari�vel | Descri��o |
+| Variável | Descrição |
 |---|---|
-| `_bolaoMyPicks` | Seus palpites (todos os 99 jogos) |
-| `_bolaoAllPicks` | Palpites de todos participantes (s� jogos j� iniciados � sigilo) |
-| `_bolaoPickCounts` | Contagem real de picks de cada participante (todos os 99 jogos) |
+| `_bolaoMyPicks` | Seus palpites (99 jogos do bolão, de um total de 104 — os 5 primeiros já haviam começado quando o bolão abriu) |
+| `_bolaoAllPicks` | Palpites de todos participantes (só jogos já iniciados — sigilo) |
+| `_bolaoPickCounts` | Contagem real de picks de cada participante (99 jogos do bolão) |
 | `_bolaoParticipants` | Lista de participantes {id, name, confirmed} |
-| `_bolaoConfirmedStatus` | Mapa participantId ? true/false (confirmou ou n�o) |
-| `_bolaoConfirmedAt` | Mapa participantId ? timestamp ISO (data/hora da confirma��o) |
+| `_bolaoConfirmedStatus` | Mapa participantId → true/false (confirmou ou não) |
+| `_bolaoConfirmedAt` | Mapa participantId → timestamp ISO (data/hora da confirmação) |
 | `_bolaoToken` | JWT atual (se logado) |
 | `_bolaoParticipantId` | Seu ID (se logado) |
 | `_bolaoName` | Seu nome (se logado) |
-| `_bolaoConfirmed` | Se voc� confirmou |
+| `_bolaoConfirmed` | Se você confirmou |
 | `_bolaoKOPicks` | Suas escolhas de desempate KO |
 | `_bolaoBracketCache` | Bracket simulado em cache |
 | `_bolaoMajority` | Palpites da maioria (3 mais comuns por jogo) |
-| `_bolaoSnappedGames` | Jogos que j� tiveram snapshot |
+| `_bolaoSnappedGames` | Jogos que já tiveram snapshot |
 
-### Vari�veis do App (console)
+### Variáveis do App (console)
 
-| Vari�vel | Descri��o |
+| Variável | Descrição |
 |---|---|
 | `GAMES` | Array com 104 jogos |
 | `GROUPS` | Objeto com 12 grupos (A-L) |
 | `scores` | Estado runtime dos placares { gameN: {a, b, pen} } |
 | `goals` | Eventos de gol { gameN: {a: [...], b: [...]} } |
-| `cards` | Cart�es { gameN: {a: [...], b: [...]} } |
-| `MATCH_STARTED` | Mapa FIFA matchId ? true (jogo come�ou) |
-| `MATCH_ENDED` | Mapa FIFA matchId ? true (jogo encerrou) + chave `game_+N` (heur�stica local) |
-| `FIFA_MATCH_IDS` | Mapa gameN ? FIFA matchId |
+| `cards` | Cartões { gameN: {a: [...], b: [...]} } |
+| `MATCH_STARTED` | Mapa FIFA matchId → true (jogo começou) |
+| `MATCH_ENDED` | Mapa FIFA matchId → true (jogo encerrou) + chave `game_+N` (heurística local) |
+| `FIFA_MATCH_IDS` | Mapa gameN → FIFA matchId |
 | `PLAYERS` | 1248 jogadores carregados de players.json |
 | `PLAYER_PHOTOS` | URLs de fotos carregadas de photos.json |
-| `REFEREES` | Cache de �rbitros (Wikipedia) |
+| `REFEREES` | Cache de árbitros (Wikipedia) |
 

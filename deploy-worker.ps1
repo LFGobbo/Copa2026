@@ -3,6 +3,11 @@ param(
   [string]$ScriptFile = "bolao-worker.js",
   [string]$WorkerName = "copa2026-bolao"
 )
+$ConfirmPreference = 'None'
+$WarningPreference = 'SilentlyContinue'
+$ProgressPreference = 'SilentlyContinue'
+Set-Location $PSScriptRoot
+Start-Transcript -Path "$PSScriptRoot\deploy_log.txt" -Force | Out-Null
 
 $ErrorActionPreference = "Stop"
 
@@ -69,7 +74,7 @@ $body = "--$boundary${nl}" +
 
 Write-Host "[...] Enviando $ScriptFile -> $WorkerName (multipart com $($ENV_VARS.Count) bindings) ..." -ForegroundColor Yellow
 try {
-  $resp = Invoke-WebRequest -Uri $url -Method Put `
+  $resp = Invoke-WebRequest -UseBasicParsing -TimeoutSec 60 -Uri $url -Method Put `
     -Headers @{ Authorization = "Bearer $token" } `
     -ContentType "multipart/form-data; boundary=$boundary" `
     -Body $body
@@ -81,3 +86,4 @@ try {
 if ($resp.StatusCode -ge 400) { Die "HTTP $($resp.StatusCode): $($resp.Content)" }
 
 Write-Host "[OK] $WorkerName deployado com sucesso!" -ForegroundColor Green
+Stop-Transcript | Out-Null
