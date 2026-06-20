@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 ? Documenta??o do Projeto
 
-**?ltima atualiza??o:** 2026-06-20 (v19.37)
+**?ltima atualiza??o:** 2026-06-20 (v19.38)
 **Reposit?rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -574,9 +574,13 @@ Toda melhoria deve:
 
 ## 13. Version History
 
-### v19.37 (2026-06-20) - Fix login bloqueado: inputs não eram mais desabilitados após prazo
+### v19.38 (2026-06-20) - Normalização de nomes no Worker, status de especiais, aviso reabertura
 
-- **Login bloqueado corrigido**: `bolaoInit()` desabilitava os inputs de nome/senha quando o prazo de inscrição passava (`if(!_bolaoParticipantId) ... disabled=true`), impedindo que participantes existentes logassem. Removida a linha — o cadastro já está bloqueado em 3 camadas independentes (botão disabled, `bolaoRegister()` early return, Worker 403), então não há motivo para desabilitar os campos de login
+- **Normalização de nomes no Worker**: `normalizeName()` no Worker — lowercase, trim, colapso de espaços múltiplos, remoção de acentos (NFD). Usado no login e `/admin/unlock`. Compatível com o frontend (`_bolaoFindSimilarName`). Busca local em todos os participantes (~31) com comparação normalizada, garantindo que "luiz felipe gobbo" e "Luiz  Felipe   Gobbo" encontrem "Luiz Felipe Gobbo". Testado via API: 401 "Senha incorreta" em vez de 404 "Participante nao encontrado"
+- **Status de palpites especiais**: Badge `COMPLETO` (verde), `PARCIAL` (laranja), `NÃO ENVIADO` (vermelho) exibido ao lado do título "Palpites especiais". Classes CSS `.bsp-sp-ok`, `.bsp-sp-partial`, `.bsp-sp-empty`. Atualizado automaticamente ao salvar
+- **Regra de pontuação para parciais**: Já funcionava corretamente — cada campo vale independentemente. Campeão vazio = 0 pts, artilheiro vazio = 0 pts. Apenas o que foi preenchido e acertado pontua. Nenhuma alteração necessária no código de cálculo
+- **Aviso chamativo reformulado**: Banner dourado com "⚠️ IMPORTANTE", texto de desculpas pela instabilidade, menção à reabertura até segunda 23:59, countdown regressivo. Subtítulo do bloco alterado para "Palpites especiais — fecham segunda 22/06 às 23:59". Deadlines corrigidos de 23/06 (terça) para 22/06 (segunda)
+- **Worker deployado** via Cloudflare API (simple PUT, bindings preservados). Testado e funcional
 
 ### v19.36 (2026-06-20) - Cadastro bloqueado, evolução chart refeito, card colors, speciais ocultos, fix picks login
 

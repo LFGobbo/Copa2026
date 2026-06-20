@@ -1,4 +1,4 @@
-// Cloudflare Worker — Copa2026 Bolão (v19.11 — cron snapshot real, batch upsert, secrets separados)
+// Cloudflare Worker — Copa2026 Bolão (v19.37 — normalizeName, login/search por nome normalizado)
 // ENV vars (configurar no dashboard):
 //   SUPABASE_URL  — https://etbezmraylbvlnycltha.supabase.co
 //   SUPABASE_KEY  — service_role key (NÃO a anônima!)
@@ -62,6 +62,10 @@ function error(msg, status) {
   return json({ error: msg }, status || 400);
 }
 
+function normalizeName(s) {
+  return s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
+}
+
 async function sha256(data) {
   var buf = new TextEncoder().encode(data);
   var hash = await crypto.subtle.digest('SHA-256', buf);
@@ -104,45 +108,18 @@ async function handle(req) {
       return error('Worker nao configurado', 500);
     }
 
-    // POST /register
+    // POST /register — BLOQUEADO: cadastro encerrado
     if (method === 'POST' && path === '/register') {
-      var body = await req.json();
-      if (!body.name || !body.password) return error('name e password obrigatorios');
-      var trimmedName = body.name.trim();
-      if (!trimmedName) return error('name e password obrigatorios');
-
-      // Verificar captcha apenas se enviado (opcional)
-      if (body.turnstileToken) {
-        var tres = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-          method: 'POST',
-          body: new URLSearchParams({ secret: TURNSTILE_SEC, response: body.turnstileToken }),
-        });
-        var tdata = await tres.json();
-        if (!tdata.success) return error('Captcha invalido', 403);
-      }
-
-      // Checagem case/acento-insensitive no SERVIDOR (nao so no client) -- evita contas
-      // duplicadas como "João" / "joão" / "JOAO " que pareceriam a mesma pessoa no ranking
-      // mas teriam IDs e palpites totalmente separados. O client ja tem uma checagem similar
-      // (_bolaoFindSimilarName), mas ela depende da lista de participantes ja estar carregada
-      // em memoria e pode ser contornada chamando a API diretamente -- esta e a barreira real.
-      var allNames = await supaFetch("participants?select=name");
-      var normalize = function (s) { return s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' '); };
-      var normTarget = normalize(trimmedName);
-      var dupe = (allNames || []).find(function (p) { return normalize(p.name) === normTarget; });
-      if (dupe) return error('Nome ja cadastrado (ou muito similar a "' + dupe.name + '")', 409);
-
-      var hash = await sha256(body.password + ':' + JWT_SECRET);
-      await supaFetch('participants', 'POST', { name: trimmedName, password: hash, confirmed: false });
-      var np = await supaFetch("participants?name=eq." + encodeURIComponent(trimmedName) + "&select=id,name");
-      return json({ id: np[0].id, name: np[0].name }, 201);
+      return error('Cadastro encerrado. Apenas login para participantes existentes.', 403);
     }
 
     // POST /login
     if (method === 'POST' && path === '/login') {
       var body = await req.json();
       if (!body.name || !body.password) return error('name e password obrigatorios');
-      var existing = await supaFetch("participants?name=eq." + encodeURIComponent(body.name) + "&select=id,name,password,confirmed");
+      var allParts = await supaFetch("participants?select=id,name,password,confirmed");
+      var target = normalizeName(body.name);
+      var existing = allParts ? allParts.filter(function(p){ return normalizeName(p.name) === target; }) : [];
       if (!existing || !existing.length) return error('Participante nao encontrado', 404);
       var hash = await sha256(body.password + ':' + JWT_SECRET);
       if (existing[0].password !== hash) return error('Senha incorreta', 401);
@@ -328,7 +305,9 @@ async function handle(req) {
       if (!body.name || !body.adminPass) return error('name e adminPass obrigatorios');
       var h = await sha256(body.adminPass + ':' + JWT_SECRET);
       if (h !== ADMIN_HASH) return error('Admin pass invalida', 403);
-      var parts = await supaFetch("participants?name=eq." + encodeURIComponent(body.name) + "&select=id,name,confirmed");
+      var allParts = await supaFetch("participants?select=id,name,confirmed");
+      var target = normalizeName(body.name);
+      var parts = allParts ? allParts.filter(function(p){ return normalizeName(p.name) === target; }) : [];
       if (!parts || !parts.length) return error('Participante nao encontrado', 404);
       console.log('[AUDIT] PATCH /admin/unlock para "' + parts[0].name + '" em ' + new Date().toISOString());
       await supaFetch("participants?id=eq." + parts[0].id, 'PATCH', { confirmed: false });

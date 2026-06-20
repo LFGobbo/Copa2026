@@ -470,6 +470,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .bsp-teams{font-size:13px;font-weight:600;color:var(--text);min-height:20px}
   .bsp-score-row{display:flex;align-items:center;gap:8px;justify-content:center;margin:0}
   .bsp-input{width:44px;text-align:center;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 4px;color:var(--text);font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+  .bsp-sp-badge{font-size:11px;font-weight:700;padding:2px 10px;border-radius:10px;display:inline-block;vertical-align:middle;margin-left:8px}
+  .bsp-sp-badge.bsp-sp-ok{background:rgba(0,200,83,.15);color:#4ade80;border:1px solid rgba(0,200,83,.3)}
+  .bsp-sp-badge.bsp-sp-partial{background:rgba(255,145,0,.15);color:var(--orange);border:1px solid rgba(255,145,0,.3)}
+  .bsp-sp-badge.bsp-sp-empty{background:rgba(255,23,68,.12);color:var(--red);border:1px solid rgba(255,23,68,.25)}
   .bsp-input:focus{outline:none;border-color:var(--gold)}
   .bsp-input[readonly]{opacity:.6;cursor:not-allowed}
   .bsp-sep{color:var(--muted);font-weight:700;font-size:14px}
@@ -718,12 +722,12 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     <div class="bolao-section">
       <!-- Special picks re-open banner -->
       <div id="bolao-special-banner" style="display:none;background:linear-gradient(135deg,rgba(255,223,0,.12),rgba(255,193,7,.08));border:2px solid var(--gold);border-radius:var(--radius);padding:var(--sp-md);margin-bottom:var(--sp-md);text-align:center">
-        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--gold);margin-bottom:6px">&#9888;&#65039; PALPITES ESPECIAIS REABERTOS</div>
-        <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px">Desculpem pela instabilidade do sistema. Devido a isso, os palpites especiais foram reabertos e agora fecham em:</div>
+        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--gold);margin-bottom:6px">&#9888;&#65039; IMPORTANTE</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px">Pedimos desculpas pela instabilidade ocorrida nos &uacute;ltimos dias. Para garantir que ningu&eacute;m seja prejudicado, os palpites especiais foram reabertos at&eacute; <strong>segunda-feira &agrave;s 23:59</strong>. Caso voc&ecirc; j&aacute; tenha preenchido, recomendamos revisar seus palpites.</div>
         <div id="bolao-special-countdown" style="font-size:var(--fs-lg);font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums"></div>
         <div style="font-size:11px;color:var(--orange);margin-top:6px">Aproveite para revisar e salvar seu palpite!</div>
       </div>
-      <div class="bolao-section-title">Palpites especiais &mdash; fecham 2h antes do Brasil #2 (jogo #32)</div>
+      <div class="bolao-section-title">Palpites especiais <span class="bsp-sp-badge" id="bolao-special-status">—</span></div>
       <div id="bolao-special-deadline" style="font-size:11px;color:var(--muted);margin-bottom:8px"></div>
       <div class="bolao-special-grid">
         <div class="bolao-special-card">
@@ -3243,20 +3247,35 @@ function bolaoSavePick(gameN){
   .then(function(){if(saved){saved.style.color='#4ade80';saved.textContent='Salvo';}try{var el=document.querySelector('.bsp-input[data-game="'+gameN+'"]');if(el){var c=el.closest('.bsp-card');if(c)c.removeAttribute('style');}}catch(e){}})
   .catch(function(){if(saved){saved.style.color='var(--red)';saved.textContent='Erro';}});
 }
+function _bolaoSpecialStatus(){
+  var my=_bolaoMySpecial;
+  if(!my)return{label:'N\u00c3O ENVIADO',cls:'bsp-sp-empty',order:2};
+  if(my.champion&&my.top_scorer)return{label:'COMPLETO',cls:'bsp-sp-ok',order:0};
+  if(my.champion||my.top_scorer)return{label:'PARCIAL',cls:'bsp-sp-partial',order:1};
+  return{label:'N\u00c3O ENVIADO',cls:'bsp-sp-empty',order:2};
+}
+function bolaoRenderSpecialStatus(){
+  var el=document.getElementById('bolao-special-status');
+  if(!el)return;
+  var st=_bolaoSpecialStatus();
+  el.className='bsp-sp-badge '+st.cls;
+  el.textContent=st.label;
+}
 function bolaoPopulateSpecials(){
   var champSel=document.getElementById('bolao-champion'),scorerSel=document.getElementById('bolao-scorer');
   if(!champSel||!scorerSel)return;
-  // Show special re-open banner with countdown to Tuesday June 23 2026 23:59 BRT
+  bolaoRenderSpecialStatus();
+  // Show special re-open banner with countdown to Monday June 22 2026 23:59 BRT
   var banner=document.getElementById('bolao-special-banner');
   var cdEl=document.getElementById('bolao-special-countdown');
   if(banner&&cdEl){
-    var tuesdayTarget=new Date('2026-06-23T23:59:00-03:00');
+    var mondayTarget=new Date('2026-06-22T23:59:00-03:00');
     var nowSp=new Date();
-    if(nowSp<tuesdayTarget){
+    if(nowSp<mondayTarget){
       banner.style.display='block';
       if(!window._specCDInterval){
         window._specCDInterval=setInterval(function(){
-          var d=tuesdayTarget-new Date();
+          var d=mondayTarget-new Date();
           if(d<=0){cdEl.textContent='ENCERRADO!';banner.style.display='none';clearInterval(window._specCDInterval);window._specCDInterval=null;return}
           var dd=Math.floor(d/86400000),dh=Math.floor((d%86400000)/3600000),dm=Math.floor((d%3600000)/60000),ds=Math.floor((d%60000)/1000);
           cdEl.textContent=dd+'d '+dh+'h '+dm+'m '+ds+'s';
@@ -3266,8 +3285,8 @@ function bolaoPopulateSpecials(){
       banner.style.display='none';
     }
   }
-  // Deadline reaberto: ter\u00e7a 23/06 23:59 BRT (em vez do jogo #32 original)
-  var reopenDeadline=new Date('2026-06-23T23:59:00-03:00');
+  // Deadline reaberto: segunda 22/06 23:59 BRT
+  var reopenDeadline=new Date('2026-06-22T23:59:00-03:00');
   var locked=reopenDeadline&&new Date()>=reopenDeadline;
   var teams=[];Object.keys(GROUPS||{}).forEach(function(k){(GROUPS[k]||[]).forEach(function(t){teams.push(t)})});
   teams.sort();
@@ -3287,7 +3306,7 @@ function bolaoPopulateSpecials(){
   if(dlEl&&reopenDeadline){
     if(reopenDeadline>new Date()){
       var d=reopenDeadline-new Date(),dd=Math.floor(d/86400000),dh=Math.floor((d%86400000)/3600000),dm=Math.floor((d%3600000)/60000);
-      dlEl.textContent='\u23f0 Reaberto \u2014 fecha em '+dd+'d '+dh+'h '+dm+'m (ter\u00e7a 23/06)';
+      dlEl.textContent='\u23f0 Reaberto \u2014 fecha em '+dd+'d '+dh+'h '+dm+'m (segunda 22/06)';
       dlEl.style.color='var(--gold)';
     }else{dlEl.textContent='\u26a0 Fechado';dlEl.style.color='var(--red)'}
   }
@@ -3296,7 +3315,7 @@ function bolaoPopulateSpecials(){
 }
 async function bolaoSaveSpecial(){
   if(!_bolaoToken)return;
-  var reopenDeadline=new Date('2026-06-23T23:59:00-03:00');
+  var reopenDeadline=new Date('2026-06-22T23:59:00-03:00');
   if(reopenDeadline&&new Date()>=reopenDeadline){var btn=document.getElementById('bolao-special-btn');if(btn)btn.textContent='Prazo encerrado';return}
   var champion=document.getElementById('bolao-champion').value,topScorer=document.getElementById('bolao-scorer').value;
   var btn=document.getElementById('bolao-special-btn');_btnLoading(btn,true);
@@ -3305,6 +3324,7 @@ async function bolaoSaveSpecial(){
     _bolaoMySpecial={champion:champion,top_scorer:topScorer};
     if(champion)document.getElementById('bolao-champion-saved').textContent=champion;
     if(topScorer)document.getElementById('bolao-scorer-saved').textContent=topScorer;
+    bolaoRenderSpecialStatus();
     btn.disabled=false;btn.textContent='Salvo com sucesso';
     setTimeout(function(){btn.textContent='Salvar palpites especiais';btn.disabled=false},2000);
   }catch(e){btn.disabled=false;btn.textContent='Erro \u2014 tente novamente'}
@@ -3387,7 +3407,7 @@ async function bolaoLoadRanking(){
   try{
     var maxG=0;
     GAMES.forEach(function(g){var gd=gameUTC(g);if(gd&&new Date()>=gd&&g.n>maxG)maxG=g.n});
-    var reopenDeadlineSp=new Date('2026-06-23T23:59:00-03:00');var showSpecials=reopenDeadlineSp&&new Date()>=reopenDeadlineSp?1:0;
+    var reopenDeadlineSp=new Date('2026-06-22T23:59:00-03:00');var showSpecials=reopenDeadlineSp&&new Date()>=reopenDeadlineSp?1:0;
     var data=await _bolaoFetch('/ranking?maxGame='+maxG+'&showSpecials='+showSpecials);
     _bolaoParticipants={};(data.participants||[]).forEach(function(p){_bolaoParticipants[p.id]=p.name});
     _bolaoConfirmedStatus={};(data.participants||[]).forEach(function(p){_bolaoConfirmedStatus[p.id]=p.confirmed||false});
