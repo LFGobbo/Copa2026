@@ -3511,13 +3511,16 @@ async function bolaoRegister(){
   var st=document.getElementById('bolao-login-status');
   st.className='bolao-login-status err';st.textContent='Cadastro fechado — apenas login para participantes existentes.';
 }
+function _jwtSub(token){
+  try{var p=JSON.parse(atob(token.split('.')[1]));return p.sub||null}catch(e){return null}
+}
 function bolaoRestoreSession(){
   if(_bolaoToken&&_bolaoParticipantId&&_bolaoName)return;
   try{
     var saved=JSON.parse(localStorage.getItem(BOLAO_SESSION_KEY)||'null');
     if(saved&&saved.token){
       _bolaoToken=saved.token;
-      _bolaoParticipantId=saved.id||null;
+      _bolaoParticipantId=saved.id||_jwtSub(saved.token);
       _bolaoName=saved.name||null;
       _bolaoConfirmed=saved.confirmed||false;
     }
@@ -3532,7 +3535,7 @@ function _clearSession(){
 async function _onLoginSuccess(res){
   var st=document.getElementById('bolao-login-status');
   _bolaoToken=res.token;
-  _bolaoParticipantId=res.id;
+  _bolaoParticipantId=res.id||_jwtSub(res.token);
   _bolaoName=res.name;
   _bolaoConfirmed=res.confirmed||false;
   _saveSession();
@@ -3568,7 +3571,7 @@ function bolaoInit(){
   bolaoLoadRanking();
   _initSpecialBanner();
   bolaoRestoreSession();
-  if(_bolaoToken)_onLoginSuccess({token:_bolaoToken,id:_bolaoParticipantId,name:_bolaoName,confirmed:_bolaoConfirmed});
+  if(_bolaoToken&&_bolaoParticipantId&&_bolaoName)_onLoginSuccess({token:_bolaoToken,id:_bolaoParticipantId,name:_bolaoName,confirmed:_bolaoConfirmed});
   var el=document.getElementById('bolao-deadline-info');if(!el)return;
   var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);if(!deadline){el.textContent='';return}
   var now=new Date();
