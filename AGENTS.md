@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 ? Documenta??o do Projeto
 
-**?ltima atualiza??o:** 2026-06-18 (v19.31)
+**?ltima atualiza??o:** 2026-06-20 (v19.36)
 **Reposit?rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -573,6 +573,18 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v19.36 (2026-06-20) - Cadastro bloqueado, evolução chart refeito, card colors, speciais ocultos, fix picks login
+
+- **Cadastro bloqueado**: Botão "Criar conta" removido, substituído por "Cadastro fechado" (disabled). Worker `/register` retorna 403. `bolaoRegister()` no frontend agora só exibe aviso. Turnstile removido da UI de login. Participantes existentes continuam logando normalmente
+- **Gráfico de evolução refeito**: SVG responsivo (largura 100%) com grade horizontal, labels de posição, gradiente dourado sob a linha (fill area), pontos com destaque (última rodada maior), labels de rodada no eixo X, card informativo lateral com posição/total/pontos/rodadas/variação. Background escuro com cantos arredondados
+- **Card colors (estados visuais)**: Classes CSS `bsp-live-neutral` (jogo ao vivo sem pontuação), `bsp-result` (verde, 2-6 pts), `bsp-exact` (ouro, 10 pts), `bsp-final` (ouro forte, final #104). Aplicadas dinamicamente em `bolaoRenderPicksGrid()`
+- **Palpites especiais ocultos do ranking**: `showSpecials` agora usa o novo deadline de reabertura (terça 23/06 23:59) em vez do jogo #32. Enquanto o prazo de reabertura estiver vigente, ninguém vê os especiais alheios no ranking
+- **Fix picks sumindo no login**: Adicionado try/catch em `bolaoLoadMyData()` com mensagem visível ao usuário em caso de erro. Reset de `_bolaoMyPicks` só ocorre após confirmação de carregamento bem-sucedido
+- **Fix duplicata por espaços duplos**: Normalização de nomes no Worker e frontend agora colapsa espaços múltiplos (`.replace(/\s+/g, ' ')`). Impede criação de "Nome  Sobrenome" quando "Nome Sobrenome" já existe
+- **Usuário "Luiz  Gobbo" (duplo espaço) deletado**: 0 picks, não confirmado, especial (Espanha/Embape) removido em cascata. Backup verificado via Supabase REST API antes da exclusão
+- **Banner de reabertura especiais**: Banner dourado com countdown até terça 23/06 23:59, inputs reabilitados, deadline do jogo #32 substituído pelo novo prazo
+- **Worker e index.html sincronizados**: Deploy do Worker via Cloudflare API (PUT multipart), push para GitHub Pages
 
 ### v19.31 (2026-06-18) - renderGroups() sincronizado com ordem FIFA 2026 + numero do jogo no bracket
 - **renderGroups() corrigido**: ordem de desempate mudou de P->GD->GF->H2H->alpha para P->H2H->GD->GF->fair play->FIFA ranking->alpha, igualando ao `_resolveGroupOrder()` usado pelo bracket. Antes a divergencia causava casos onde a tabela de grupos mostrava o Brasil fora do 3o lugar mas o bracket o elegia como 3o colocado
