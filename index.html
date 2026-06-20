@@ -3480,7 +3480,6 @@ function bolaoInit(){
   var now=new Date();
   if(now>=deadline){
     el.textContent='Inscri\u00e7\u00f5es encerradas.';el.style.color='var(--red)';
-    if(!_bolaoParticipantId){var ni=document.getElementById('bolao-name'),pi=document.getElementById('bolao-pass');if(ni)ni.disabled=true;if(pi)pi.disabled=true}
   }else{
     var diff=deadline-now,days=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),mmin=Math.floor((diff%3600000)/60000);
     el.textContent=days>0?'Inscri\u00e7\u00f5es abertas \u2014 encerram em '+days+'d '+h+'h':h>0?'Inscri\u00e7\u00f5es abertas \u2014 encerram em '+h+'h '+mmin+'m':'Inscri\u00e7\u00f5es encerram em menos de 1 hora!';

@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 ? Documenta??o do Projeto
 
-**?ltima atualiza??o:** 2026-06-20 (v19.36)
+**?ltima atualiza??o:** 2026-06-20 (v19.37)
 **Reposit?rio:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -573,6 +573,10 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v19.37 (2026-06-20) - Fix login bloqueado: inputs não eram mais desabilitados após prazo
+
+- **Login bloqueado corrigido**: `bolaoInit()` desabilitava os inputs de nome/senha quando o prazo de inscrição passava (`if(!_bolaoParticipantId) ... disabled=true`), impedindo que participantes existentes logassem. Removida a linha — o cadastro já está bloqueado em 3 camadas independentes (botão disabled, `bolaoRegister()` early return, Worker 403), então não há motivo para desabilitar os campos de login
 
 ### v19.36 (2026-06-20) - Cadastro bloqueado, evolução chart refeito, card colors, speciais ocultos, fix picks login
 
