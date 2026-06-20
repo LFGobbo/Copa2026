@@ -237,7 +237,6 @@ async function handle(req) {
     if (method === 'POST' && path === '/special-picks') {
       if (!user) return error('Token invalido', 401);
       var body = await req.json();
-      // Buscar valores existentes para nao sobrescrever campos nao enviados com null
       var existing = ((await supaFetch("special_picks?participant_id=eq." + user.sub + "&select=champion,top_scorer")) || [])[0] || {};
       var champion  = (body.champion  !== undefined && body.champion  !== '' && body.champion  !== null) ? body.champion  : (existing.champion  || null);
       var topScorer = (body.topScorer !== undefined && body.topScorer !== '' && body.topScorer !== null) ? body.topScorer : (existing.top_scorer || null);
@@ -606,4 +605,16 @@ async function handle(req) {
                        points:r.points, exact_count:r.exact_count, result_count:r.result_count };
             });
             await supaFetch('ranking_snapshots?on_conflict=participant_id,round', 'POST', snapData);
-            results.snapshot = rows.length+' participants, round='+round+', '+Object.keys(realScores).length+' 
+            results.snapshot = rows.length+' participants, round='+round+', '+Object.keys(realScores).length+' scored games';
+          }
+        } catch (e) { results.snapshot = 'fail: ' + e.message; }
+      }
+
+      return json({ ok: true, tasks: results });
+    }
+
+        return json({ ok: true, message: 'Copa2026 Bolao — API do Worker. Rotas: GET /ranking, POST /register, POST /login, GET|POST /picks, GET /mypicks, POST /special-picks, PATCH /confirm, PATCH /admin/unlock, DELETE /reset, GET /health, GET /cron' });
+  } catch (e) {
+    return json({ error: 'Internal: ' + e.message }, 500);
+  }
+}
