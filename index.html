@@ -460,6 +460,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   .bsp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;display:flex;flex-direction:column;gap:3px}
   .bsp-card.bsp-locked{opacity:.7}
   .bsp-card.bsp-missing{border-color:var(--red);box-shadow:0 0 12px rgba(255,23,68,.3)}
+  .bsp-card.bsp-live-neutral{border-color:var(--border-light);opacity:.85;background:rgba(255,255,255,.03)}
+  .bsp-card.bsp-result{border-color:#4ade80;border-width:2px;box-shadow:0 0 16px rgba(74,222,128,.2)}
+  .bsp-card.bsp-exact{border-color:var(--gold);border-width:2px;box-shadow:0 0 20px rgba(255,223,0,.3),inset 0 0 20px rgba(255,223,0,.04)}
+  .bsp-card.bsp-final{border-color:var(--gold);border-width:2px;box-shadow:0 0 30px rgba(255,223,0,.4),inset 0 0 30px rgba(255,223,0,.06)}
   .bsp-header{display:flex;justify-content:space-between;align-items:center;gap:6px}
   .bsp-phase{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);flex-shrink:0}
   .bsp-date{font-size:10px;color:var(--muted);text-align:right;flex-shrink:0}
@@ -704,15 +708,21 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     <div class="bolao-login">
        <div><label>Seu nome</label><input type="text" id="bolao-name" placeholder="Nome e Sobrenome" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();bolaoLogin()}"></div>
        <div><label>Senha</label><input type="password" id="bolao-pass" placeholder="Senha" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();bolaoLogin()}"></div>
-      <div class="cf-turnstile" data-sitekey="0x4AAAAAADj0kWY7cUoZ_uwS" data-theme="dark" data-size="normal" id="bolao-turnstile"></div>
       <button class="btn" onclick="bolaoLogin()" style="height:36px;padding:0 18px;font-size:13px">Entrar</button>
-      <button class="btn" onclick="bolaoRegister()" style="height:36px;padding:0 18px;font-size:13px;background:var(--gold);color:#000">Criar conta</button>
+      <button class="btn" disabled style="height:36px;padding:0 18px;font-size:13px;background:var(--card);color:var(--muted);border-color:var(--border);cursor:not-allowed">Cadastro fechado</button>
       <span class="bolao-login-status" id="bolao-login-status"></span>
       <span class="bolao-deadline" id="bolao-deadline-info"></span>
     </div>
   </div>
   <div id="bolao-logged-area" style="display:none">
     <div class="bolao-section">
+      <!-- Special picks re-open banner -->
+      <div id="bolao-special-banner" style="display:none;background:linear-gradient(135deg,rgba(255,223,0,.12),rgba(255,193,7,.08));border:2px solid var(--gold);border-radius:var(--radius);padding:var(--sp-md);margin-bottom:var(--sp-md);text-align:center">
+        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--gold);margin-bottom:6px">&#9888;&#65039; PALPITES ESPECIAIS REABERTOS</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px">Desculpem pela instabilidade do sistema. Devido a isso, os palpites especiais foram reabertos e agora fecham em:</div>
+        <div id="bolao-special-countdown" style="font-size:var(--fs-lg);font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums"></div>
+        <div style="font-size:11px;color:var(--orange);margin-top:6px">Aproveite para revisar e salvar seu palpite!</div>
+      </div>
       <div class="bolao-section-title">Palpites especiais &mdash; fecham 2h antes do Brasil #2 (jogo #32)</div>
       <div id="bolao-special-deadline" style="font-size:11px;color:var(--muted);margin-bottom:8px"></div>
       <div class="bolao-special-grid">
@@ -3099,7 +3109,17 @@ function bolaoRenderPicksGrid(){
     // Card
     var locked=inputLocked?' bsp-locked':'';
     var missingStyle=(!hasPick&&!isLocked)?'border:2px solid #ff1744;box-shadow:0 0 16px rgba(255,23,68,.5);':'';
-    html+='<div class="bsp-card'+locked+'"'+(missingStyle?' style="'+missingStyle+'"':'')+'>'
+    var stateClass='';
+    if(isLocked&&hasPick&&hasReal){
+      var pts=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);
+      var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
+      if(g.n===BOLAO_FINAL&&pts===10)stateClass=' bsp-final';
+      else if(pts===10)stateClass=' bsp-exact';
+      else if(pts>=2)stateClass=' bsp-result';
+    }else if(isLocked&&hasPick&&!hasReal){
+      stateClass=' bsp-live-neutral';
+    }
+    html+='<div class="bsp-card'+locked+stateClass+'"'+(missingStyle?' style="'+missingStyle+'"':'')+'>'
       +'<div class="bsp-header"><span class="bsp-phase">#'+g.n+' \u00b7 '+esc(g.f)+'</span><span class="bsp-date">'+g.d+' '+g.t+'</span></div>'
       +'<div class="bsp-teams" id="bolao-teams-'+g.n+'">'+tA+' vs '+tB+'</div>'
       +'<div class="bsp-score-row">'
@@ -3226,7 +3246,29 @@ function bolaoSavePick(gameN){
 function bolaoPopulateSpecials(){
   var champSel=document.getElementById('bolao-champion'),scorerSel=document.getElementById('bolao-scorer');
   if(!champSel||!scorerSel)return;
-  var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME),locked=deadline&&new Date()>=deadline;
+  // Show special re-open banner with countdown to Tuesday June 23 2026 23:59 BRT
+  var banner=document.getElementById('bolao-special-banner');
+  var cdEl=document.getElementById('bolao-special-countdown');
+  if(banner&&cdEl){
+    var tuesdayTarget=new Date('2026-06-23T23:59:00-03:00');
+    var nowSp=new Date();
+    if(nowSp<tuesdayTarget){
+      banner.style.display='block';
+      if(!window._specCDInterval){
+        window._specCDInterval=setInterval(function(){
+          var d=tuesdayTarget-new Date();
+          if(d<=0){cdEl.textContent='ENCERRADO!';banner.style.display='none';clearInterval(window._specCDInterval);window._specCDInterval=null;return}
+          var dd=Math.floor(d/86400000),dh=Math.floor((d%86400000)/3600000),dm=Math.floor((d%3600000)/60000),ds=Math.floor((d%60000)/1000);
+          cdEl.textContent=dd+'d '+dh+'h '+dm+'m '+ds+'s';
+        },1000);
+      }
+    }else{
+      banner.style.display='none';
+    }
+  }
+  // Deadline reaberto: ter\u00e7a 23/06 23:59 BRT (em vez do jogo #32 original)
+  var reopenDeadline=new Date('2026-06-23T23:59:00-03:00');
+  var locked=reopenDeadline&&new Date()>=reopenDeadline;
   var teams=[];Object.keys(GROUPS||{}).forEach(function(k){(GROUPS[k]||[]).forEach(function(t){teams.push(t)})});
   teams.sort();
   var myChamp=_bolaoMySpecial&&_bolaoMySpecial.champion,myScorer=_bolaoMySpecial&&_bolaoMySpecial.top_scorer;
@@ -3237,17 +3279,16 @@ function bolaoPopulateSpecials(){
   if(listB)listB.innerHTML=players.map(function(p){return'<option value="'+esc(p)+'">'}).join('');
   if(myChamp)champSel.value=myChamp;
   if(myScorer)scorerSel.value=myScorer;
+  champSel.readOnly=false;scorerSel.readOnly=false;
   var btn=document.getElementById('bolao-special-btn');
-  if(locked){
-    champSel.readOnly=true;scorerSel.readOnly=true;
-    if(btn){btn.disabled=true;btn.textContent='Bloqueado \u2014 prazo encerrado'}
-  }
+  if(btn){btn.disabled=locked;btn.textContent=locked?'Bloqueado \u2014 prazo encerrado':'Salvar palpites especiais'}
   // Atualizar deadline
   var dlEl=document.getElementById('bolao-special-deadline');
-  if(dlEl&&deadline){
-    if(deadline>new Date()){
-      var d=deadline-new Date(),dd=Math.floor(d/86400000),dh=Math.floor((d%86400000)/3600000),dm=Math.floor((d%3600000)/60000);
-      dlEl.textContent='\u23f0 Fecha em '+dd+'d '+dh+'h '+dm+'m (2h antes do jogo #32 \u2014 Haiti vs Brasil)';
+  if(dlEl&&reopenDeadline){
+    if(reopenDeadline>new Date()){
+      var d=reopenDeadline-new Date(),dd=Math.floor(d/86400000),dh=Math.floor((d%86400000)/3600000),dm=Math.floor((d%3600000)/60000);
+      dlEl.textContent='\u23f0 Reaberto \u2014 fecha em '+dd+'d '+dh+'h '+dm+'m (ter\u00e7a 23/06)';
+      dlEl.style.color='var(--gold)';
     }else{dlEl.textContent='\u26a0 Fechado';dlEl.style.color='var(--red)'}
   }
   if(myChamp)document.getElementById('bolao-champion-saved').textContent=myChamp;
@@ -3255,7 +3296,8 @@ function bolaoPopulateSpecials(){
 }
 async function bolaoSaveSpecial(){
   if(!_bolaoToken)return;
-  var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);if(deadline&&new Date()>=deadline)return;
+  var reopenDeadline=new Date('2026-06-23T23:59:00-03:00');
+  if(reopenDeadline&&new Date()>=reopenDeadline){var btn=document.getElementById('bolao-special-btn');if(btn)btn.textContent='Prazo encerrado';return}
   var champion=document.getElementById('bolao-champion').value,topScorer=document.getElementById('bolao-scorer').value;
   var btn=document.getElementById('bolao-special-btn');_btnLoading(btn,true);
   try{
@@ -3321,7 +3363,15 @@ async function _bAdm(pass,name){
 }
 async function bolaoLoadMyData(){
   if(!_bolaoToken)return;
-  var data=await _bolaoFetch('/mypicks');
+  var data;
+  try{
+    data=await _bolaoFetch('/mypicks');
+  }catch(e){
+    console.warn('Falha ao carregar palpites:',e&&e.message?e.message:'');
+    var st=document.getElementById('bolao-login-status');
+    if(st){st.className='bolao-login-status err';st.textContent='Erro ao carregar seus palpites. Tente recarregar a p\u00e1gina.'}
+    return;
+  }
   _bolaoMyPicks={};_bolaoKOPicks={};
   (data.picks||[]).forEach(function(p){
     _bolaoMyPicks[p.game_n]={a:p.goals_a,b:p.goals_b};
@@ -3337,7 +3387,7 @@ async function bolaoLoadRanking(){
   try{
     var maxG=0;
     GAMES.forEach(function(g){var gd=gameUTC(g);if(gd&&new Date()>=gd&&g.n>maxG)maxG=g.n});
-    var showSpecials=0;GAMES.forEach(function(g){var gd=gameUTC(g);if(gd&&g.n===32&&new Date()>=gd)showSpecials=1});
+    var reopenDeadlineSp=new Date('2026-06-23T23:59:00-03:00');var showSpecials=reopenDeadlineSp&&new Date()>=reopenDeadlineSp?1:0;
     var data=await _bolaoFetch('/ranking?maxGame='+maxG+'&showSpecials='+showSpecials);
     _bolaoParticipants={};(data.participants||[]).forEach(function(p){_bolaoParticipants[p.id]=p.name});
     _bolaoConfirmedStatus={};(data.participants||[]).forEach(function(p){_bolaoConfirmedStatus[p.id]=p.confirmed||false});
@@ -3386,7 +3436,7 @@ async function bolaoLogin(){
 }
 function _bolaoFindSimilarName(name){
   if(!_bolaoParticipants||!Object.keys(_bolaoParticipants).length)return null;
-  var norm=function(s){return s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')};
+  var norm=function(s){return s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ')};
   var target=norm(name);
   var keys=Object.keys(_bolaoParticipants);
   for(var i=0;i<keys.length;i++){
@@ -3396,29 +3446,8 @@ function _bolaoFindSimilarName(name){
   return null;
 }
 async function bolaoRegister(){
-  var name=(document.getElementById('bolao-name').value||'').trim();
-  var pass=(document.getElementById('bolao-pass').value||'').trim();
   var st=document.getElementById('bolao-login-status');
-  if(!name||!pass){st.className='bolao-login-status err';st.textContent='Preencha nome e senha';return}
-  // Verificar se ja existe nome similar (case/accent insensitive)
-  try{
-    var similar=_bolaoFindSimilarName(name);
-    if(similar){st.className='bolao-login-status err';st.textContent='J\u00e1 existe o usu\u00e1rio "'+similar+'". Se \u00e9 voc\u00ea, clique em Entrar. Sen\u00e3o, use um nome diferente.';return}
-  }catch(e){}
-  var turnstileToken=null;
-  try{if(typeof turnstile!=='undefined'&&turnstile)turnstileToken=turnstile.getResponse(document.getElementById('bolao-turnstile'))||turnstile.getResponse()}catch(te){}
-  if(!turnstileToken){st.className='bolao-login-status err';st.textContent='Resolva o captcha primeiro';return}
-  var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);
-  if(deadline&&new Date()>=deadline){st.className='bolao-login-status err';st.textContent='Inscri\u00e7\u00f5es encerradas (2h antes do 2\u00ba jogo do Brasil)';try{turnstile.reset(document.getElementById('bolao-turnstile'))}catch(te){}return}
-  st.className='bolao-login-status';st.textContent='Cadastrando...';
-  try{
-    var regRes=await _bolaoFetch('/register','POST',{name:name,password:pass,turnstileToken:turnstileToken});
-    var loginRes2=await _bolaoFetch('/login','POST',{name:name,password:pass});
-    await _onLoginSuccess(loginRes2);
-  }catch(e){
-    if(e.status===409){st.className='bolao-login-status err';st.textContent='Nome j\u00e1 cadastrado \u2014 tente outro ou verifique a senha';return}
-    st.className='bolao-login-status err';st.textContent='Erro: '+(e.message||'desconhecido');
-  }
+  st.className='bolao-login-status err';st.textContent='Cadastro fechado — apenas login para participantes existentes.';
 }
 async function _onLoginSuccess(res){
   var st=document.getElementById('bolao-login-status');
@@ -3506,30 +3535,73 @@ function bolaoRenderEvolution(el){
   if(!_bolaoEvolution||!_bolaoEvolution.length){
     el.innerHTML='<p style="color:var(--muted);font-size:12px;padding:8px 0">Evolução disponível após a primeira rodada</p>';return;
   }
-  var pts=_bolaoEvolution,W=260,H=60,pad=6;
-  var maxPos=Math.max.apply(null,pts.map(function(p){return p.position;}));
-  var xStep=pts.length>1?(W-2*pad)/(pts.length-1):0;
-  function px(i){return pad+i*xStep;}
-  function py(p){return pad+(p-1)/(maxPos>1?maxPos-1:1)*(H-2*pad);}
+  var pts=_bolaoEvolution;
+  var totalPlayers=Object.keys(_bolaoParticipants||{}).length||32;
+  // Dimensoes responsivas
+  var w=Math.min(600,el.clientWidth-32||400),h=Math.max(140,w*0.35),padL=32,padR=16,padT=20,padB=28;
+  var plotW=w-padL-padR,plotH=h-padT-padB;
+  // Eixos
+  var maxPos=totalPlayers,minPos=1;
+  var allRounds=pts.map(function(p){return p.round;});
+  var minRound=Math.min.apply(null,allRounds),maxRound=Math.max.apply(null,allRounds);
+  var rRange=maxRound-minRound||1;
+  var pRange=maxPos-minPos||1;
+  // Interpolacao
+  function px(r){return padL+(r-minRound)/rRange*plotW;}
+  function py(pos){return padT+(pos-minPos)/pRange*plotH;}
+  // Pontos da linha
+  var points=pts.map(function(p){return px(p.round).toFixed(1)+','+py(p.position).toFixed(1);}).join(' ');
+  // Area fill (gradiente)
+  var fillPts=points+' '+px(maxRound).toFixed(1)+','+py(maxPos).toFixed(1)+' '+px(minRound).toFixed(1)+','+py(maxPos).toFixed(1);
+  // Diferenca da ultima rodada
   var last=pts[pts.length-1];
   var diffTxt='';
   if(pts.length>1){
-    var d2=pts[pts.length-2].position-last.position;
-    if(d2>0)diffTxt='<span style="color:#4ade80">&#9650;'+d2+'</span>';
-    else if(d2<0)diffTxt='<span style="color:var(--red)">&#9660;'+Math.abs(d2)+'</span>';
-    else diffTxt='<span style="color:var(--muted)">&#8212;</span>';
+    var prev=pts[pts.length-2];
+    var d2=prev.position-last.position;
+    if(d2>0)diffTxt='<span style="color:#4ade80;font-weight:700">&#9650; +'+d2+'</span>';
+    else if(d2<0)diffTxt='<span style="color:var(--red);font-weight:700">&#9660; '+Math.abs(d2)+'</span>';
+    else diffTxt='<span style="color:var(--muted)">&#8212; est\u00e1vel</span>';
   }
-  el.innerHTML='<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
-    +'<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="flex-shrink:0">'
-    +'<polyline points="'+pts.map(function(p,i){return px(i).toFixed(1)+','+py(p.position).toFixed(1);}).join(' ')+'" fill="none" stroke="var(--gold)" stroke-width="2"/>'
-    +pts.map(function(p,i){return'<circle cx="'+px(i).toFixed(1)+'" cy="'+py(p.position).toFixed(1)+'" r="3" fill="var(--gold)"/>';}).join('')
-    +'<text x="'+px(pts.length-1).toFixed(1)+'" y="'+(py(last.position)-6).toFixed(1)+'" text-anchor="middle" fill="var(--gold)" font-size="9" font-weight="700">'+last.position+'&#176;</text>'
-    +'</svg>'
-    +'<div style="font-size:12px;line-height:1.8">'
-    +'<div style="font-weight:700;font-size:16px;color:var(--gold)">'+last.position+'&#176; lugar</div>'
-    +'<div style="color:var(--muted)">'+last.points+' pts</div>'
-    +(diffTxt?'<div>'+diffTxt+' desde última rodada</div>':'')
-    +'</div></div>';
+  // SVG markup
+  var svg='<svg width="100%" height="'+h+'" viewBox="0 0 '+w+' '+h+'" style="display:block;max-width:100%">'
+    // Fundo do grafico
+    +'<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="rgba(17,17,46,.5)" rx="8"/>'
+    // Grade horizontal (5 linhas)
+    +function(){var g='';for(var i=0;i<=4;i++){var y=padT+i/4*plotH;var rank=Math.round(minPos+i/4*pRange);g+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(w-padR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(255,255,255,.06)" stroke-width="1"/>';g+='<text x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" fill="var(--muted)" font-size="9">'+rank+'&#176;</text>';}return g;}()
+    // Area fill
+    +'<polygon points="'+fillPts+'" fill="url(#evoGrad)" opacity=".35"/>'
+    // Definicoes gradiente
+    +'<defs><linearGradient id="evoGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--gold)"/><stop offset="100%" stop-color="var(--gold)" stop-opacity="0"/></linearGradient></defs>'
+    // Linha principal
+    +'<polyline points="'+points+'" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
+    // Pontos com circulo + label
+    +pts.map(function(p,i){
+      var cx=px(p.round).toFixed(1),cy=py(p.position).toFixed(1);
+      var isLast=i===pts.length-1;
+      return '<circle cx="'+cx+'" cy="'+cy+'" r="'+(isLast?5:3.5)+'" fill="'+(isLast?'var(--gold)':'var(--bg)')+'" stroke="var(--gold)" stroke-width="2"/>'
+        +(isLast?'<text x="'+cx+'" y="'+(py(p.position)-10).toFixed(1)+'" text-anchor="middle" fill="var(--gold)" font-size="11" font-weight="800">'+p.position+'&#176;</text>':'');
+    }).join('')
+    // Labels dos rounds no eixo X
+    +function(){
+      var labels='';
+      pts.forEach(function(p){
+        var lx=px(p.round);
+        labels+='<text x="'+lx.toFixed(1)+'" y="'+(h-6).toFixed(1)+'" text-anchor="middle" fill="var(--muted)" font-size="8">R'+(p.round<10?'0':'')+p.round+'</text>';
+      });
+      return labels;
+    }()
+    +'</svg>';
+  // Card informativo ao lado
+  var info='<div style="display:flex;flex-direction:column;gap:6px;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);min-width:160px;flex-shrink:0">'
+    +'<div style="display:flex;align-items:center;gap:8px"><span style="font-size:28px;font-weight:900;color:var(--gold)">'+last.position+'&#176;</span><span style="font-size:12px;color:var(--muted)">de '+totalPlayers+'</span></div>'
+    +'<div style="display:flex;gap:16px;flex-wrap:wrap">'
+    +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Pontos</div><div style="font-size:18px;font-weight:700;color:var(--text)">'+last.points+'</div></div>'
+    +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Rodadas</div><div style="font-size:18px;font-weight:700;color:var(--text)">'+pts.length+'</div></div>'
+    +'</div>'
+    +'<div style="font-size:12px;color:var(--muted);padding-top:4px;border-top:1px solid var(--border)">'+(pts.length>1?'&Uacute;ltima rodada: '+diffTxt:'')+'</div>'
+    +'</div>';
+  el.innerHTML='<div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">'+svg+info+'</div>';
 }
 
 // ── Evolução combinada (todas as snapshots) ────────────────

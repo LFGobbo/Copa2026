@@ -127,7 +127,7 @@ async function handle(req) {
       // (_bolaoFindSimilarName), mas ela depende da lista de participantes ja estar carregada
       // em memoria e pode ser contornada chamando a API diretamente -- esta e a barreira real.
       var allNames = await supaFetch("participants?select=name");
-      var normalize = function (s) { return s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
+      var normalize = function (s) { return s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' '); };
       var normTarget = normalize(trimmedName);
       var dupe = (allNames || []).find(function (p) { return normalize(p.name) === normTarget; });
       if (dupe) return error('Nome ja cadastrado (ou muito similar a "' + dupe.name + '")', 409);

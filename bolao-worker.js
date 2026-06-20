@@ -104,38 +104,9 @@ async function handle(req) {
       return error('Worker nao configurado', 500);
     }
 
-    // POST /register
+    // POST /register — BLOQUEADO: cadastro encerrado
     if (method === 'POST' && path === '/register') {
-      var body = await req.json();
-      if (!body.name || !body.password) return error('name e password obrigatorios');
-      var trimmedName = body.name.trim();
-      if (!trimmedName) return error('name e password obrigatorios');
-
-      // Verificar captcha apenas se enviado (opcional)
-      if (body.turnstileToken) {
-        var tres = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-          method: 'POST',
-          body: new URLSearchParams({ secret: TURNSTILE_SEC, response: body.turnstileToken }),
-        });
-        var tdata = await tres.json();
-        if (!tdata.success) return error('Captcha invalido', 403);
-      }
-
-      // Checagem case/acento-insensitive no SERVIDOR (nao so no client) -- evita contas
-      // duplicadas como "João" / "joão" / "JOAO " que pareceriam a mesma pessoa no ranking
-      // mas teriam IDs e palpites totalmente separados. O client ja tem uma checagem similar
-      // (_bolaoFindSimilarName), mas ela depende da lista de participantes ja estar carregada
-      // em memoria e pode ser contornada chamando a API diretamente -- esta e a barreira real.
-      var allNames = await supaFetch("participants?select=name");
-      var normalize = function (s) { return s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
-      var normTarget = normalize(trimmedName);
-      var dupe = (allNames || []).find(function (p) { return normalize(p.name) === normTarget; });
-      if (dupe) return error('Nome ja cadastrado (ou muito similar a "' + dupe.name + '")', 409);
-
-      var hash = await sha256(body.password + ':' + JWT_SECRET);
-      await supaFetch('participants', 'POST', { name: trimmedName, password: hash, confirmed: false });
-      var np = await supaFetch("participants?name=eq." + encodeURIComponent(trimmedName) + "&select=id,name");
-      return json({ id: np[0].id, name: np[0].name }, 201);
+      return error('Cadastro encerrado. Apenas login para participantes existentes.', 403);
     }
 
     // POST /login
