@@ -809,7 +809,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
   <div class="nav-btn" id="nav-grupos" data-tab="grupos" onclick="navClick.call(this)" tabindex="-1" role="button"><span class="nav-icon">🗂️</span><span class="nav-label">Grupos</span></div>
   <div class="nav-btn" id="nav-mata-mata" data-tab="mata-mata" onclick="navClick.call(this)" tabindex="-1" role="button"><span class="nav-icon">⚔️</span><span class="nav-label">Mata-Mata</span></div>
   <div class="nav-btn" id="nav-bolao" data-tab="bolao" onclick="navClick.call(this)" tabindex="-1" role="button"><span class="nav-icon">🎯</span><span class="nav-label">Bolão</span></div>
-  <div class="nav-btn" id="nav-mais" onclick="maisOpen()" tabindex="-1" role="button" aria-haspopup="true"><span class="nav-icon">•••</span><span class="nav-label">Mais</span></div>
+  <div class="nav-btn" id="nav-mais" onclick="maisOpen()" tabindex="-1" role="button" aria-haspopup="true"><span class="nav-icon">☰</span><span class="nav-label">Mais</span></div>
 </div>
 <!-- Mais menu overlay -->
 <div class="mais-overlay" id="mais-overlay" style="display:none" onclick="maisClose()">
@@ -1007,7 +1007,6 @@ document.addEventListener('touchstart',function(e){_touchSX=e.touches[0].clientX
 document.addEventListener('touchend',function(e){
   if(!ENABLE_SWIPE)return;
   var t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'))return;
-  // Ignorar se o toque está dentro de um elemento com scroll horizontal
   var el=t;while(el&&el!==document.body){var st=window.getComputedStyle(el);if((st.overflowX==='auto'||st.overflowX==='scroll')&&el.scrollWidth>el.clientWidth)return;el=el.parentElement;}
   var dx=e.changedTouches[0].clientX-_touchSX,dy=e.changedTouches[0].clientY-_touchSY;
   if(Math.abs(dx)<90||Math.abs(dy)>Math.abs(dx)*0.25)return;
@@ -4322,4 +4321,8 @@ document.addEventListener('keydown', function(e){
     return;
   }
 });
-var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED'&&!_refreshing){_refresh
+var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED'&&!_refreshing){_refreshing=true;window.location.reload()}})}
+</script>
+</body>
+</html>
+
