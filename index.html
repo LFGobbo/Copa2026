@@ -2632,9 +2632,8 @@ var BOLAO_FIRST=6,BOLAO_FINAL=104,BOLAO_SIGNUP_GAME=32,BOLAO_TWO_H=7200000;
 var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
 var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmedStatus={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[],_bolaoKOPicks={},_bolaoPicksLoadFailed=false;
 var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0;
-var BOLAO_SESSION_KEY='copa2026_session',BOLAO_PICKS_CACHE='copa2026_mypicks_cache',BOLAO_SPECIAL_CACHE='copa2026_special_cache';
+var BOLAO_PICKS_CACHE='copa2026_mypicks_cache';
 try{_bolaoSnappedGames=JSON.parse(localStorage.getItem('copa2026_snapped')||'{}')}catch(e){}
-try{var _savedSession=JSON.parse(localStorage.getItem(BOLAO_SESSION_KEY)||'null');if(_savedSession&&_savedSession.token){_bolaoToken=_savedSession.token;_bolaoParticipantId=_savedSession.id||null;_bolaoName=_savedSession.name||null;_bolaoConfirmed=_savedSession.confirmed||false}}catch(e){}
 
 function _bolaoFetch(path,method,body,retries){
   var opts={method:method||'GET',headers:{'Content-Type':'application/json'}};
@@ -3079,18 +3078,8 @@ function bolaoRenderPicksGrid(){
   var grid=document.getElementById('bolao-picks-grid');
   if(!grid||!_bolaoParticipantId)return;
   var now=new Date(),html='',any=false;
-  // Só mostra jogos progressivamente — até o primeiro jogo não travado
-  var maxIdx=-1;
-  GAMES.forEach(function(g,i){
+  GAMES.forEach(function(g){
     if(g.n<BOLAO_FIRST)return;
-    var gd=gameUTC(g);if(!gd)return;
-    var lockTime=new Date(gd.getTime()-BOLAO_TWO_H);
-    if(now<lockTime){maxIdx=i;return} // primeiro não travado
-    maxIdx=i;
-  });
-  if(maxIdx<0)maxIdx=GAMES.length-1;
-  GAMES.forEach(function(g,i){
-    if(g.n<BOLAO_FIRST||i>maxIdx)return;
     var gd=gameUTC(g);if(!gd)return;
     var lockTime=new Date(gd.getTime()-BOLAO_TWO_H);
     var isLocked=now>=lockTime;
@@ -3180,26 +3169,14 @@ function bolaoRenderPicksGrid(){
   grid.addEventListener('input',grid._bolaoInputHandler,true);
   // Status: quantos preenchidos
   var elSum=document.getElementById('bolao-pick-summary');
-  if(elSum)bolaoUpdateSummary(maxIdx);
+  if(elSum)bolaoUpdateSummary();
 }
-function bolaoUpdateSummary(maxIdx){
+function bolaoUpdateSummary(){
   var elSum=document.getElementById('bolao-pick-summary');
   if(!elSum)return;
-  if(maxIdx===undefined){
-    var now=new Date();
-    maxIdx=-1;
-    GAMES.forEach(function(g,i){
-      if(g.n<BOLAO_FIRST)return;
-      var gd=gameUTC(g);if(!gd)return;
-      var lockTime=new Date(gd.getTime()-BOLAO_TWO_H);
-      if(now<lockTime){maxIdx=i;return}
-      maxIdx=i;
-    });
-    if(maxIdx<0)maxIdx=GAMES.length-1;
-  }
   var totalV=0,filled=0,missing=[];
-  GAMES.forEach(function(g,i){
-    if(g.n<BOLAO_FIRST||i>maxIdx)return;
+  GAMES.forEach(function(g){
+    if(g.n<BOLAO_FIRST)return;
     var gd=gameUTC(g);if(!gd)return;
     var lk=new Date()>=new Date(gd.getTime()-BOLAO_TWO_H);
     var pk=_bolaoMyPicks[g.n],hp=pk&&pk.a!==undefined&&pk.b!==undefined;
@@ -3424,7 +3401,7 @@ async function bolaoLoadMyData(){
   try{
     data=await _bolaoFetch('/mypicks');
   }catch(e){
-    if(e.status===401){_clearSession();_bolaoToken=null;_bolaoParticipantId=null;_bolaoName=null;_bolaoConfirmed=false;_bolaoMyPicks={}}
+    if(e.status===401){_bolaoToken=null;_bolaoParticipantId=null;_bolaoName=null;_bolaoConfirmed=false;_bolaoMyPicks={}}
     console.warn('Falha ao carregar palpites:',e&&e.message?e.message:'');
     if(!hadCache){
       _bolaoPicksLoadFailed=true;
@@ -3514,31 +3491,12 @@ async function bolaoRegister(){
 function _jwtSub(token){
   try{var p=JSON.parse(atob(token.split('.')[1]));return p.sub||null}catch(e){return null}
 }
-function bolaoRestoreSession(){
-  if(_bolaoToken&&_bolaoParticipantId&&_bolaoName)return;
-  try{
-    var saved=JSON.parse(localStorage.getItem(BOLAO_SESSION_KEY)||'null');
-    if(saved&&saved.token){
-      _bolaoToken=saved.token;
-      _bolaoParticipantId=saved.id||_jwtSub(saved.token);
-      _bolaoName=saved.name||null;
-      _bolaoConfirmed=saved.confirmed||false;
-    }
-  }catch(e){}
-}
-function _saveSession(){
-  try{localStorage.setItem(BOLAO_SESSION_KEY,JSON.stringify({token:_bolaoToken,id:_bolaoParticipantId,name:_bolaoName,confirmed:_bolaoConfirmed}))}catch(e){}
-}
-function _clearSession(){
-  try{localStorage.removeItem(BOLAO_SESSION_KEY)}catch(e){}
-}
 async function _onLoginSuccess(res){
   var st=document.getElementById('bolao-login-status');
   _bolaoToken=res.token;
   _bolaoParticipantId=res.id||_jwtSub(res.token);
   _bolaoName=res.name;
   _bolaoConfirmed=res.confirmed||false;
-  _saveSession();
   // Resetar captcha para evitar reuso
   try{turnstile.reset(document.getElementById('bolao-turnstile'))}catch(te){}
   document.getElementById('bolao-name').readOnly=true;
@@ -3570,8 +3528,6 @@ async function _onLoginSuccess(res){
 function bolaoInit(){
   bolaoLoadRanking();
   _initSpecialBanner();
-  bolaoRestoreSession();
-  if(_bolaoToken&&_bolaoParticipantId&&_bolaoName)_onLoginSuccess({token:_bolaoToken,id:_bolaoParticipantId,name:_bolaoName,confirmed:_bolaoConfirmed});
   var el=document.getElementById('bolao-deadline-info');if(!el)return;
   var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);if(!deadline){el.textContent='';return}
   var now=new Date();
