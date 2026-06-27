@@ -1002,7 +1002,7 @@ function navClick(){maisClose();switchTab(this.dataset.tab)}
 function maisOpen(){var el=document.getElementById("mais-overlay");if(el)el.style.display="flex"}
 function maisClose(){var el=document.getElementById("mais-overlay");if(el)el.style.display="none"}
 // Swipe entre abas (mobile)
-var ENABLE_SWIPE=true,SWIPE_TABS=['jogos','grupos','mata-mata','bolao','artilheiros','convocados','bolao-estatisticas','regras'],_touchSX=0,_touchSY=0;
+var ENABLE_SWIPE=false,SWIPE_TABS=['jogos','grupos','mata-mata','bolao','artilheiros','convocados','bolao-estatisticas','regras'],_touchSX=0,_touchSY=0;
 document.addEventListener('touchstart',function(e){_touchSX=e.touches[0].clientX;_touchSY=e.touches[0].clientY},{passive:true});
 document.addEventListener('touchend',function(e){
   if(!ENABLE_SWIPE)return;
@@ -1792,19 +1792,22 @@ function renderBracketTree(){
       +' stroke-width="'+(isFinal?1.5:0.8)+'"'+(isFinal?' filter="url(#bk-glow)"':'')+'/>';
     svg+='<line x1="'+(x+5)+'" y1="'+(y+CH/2)+'" x2="'+(x+CW-5)+'" y2="'+(y+CH/2)+'"'
       +' stroke="'+clr+'" stroke-opacity="0.2" stroke-width="0.5"/>';
-    function trow(name,isW,isPend,score,ty){
-      var lbl=name&&name.length>19?name.substr(0,17)+'…':(name||'?');
+    function trow(name,isW,isPend,score,ty,teamName){
+      var fi=flagIso(teamName||name),fu=fi?'https://flagcdn.com/16x12/'+fi+'.png':'';
+      var tx=fu?(x+24):(x+7);
+      var lbl=name&&name.length>17?name.substr(0,15)+'…':(name||'?');
       var isBR=name==='Brasil';
       var fc=isPend&&!isW?'rgba(255,255,255,.28)':isBR?'#ffe066':isW?'#fff':'rgba(255,255,255,.78)';
-      svg+='<text x="'+(x+7)+'" y="'+ty+'" fill="'+fc+'"'
+      if(fu){svg+='<image href="'+fu+'" x="'+(x+5)+'" y="'+(ty-10)+'" width="16" height="12" opacity="'+(isPend&&!isW?.35:.85)+'"/>';}
+      svg+='<text x="'+tx+'" y="'+ty+'" fill="'+fc+'"'
         +' font-size="9" font-weight="'+(isW?700:400)+'">'+esc(lbl)+'</text>';
       if(score!==''){
         svg+='<text x="'+(x+CW-5)+'" y="'+ty+'" text-anchor="end"'
           +' fill="'+(isW?'#ffd600':'rgba(255,255,255,.5)')+'" font-size="10" font-weight="800">'+score+'</text>';
       }
     }
-    trow(rA.name||g.a,wA,rA.pending,hasScore?sc.a:'',y+15);
-    trow(rB.name||g.b,wB,rB.pending,hasScore?sc.b:'',y+CH-7);
+    trow(rA.name||g.a,wA,rA.pending,hasScore?sc.a:'',y+15,rA.name||g.a);
+    trow(rB.name||g.b,wB,rB.pending,hasScore?sc.b:'',y+CH-7,rB.name||g.b);
     if(hasScore&&sc.pen){
       svg+='<text x="'+(x+CW/2)+'" y="'+(y+CH/2+1)+'" text-anchor="middle" fill="rgba(255,255,255,.35)" font-size="7">PEN</text>';
     }else if(!hasScore){
@@ -2984,9 +2987,12 @@ function bolaoCalcTotal(participantId){
     if(bonus>0)bonusCount++;
   });
   var champion=_bolaoFinalChampion(),topScorer=_bolaoTopScorer();
+  var _finalGameObj=GAMES.find(function(g){return g.n===BOLAO_FINAL;});
+  var finalDone=_finalGameObj&&gameIsPast(_finalGameObj);
+  var matchName=function(a,b){if(!a||!b)return false;var na=a.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g,'');var nb=b.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g,'');return na===nb};
   if(sp&&sp.champion&&champion&&sp.champion===champion){total+=50;bonusCount++;}
-  if(sp&&sp.top_scorer&&topScorer){
-    var matchName=function(a,b){if(!a||!b)return false;var na=a.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'');var nb=b.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'');return na===nb};
+  // Artilheiro só pontua DEPOIS que a final (J104) terminar
+  if(finalDone&&sp&&sp.top_scorer&&topScorer){
     if(topScorer.exact&&matchName(sp.top_scorer,topScorer.name)){total+=20;bonusCount++;}
     else if(!topScorer.exact&&topScorer.tied&&topScorer.tied.some(function(t){return matchName(sp.top_scorer,t)})){total+=10;bonusCount++;}
   }
@@ -3076,10 +3082,28 @@ function bolaoRenderDetail(pid){
   var out='';
   var sp=_bolaoAllSpecials[pid];
   if(sp&&(sp.champion||sp.top_scorer)){
-    out+='<div class="bolao-detail-section"><div class="bolao-detail-section-title">\ud83c\udfc6 PALPITES ESPECIAIS</div>'
-      +'<div style="display:flex;gap:12px;font-size:12px;padding:4px 0">'
-      +(sp.champion?'<span>\ud83c\udfc6 Campe\u00e3o: <strong>'+esc(sp.champion)+'</strong></span>':'')
-      +(sp.top_scorer?'<span>\u26bd Artilheiro: <strong>'+esc(sp.top_scorer)+'</strong></span>':'')
+    var _fgObj=GAMES.find(function(g){return g.n===BOLAO_FINAL;});
+    var _fDone=_fgObj&&gameIsPast(_fgObj);
+    var _champ=_bolaoFinalChampion(),_ts=_bolaoTopScorer();
+    var _mn=function(a,b){if(!a||!b)return false;var na=a.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'');var nb=b.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'');return na===nb};
+    var _scorerHtml='';
+    if(sp.top_scorer){
+      if(!_fDone){
+        _scorerHtml='<span style="display:flex;align-items:center;gap:4px">⚽ Artilheiro: <strong>'+esc(sp.top_scorer)+'</strong>'
+          +' <span style="background:rgba(255,193,7,.18);color:#ffc107;border:1px solid rgba(255,193,7,.4);border-radius:10px;font-size:10px;padding:1px 7px;font-weight:600">⏳ PENDENTE</span></span>';
+      }else if(_ts&&(_ts.exact?_mn(sp.top_scorer,_ts.name):(_ts.tied&&_ts.tied.some(function(t){return _mn(sp.top_scorer,t)})))){
+        var _artPts=_ts.exact?20:10;
+        _scorerHtml='<span style="display:flex;align-items:center;gap:4px">⚽ Artilheiro: <strong>'+esc(sp.top_scorer)+'</strong>'
+          +' <span style="background:rgba(76,175,80,.2);color:#81c784;border:1px solid rgba(76,175,80,.4);border-radius:10px;font-size:10px;padding:1px 7px;font-weight:700">✅ Acertou! +'+_artPts+' pts</span></span>';
+      }else{
+        _scorerHtml='<span style="display:flex;align-items:center;gap:4px">⚽ Artilheiro: <strong>'+esc(sp.top_scorer)+'</strong>'
+          +' <span style="background:rgba(244,67,54,.15);color:#ef9a9a;border:1px solid rgba(244,67,54,.3);border-radius:10px;font-size:10px;padding:1px 7px;font-weight:600">❌ Não acertou</span></span>';
+      }
+    }
+    out+='<div class="bolao-detail-section"><div class="bolao-detail-section-title">🏆 PALPITES ESPECIAIS</div>'
+      +'<div style="display:flex;flex-direction:column;gap:8px;font-size:12px;padding:4px 0">'
+      +(sp.champion?'<span>🏆 Campeão: <strong>'+esc(sp.champion)+'</strong></span>':'')
+      +_scorerHtml
       +'</div></div>';
   }
   if(scored.length){out+='<div class="bolao-detail-section"><div class="bolao-detail-section-title">\u2705 PONTUADOS ('+scored.length+')</div><div class="bolao-detail-grid">'+scored.join('')+'</div></div>'}
