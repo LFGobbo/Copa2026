@@ -1,8 +1,0 @@
-=== Deploy Worker via Node.js - 20/06/2026 12:58:21,13 === 
-
-=== Node Deploy ===
-[...] Autenticando...
-[OK] Account ID: 2df2e28b8c8d1b2a96aac34eb62cd72d
-[...] Enviando copa2026-bolao (7 bindings)...
-[OK] copa2026-bolao deployado com sucesso! (2026-06-20T15:58:23.638Z)
-=== Fim - 20/06/2026 12:58:23,65 === 

@@ -843,7 +843,7 @@ let scores=_savedData.scores||{};
 let goals=_savedData.goals||{};
 let cards=_savedData.cards||{};
 // Version check: limpa cache stale de versoes com bugs (gol contra, cartao, parseInt)
-const DATA_VERSION = 3;
+const DATA_VERSION = 4;
 // Janela maxima de duracao de um jogo (apito inicial -> fim), usada tanto para decidir se um
 // jogo ainda pode estar "ao vivo" sem placar confirmado quanto para inferir "jogo encerrado"
 // quando ja ha placar mas a confirmacao oficial (MATCH_ENDED) ainda nao chegou. Antes havia dois
@@ -2232,6 +2232,9 @@ function processTimeline(idMatch,gameId){
         if(resolved.homeId)meta.homeId=resolved.homeId;
         if(resolved.awayId)meta.awayId=resolved.awayId;
       }
+      // Detectar se a ordem da FIFA está invertida (Home da FIFA != game.a)
+      var _revCk=_resolveMatchTeams(game);
+      var _rev=_revCk.homeId&&meta.homeId&&_revCk.homeId!==meta.homeId;
 
       // ── Estado do jogo ────────────────────────────────────
       allEvents.forEach(function(e){
@@ -2280,7 +2283,7 @@ function processTimeline(idMatch,gameId){
         scores[gameId].a=finalHome; scores[gameId].b=finalAway;
         changed=true;
       }
-      if(!hasNew&&!hashChanged&&!changed)return; // Nada novo, sair
+        if(!hasNew&&!hashChanged&&!changed)return;
 
       // ── Reconstruir gols auto do zero (API é fonte da verdade) ──
       // Manter gols manuais (não-auto), descartar todos os auto
@@ -2294,18 +2297,22 @@ function processTimeline(idMatch,gameId){
         if(e.HomeGoals===undefined||e.AwayGoals===undefined)return;
 
         var scoredForHome=e.HomeGoals>prevHome, scoredForAway=e.AwayGoals>prevAway;
-        if(!scoredForHome&&!scoredForAway){prevHome=e.HomeGoals;prevAway=e.AwayGoals;return;}
+        if(!scoredForHome&&!scoredForAway){
+          if(e.Type===0||e.Type===34||e.Type===41){prevHome=e.HomeGoals;prevAway=e.AwayGoals;}
+          return;
+        }
 
-        var homeId=meta.homeId, awayId=meta.awayId;
-        var isOwn=(scoredForHome&&e.IdTeam&&homeId&&e.IdTeam!==homeId)||
-                  (scoredForAway&&e.IdTeam&&awayId&&e.IdTeam!==awayId);
-        var teamSide=scoredForHome?'a':'b';
+        var _idTeam=parseInt(e.IdTeam,10);
+        var _mHomeId=parseInt(meta.homeId,10),_mAwayId=parseInt(meta.awayId,10);
+        var isOwn=(scoredForHome&&_idTeam&&_mHomeId&&_idTeam!==_mHomeId)||
+                  (scoredForAway&&_idTeam&&_mAwayId&&_idTeam!==_mAwayId);
+        var teamSide=_rev?(scoredForHome?'b':'a'):(scoredForHome?'a':'b');
         var storeSide=isOwn?(teamSide==='a'?'b':'a'):teamSide;
 
         var info=FIFA_PLAYER_MAP[e.IdPlayer];
         // Validar que o jogador do gol é do time correto
         if(info&&info.team){
-          var _gt=scoredForHome?game.a:game.b;
+          var _gt=_rev?(scoredForHome?game.b:game.a):(scoredForHome?game.a:game.b);
           var _pt=isOwn?(_gt===game.a?game.b:game.a):_gt;
           if(info.team!==_pt)info=null;
         }
@@ -2314,7 +2321,8 @@ function processTimeline(idMatch,gameId){
           var nm=desc.match(/^(.+?)\s*\(/);
           if(nm){
             var parsedName=nm[1].trim();
-            var squad=PLAYERS[isOwn?(scoredForHome?game.b:game.a):(scoredForHome?game.a:game.b)]||[];
+            var _bt=_rev?(scoredForHome?game.b:game.a):(scoredForHome?game.a:game.b);
+            var squad=PLAYERS[isOwn?(_bt===game.a?game.b:game.a):_bt]||[];
             for(var pi=0;pi<squad.length;pi++){
               var pNames=parsedName.split(' '),pFirst=pNames[0].toUpperCase(),pLast=pNames.pop().toUpperCase();
               var sNames=squad[pi].name.split(' '),sFirst=sNames[0].toUpperCase(),sLast=sNames.pop().toUpperCase();
@@ -2330,7 +2338,7 @@ function processTimeline(idMatch,gameId){
         var min=e.MatchMinute?(e.MatchMinute.replace(/'/g,'')):(''+idx);
         // Assistência: validar que é do mesmo time do gol
         var aNum=null,aName=null;
-        var _gt=scoredForHome?game.a:game.b,_pt=isOwn?(_gt===game.a?game.b:game.a):_gt;
+        var _gt=_rev?(scoredForHome?game.b:game.a):(scoredForHome?game.a:game.b),_pt=isOwn?(_gt===game.a?game.b:game.a):_gt;
         if(e.AssistPlayerId){
           var ai=FIFA_PLAYER_MAP[e.AssistPlayerId];
           if(ai&&(!ai.team||ai.team===_pt)){aNum=ai.num;aName=ai.pname;}
@@ -2395,7 +2403,10 @@ function processTimeline(idMatch,gameId){
         seenCardEvents[e.EventId]=true;
         var ci=FIFA_PLAYER_MAP[e.IdPlayer];
         if(!ci)return;
-        var ct=(meta.homeId&&e.IdTeam===meta.homeId)?'a':'b';
+        var _cHome=_rev?meta.awayId:meta.homeId;
+        var _eCId=parseInt(e.IdTeam,10);
+        var _cHomeNum=parseInt(_cHome,10);
+        var ct=(_cHomeNum&&_eCId&&_eCId===_cHomeNum)?'a':'b';
         var ctyp=e.Type===2?'yellow':'red';
         var cmin=e.MatchMinute?(e.MatchMinute.replace(/'/g,'')):'' ;
         var ckey=gameId+'_c_'+e.EventId;
@@ -3017,7 +3028,7 @@ function bolaoRenderDetail(pid){
     var pickStr=hasPick?(pick.a+'x'+pick.b):'?x?',realStr=hasReal?(real.a+'x'+real.b):'';
     var ptsStr=forfeit?'<span style="color:var(--red);font-weight:600">PERDEU</span> <span style="text-decoration:line-through;opacity:.4">'+forfeitPts+' pts</span>'
       :wrongTeams?'<span style="color:var(--red);font-weight:600">TIME DIFERENTE</span> <span style="font-size:11px;opacity:.7">(0 pts)</span>'
-      :(pts>=0&&isFinal)?(pts+(bonus?'+'+bonus:''))+' pts':'';
+      :(pts>=0&&isFinal)?(pts+(bonus?'+'+bonus:''))+' pts':(pts>=0)?'<span style="opacity:.5;font-style:italic">'+(pts+(bonus?'+'+bonus:''))+' pts</span>':'';
     if(!hasReal)pickStr='<span style="filter:blur(3px)">'+pickStr+'</span>';
     var card='<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">'+flag(g.a)+' '+esc(g.a)+' vs '+flag(g.b)+' '+esc(g.b)+'</div><div><span class="bolao-pick-score">Palpite: '+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">\u2192 '+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>';
     if(hasReal){scored.push(card)}else{future.push(card)}
@@ -3104,7 +3115,12 @@ function bolaoRenderPicksGrid(){
       var col=pts===10?'var(--gold)':pts>=2?'#4ade80':'var(--red)';
       var trophy=pts===10?' \ud83c\udfc6':'';
       ptsHtml='<span class="bsp-pts" style="color:'+col+'">'+(pts>=0?'+':'')+pts+(bonus?'+'+bonus:'')+' pts'+trophy+'</span>';
+   }else if(isLocked&&hasReal&&hasPick&&!gameIsPast(g)){
+      var pts=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);
+      var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
+      ptsHtml='<span class="bsp-pts" style="color:var(--muted);font-style:italic">'+(pts>=0?'+':'')+pts+(bonus?'+'+bonus:'')+' pts</span>';
     }
+    
     // Bloco de empate KO
     var koHtml=_bolaoKOHtml(g,pick,inputLocked);
     // Card
