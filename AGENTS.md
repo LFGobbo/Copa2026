@@ -1,9 +1,15 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-06-20 (v19.37)
+**Última atualização:** 2026-06-27 (v20.1 — Bracket fix + protocolo de engenharia)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
+
+---
+
+> ⚠️ **LEIA PRIMEIRO — Seção 19**
+> Antes de qualquer alteração de código, leia a **Seção 19 — Protocolo Obrigatório de Desenvolvimento**.
+> Ela tem prioridade sobre todas as demais seções deste documento.
 
 ---
 
@@ -611,6 +617,21 @@ Toda melhoria deve:
 
 ## 13. Version History
 
+### v20.1 (2026-06-27) - Bracket visual reescrito + correção crítica de dados J98/J99
+
+- **Bracket SVG reescrito (`renderBracketTree`)**: layout simétrico de dois lados (esq→J101, dir→J102) com Final central, idêntico ao bracket oficial FIFA 2026. Conectores ortogonais (horizontal→vertical→horizontal) eliminam cruzamento de linhas. Cores por fase: verde (R32), azul (Oitavas), laranja (Quartas), vermelho (SF), dourado (Final), roxo (3º Lugar). SVG com largura fixa + overflow-x:auto para scroll horizontal no mobile
+- **Bug crítico corrigido — J98 e J99 estavam com conexões trocadas**: J98 apontava para W(J91)×W(J92) e J99 para W(J93)×W(J94). O correto conforme bracket oficial é J98=W(J93)×W(J94) e J99=W(J91)×W(J92). Com o bug, Brasil (J76→J91→J98→J101) e Alemanha (J74→J89→J97→J101) se encontravam na Semifinal em vez da Final — contradizendo o chaveamento oficial
+- **Distribuição correta dos quadrantes**:
+  - Esquerdo (→J101): J74,J77,J73,J75 (top) + J83,J84,J81,J82 (bot) → J89,J90,J93,J94 → J97,J98
+  - Direito (→J102): J76,J78,J79,J80 (top) + J86,J88,J85,J87 (bot) → J91,J92,J95,J96 → J99,J100
+- **Sync copa2026.html**: ambos os arquivos atualizados (dados + visualização)
+
+### v20.0 (2026-06-27) - Protocolo Obrigatório de Desenvolvimento (seção 19)
+
+- **AGENTS.md v20.0**: adicionada seção 19 — Protocolo Obrigatório de Desenvolvimento com 11 subseções: engenharia antes de programação, fluxo de 6 etapas para bugs (reprodução→auditoria→hipótese→correção→testes→validação visual), interface como fonte da verdade, evidências obrigatórias, critério de encerramento com checklist, proibição de declarar sucesso sem comprovação, alterações mínimas, proibição de tentativa e erro, auditoria pós-correção, sincronização index.html/copa2026.html, checklist mental de 8 perguntas
+- **Regra de Ouro (seção 15) reescrita**: versão mais forte — proíbe teorizar ou declarar sucesso sem evidências objetivas
+- **Callout no topo do arquivo**: aviso "LEIA PRIMEIRO — Seção 19" logo abaixo do cabeçalho, garante que o protocolo seja lido antes de qualquer documentação técnica
+
 ### v19.37 (2026-06-20) - Fix login bloqueado: inputs não eram mais desabilitados após prazo
 
 - **Login bloqueado corrigido**: `bolaoInit()` desabilitava os inputs de nome/senha quando o prazo de inscrição passava (`if(!_bolaoParticipantId) ... disabled=true`), impedindo que participantes existentes logassem. Removida a linha — o cadastro já está bloqueado em 3 camadas independentes (botão disabled, `bolaoRegister()` early return, Worker 403), então não há motivo para desabilitar os campos de login
@@ -986,7 +1007,7 @@ _bAdm('BolaoAdmin2026!', 'Nome do Participante')
 
 ## 15. Regra de Ouro (Debug)
 
-**Nunca teorize sobre bugs — teste com dados reais primeiro.**
+**É proibido teorizar sobre bugs ou declarar sucesso sem validação. Toda hipótese deve ser comprovada com evidências, toda correção deve ser validada por testes e, quando houver interface, pela própria interface. A aplicação funcionando corretamente sempre prevalece sobre logs, testes automatizados ou conclusões teóricas.**
 
 Antes de propor qualquer solução para um bug de lógica JS:
 1. Extrair as funções afetadas do `index.html`
@@ -1140,4 +1161,204 @@ powershell
 | `PLAYERS` | 1248 jogadores carregados de players.json |
 | `PLAYER_PHOTOS` | URLs de fotos carregadas de photos.json |
 | `REFEREES` | Cache de árbitros (Wikipedia) |
+
+---
+
+## 19. Protocolo Obrigatório de Desenvolvimento
+
+**Esta seção tem prioridade sobre todas as demais. Em caso de conflito, ela prevalece.**
+
+---
+
+### 19.1 Engenharia antes de programação
+
+Este projeto **não permite programação baseada em hipóteses**.
+
+Antes de alterar qualquer linha de código é obrigatório compreender exatamente onde está a origem do problema. Nunca alterar lógica apenas porque ela "parece" ser a responsável.
+
+---
+
+### 19.2 Fluxo obrigatório para qualquer bug
+
+Toda correção deve seguir exatamente esta sequência. Pular etapas é proibido.
+
+**Etapa 1 — Reprodução**
+
+Reproduzir o problema antes de qualquer outra ação. Informar:
+- como reproduzir
+- onde ocorre (função, linha, componente)
+- frequência (sempre, às vezes, condição específica)
+- impacto (visual, dados, funcionalidade)
+
+Se não conseguir reproduzir, não alterar código.
+
+**Etapa 2 — Auditoria da cadeia completa**
+
+Percorrer toda a cadeia relevante. Nunca assumir onde está o bug.
+
+```
+API FIFA / Supabase / Worker
+↓
+Parser / mergeScores / processTimeline
+↓
+Estado runtime (scores / goals / cards)
+↓
+Cache / persistência (IndexedDB / localStorage)
+↓
+Função de renderização (renderGames / renderGroups / renderBracket)
+↓
+HTML gerado (dynRender)
+↓
+Interface visual no navegador
+```
+
+Comparar em cada etapa: entrada recebida · saída produzida · saída esperada.
+
+Somente após percorrer toda a cadeia identificar a causa raiz.
+
+**Etapa 3 — Hipótese**
+
+Após encontrar a possível causa:
+- explicar por que ela é a causa (não apenas onde está)
+- antes de alterar código, tentar provar que a hipótese está **errada**
+- somente após resistir às tentativas de refutação, utilizar a hipótese
+
+Quando existir mais de uma hipótese plausível, não escolher a primeira. Coletar evidências suficientes para eliminar as demais antes de modificar qualquer código.
+
+**Etapa 4 — Correção**
+
+Alterar apenas o mínimo necessário. É proibido:
+- refatorar código não relacionado ao bug
+- alterar arquitetura sem necessidade
+- modificar regras de negócio sem necessidade
+- criar hardcode ou valores mágicos
+- criar exceções específicas que mascaram o problema real
+
+**Etapa 5 — Testes**
+
+Toda alteração deve ser testada. Obrigatórios:
+- caso original (o bug reportado)
+- casos semelhantes (mesma lógica, dados diferentes)
+- casos extremos (edge cases)
+- regressão (funcionalidades que poderiam ser afetadas)
+- funcionalidades relacionadas (ex: alterar bracket → testar grupos e artilharia)
+
+**Etapa 6 — Validação visual**
+
+Quando existir interface, os testes internos **não são suficientes**. A validação obrigatória é a interface renderizada no navegador.
+
+Se existir divergência entre API, estruturas internas e interface, **a interface prevalece**.
+
+---
+
+### 19.3 Interface é a fonte da verdade
+
+Em caso de conflito entre qualquer das seguintes fontes:
+- logs do console
+- objetos JavaScript em memória
+- testes automatizados (Node.js)
+- comportamento visual na interface
+
+**A interface visual sempre prevalece.** Se a interface estiver incorreta, o problema continua existindo — independentemente do que os logs ou testes afirmem.
+
+Um bug não está resolvido enquanto a interface não estiver correta.
+
+---
+
+### 19.4 Evidências obrigatórias
+
+É proibido responder apenas:
+- "corrigido"
+- "problema resolvido"
+- "zero divergências"
+- "funcionando"
+
+Toda conclusão deve apresentar evidências objetivas. Formatos aceitos:
+- comparação API × interface (valores lado a lado)
+- HTML gerado pela função (antes e depois)
+- objeto JavaScript antes/depois da correção
+- resultado dos testes com output real
+- captura ou descrição precisa do comportamento da interface
+
+---
+
+### 19.5 Critério de encerramento
+
+Uma tarefa somente pode ser encerrada quando **todos** os itens abaixo forem verdadeiros:
+
+- [ ] problema reproduzido
+- [ ] causa raiz identificada (não apenas localizada)
+- [ ] hipótese validada com evidências
+- [ ] correção aplicada com alterações mínimas
+- [ ] testes executados (caso original + semelhantes + extremos)
+- [ ] regressão verificada
+- [ ] interface validada visualmente no navegador
+- [ ] `index.html` e `copa2026.html` continuam sincronizados
+- [ ] usuário aprovou
+
+Se qualquer item for falso, a tarefa permanece aberta.
+
+---
+
+### 19.6 Não declarar sucesso sem comprovação
+
+É proibido afirmar que algo está resolvido sem apresentar evidências objetivas conforme seção 19.4.
+
+É proibido considerar um bug resolvido apenas porque:
+- não há erros no console
+- o código compila
+- os testes passaram
+- a lógica parece correta teoricamente
+
+O único critério definitivo é o **comportamento correto da aplicação na interface**.
+
+---
+
+### 19.7 Alterações mínimas
+
+Toda alteração deve seguir o princípio do menor impacto possível. Evitar:
+- refatorações não relacionadas ao problema
+- alterações em múltiplas funções quando uma basta
+- mudanças estruturais sem necessidade
+- otimizações não solicitadas
+
+---
+
+### 19.8 Nunca programar por tentativa e erro
+
+É proibido modificar lógica sucessivamente esperando que alguma alteração resolva o problema. Cada alteração deve ter justificativa técnica baseada em evidências coletadas nas etapas anteriores.
+
+---
+
+### 19.9 Auditoria pós-correção
+
+Após qualquer correção, informar obrigatoriamente:
+- arquivos alterados e motivo de cada alteração
+- funções alteradas
+- riscos introduzidos
+- regressões verificadas
+- como validar que o problema foi resolvido
+
+---
+
+### 19.10 Sincronização obrigatória
+
+Sempre que houver alteração em `index.html`, verificar e sincronizar `copa2026.html` imediatamente na mesma sessão. Ambos devem permanecer funcionalmente idênticos.
+
+---
+
+### 19.11 Checklist mental antes de escrever código
+
+Antes de implementar qualquer correção, responder internamente:
+
+1. Consigo reproduzir o problema?
+2. Sei exatamente onde ocorre na cadeia?
+3. Tenho evidências que provam a causa raiz?
+4. Minha hipótese pode estar errada?
+5. Como posso tentar provar que ela está errada?
+6. Qual é a menor alteração possível?
+7. O que essa alteração pode quebrar?
+8. Como vou provar que realmente resolveu?
+
+Se qualquer resposta for "não" ou "não sei", continuar investigando antes de modificar o código.
 
