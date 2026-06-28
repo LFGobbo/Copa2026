@@ -668,6 +668,11 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .reopen-badge-saved{background:rgba(74,222,128,.18);color:#4ade80}
 .reopen-badge-editing{background:rgba(255,193,7,.12);color:#ffc107}
 .reopen-teams{font-size:13px;font-weight:600;color:var(--text);min-height:18px;line-height:1.3}
+.reopen-ko-row{margin-top:6px}
+.reopen-ko-label{font-size:11px;color:var(--muted);margin-bottom:4px;text-align:center}
+.reopen-ko-btns{display:flex;gap:6px}
+.reopen-ko-btn{flex:1;padding:5px 4px;font-size:11px;border:1px solid rgba(255,255,255,.2);border-radius:6px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);cursor:pointer;transition:all .15s}
+.reopen-ko-btn.reopen-ko-sel{border-color:var(--gold);background:rgba(212,175,55,.15);color:var(--gold);font-weight:600}
 .reopen-orig-block{display:flex;align-items:center;justify-content:space-between;gap:6px;background:rgba(255,255,255,.05);border-radius:6px;padding:5px 8px;margin:4px 0 2px}.reopen-orig-team{font-size:11px;color:rgba(255,255,255,.7);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.reopen-orig-team.right{text-align:right}.reopen-orig-score{font-size:13px;font-weight:700;color:var(--gold);white-space:nowrap;padding:0 4px}.reopen-orig-label{font-size:10px;color:var(--muted);text-align:center;margin-bottom:1px}.reopen-orig-score-none{font-size:11px;color:var(--muted);font-style:italic}
 .reopen-info{font-size:11px;color:rgba(255,180,0,.75);padding:5px 8px;background:rgba(255,140,0,.06);border-left:2px solid rgba(255,140,0,.3);border-radius:0 5px 5px 0;line-height:1.4;margin:3px 0}
 .reopen-info-gold{font-size:11px;color:rgba(255,215,0,.85);padding:5px 8px;background:rgba(255,223,0,.05);border-left:2px solid rgba(255,223,0,.3);border-radius:0 5px 5px 0;line-height:1.4;margin:3px 0}
@@ -4021,11 +4026,17 @@ function bolaoRenderReopenSection(){
           +origHtml
           +'<div class="reopen-info">ℹ️ Errou o confronto — preencha o placar para pontuar (10/6/4/2)</div>'
           +'<div class="reopen-score-row">'
-          +'<input class="bsp-input" type="text" inputmode="numeric" maxlength="2" id="rp-a-'+gn+'" placeholder="-">'
+          +'<input class="bsp-input" type="text" inputmode="numeric" maxlength="2" id="rp-a-'+gn+'" placeholder="-" oninput="bolaoReopenCheckDraw('+gn+')">'
           +'<span style="color:var(--muted);font-size:18px;font-weight:300">×</span>'
-          +'<input class="bsp-input" type="text" inputmode="numeric" maxlength="2" id="rp-b-'+gn+'" placeholder="-">'
+          +'<input class="bsp-input" type="text" inputmode="numeric" maxlength="2" id="rp-b-'+gn+'" placeholder="-" oninput="bolaoReopenCheckDraw('+gn+')">'
           +'<button class="reopen-save-btn" onclick="bolaoSaveReopenPick('+gn+')">Salvar</button>'
           +'</div>'
+          +'<div class="reopen-ko-row" id="reopen-ko-'+gn+'" style="display:none">'
+          +'<div class="reopen-ko-label">Empate — quem avança?</div>'
+          +'<div class="reopen-ko-btns">'
+          +'<button class="reopen-ko-btn" data-side="a" onclick="bolaoReopenKOPick('+gn+',\'a\')">'+flag(rA)+' '+esc(rA)+'</button>'
+          +'<button class="reopen-ko-btn" data-side="b" onclick="bolaoReopenKOPick('+gn+',\'b\')">'+flag(rB)+' '+esc(rB)+'</button>'
+          +'</div></div>'
           +'</div>';
       }
     });
@@ -4069,13 +4080,42 @@ function bolaoReopenUnlock(gn){
     +origHtml
     +'<div class="reopen-info">⚠️ Ao salvar — tabela reduzida (10/6/4/2), sem bônus de fase</div>'
     +'<div class="reopen-score-row">'
-    +'<input class="bsp-input" type="text" inputmode="numeric" maxlength="2" id="rp-a-'+gn+'" value="'+valA+'" placeholder="-">'
+    +'<input class="bsp-input" type="text" inputmode="numeric" maxlength="2" id="rp-a-'+gn+'" value="'+valA+'" placeholder="-" oninput="bolaoReopenCheckDraw('+gn+')">'
     +'<span style="color:var(--muted);font-size:18px;font-weight:300">×</span>'
-    +'<input class="bsp-input" type="text" inputmode="numeric" maxlength="2" id="rp-b-'+gn+'" value="'+valB+'" placeholder="-">'
+    +'<input class="bsp-input" type="text" inputmode="numeric" maxlength="2" id="rp-b-'+gn+'" value="'+valB+'" placeholder="-" oninput="bolaoReopenCheckDraw('+gn+')">'
     +'<button class="reopen-save-btn" onclick="bolaoSaveReopenPick('+gn+')">Salvar</button>'
     +'</div>'
+    +'<div class="reopen-ko-row" id="reopen-ko-'+gn+'" style="display:none">'
+    +'<div class="reopen-ko-label">Empate — quem avança?</div>'
+    +'<div class="reopen-ko-btns">'
+    +'<button class="reopen-ko-btn" data-side="a" onclick="bolaoReopenKOPick('+gn+',\'a\')">'+flag(rA)+' '+rA+'</button>'
+    +'<button class="reopen-ko-btn" data-side="b" onclick="bolaoReopenKOPick('+gn+',\'b\')">'+flag(rB)+' '+rB+'</button>'
+    +'</div></div>'
     +'<button class="reopen-cancel-btn" onclick="bolaoRenderReopenSection()">✕ Cancelar</button>';
   var inp=document.getElementById('rp-a-'+gn);if(inp)inp.focus();
+}
+function bolaoReopenCheckDraw(gn){
+  var inA=document.getElementById('rp-a-'+gn),inB=document.getElementById('rp-b-'+gn);
+  var row=document.getElementById('reopen-ko-'+gn);
+  if(!inA||!inB||!row)return;
+  var a=parseInt(inA.value,10),b=parseInt(inB.value,10);
+  row.style.display=(a===b&&!isNaN(a)&&!isNaN(b))?'block':'none';
+}
+function bolaoReopenKOPick(gn,side){
+  if(!_bolaoMyPicksReopen)_bolaoMyPicksReopen={};
+  if(!_bolaoMyPicksReopen[gn])_bolaoMyPicksReopen[gn]={a:null,b:null,ko:null};
+  _bolaoMyPicksReopen[gn].ko=(_bolaoMyPicksReopen[gn].ko===side)?null:side;
+  // Atualiza botões visualmente sem re-render completo
+  var card=document.getElementById('reopen-card-'+gn);
+  if(!card)return;
+  var g=GAMES.find(function(x){return x.n===gn;});if(!g)return;
+  var rtA=resolveTeam(g.a,g.n),rtB=resolveTeam(g.b,g.n);
+  var rA=rtA&&rtA.name?rtA.name:g.a,rB=rtB&&rtB.name?rtB.name:g.b;
+  var sel=_bolaoMyPicksReopen[gn].ko;
+  var btnA=card.querySelector('.reopen-ko-btn[data-side="a"]');
+  var btnB=card.querySelector('.reopen-ko-btn[data-side="b"]');
+  if(btnA){btnA.className='reopen-ko-btn'+(sel==='a'?' reopen-ko-sel':'');btnA.textContent=(sel==='a'?'✔ ':'')+flag(rA)+' '+rA;}
+  if(btnB){btnB.className='reopen-ko-btn'+(sel==='b'?' reopen-ko-sel':'');btnB.textContent=(sel==='b'?'✔ ':'')+flag(rB)+' '+rB;}
 }
 function bolaoSaveReopenPick(gn){
   var inA=document.getElementById('rp-a-'+gn);
@@ -4083,12 +4123,15 @@ function bolaoSaveReopenPick(gn){
   if(!inA||!inB)return;
   var a=parseInt(inA.value,10),b=parseInt(inB.value,10);
   if(isNaN(a)||isNaN(b)||a<0||b<0){alert('Palpite inválido');return;}
+  var ko=(_bolaoMyPicksReopen&&_bolaoMyPicksReopen[gn])?_bolaoMyPicksReopen[gn].ko:null;
+  if(a===b&&!ko){alert('Empate — escolha quem avança (pênaltis/prorrogação)');return;}
+  if(a!==b)ko=null; // vitória direta: limpa ko_pick
   var btn=inA.closest('.reopen-card')?inA.closest('.reopen-card').querySelector('.reopen-save-btn'):null;
   if(btn){btn.disabled=true;btn.textContent='Salvando...';}
-  _bolaoFetch('/picks-reopen','POST',{game_n:gn,score_a:a,score_b:b})
+  _bolaoFetch('/picks-reopen','POST',{game_n:gn,score_a:a,score_b:b,ko_pick:ko||null})
     .then(function(){
       if(!_bolaoMyPicksReopen)_bolaoMyPicksReopen={};
-      _bolaoMyPicksReopen[gn]={a:a,b:b};
+      _bolaoMyPicksReopen[gn]={a:a,b:b,ko:ko};
       bolaoRenderReopenSection();
     })
     .catch(function(e){
