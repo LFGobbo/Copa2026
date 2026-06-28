@@ -461,6 +461,86 @@ _bAdm('BolaoAdmin2026!', 'Nome')  — console do DevTools
 
 ---
 
+
+### 7.8 Reabertura do Mata-Mata (Bolão KO Reopen)
+
+Implementada nas sessões de 2026-06-27/28. Permite que participantes editem palpites do mata-mata após saber os confrontos reais.
+
+#### Tabelas novas no Supabase
+
+| Tabela | Colunas | Função |
+|---|---|---|
+| `picks_reopen` | `id, participant_id (fk), game_n (int), score_a (int), score_b (int), created_at` | Palpites reeditados no mata-mata |
+| `phase_reopen` | `id, phase (text unique), open (bool), deadline (timestamptz), game_ns (int[])` | Controle admin de quais fases estão abertas |
+
+> ⚠️ `picks` é IMUTÁVEL (palpites originais). `picks_reopen` guarda os palpites novos da reabertura.
+
+#### Fases KO e seus jogos
+
+```javascript
+KO_PHASE_GAMES = {
+  r32:   [73..88],   // Rodada de 32 (16 jogos)
+  r16:   [89..96],   // Oitavas de Final (8 jogos)
+  qf:    [97..100],  // Quartas de Final (4 jogos)
+  sf:    [101..102], // Semifinal (2 jogos)
+  '3rd': [103],      // Terceiro Lugar (1 jogo)
+  final: [104],      // Final (1 jogo)
+}
+```
+
+#### Auto-abertura via Worker (Cron)
+
+```javascript
+PHASE_THRESHOLD = { r32: 72, r16: 88, qf: 96, sf: 100, '3rd': 102, final: 103 }
+// Quando completed >= threshold → abre a próxima fase via upsert em phase_reopen
+```
+
+#### Endpoints do Worker
+
+| Método | Rota | Função |
+|---|---|---|
+| `GET` | `/reopen-status` | Retorna fases abertas + deadlines (público) |
+| `POST` | `/picks-reopen` | Salva palpite da reabertura (requer JWT) |
+| `POST` | `/admin/reopen` | Abre fase manualmente (admin key) |
+
+#### Pontuação da Reabertura
+
+| Situação | Tabela |
+|---|---|
+| Acertou confronto e não editou | Tabela cheia: 15/9/6/3 + bônus de fase |
+| Acertou confronto mas editou | Tabela reduzida: 10/6/4/2 |
+| Errou confronto | Tabela reduzida: 10/6/4/2 |
+
+#### Posição dos elementos no HTML
+
+```
+<div id="bolao-reopen-banner">          ← FORA do bolao-logged-area (visível sem login)
+<div id="bolao-logged-area">
+  ...palpites...
+  <div id="bolao-confirm-area">
+  <div id="bolao-reopen-section">       ← DENTRO, APÓS palpites
+```
+
+#### Estados dos cards em `bolaoRenderReopenSection()`
+
+- **🔒 Acertou confronto / não editou**: borda verde, bônus garantido, "Editar mesmo assim" + aviso de redução
+- **🔓 Errou confronto**: borda azul, inputs abertos, botão Salvar
+- **✓ Salvo**: borda verde forte, placar em destaque, "Alterar palpite"
+
+#### Fonte do palpite original nos cards
+
+`_bolaoMyPicks[gn]` (vem de `/mypicks`, sem filtro de maxGame) como primária.
+`_bolaoAllPicks[pid][gn]` como fallback — o ranking filtra por `game_n <= maxGame` (só jogos iniciados), então picks de jogos futuros não voltam no ranking.
+
+#### Fluxo de carregamento pós-login (performance)
+
+```javascript
+// PARALELO — reduz tempo pela metade:
+await Promise.all([bolaoLoadMyData().catch(e=>{}), bolaoLoadRanking().catch(e=>{})]);
+bolaoRenderPicksGrid(); bolaoLoadMajority(); bolaoPopulateSpecials();
+if(Object.keys(_bolaoOpenPhases||{}).length) bolaoRenderReopenSection();
+```
+
 ## 8. Service Worker (sw.js)
 
 **Cache name:** `copa2026-v21`
@@ -616,6 +696,30 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v20.5 (2026-06-28) - Fix palpite original + perf login + docs
+
+- **Palpite original nos cards**: corrigida fonte de dados — `_bolaoMyPicks[gn]` (do `/mypicks`, sem filtro) em vez de `_bolaoAllPicks[pid][gn]` (filtrado por maxGame, não tem jogos futuros). Resolvia "Palpite original: —" em todos os cards
+- **Promise.all no login**: `bolaoLoadMyData` e `bolaoLoadRanking` em paralelo — tempo de carregamento pós-login reduzido ~50%
+- **SW_UPDATED corrigido**: listener do Service Worker tinha string duplicada `'SW_UPDATE'SW_UPDATED'` — corrigido
+- **AGENTS.md**: seções 7.8 (reabertura mata-mata), 19.12 (edição segura de arquivos grandes) e version history adicionados
+
+### v20.4 (2026-06-28) - Reabertura Mata-Mata: cards + banner + popup + countdown
+
+- **Banner externo ao logged-area**: `#bolao-reopen-banner` movido para FORA do `#bolao-logged-area` — aparece sem login
+- **Hardcoded R32 fallback**: `bolaoUpdateReopenBanner()` com `_r32OpenFrom=2026-06-28T04:10Z` e `_r32Deadline=2026-06-28T18:55Z`
+- **Popup sessionStorage**: `bolaoShowReopenPopup(phase)` — uma vez por aba, volta ao recarregar
+- **Cards da reabertura** (`bolaoRenderReopenSection`): três estados (🔒/🔓/✓), palpite original em todos, bônus correto, cancelar ao editar locked
+- **Times reais no countdown**: `resolveTeam(g.a, g.n)` com try/catch — mostra nomes reais em vez de "2° Grupo A"
+- **Todos os jogos R32 no countdown**: janela alargada para 7 dias
+- **`bolao-reopen-section` dentro do logged-area**: posicionado após `#bolao-confirm-area`
+
+### v20.3 (2026-06-27) - Worker: endpoints reabertura + auto-abertura cron + pontuação KO
+
+- **Worker endpoints**: `GET /reopen-status`, `POST /picks-reopen`, `POST /admin/reopen`
+- **Auto-abertura cron**: `completed >= PHASE_THRESHOLD[phase]` → upsert em `phase_reopen`
+- **Tabelas SQL**: `picks_reopen` e `phase_reopen` criadas no Supabase
+- **Pontuação KO**: Tabela cheia (15/9/6/3) para acertou+não editou; Tabela reduzida (10/6/4/2) para editou ou errou
 
 ### v20.1 (2026-06-27) - Bracket visual reescrito + correção crítica de dados J98/J99
 
@@ -1361,4 +1465,57 @@ Antes de implementar qualquer correção, responder internamente:
 8. Como vou provar que realmente resolveu?
 
 Se qualquer resposta for "não" ou "não sei", continuar investigando antes de modificar o código.
+
+---
+
+### 19.12 Edição segura de arquivos grandes (index.html)
+
+O arquivo `index.html` tem ~435KB. O **Edit tool** e `open(path,'w').write(c)` do Python **truncam o arquivo** ao reescrever inteiro em mounts de rede (`/sessions/`). Isso já causou perda de código em múltiplas sessões neste projeto.
+
+**Regra obrigatória: nunca usar Edit tool nem `f.write(c)` direto no `index.html`.**
+
+#### Padrão seguro — Python com move atômico
+
+```python
+with open('index.html', 'r', encoding='utf-8') as f:
+    c = f.read()
+c = c.replace(old, new, 1)
+with open('/tmp/index_new.html', 'w', encoding='utf-8') as f:
+    f.write(c)
+import shutil
+shutil.move('/tmp/index_new.html', 'index.html')
+# Verificar sempre:
+v = open('index.html', encoding='utf-8').read()
+assert v.strip().endswith('</html>'), "TRUNCADO!"
+```
+
+`shutil.move` é atômico — ou funciona completamente ou falha, nunca trunca pela metade.
+
+#### Alternativa — sed in-place (substituições simples de uma linha)
+
+```bash
+sed -i "s|texto antigo|texto novo|g" index.html
+```
+
+`sed -i` modifica in-place sem reescrever o arquivo inteiro. Nunca trunca.
+
+#### Recuperação quando truncado
+
+```bash
+git show HEAD:index.html > /tmp/index_clean.html
+cp /tmp/index_clean.html index.html
+# Reaplicar patches via Python+move ou sed
+```
+
+#### Verificação obrigatória após qualquer edição
+
+```python
+c = open('index.html', encoding='utf-8').read()
+assert c.strip().endswith('</html>'), "TRUNCADO!"
+import re, subprocess
+scripts = re.findall(r'<script>(.*?)</script>', c, re.DOTALL)
+open('/tmp/check.js','w').write('\n'.join(scripts))
+assert subprocess.run(['node','--check','/tmp/check.js']).returncode == 0, "JS INVÁLIDO!"
+```
+
 
