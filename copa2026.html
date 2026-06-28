@@ -3832,8 +3832,7 @@ function _bolaoPhaseLabel(ph){
   return map[ph]||ph;
 }
 function bolaoShowReopenPopup(phaseName){
-  var _sk='bolao-reopen-shown-'+phaseName+'-'+new Date().toDateString();
-  try{if(sessionStorage.getItem(_sk))return;sessionStorage.setItem(_sk,'1');}catch(e){}
+  if(window._bolaoPopupShown)return;window._bolaoPopupShown=true;
   var label=_bolaoPhaseLabel(phaseName);
   var overlay=document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
@@ -3939,9 +3938,9 @@ function bolaoUpdateReopenBanner(){
 
   // Fallback hardcoded: duas fases
   // Jogos 71+72 (últimos da fase de grupos): 27/Jun 23:00 CDT = 28/Jun 04:00 UTC ? terminam ~06:00 UTC
-  // Jogo 73 (1º R32): 29/Jun 16:00 BRT = 19:00 UTC ? deadline 18:55 UTC (5min antes)
+  // Jogo 73 (1º R32): 28/Jun 16:00 BRT = 19:00 UTC ? deadline 18:55 UTC (5min antes)
   var _r32OpenFrom=new Date('2026-06-28T04:10:00Z');   // após fim dos jogos 71+72 (04:00 UTC + 90+acréscimos ? ~06:00 UTC)
-  var _r32Deadline=new Date('2026-06-29T18:55:00Z');   // 5min antes do jogo 73 (29/06 16:00 BRT = 19:00 UTC)
+  var _r32Deadline=new Date('2026-06-28T18:55:00Z');   // 5min antes do jogo 73 (28/06 16:00 BRT = 19:00 UTC)
   var _r32AnnounceFrom=new Date('2026-06-27T00:00:00-03:00');
   var _nowMs=Date.now();
   if(_nowMs>=_r32AnnounceFrom.getTime()&&_nowMs<_r32Deadline.getTime()){
@@ -4646,7 +4645,7 @@ function bolaoShowParcialR32(){
   console.log('');
   ids.forEach(function(id){
     var name=_bolaoParticipants[id]||'?';
-    var picks=_bolaoAllPicks[id]||{};
+    var picks=(id===_bolaoParticipantId?_bolaoMyPicks:_bolaoAllPicks[id])||{};
     var reopens=_bolaoAllPicksReopen[id]||{};
     var editou=[],manteve=[],errou=[];
     r32games.forEach(function(gn){
