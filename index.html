@@ -3853,7 +3853,7 @@ function bolaoUpdateReopenBanner(){
         _bolaoOpenPhases={};_bolaoClosedPhases={};
         (d.phases||[]).forEach(function(p){
           if(p.open)_bolaoOpenPhases[p.phase_name]={deadline:p.deadline,game_ns:p.game_ns};
-          else if(p.open_at)_bolaoClosedPhases[p.phase_name]={open_at:p.open_at};
+          else if(p.opened_at)_bolaoClosedPhases[p.phase_name]={open_at:p.opened_at};
         });
         bolaoUpdateReopenBanner();bolaoRenderReopenSection();
         Object.keys(_bolaoOpenPhases).forEach(function(ph){bolaoShowReopenPopup(ph);});
@@ -3862,6 +3862,24 @@ function bolaoUpdateReopenBanner(){
     return;
   }
 
+  // Fallback hardcoded: anúncio R32 mesmo sem dados do banco
+  // Jogo 73 (1º R32): 28/Jun 16:00 PDT = 23:00 UTC. Deadline = 22:55 UTC (5min antes)
+  var _r32Deadline=new Date('2026-06-28T22:55:00Z');
+  var _r32AnnounceFrom=new Date('2026-06-27T00:00:00-03:00');
+  var _nowMs=Date.now();
+  if(_nowMs>=_r32AnnounceFrom.getTime()&&_nowMs<_r32Deadline.getTime()){
+    banner.style.display='block';
+    inner.style.background='linear-gradient(135deg,rgba(80,80,200,.14),rgba(60,60,150,.08))';
+    inner.style.border='2px solid rgba(150,150,255,.35)';
+    if(iconEl)iconEl.textContent='⏳';
+    if(titleEl){titleEl.style.color='rgba(200,200,255,.95)';titleEl.textContent='Reabertura da Rodada de 32 está chegando!';}
+    if(subEl)subEl.textContent='Você poderá editar seus palpites do mata-mata em breve';
+    if(countLabel){countLabel.textContent='Abre em';countLabel.style.color='rgba(180,180,255,.55)';}
+    var _tillR32=_r32Deadline.getTime()-_nowMs;
+    if(countEl){countEl.style.color='rgba(200,200,255,.95)';countEl.textContent=_bolaoFmtCountdown(Math.max(0,_tillR32));}
+    if(_tillR32>0)setTimeout(bolaoUpdateReopenBanner,1000);
+    return;
+  }
   banner.style.display='none';
 }
 
@@ -3925,6 +3943,26 @@ function bolaoSaveReopenPick(gn){
     })
     .catch(function(e){alert('Erro ao salvar: '+e.message);});
 }
+// Função de teste — chame no console: bolaoTestReopen('r32') ou bolaoTestReopen('r32', true) para fase aberta
+function bolaoTestReopen(phase, isOpen){
+  phase=phase||'r32';
+  _bolaoOpenPhases={};_bolaoClosedPhases={};
+  if(isOpen){
+    var deadline=new Date(Date.now()+3*3600000).toISOString(); // fecha em 3h
+    _bolaoOpenPhases[phase]={deadline:deadline,game_ns:KO_PHASE_GAMES[phase]||[]};
+    bolaoUpdateReopenBanner();
+    bolaoRenderReopenSection();
+    // Força popup (ignora localStorage)
+    var key='bolao-reopen-popup-v2-'+phase;
+    try{localStorage.removeItem(key);}catch(e){}
+    bolaoShowReopenPopup(phase);
+  }else{
+    var openAt=new Date(Date.now()+2*3600000).toISOString(); // abre em 2h
+    _bolaoClosedPhases[phase]={open_at:openAt};
+    bolaoUpdateReopenBanner();
+  }
+  console.log('[TEST] Reabertura simulada: fase='+phase+' open='+(!!isOpen));
+}
 function bolaoInit(){
   bolaoLoadRanking();
   _initSpecialBanner();
@@ -3933,7 +3971,7 @@ function bolaoInit(){
     _bolaoOpenPhases={};_bolaoClosedPhases={};
     (d.phases||[]).forEach(function(p){
       if(p.open)_bolaoOpenPhases[p.phase_name]={deadline:p.deadline,game_ns:p.game_ns};
-      else if(p.open_at)_bolaoClosedPhases[p.phase_name]={open_at:p.open_at};
+      else if(p.opened_at)_bolaoClosedPhases[p.phase_name]={open_at:p.opened_at};
     });
     var hasOpen=Object.keys(_bolaoOpenPhases).length>0;
     var hasClosed=Object.keys(_bolaoClosedPhases).length>0;
