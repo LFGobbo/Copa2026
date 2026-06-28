@@ -3977,7 +3977,7 @@ function bolaoRenderReopenSection(){
       if(!rA||!rB)return;
       totalCount++;
       var myPicks=_bolaoAllPicks[_bolaoParticipantId]||{};
-      var origPick=myPicks[gn]||{};
+      var origPick=_bolaoMyPicks[gn]||myPicks[gn]||{};
       var ptA=_bolaoResolveTeam(g.a,g.n,myPicks);
       var ptB=_bolaoResolveTeam(g.b,g.n,myPicks);
       var acertou=!!(ptA&&ptB&&ptA===rA&&ptB===rB);
@@ -4044,7 +4044,7 @@ function bolaoReopenUnlock(gn){
   var rA=rtA&&rtA.name?rtA.name:g.a,rB=rtB&&rtB.name?rtB.name:g.b;
   var fl=flag(rA)+' '+rA+' vs '+flag(rB)+' '+rB;
   var myPicks=_bolaoAllPicks[_bolaoParticipantId]||{};
-  var origPick=myPicks[gn]||{};
+  var origPick=_bolaoMyPicks[gn]||myPicks[gn]||{};
   var origHtml='<div class="reopen-orig">Palpite original: '
     +(origPick.a!==undefined&&origPick.b!==undefined
       ?'<strong>'+origPick.a+' × '+origPick.b+'</strong>'
