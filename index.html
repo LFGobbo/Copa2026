@@ -3926,23 +3926,24 @@ function bolaoRenderEvolution(el){
   }
   var pts=_bolaoEvolution;
   var totalPlayers=Object.keys(_bolaoParticipants||{}).length||32;
-  // Dimensoes responsivas
-  var w=Math.min(600,el.clientWidth-32||400),h=Math.max(140,w*0.35),padL=32,padR=16,padT=20,padB=28;
-  var plotW=w-padL-padR,plotH=h-padT-padB;
-  // Eixos
-  var maxPos=totalPlayers,minPos=1;
-  var allRounds=pts.map(function(p){return p.round;});
-  var minRound=Math.min.apply(null,allRounds),maxRound=Math.max.apply(null,allRounds);
-  var rRange=maxRound-minRound||1;
-  var pRange=maxPos-minPos||1;
-  // Interpolacao
-  function px(r){return padL+(r-minRound)/rRange*plotW;}
-  function py(pos){return padT+(pos-minPos)/pRange*plotH;}
-  // Pontos da linha
-  var points=pts.map(function(p){return px(p.round).toFixed(1)+','+py(p.position).toFixed(1);}).join(' ');
-  // Area fill (gradiente)
-  var fillPts=points+' '+px(maxRound).toFixed(1)+','+py(maxPos).toFixed(1)+' '+px(minRound).toFixed(1)+','+py(maxPos).toFixed(1);
-  // Diferenca da ultima rodada
+
+  // Posição atual real (recalculada do ranking, não do snapshot)
+  var currentRank=0,currentPts=0;
+  if(_bolaoParticipantId&&Object.keys(_bolaoParticipants).length){
+    var rows=Object.keys(_bolaoParticipants).map(function(id){
+      var r=bolaoCalcTotal(id);return{id:id,total:r.total,exact:r.exactCount,result:r.resultCount,bonus:r.bonusCount};
+    }).sort(function(a,b){
+      if(b.total!==a.total)return b.total-a.total;
+      if(b.exact!==a.exact)return b.exact-a.exact;
+      if(b.result!==a.result)return b.result-a.result;
+      return b.bonus-a.bonus;
+    });
+    var myIdx=rows.findIndex(function(r){return r.id===_bolaoParticipantId;});
+    if(myIdx>=0){currentRank=myIdx+1;currentPts=rows[myIdx].total;}
+  }
+  if(!currentRank){currentRank=pts[pts.length-1].position;currentPts=pts[pts.length-1].points;}
+
+  // Última variação (do histórico de snapshots)
   var last=pts[pts.length-1];
   var diffTxt='';
   if(pts.length>1){
@@ -3950,47 +3951,85 @@ function bolaoRenderEvolution(el){
     var d2=prev.position-last.position;
     if(d2>0)diffTxt='<span style="color:#4ade80;font-weight:700">&#9650; +'+d2+'</span>';
     else if(d2<0)diffTxt='<span style="color:var(--red);font-weight:700">&#9660; '+Math.abs(d2)+'</span>';
-    else diffTxt='<span style="color:var(--muted)">&#8212; est\u00e1vel</span>';
+    else diffTxt='<span style="color:var(--muted)">&#8212; estável</span>';
   }
-  // SVG markup
-  var svg='<svg width="100%" height="'+h+'" viewBox="0 0 '+w+' '+h+'" style="display:block;max-width:100%">'
-    // Fundo do grafico
-    +'<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="rgba(17,17,46,.5)" rx="8"/>'
-    // Grade horizontal (5 linhas)
-    +function(){var g='';for(var i=0;i<=4;i++){var y=padT+i/4*plotH;var rank=Math.round(minPos+i/4*pRange);g+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(w-padR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(255,255,255,.06)" stroke-width="1"/>';g+='<text x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" fill="var(--muted)" font-size="9">'+rank+'&#176;</text>';}return g;}()
-    // Area fill
-    +'<polygon points="'+fillPts+'" fill="url(#evoGrad)" opacity=".35"/>'
-    // Definicoes gradiente
-    +'<defs><linearGradient id="evoGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--gold)"/><stop offset="100%" stop-color="var(--gold)" stop-opacity="0"/></linearGradient></defs>'
-    // Linha principal
-    +'<polyline points="'+points+'" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
-    // Pontos com circulo + label
-    +pts.map(function(p,i){
-      var cx=px(p.round).toFixed(1),cy=py(p.position).toFixed(1);
-      var isLast=i===pts.length-1;
-      return '<circle cx="'+cx+'" cy="'+cy+'" r="'+(isLast?5:3.5)+'" fill="'+(isLast?'var(--gold)':'var(--bg)')+'" stroke="var(--gold)" stroke-width="2"/>'
-        +(isLast?'<text x="'+cx+'" y="'+(py(p.position)-10).toFixed(1)+'" text-anchor="middle" fill="var(--gold)" font-size="11" font-weight="800">'+p.position+'&#176;</text>':'');
-    }).join('')
-    // Labels dos rounds no eixo X
-    +function(){
-      var labels='';
-      pts.forEach(function(p){
-        var lx=px(p.round);
-        labels+='<text x="'+lx.toFixed(1)+'" y="'+(h-6).toFixed(1)+'" text-anchor="middle" fill="var(--muted)" font-size="8">R'+(p.round<10?'0':'')+p.round+'</text>';
-      });
-      return labels;
-    }()
+
+  // Dimensões
+  var W=Math.max(300,el.clientWidth-200||400),H=160,padL=34,padR=20,padT=18,padB=24;
+  var cW=W-padL-padR,cH=H-padT-padB;
+  var maxPos=totalPlayers,minPos=1,pRange=maxPos-minPos||1;
+  var allRounds=pts.map(function(p){return p.round;});
+  var minR=Math.min.apply(null,allRounds),maxR=Math.max.apply(null,allRounds),rRange=maxR-minR||1;
+
+  function cx(r){return padL+(r-minR)/rRange*cW;}
+  function cy(pos){return padT+(pos-minPos)/pRange*cH;}
+
+  // Curva bezier suave
+  function smoothPath(points){
+    if(points.length<2)return 'M'+points[0][0]+','+points[0][1];
+    var d='M'+points[0][0].toFixed(1)+','+points[0][1].toFixed(1);
+    for(var i=1;i<points.length;i++){
+      var px0=points[i-1][0],py0=points[i-1][1],px1=points[i][0],py1=points[i][1];
+      var cpx=(px0+px1)/2;
+      d+=' C'+cpx.toFixed(1)+','+py0.toFixed(1)+' '+cpx.toFixed(1)+','+py1.toFixed(1)+' '+px1.toFixed(1)+','+py1.toFixed(1);
+    }
+    return d;
+  }
+
+  var ptCoords=pts.map(function(p){return[cx(p.round),cy(p.position)];});
+  var linePath=smoothPath(ptCoords);
+  // Area path: linha + borda direita até baixo + esquerda
+  var areaPath=linePath+' L'+cx(maxR).toFixed(1)+','+cy(maxPos).toFixed(1)+' L'+cx(minR).toFixed(1)+','+cy(maxPos).toFixed(1)+' Z';
+
+  // Grade Y: mostrar apenas posições chave
+  var gridLines='';
+  var gridPos=[1, Math.round(totalPlayers*0.25), Math.round(totalPlayers*0.5), Math.round(totalPlayers*0.75), totalPlayers];
+  gridPos.forEach(function(pos){
+    var y=cy(pos).toFixed(1);
+    gridLines+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="rgba(255,255,255,.07)" stroke-width="1"/>';
+    gridLines+='<text x="'+(padL-5)+'" y="'+(parseFloat(y)+3.5).toFixed(1)+'" text-anchor="end" fill="rgba(255,255,255,.35)" font-size="9">'+pos+'°</text>';
+  });
+
+  // Labels X: só início, meio e fim
+  var xLabels='';
+  var showIdx=[0, Math.floor(pts.length/2), pts.length-1];
+  showIdx.forEach(function(i){
+    if(i<pts.length){
+      var p=pts[i];
+      xLabels+='<text x="'+cx(p.round).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" fill="rgba(255,255,255,.3)" font-size="9">J'+p.round+'</text>';
+    }
+  });
+
+  // Ponto atual (último)
+  var lx=cx(maxR).toFixed(1),ly=cy(last.position).toFixed(1);
+
+  var svg='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block;flex:1;min-width:200px">'
+    +'<defs>'
+    +'<linearGradient id="evoFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffdf00" stop-opacity=".25"/><stop offset="100%" stop-color="#ffdf00" stop-opacity=".02"/></linearGradient>'
+    +'<filter id="evoGlow"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+    +'</defs>'
+    +gridLines
+    +'<path d="'+areaPath+'" fill="url(#evoFill)"/>'
+    +'<path d="'+linePath+'" fill="none" stroke="#ffdf00" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" filter="url(#evoGlow)"/>'
+    +'<circle cx="'+lx+'" cy="'+ly+'" r="5" fill="#ffdf00" filter="url(#evoGlow)"/>'
+    +'<circle cx="'+lx+'" cy="'+ly+'" r="9" fill="none" stroke="#ffdf00" stroke-width="1.5" opacity=".4"/>'
+    +xLabels
     +'</svg>';
-  // Card informativo ao lado
-  var info='<div style="display:flex;flex-direction:column;gap:6px;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);min-width:160px;flex-shrink:0">'
-    +'<div style="display:flex;align-items:center;gap:8px"><span style="font-size:28px;font-weight:900;color:var(--gold)">'+last.position+'&#176;</span><span style="font-size:12px;color:var(--muted)">de '+totalPlayers+'</span></div>'
-    +'<div style="display:flex;gap:16px;flex-wrap:wrap">'
-    +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Pontos</div><div style="font-size:18px;font-weight:700;color:var(--text)">'+last.points+'</div></div>'
-    +'<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Rodadas</div><div style="font-size:18px;font-weight:700;color:var(--text)">'+pts.length+'</div></div>'
+
+  // Card de stats
+  var info='<div style="display:flex;flex-direction:column;justify-content:center;gap:10px;padding:16px 20px;min-width:150px;flex-shrink:0;border-left:1px solid rgba(255,223,0,.15)">'
+    +'<div>'
+    +'<div style="font-size:36px;font-weight:900;color:#ffdf00;line-height:1">'+currentRank+'°</div>'
+    +'<div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:2px">de '+totalPlayers+' participantes</div>'
     +'</div>'
-    +'<div style="font-size:12px;color:var(--muted);padding-top:4px;border-top:1px solid var(--border)">'+(pts.length>1?'&Uacute;ltima rodada: '+diffTxt:'')+'</div>'
+    +'<div style="display:flex;gap:20px">'
+    +'<div><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px">Pontos</div><div style="font-size:22px;font-weight:700;color:var(--text)">'+currentPts+'</div></div>'
+    +'<div><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px">Jogos</div><div style="font-size:22px;font-weight:700;color:var(--text)">'+pts.length+'</div></div>'
+    +'</div>'
+    +(pts.length>1?'<div style="font-size:12px;color:rgba(255,255,255,.5);border-top:1px solid rgba(255,255,255,.08);padding-top:8px">Última: '+diffTxt+'</div>':'')
     +'</div>';
-  el.innerHTML='<div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">'+svg+info+'</div>';
+
+  el.innerHTML='<div style="display:flex;gap:0;align-items:stretch;background:rgba(10,10,30,.6);border-radius:12px;overflow:hidden;border:1px solid rgba(255,223,0,.1)">'+svg+info+'</div>';
 }
 
 // ── Evolução combinada (todas as snapshots) ────────────────
