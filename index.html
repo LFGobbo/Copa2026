@@ -3939,9 +3939,9 @@ function bolaoUpdateReopenBanner(){
 
   // Fallback hardcoded: duas fases
   // Jogos 71+72 (últimos da fase de grupos): 27/Jun 23:00 CDT = 28/Jun 04:00 UTC → terminam ~06:00 UTC
-  // Jogo 73 (1º R32): 28/Jun 16:00 PDT = 23:00 UTC → deadline 22:55 UTC (5min antes)
-  var _r32OpenFrom=new Date('2026-06-28T04:10:00Z');   // após fim dos jogos 71+72 (~02:00 UTC + 90+acréscimos)
-  var _r32Deadline=new Date('2026-06-28T18:55:00Z');   // 5min antes do jogo 73 (16:00 BRT = 19:00 UTC)
+  // Jogo 73 (1º R32): 29/Jun 16:00 BRT = 19:00 UTC → deadline 18:55 UTC (5min antes)
+  var _r32OpenFrom=new Date('2026-06-28T04:10:00Z');   // após fim dos jogos 71+72 (04:00 UTC + 90+acréscimos → ~06:00 UTC)
+  var _r32Deadline=new Date('2026-06-29T18:55:00Z');   // 5min antes do jogo 73 (29/06 16:00 BRT = 19:00 UTC)
   var _r32AnnounceFrom=new Date('2026-06-27T00:00:00-03:00');
   var _nowMs=Date.now();
   if(_nowMs>=_r32AnnounceFrom.getTime()&&_nowMs<_r32Deadline.getTime()){
