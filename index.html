@@ -718,6 +718,16 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       <li><strong>Especiais em segredo:</strong> Campeão e artilheiro de cada participante só são revelados após o início do jogo #32, mantendo a emoção até o fim das inscrições</li>
       <li><strong>Desempate:</strong> 1&ordm; mais placares exatos, 2&ordm; mais resultados certos, 3&ordm; mais b&ocirc;nus especiais</li>
     </ul>
+    <div style="margin:12px 0 4px;padding:12px 14px;background:rgba(255,223,0,.06);border:1px solid rgba(255,223,0,.2);border-radius:10px">
+      <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:8px">🔓 Reabertura do Mata-Mata</div>
+      <ul style="margin:0;padding-left:18px">
+        <li>🔒 <strong>Não editou o palpite:</strong> tabela cheia (15/9/6/3 pts) + bônus de fase</li>
+        <li>🔓 <strong>Editou o palpite:</strong> tabela reduzida (10/6/4/2 pts), sem bônus de fase</li>
+        <li>⚽ Bônus pênaltis / prorrogação: +5 pts</li>
+        <li>🏅 Bônus por fase: R32 +5 · R16 +10 · QF +15 · SF +20 · 3º +20 · Final +30</li>
+        <li>⏰ Prazo: fecha 5 minutos antes do 1º jogo da fase</li>
+      </ul>
+    </div>
     <div class="agree-row">
       <input type="checkbox" id="bolao-agree" onchange="bolaoOnAgree()">
       <label for="bolao-agree">Li e concordo com as regras</label>
@@ -2696,6 +2706,10 @@ dailyMaintenance();
 var BOLAO_WORKER='https://copa2026-bolao.luizfelipegobbo.workers.dev'; // <-- TROCAR
 var _bolaoToken=null;
 var BOLAO_FIRST=6,BOLAO_FINAL=104,BOLAO_SIGNUP_GAME=32,BOLAO_TWO_H=7200000;
+var KO_PHASE_BONUS_FRONTEND={r32:5,r16:10,qf:15,sf:20,'3rd':20,final:30};
+var KO_PHASE_GAMES={r32:[73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88],r16:[89,90,91,92,93,94,95,96],qf:[97,98,99,100],sf:[101,102],'3rd':[103],final:[104]};
+var KO_GAME_PHASE_FRONTEND=(function(){var m={};if(typeof KO_PHASE_GAMES!=='undefined'){Object.keys(KO_PHASE_GAMES).forEach(function(ph){(KO_PHASE_GAMES[ph]||[]).forEach(function(n){m[n]=ph;});})}return m;}());
+var _bolaoMyPicksReopen={},_bolaoAllPicksReopen={},_bolaoOpenPhases={};
 var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
 var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmedStatus={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[],_bolaoKOPicks={},_bolaoPicksLoadFailed=false;
 var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0;
@@ -2921,6 +2935,25 @@ function _loadTeamPicks(){
     document.body.appendChild(dl);
   }
 }
+function bolaoCalcKOPickPts(pA,pB,rA,rB,useFullTable){
+  if(pA===null||pA===undefined||pB===null||pB===undefined)return -1;
+  if(rA===null||rA===undefined||rB===null||rB===undefined)return -1;
+  var exact=pA===rA&&pB===rB;
+  var pr=Math.sign(pA-pB),rr=Math.sign(rA-rB);
+  if(useFullTable){
+    if(exact)return 15;
+    if(pr!==rr)return 0;
+    if(Math.max(pA,pB)===Math.max(rA,rB))return 9;
+    if(Math.min(pA,pB)===Math.min(rA,rB))return 6;
+    return 3;
+  }else{
+    if(exact)return 10;
+    if(pr!==rr)return 0;
+    if(Math.max(pA,pB)===Math.max(rA,rB))return 6;
+    if(Math.min(pA,pB)===Math.min(rA,rB))return 4;
+    return 2;
+  }
+}
 function bolaoCalcPickPts(pA,pB,rA,rB){
   if(pA===null||pA===undefined||pB===null||pB===undefined)return -1;
   if(rA===null||rA===undefined||rB===null||rB===undefined)return -1;
@@ -2980,16 +3013,29 @@ function bolaoCalcTotal(participantId){
     // Se o time real venceu ≠ o time que o user achou que venceu → 0 pts no KO
     var isKO=g.f&&!g.f.startsWith('Grupo');
     if(isKO){
-      // Time real do lado A: resolver via app (_winnerOf dos jogos anteriores)
-      // Usar resolveTeam do app (a função do app principal, não do bolão)
-      var realTeamA=resolveTeam(g.a,g.n);
-      var realTeamB=resolveTeam(g.b,g.n);
+      var realTeamA=resolveTeam(g.a,g.n),realTeamB=resolveTeam(g.b,g.n);
       realTeamA=realTeamA&&realTeamA.name?realTeamA.name:null;
       realTeamB=realTeamB&&realTeamB.name?realTeamB.name:null;
-      if(realTeamA&&realTeamB&&teamPickA&&teamPickB){
-        if(teamPickA!==realTeamA||teamPickB!==realTeamB)return; // Times errados = 0 pts
-      }
+      var acertouConfronto=!!(realTeamA&&realTeamB&&teamPickA&&teamPickB&&teamPickA===realTeamA&&teamPickB===realTeamB);
+      var myReopens=(_bolaoAllPicksReopen[participantId]||{});
+      var reopenPick=myReopens[g.n];
+      var temReopen=!!(reopenPick&&reopenPick.a!==null&&reopenPick.a!==undefined);
+      if(!acertouConfronto&&!temReopen)return;
+      var activePick=temReopen?reopenPick:pick;
+      var useFullTable=acertouConfronto&&!temReopen;
+      var scoreKO=bolaoCalcKOPickPts(activePick.a,activePick.b,real.a,real.b,useFullTable);
+      if(scoreKO<0)return;
+      var koBonus=0;
+      if(real.a===real.b){var rw=_winnerOf(g.n);if(activePick.ko&&rw&&activePick.ko===rw)koBonus=5;}
+      var phaseBonus=0;
+      if(acertouConfronto){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_FRONTEND[cph]||0;}
+      total+=scoreKO+koBonus+phaseBonus;
+      if(scoreKO===15||scoreKO===10)exactCount++;
+      else if(scoreKO>=2)resultCount++;
+      bonusCount+=koBonus+phaseBonus;
+      return;
     }
+    // Grupos: pontuação original
     var pts=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);if(pts<0)return;
     var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
     total+=pts+bonus;
@@ -3069,8 +3115,50 @@ function bolaoRenderDetail(pid){
     // nao conta -- antes, este card mostrava os pontos calculados sem essa checagem, entao
     // o usuario via "10 pts" aqui mas esse valor nao aparecia no total oficial, causando
     // divergencia confusa entre o que era exibido e o que era de fato contado.
-    var wrongTeams=false;
     var isKO=g.f&&!g.f.startsWith('Grupo');
+    if(isKO&&hasReal&&!forfeit){
+      var dTeamPickA=_bolaoResolveTeam(g.a,g.n,picks);
+      var dTeamPickB=_bolaoResolveTeam(g.b,g.n,picks);
+      var dRealTeamA=resolveTeam(g.a,g.n),dRealTeamB=resolveTeam(g.b,g.n);
+      dRealTeamA=dRealTeamA&&dRealTeamA.name?dRealTeamA.name:null;
+      dRealTeamB=dRealTeamB&&dRealTeamB.name?dRealTeamB.name:null;
+      var dAcertou=!!(dRealTeamA&&dRealTeamB&&dTeamPickA&&dTeamPickB&&dTeamPickA===dRealTeamA&&dTeamPickB===dRealTeamB);
+      var dReopenMap=_bolaoAllPicksReopen[pid]||{};
+      var dReopen=dReopenMap[g.n];
+      var dHasReopen=!!(dReopen&&dReopen.a!==null&&dReopen.a!==undefined);
+      var isFinalKO=gameIsPast(g);
+      if(!dAcertou&&!dHasReopen){
+        // Errou confronto e não reabriu — sem pontos
+        var card0='<div class="bolao-pick-card forfeit"><div class="bolao-pick-teams">'+flag(dRealTeamA||g.a)+' '+(dRealTeamA||g.a)+' vs '+flag(dRealTeamB||g.b)+' '+(dRealTeamB||g.b)+'</div><div><span class="bolao-pick-score">Palpite: '+(hasPick?pick.a+'x'+pick.b:'?x?')+'</span> <span class="bolao-pick-real">→ '+real.a+'x'+real.b+'</span><span class="bolao-pick-pts"><span style="color:var(--red);font-weight:600">TIME DIFERENTE</span> <span style="font-size:11px;opacity:.7">(0 pts)</span></span></div></div>';
+        scored.push(card0);return;
+      }
+      var dActivePick=dHasReopen?dReopen:pick;
+      var dUseFullTable=dAcertou&&!dHasReopen;
+      var dScoreKO=bolaoCalcKOPickPts(dActivePick.a,dActivePick.b,real.a,real.b,dUseFullTable);
+      var dKoBonus=0;
+      if(real.a===real.b){var drw=_winnerOf(g.n);if(dActivePick.ko&&drw&&dActivePick.ko===drw)dKoBonus=5;}
+      var dPhaseBonus=0;
+      if(dAcertou){var dph=KO_GAME_PHASE_FRONTEND[g.n];dPhaseBonus=KO_PHASE_BONUS_FRONTEND[dph]||0;}
+      var dTotal=dScoreKO<0?-1:dScoreKO+dKoBonus+dPhaseBonus;
+      var dBadge=dAcertou&&!dHasReopen?'🔒 tabela cheia':'🔓 tabela reduzida';
+      var dCls=!isFinalKO?'future':dScoreKO===15||dScoreKO===10?'exact':dScoreKO>=2?'result':dScoreKO===0?'wrong':'future';
+      var dPickStr=dActivePick.a+'x'+dActivePick.b;
+      var dPtsStr='';
+      if(isFinalKO&&dTotal>=0){
+        var dPtsCol=dCls==='exact'?'var(--gold)':dCls==='result'?'var(--green)':dCls==='wrong'?'var(--red)':'var(--muted)';
+        var dPtsBreak=dScoreKO+'';
+        if(dKoBonus>0)dPtsBreak+='+'+dKoBonus+'(PEN)';
+        if(dPhaseBonus>0){var dphLabel=KO_GAME_PHASE_FRONTEND[g.n]||'';dPtsBreak+='+'+dPhaseBonus+'('+dphLabel.toUpperCase()+')';}
+        if(dKoBonus||dPhaseBonus)dPtsBreak+='='+dTotal;
+        dPtsStr='<span class="bolao-pick-pts" style="color:'+dPtsCol+'">'+dPtsBreak+' pts</span>';
+      }else if(!isFinalKO&&dTotal>=0){
+        dPtsStr='<span class="bolao-pick-pts" style="color:var(--muted);font-style:italic">'+dTotal+' pts</span>';
+      }
+      var dCard='<div class="bolao-pick-card '+dCls+'"><div class="bolao-pick-teams" style="display:flex;justify-content:space-between"><span>'+flag(dRealTeamA||g.a)+' '+(dRealTeamA||g.a)+' vs '+flag(dRealTeamB||g.b)+' '+(dRealTeamB||g.b)+'</span><span style="font-size:11px;opacity:.7">'+dBadge+'</span></div><div><span class="bolao-pick-score">Palpite: '+dPickStr+'</span> <span class="bolao-pick-real">→ '+real.a+'x'+real.b+'</span>'+dPtsStr+'</div></div>';
+      scored.push(dCard);return;
+    }
+    // Grupo ou KO forfeit
+    var wrongTeams=false;
     if(isKO&&hasReal){
       var teamPickA=_bolaoResolveTeam(g.a,g.n,picks);
       var teamPickB=_bolaoResolveTeam(g.b,g.n,picks);
@@ -3189,11 +3277,31 @@ function bolaoRenderPicksGrid(){
     // Pontuação (só se jogo encerrado)
     var ptsHtml='';
     if(isLocked&&hasReal&&hasPick&&gameIsPast(g)){
-      var pts=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);
-      var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
-      var col=pts===10?'var(--gold)':pts>=2?'#4ade80':'var(--red)';
-      var trophy=pts===10?' \ud83c\udfc6':'';
-      ptsHtml='<span class="bsp-pts" style="color:'+col+'">'+(pts>=0?'+':'')+pts+(bonus?'+'+bonus:'')+' pts'+trophy+'</span>';
+      var gPts,gBonus=0,gCol,gTrophy='';
+      if(isKO){
+        var gTeamPickA=_bolaoResolveTeam(g.a,g.n,_bolaoMyPicks);
+        var gTeamPickB=_bolaoResolveTeam(g.b,g.n,_bolaoMyPicks);
+        var gRealTeamA=resolveTeam(g.a,g.n),gRealTeamB=resolveTeam(g.b,g.n);
+        gRealTeamA=gRealTeamA&&gRealTeamA.name?gRealTeamA.name:null;
+        gRealTeamB=gRealTeamB&&gRealTeamB.name?gRealTeamB.name:null;
+        var gAcertou=!!(gRealTeamA&&gRealTeamB&&gTeamPickA&&gTeamPickB&&gTeamPickA===gRealTeamA&&gTeamPickB===gRealTeamB);
+        var gReopenPick=(_bolaoMyPicksReopen||{})[g.n];
+        var gTemReopen=!!(gReopenPick&&gReopenPick.a!==null&&gReopenPick.a!==undefined);
+        if(!gAcertou&&!gTemReopen){gPts=-1;}else{
+          var gActivePick=gTemReopen?gReopenPick:pick;
+          var gUseFullTable=gAcertou&&!gTemReopen;
+          gPts=bolaoCalcKOPickPts(gActivePick.a,gActivePick.b,real.a,real.b,gUseFullTable);
+          if(real.a===real.b){var grw=_winnerOf(g.n);if(gActivePick.ko&&grw&&gActivePick.ko===grw)gBonus+=5;}
+          if(gAcertou){var gph=KO_GAME_PHASE_FRONTEND[g.n];gBonus+=(KO_PHASE_BONUS_FRONTEND[gph]||0);}
+        }
+        gCol=gPts<0?'var(--red)':gPts===15||gPts===10?'var(--gold)':gPts>=2?'#4ade80':'var(--red)';
+      }else{
+        gPts=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);
+        gBonus=g.n===BOLAO_FINAL&&gPts===10?20:0;
+        gCol=gPts===10?'var(--gold)':gPts>=2?'#4ade80':'var(--red)';
+        gTrophy=gPts===10?' 🏆':'';
+      }
+      if(gPts>=0)ptsHtml='<span class="bsp-pts" style="color:'+gCol+'">'+(gPts>=0?'+':'')+gPts+(gBonus?'+'+gBonus:'')+' pts'+gTrophy+'</span>';
    }else if(isLocked&&hasReal&&hasPick&&!gameIsPast(g)){
       var pts=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);
       var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
@@ -3532,6 +3640,7 @@ async function bolaoLoadRanking(){
     _bolaoAllPicks={};(data.picks||[]).forEach(function(p){if(!_bolaoAllPicks[p.participant_id])_bolaoAllPicks[p.participant_id]={};_bolaoAllPicks[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b,ko:p.ko_pick}});
     _bolaoAllSpecials={};(data.specialPicks||[]).forEach(function(p){_bolaoAllSpecials[p.participant_id]=p});
     _bolaoPickCounts=data.pickCounts||{};
+    _bolaoAllPicksReopen={};(data.picksReopen||[]).forEach(function(p){if(!_bolaoAllPicksReopen[p.participant_id])_bolaoAllPicksReopen[p.participant_id]={};_bolaoAllPicksReopen[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b,ko:p.ko_pick};});
     _rankingCachedAt=Date.now();
     bolaoRenderRanking();
     try{localStorage.setItem('copa2026_ranking_cache',JSON.stringify({ts:Date.now(),participants:_bolaoParticipants,confirmedStatus:_bolaoConfirmedStatus,confirmedAt:_bolaoConfirmedAt,picks:_bolaoAllPicks,specials:_bolaoAllSpecials,pickCounts:_bolaoPickCounts}))}catch(e){}
@@ -3623,9 +3732,139 @@ async function _onLoginSuccess(res){
   if(_bolaoConfirmed)document.getElementById('bolao-confirmed-banner').style.display='block';
   else bolaoShowConfirmButton();
 }
+function _bolaoFmtCountdown(ms){
+  if(ms<0)ms=0;
+  var s=Math.floor(ms/1000),m=Math.floor(s/60),h=Math.floor(m/60);
+  s=s%60;m=m%60;
+  return (h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+}
+function _bolaoPhaseLabel(ph){
+  var map={r32:'Rodada de 32',r16:'Oitavas de Final',qf:'Quartas de Final',sf:'Semifinal','3rd':'Terceiro Lugar',final:'Final'};
+  return map[ph]||ph;
+}
+function bolaoShowReopenPopup(phaseName){
+  var key='bolao-reopen-popup-'+phaseName;
+  if(typeof localStorage!=='undefined'&&localStorage.getItem(key))return;
+  if(typeof localStorage!=='undefined')localStorage.setItem(key,'1');
+  var label=_bolaoPhaseLabel(phaseName);
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML='<div style="background:var(--card);border:2px solid var(--gold);border-radius:16px;padding:28px 24px;max-width:360px;width:90%;text-align:center">'
+    +'<div style="font-size:28px;margin-bottom:12px">🔓</div>'
+    +'<div style="font-size:18px;font-weight:700;color:var(--gold);margin-bottom:10px">Reabertura: '+label+'</div>'
+    +'<div style="font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:18px">Os jogos do mata-mata estão disponíveis para palpite!<br><br>'
+    +'🔒 Se você acertou o confronto: tabela cheia (15/9/6/3 pts) + bônus de fase.<br>'
+    +'🔓 Se errou: pode palpitar pelo placar, tabela reduzida (10/6/4/2 pts).</div>'
+    +'<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:10px 28px;font-size:15px;font-weight:700;cursor:pointer">Entendido!</button>'
+    +'</div>';
+  document.body.appendChild(overlay);
+}
+function bolaoUpdateReopenBanner(){
+  var banner=document.getElementById('bolao-reopen-banner');
+  if(!banner)return;
+  var phases=Object.keys(_bolaoOpenPhases||{});
+  if(!phases.length){banner.style.display='none';return;}
+  var ph=phases[0];
+  var info=_bolaoOpenPhases[ph];
+  var deadline=info&&info.deadline?new Date(info.deadline).getTime():null;
+  var now=Date.now();
+  var detail=document.getElementById('bolao-reopen-banner-detail');
+  var countLabel=document.getElementById('bolao-reopen-countdown-label');
+  var countEl=document.getElementById('bolao-reopen-countdown');
+  banner.style.display='block';
+  if(detail)detail.textContent='🔓 Reabertura: '+_bolaoPhaseLabel(ph);
+  if(deadline){
+    var remaining=deadline-now;
+    var urgent=remaining<3600000;
+    banner.style.borderColor=urgent?'var(--red)':'var(--gold)';
+    if(countLabel)countLabel.textContent='prazo fecha em';
+    if(countEl)countEl.textContent=_bolaoFmtCountdown(remaining);
+    if(remaining>0){
+      setTimeout(bolaoUpdateReopenBanner,1000);
+    }else{
+      delete _bolaoOpenPhases[ph];
+      bolaoUpdateReopenBanner();
+    }
+  }else{
+    if(countLabel)countLabel.style.display='none';
+    if(countEl)countEl.style.display='none';
+  }
+}
+function bolaoRenderReopenSection(){
+  var sec=document.getElementById('bolao-reopen-section');
+  if(!sec)return;
+  var phases=Object.keys(_bolaoOpenPhases||{});
+  if(!phases.length){sec.innerHTML='';return;}
+  var ph=phases[0];
+  var phGames=KO_PHASE_GAMES&&KO_PHASE_GAMES[ph]?KO_PHASE_GAMES[ph]:[];
+  var html='<div style="margin-bottom:8px;font-size:14px;font-weight:700;color:var(--gold)">🔓 '+_bolaoPhaseLabel(ph)+'</div>';
+  phGames.forEach(function(gn){
+    var g=GAMES.find(function(x){return x.n===gn;});if(!g)return;
+    var realTeamA=resolveTeam(g.a,g.n),realTeamB=resolveTeam(g.b,g.n);
+    var rA=realTeamA&&realTeamA.name?realTeamA.name:g.a;
+    var rB=realTeamB&&realTeamB.name?realTeamB.name:g.b;
+    var myPickA=_bolaoResolveTeam(g.a,g.n,_bolaoMyPicks);
+    var myPickB=_bolaoResolveTeam(g.b,g.n,_bolaoMyPicks);
+    var acertou=!!(rA&&rB&&myPickA&&myPickB&&myPickA===rA&&myPickB===rB);
+    var reopen=(_bolaoMyPicksReopen||{})[gn];
+    var hasReopen=!!(reopen&&reopen.a!==null&&reopen.a!==undefined);
+    if(acertou&&!hasReopen){
+      html+='<div class="bolao-pick-card" style="border-left-color:var(--gold);margin-bottom:8px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center">'
+        +'<span>'+flag(rA)+' '+rA+' vs '+flag(rB)+' '+rB+'</span>'
+        +'<span style="font-size:12px;color:var(--gold)">🔒 Acertou confronto</span>'
+        +'</div>'
+        +'<div style="font-size:12px;color:var(--muted);margin-top:4px">Tabela cheia + bônus de fase garantidos</div>'
+        +'</div>';
+    }else{
+      var rpick=hasReopen?reopen:{};
+      html+='<div class="bolao-pick-card" style="border-left-color:var(--blue,#60a5fa);margin-bottom:8px" id="reopen-card-'+gn+'">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center">'
+        +'<span>'+flag(rA)+' '+rA+' vs '+flag(rB)+' '+rB+'</span>'
+        +'<span style="font-size:12px;color:#60a5fa">🔓 Tabela reduzida</span>'
+        +'</div>'
+        +'<div style="margin-top:8px;display:flex;align-items:center;gap:8px">'
+        +'<input class="bsp-input" type="text" inputmode="numeric" maxlength="2" id="rp-a-'+gn+'" value="'+(rpick.a!==undefined?rpick.a:'')+'" placeholder="-">'
+        +'<span>×</span>'
+        +'<input class="bsp-input" type="text" inputmode="numeric" maxlength="2" id="rp-b-'+gn+'" value="'+(rpick.b!==undefined?rpick.b:'')+'" placeholder="-">'
+        +'<button onclick="bolaoSaveReopenPick('+gn+')" style="margin-left:8px;background:var(--gold);color:#000;border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer">Salvar</button>'
+        +'</div>'
+        +(hasReopen?'<div style="font-size:11px;color:#4ade80;margin-top:4px">✓ Palpite salvo: '+reopen.a+'x'+reopen.b+'</div>':'')
+        +'</div>';
+    }
+  });
+  sec.innerHTML=html;
+}
+function bolaoSaveReopenPick(gn){
+  var inA=document.getElementById('rp-a-'+gn);
+  var inB=document.getElementById('rp-b-'+gn);
+  if(!inA||!inB)return;
+  var a=parseInt(inA.value,10),b=parseInt(inB.value,10);
+  if(isNaN(a)||isNaN(b)||a<0||b<0){alert('Palpite inválido');return;}
+  fetch('/api/picks-reopen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({game_n:gn,score_a:a,score_b:b})})
+    .then(function(r){return r.json();})
+    .then(function(){
+      if(!_bolaoMyPicksReopen)_bolaoMyPicksReopen={};
+      _bolaoMyPicksReopen[gn]={a:a,b:b};
+      bolaoRenderReopenSection();
+    })
+    .catch(function(e){alert('Erro ao salvar: '+e.message);});
+}
 function bolaoInit(){
   bolaoLoadRanking();
   _initSpecialBanner();
+  // Reopen: busca fases abertas e atualiza UI
+  _bolaoFetch('/reopen-status').then(function(d){
+    _bolaoOpenPhases={};
+    (d.phases||[]).forEach(function(p){
+      if(p.open)_bolaoOpenPhases[p.phase_name]={deadline:p.deadline,game_ns:p.game_ns};
+    });
+    if(Object.keys(_bolaoOpenPhases).length){
+      bolaoUpdateReopenBanner();
+      bolaoRenderReopenSection();
+      Object.keys(_bolaoOpenPhases).forEach(function(ph){bolaoShowReopenPopup(ph);});
+    }
+  }).catch(function(){});
   var el=document.getElementById('bolao-deadline-info');if(!el)return;
   var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);if(!deadline){el.textContent='';return}
   var now=new Date();

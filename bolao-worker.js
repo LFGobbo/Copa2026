@@ -1,4 +1,4 @@
-// Cloudflare Worker — Copa2026 Bolão (v19.37 — normalizeName, login/search por nome normalizado)
+// Cloudflare Worker — Copa2026 Bolão (v20.3 — reabertura mata-mata: picks_reopen + phase_reopen)
 // ENV vars (configurar no dashboard):
 //   SUPABASE_URL  — https://etbezmraylbvlnycltha.supabase.co
 //   SUPABASE_KEY  — service_role key (NÃO a anônima!)
@@ -32,6 +32,21 @@ var BOLAO_GAME_BY_ID = {};
 BOLAO_GAMES.forEach(function (g) { BOLAO_GAME_BY_ID[g.n] = g; });
 var BOLAO_FIRST = 6;
 var BOLAO_DEADLINE_MS = 7200000; // 2 horas antes do jogo (espelha BOLAO_TWO_H do frontend)
+var BOLAO_REOPEN_DEADLINE_MS = 300000; // 5 minutos antes do 1º jogo da fase (reabertura)
+
+// ── Mata-mata: mapeamento fase → jogos e jogo → fase ──
+var KO_PHASE_GAMES = {
+  r32:   [73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88],
+  r16:   [89,90,91,92,93,94,95,96],
+  qf:    [97,98,99,100],
+  sf:    [101,102],
+  '3rd': [103],
+  final: [104]
+};
+var KO_GAME_PHASE = {};
+Object.keys(KO_PHASE_GAMES).forEach(function(ph) {
+  KO_PHASE_GAMES[ph].forEach(function(n) { KO_GAME_PHASE[n] = ph; });
+});
 
 // Calcula o instante UTC de início do jogo a partir de g.d ("DD/MM Dia") e g.t ("HH:MM", horário de Brasília UTC-3)
 function gameUTC(g) {
@@ -49,6 +64,21 @@ function bolaoDeadline(gameN) {
   if (!g) return null;
   var gd = gameUTC(g);
   return gd ? new Date(gd.getTime() - BOLAO_DEADLINE_MS) : null;
+}
+
+// Retorna o deadline de reabertura de uma fase: 5 min antes do kickoff do 1º jogo da fase
+function phaseReopenDeadline(phaseName) {
+  var gameNs = KO_PHASE_GAMES[phaseName];
+  if (!gameNs || !gameNs.length) return null;
+  var earliest = null;
+  for (var i = 0; i < gameNs.length; i++) {
+    var g = BOLAO_GAME_BY_ID[gameNs[i]];
+    if (!g) continue;
+    var t = gameUTC(g);
+    if (!t) continue;
+    if (!earliest || t.getTime() < earliest.getTime()) earliest = t;
+  }
+  return earliest ? new Date(earliest.getTime() - BOLAO_REOPEN_DEADLINE_MS) : null;
 }
 
 function json(data, status) {
@@ -179,9 +209,10 @@ async function handle(req) {
     if (method === 'GET' && path === '/mypicks') {
       if (!user) return error('Token invalido', 401);
       var picks = (await supaFetch("picks?participant_id=eq." + user.sub + "&select=game_n,goals_a,goals_b,ko_pick")) || [];
+      var picksReopen = (await supaFetch("picks_reopen?participant_id=eq." + user.sub + "&select=game_n,goals_a,goals_b,ko_pick,updated_at")) || [];
       var sp = (await supaFetch("special_picks?participant_id=eq." + user.sub + "&select=champion,top_scorer,locked")) || [];
       var part = (await supaFetch("participants?id=eq." + user.sub + "&select=confirmed")) || [];
-      return json({ picks: picks, specialPicks: sp[0] || null, confirmed: part[0] ? part[0].confirmed : false });
+      return json({ picks: picks, picksReopen: picksReopen, specialPicks: sp[0] || null, confirmed: part[0] ? part[0].confirmed : false });
     }
 
     // GET /ranking
@@ -230,7 +261,12 @@ async function handle(req) {
       if (url.searchParams.get('showSpecials') === '1') {
         allSp = (await supaFetch('special_picks?select=participant_id,champion,top_scorer')) || [];
       }
-      return json({ participants: participants, picks: allPicks, specialPicks: allSp, pickCounts: pickCounts });
+      // Buscar picks reabertos (mata-mata) — tabela menor, sem paginação necessária
+      var allPicksReopen = [];
+      try {
+        allPicksReopen = (await supaFetch('picks_reopen?select=participant_id,game_n,goals_a,goals_b,ko_pick&limit=10000')) || [];
+      } catch(e) { allPicksReopen = []; }
+      return json({ participants: participants, picks: allPicks, picksReopen: allPicksReopen, specialPicks: allSp, pickCounts: pickCounts });
     }
 
     // POST /special-picks
@@ -448,6 +484,70 @@ async function handle(req) {
       return json({ error: 'Site temporariamente indisponivel' }, 503);
     }
 
+    // GET /reopen-status — fases abertas para reabertura (público, sem auth)
+    if (method === 'GET' && path === '/reopen-status') {
+      var phases = (await supaFetch('phase_reopen?select=phase_name,game_ns,open,deadline,opened_at')) || [];
+      return json({ phases: phases });
+    }
+
+    // POST /picks-reopen — salva palpite reaberto em mata-mata (tabela separada, picks original intocado)
+    if (method === 'POST' && path === '/picks-reopen') {
+      if (!user) return error('Token invalido', 401);
+      var body = await req.json();
+      if (!body.game_n) return error('game_n obrigatorio');
+      var gameN = parseInt(body.game_n, 10);
+      // Verificar se é jogo de mata-mata
+      var phaseName = KO_GAME_PHASE[gameN];
+      if (!phaseName) return error('Jogo nao pertence ao mata-mata', 400);
+      // Verificar se a fase está aberta
+      var phaseRows = (await supaFetch('phase_reopen?phase_name=eq.' + phaseName + '&select=open,deadline')) || [];
+      if (!phaseRows.length || !phaseRows[0].open) return error('Fase nao esta aberta para reabertura', 403);
+      // Deadline: 5 min antes do 1º jogo da fase.
+      // Se admin configurou deadline manual no DB, ele prevalece; senão usa o calculado.
+      var now = Date.now();
+      var phaseDeadline = phaseRows[0].deadline
+        ? new Date(phaseRows[0].deadline)
+        : phaseReopenDeadline(phaseName);
+      if (phaseDeadline && now >= phaseDeadline.getTime()) return error('Prazo da fase encerrado', 403);
+      // Upsert em picks_reopen — NUNCA modifica a tabela picks original
+      var payload = {
+        participant_id: user.sub,
+        game_n: gameN,
+        goals_a: (body.goals_a !== undefined && body.goals_a !== null) ? parseInt(body.goals_a, 10) : null,
+        goals_b: (body.goals_b !== undefined && body.goals_b !== null) ? parseInt(body.goals_b, 10) : null,
+        ko_pick: body.ko_pick || null,
+        updated_at: new Date().toISOString()
+      };
+      await supaFetch('picks_reopen?on_conflict=participant_id,game_n', 'POST', payload);
+      return json({ ok: true });
+    }
+
+    // PATCH /admin/phase-reopen — admin abre ou fecha uma fase para reabertura
+    if (method === 'PATCH' && path === '/admin/phase-reopen') {
+      var body = await req.json();
+      if (!body.phase_name || body.adminPass === undefined) return error('phase_name e adminPass obrigatorios');
+      var h = await sha256(body.adminPass + ':' + JWT_SECRET);
+      if (h !== ADMIN_HASH) return error('Admin pass invalida', 403);
+      var isOpen = body.open === true || body.open === 'true';
+      var patch = { open: isOpen };
+      if (isOpen) {
+        patch.opened_at = new Date().toISOString();
+        patch.closed_at = null;
+        // Admin pode passar deadline manual; se não, calcula automaticamente (5 min antes do 1º jogo da fase)
+        if (body.deadline) {
+          patch.deadline = body.deadline;
+        } else {
+          var autoDl = phaseReopenDeadline(body.phase_name);
+          if (autoDl) patch.deadline = autoDl.toISOString();
+        }
+      } else {
+        patch.closed_at = new Date().toISOString();
+      }
+      await supaFetch('phase_reopen?phase_name=eq.' + body.phase_name, 'PATCH', patch);
+      console.log('[AUDIT] /admin/phase-reopen: fase=' + body.phase_name + ' open=' + isOpen + ' em ' + new Date().toISOString());
+      return json({ ok: true, phase_name: body.phase_name, open: isOpen });
+    }
+
     // GET /health — monitoramento
     if (method === 'GET' && path === '/health') {
       return json({ ok: true, uptime: Math.floor(Date.now() / 1000) });
@@ -610,10 +710,47 @@ async function handle(req) {
         } catch (e) { results.snapshot = 'fail: ' + e.message; }
       }
 
+      // auto-reopen: abre fases automaticamente baseado em partidas concluídas pela FIFA
+      // Thresholds: r32 após 72 grupos, r16 após 88, qf após 96, sf após 100, 3rd+final após 102
+      if (task === 'auto-reopen' || task === 'all') {
+        try {
+          // Contar partidas concluídas via FIFA API (todas as fases)
+          var arFresp = await fetch('https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200');
+          var arData = await arFresp.json();
+          var completedCount = 0;
+          if (arData && arData.Results) {
+            completedCount = arData.Results.filter(function(m) {
+              return m.HomeTeamScore !== null && m.AwayTeamScore !== null;
+            }).length;
+          }
+          // Threshold por fase (cumulativo)
+          var PHASE_THRESHOLD = { r32: 72, r16: 88, qf: 96, sf: 100, '3rd': 102, final: 103 };
+          var phaseRows = (await supaFetch('phase_reopen?select=phase_name,open,deadline')) || [];
+          var opened = [];
+          for (var pri = 0; pri < phaseRows.length; pri++) {
+            var pr = phaseRows[pri];
+            if (pr.open) continue; // já aberta
+            var threshold = PHASE_THRESHOLD[pr.phase_name];
+            if (threshold === undefined) continue;
+            if (completedCount >= threshold) {
+              var autoDlAR = phaseReopenDeadline(pr.phase_name);
+              // Só abre se ainda há tempo (deadline futuro ou não definido)
+              if (autoDlAR && Date.now() >= autoDlAR.getTime()) continue;
+              var patchAR = { open: true, opened_at: new Date().toISOString(), closed_at: null };
+              if (autoDlAR) patchAR.deadline = autoDlAR.toISOString();
+              await supaFetch('phase_reopen?phase_name=eq.' + pr.phase_name, 'PATCH', patchAR);
+              console.log('[AUTO-REOPEN] Fase ' + pr.phase_name + ' aberta automaticamente. Partidas concluídas: ' + completedCount);
+              opened.push(pr.phase_name);
+            }
+          }
+          results['auto-reopen'] = completedCount + ' partidas concluídas. Abertas: ' + (opened.length ? opened.join(',') : 'nenhuma');
+        } catch (e) { results['auto-reopen'] = 'fail: ' + e.message; }
+      }
+
       return json({ ok: true, tasks: results });
     }
 
-        return json({ ok: true, message: 'Copa2026 Bolao — API do Worker. Rotas: GET /ranking, POST /register, POST /login, GET|POST /picks, GET /mypicks, POST /special-picks, PATCH /confirm, PATCH /admin/unlock, DELETE /reset, GET /health, GET /cron' });
+        return json({ ok: true, message: 'Copa2026 Bolao — API do Worker. Rotas: GET /ranking, POST /register, POST /login, GET|POST /picks, GET /mypicks, POST /special-picks, PATCH /confirm, PATCH /admin/unlock, DELETE /reset, GET /health, GET /cron, GET /reopen-status, POST /picks-reopen, PATCH /admin/phase-reopen' });
   } catch (e) {
     return json({ error: 'Internal: ' + e.message }, 500);
   }
