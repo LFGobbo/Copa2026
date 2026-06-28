@@ -3728,7 +3728,7 @@ async function bolaoLoadRanking(){
     _bolaoAllPicksReopen={};(data.picksReopen||[]).forEach(function(p){if(!_bolaoAllPicksReopen[p.participant_id])_bolaoAllPicksReopen[p.participant_id]={};_bolaoAllPicksReopen[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b,ko:p.ko_pick};});
     _rankingCachedAt=Date.now();
     bolaoRenderRanking();
-    try{localStorage.setItem('copa2026_ranking_cache',JSON.stringify({ts:Date.now(),participants:_bolaoParticipants,confirmedStatus:_bolaoConfirmedStatus,confirmedAt:_bolaoConfirmedAt,picks:_bolaoAllPicks,specials:_bolaoAllSpecials,pickCounts:_bolaoPickCounts}))}catch(e){}
+    try{localStorage.setItem('copa2026_ranking_cache',JSON.stringify({ts:Date.now(),participants:_bolaoParticipants,confirmedStatus:_bolaoConfirmedStatus,confirmedAt:_bolaoConfirmedAt,picks:_bolaoAllPicks,specials:_bolaoAllSpecials,pickCounts:_bolaoPickCounts,picksReopen:_bolaoAllPicksReopen}))}catch(e){}
   }catch(e){
     if(!_triedCache){
       try{
@@ -3740,6 +3740,7 @@ async function bolaoLoadRanking(){
           _bolaoAllPicks=cached.picks||{};
           _bolaoAllSpecials=cached.specials||{};
           _bolaoPickCounts=cached.pickCounts||{};
+          _bolaoAllPicksReopen=cached.picksReopen||{};
           bolaoRenderRanking();
           var tb=document.getElementById('bolao-rank-body');
           if(tb)tb.insertAdjacentHTML('afterend','<div style="text-align:center;color:var(--orange);font-size:11px;padding:4px 0">&#9888; Dados offline (até 1h atrás)</div>');
@@ -4019,13 +4020,12 @@ function bolaoRenderReopenSection(){
         +'<span class="reopen-orig-team right">'+esc(_origTB)+' '+flag(_origTB)+'</span>'
         +'</div>';
       if(hasReopen){
-        // ? Salvo — limpo, sem inputs
+        // ? Salvo — read-only
         cardsHtml+='<div class="reopen-card reopen-card-saved" id="reopen-card-'+gn+'">'
           +'<div class="reopen-card-header"><span class="reopen-card-meta">#'+gn+' · '+esc(g.f)+'</span><span class="reopen-card-badge reopen-badge-saved">? Salvo</span></div>'
           +'<div class="reopen-teams">'+fl+'</div>'
           +origHtml
           +'<div class="reopen-saved-score">'+reopen.a+' &times; '+reopen.b+'</div>'
-          +'<button class="reopen-edit-btn" onclick="bolaoReopenUnlock('+gn+')">?? Alterar palpite</button>'
           +'</div>';
       }else if(acertou){
         // ?? Acertou confronto, não editou
