@@ -1420,11 +1420,7 @@ function renderThirdPlaced(){
     }
   });
   third.sort(function(a,b){if(b.pts!==a.pts)return b.pts-a.pts;if(b.sg!==a.sg)return b.sg-a.sg;if(b.gf!==a.gf)return b.gf-a.gf;return a.team.localeCompare(b.team)});
-  if(isMobile){
-    tbody.innerHTML='<tr><th>#</th><th style="text-align:left">Grupo</th><th style="text-align:left">Seleção</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th><th>Status</th></tr>'+third.map(function(t,i){var q=i<8,sg=t.sg;return'<tr><td colspan="12"><div class="mob-third-row"><span class="third-status">'+(q?"\u2705":"\u274C")+'</span><span class="pos-badge pos-'+(Math.min(i,3)+1)+'">'+(i+1)+'</span><span class="mob-flag">'+flag(t.team)+'</span><span class="mob-third-team"><span class="mob-third-group">'+GROUP_NAMES[t.group]+' · </span>'+esc(t.team)+'</span><span class="mob-pts"><strong>'+t.pts+'</strong></span><div class="mob-details">J'+t.gp+' • V'+t.w+' • E'+t.d+' • D'+t.l+' • SG '+(sg>0?'+'+sg:sg)+'</div></div></td></tr>'}).join("");
-  }else{
-    tbody.innerHTML='<tr><th>#</th><th style="text-align:left">Grupo</th><th style="text-align:left">Sele\u00e7\u00e3o</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th><th>Status</th></tr>'+third.map(function(t,i){var q=i<8;return'<tr><td>'+(i+1)+'</td><td style="text-align:left">'+GROUP_NAMES[t.group]+'</td><td style="text-align:left">'+flag(t.team)+' '+t.team+'</td><td><strong>'+t.pts+'</strong></td><td>'+t.gp+'</td><td>'+t.w+'</td><td>'+t.d+'</td><td>'+t.l+'</td><td>'+t.gf+'</td><td>'+t.ga+'</td><td>'+t.sg+'</td><td class="'+(q?"third-qualify":"third-elim")+'">'+(q?"\u2705 Classificado":"\u274C Eliminado")+'</td></tr>'}).join("");
-  }
+  tbody.innerHTML='<tr><th>#</th><th style="text-align:left">Seleção</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th><th>✔</th></tr>'+third.map(function(t,i){var q=i<8;return'<tr><td><span class="pos-badge pos-'+(Math.min(i,3)+1)+'">'+(i+1)+'</span></td><td style="text-align:left">'+flag(t.team)+' '+esc(t.team)+'<span style="color:var(--muted);font-size:9px;margin-left:4px">'+GROUP_NAMES[t.group]+'</span></td><td><strong>'+t.pts+'</strong></td><td>'+t.gp+'</td><td>'+t.w+'</td><td>'+t.d+'</td><td>'+t.l+'</td><td>'+t.gf+'</td><td>'+t.ga+'</td><td>'+t.sg+'</td><td class="'+(q?'third-qualify':'third-elim')+'">'+(q?'\u2705':'\u274C')+'</td></tr>';}).join('');
 }
 
 // ===== BRACKET: resolução dinâmica de placeholders =====
