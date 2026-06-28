@@ -752,6 +752,23 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     <div id="bolao-special-countdown" style="font-size:var(--fs-lg);font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums"></div>
     <div style="font-size:11px;color:var(--orange);margin-top:6px">Aproveite para revisar e salvar seu palpite!</div>
   </div>
+  <!-- Reabertura: banner sempre visível (mesmo sem login) -->
+  <div id="bolao-reopen-banner" style="display:none;margin-bottom:16px;padding:0">
+    <div id="bolao-reopen-banner-inner" style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;border-radius:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="bolao-reopen-banner-icon" style="font-size:22px">⏳</span>
+        <div>
+          <div id="bolao-reopen-banner-title" style="font-size:14px;font-weight:700"></div>
+          <div id="bolao-reopen-banner-sub" style="font-size:12px;opacity:.75"></div>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div id="bolao-reopen-countdown-label" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;opacity:.7;margin-bottom:2px"></div>
+        <div id="bolao-reopen-countdown" style="font-size:24px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:1px">--:--:--</div>
+      </div>
+    </div>
+  </div>
+  <div id="bolao-reopen-section" style="margin-bottom:16px"></div>
   <div id="bolao-logged-area" style="display:none">
     <div class="bolao-section">
       <div class="bolao-section-title">Palpites especiais <span class="bsp-sp-badge" id="bolao-special-status">—</span></div>
@@ -777,23 +794,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       </div>
       <button class="bolao-save-btn" id="bolao-special-btn" onclick="bolaoSaveSpecial()">Salvar palpites especiais</button>
     </div>
-    <!-- Reabertura do Mata-Mata: banner + seção de palpites -->
-    <div id="bolao-reopen-banner" style="display:none;margin-bottom:16px">
-      <div id="bolao-reopen-banner-inner" style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;border-radius:12px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span id="bolao-reopen-banner-icon" style="font-size:22px">🔓</span>
-          <div>
-            <div id="bolao-reopen-banner-title" style="font-size:14px;font-weight:700"></div>
-            <div id="bolao-reopen-banner-sub" style="font-size:12px;opacity:.75"></div>
-          </div>
-        </div>
-        <div style="text-align:center">
-          <div id="bolao-reopen-countdown-label" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;opacity:.7;margin-bottom:2px"></div>
-          <div id="bolao-reopen-countdown" style="font-size:24px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:1px">--:--:--</div>
-        </div>
-      </div>
-    </div>
-    <div id="bolao-reopen-section" style="margin-bottom:16px"></div>
+
     <div class="bolao-section">
       <div class="bolao-section-title">Meus palpites</div>
       <div class="bolao-picks-grid" id="bolao-picks-grid"></div>
@@ -1369,7 +1370,10 @@ function updateCountdown(){
     var g=x.game,d=x.time-now;
     var hh=Math.floor(d/3600000),mm=Math.floor((d%3600000)/60000);
     var timeStr=hh+"h "+mm.toString().padStart(2,"0")+"m";
-    cards.push('<div class="countdown-event'+(idx===0?' next-up':'')+'">'+(idx===0?'<span class="countdown-event-num" style="color:var(--gold)">\u25ba</span>':'<span class="countdown-event-num">#'+g.n+'</span>')+'<span class="countdown-event-teams">'+g.a+" vs "+g.b+'</span><span class="countdown-event-time">'+timeStr+'</span><span class="countdown-event-date">'+g.t+' Bras.</span></div>');
+    var _rtA=resolveTeam(g.a,g.n),_rtB=resolveTeam(g.b,g.n);
+    var nameA=_rtA&&_rtA.name?_rtA.name:g.a;
+    var nameB=_rtB&&_rtB.name?_rtB.name:g.b;
+    cards.push('<div class="countdown-event'+(idx===0?' next-up':'')+'">'+(idx===0?'<span class="countdown-event-num" style="color:var(--gold)">\u25ba</span>':'<span class="countdown-event-num">#'+g.n+'</span>')+'<span class="countdown-event-teams">'+nameA+" vs "+nameB+'</span><span class="countdown-event-time">'+timeStr+'</span><span class="countdown-event-date">'+g.t+' Bras.</span></div>');
   });
   var _html=cards.join("");
   if(!cards.length&&!liveGames.length){_html='<div class="countdown-event"><span class="countdown-event-teams">\u{1F3C6} Copa encerrada \u2014 obrigado por acompanhar!</span></div>';}
@@ -3760,9 +3764,8 @@ function _bolaoPhaseLabel(ph){
   return map[ph]||ph;
 }
 function bolaoShowReopenPopup(phaseName){
-  var key='bolao-reopen-popup-v2-'+phaseName;
-  if(typeof localStorage!=='undefined'&&localStorage.getItem(key))return;
-  if(typeof localStorage!=='undefined')localStorage.setItem(key,'1');
+  var _sk='bolao-reopen-shown-'+phaseName;
+  try{if(sessionStorage.getItem(_sk))return;sessionStorage.setItem(_sk,'1');}catch(e){}
   var label=_bolaoPhaseLabel(phaseName);
   var overlay=document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
@@ -3790,9 +3793,13 @@ function bolaoShowReopenPopup(phaseName){
     +'<div style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.2);border-radius:8px;padding:12px;margin-bottom:14px">'
     +'<div style="font-size:12px;font-weight:700;color:#60a5fa;margin-bottom:8px">🏅 Bônus adicionais</div>'
     +'<div style="font-size:11px;color:rgba(255,255,255,.7);line-height:2">'
-    +'⚽ Acertou quem passa nos pênaltis: <strong style="color:#fff">+5 pts</strong><br>'
+    +'⚽ Acertou quem passa nos <strong style="color:#fff">pênaltis ou prorrogação</strong>: <strong style="color:#fff">+5 pts</strong><br>'
     +'🏅 Bônus por fase (só quem NÃO editou): R32 <strong style="color:#fff">+5</strong> · R16 <strong style="color:#fff">+10</strong> · QF <strong style="color:#fff">+15</strong> · SF <strong style="color:#fff">+20</strong> · 3º <strong style="color:#fff">+20</strong> · Final <strong style="color:#fff">+30</strong>'
     +'</div></div>'
+    +'<div style="background:rgba(255,140,0,.07);border:1px solid rgba(255,140,0,.3);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:rgba(255,255,255,.8);display:flex;align-items:center;gap:8px">'
+    +'<span style="font-size:16px">⚠️</span>'
+    +'<span><strong style="color:#ff8c00">Preencha TODOS os jogos da fase</strong> — palpites em branco não pontuam!</span>'
+    +'</div>'
     +'<div style="background:rgba(255,23,68,.06);border:1px solid rgba(255,23,68,.2);border-radius:8px;padding:10px 12px;margin-bottom:20px;font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:8px">'
     +'<span style="font-size:16px">⏰</span>'
     +'<span>Prazo: <strong style="color:#fff">5 minutos antes do 1º jogo da '+label+'</strong>. Após isso os palpites travam.</span>'
@@ -3857,28 +3864,46 @@ function bolaoUpdateReopenBanner(){
         });
         bolaoUpdateReopenBanner();bolaoRenderReopenSection();
         Object.keys(_bolaoOpenPhases).forEach(function(ph){bolaoShowReopenPopup(ph);});
-      }).catch(function(){});
+      }).catch(function(){bolaoUpdateReopenBanner();});
     }
     return;
   }
 
-  // Fallback hardcoded: anúncio R32 mesmo sem dados do banco
-  // Jogo 73 (1º R32): 28/Jun 16:00 PDT = 23:00 UTC. Deadline = 22:55 UTC (5min antes)
-  var _r32Deadline=new Date('2026-06-28T22:55:00Z');
+  // Fallback hardcoded: duas fases
+  // Jogos 71+72 (últimos da fase de grupos): 27/Jun 23:00 CDT = 28/Jun 04:00 UTC → terminam ~06:00 UTC
+  // Jogo 73 (1º R32): 28/Jun 16:00 PDT = 23:00 UTC → deadline 22:55 UTC (5min antes)
+  var _r32OpenFrom=new Date('2026-06-28T04:10:00Z');   // após fim dos jogos 71+72 (~02:00 UTC + 90+acréscimos)
+  var _r32Deadline=new Date('2026-06-28T18:55:00Z');   // 5min antes do jogo 73 (16:00 BRT = 19:00 UTC)
   var _r32AnnounceFrom=new Date('2026-06-27T00:00:00-03:00');
   var _nowMs=Date.now();
   if(_nowMs>=_r32AnnounceFrom.getTime()&&_nowMs<_r32Deadline.getTime()){
-    var _pk='bolao-reopen-popup-v2-r32';try{if(!sessionStorage.getItem(_pk)){sessionStorage.setItem(_pk,'1');bolaoShowReopenPopup('r32');}}catch(e){}
+    bolaoShowReopenPopup('r32'); // sempre mostra enquanto countdown ativo
     banner.style.display='block';
-    inner.style.background='linear-gradient(135deg,rgba(80,80,200,.14),rgba(60,60,150,.08))';
-    inner.style.border='2px solid rgba(150,150,255,.35)';
-    if(iconEl)iconEl.textContent='⏳';
-    if(titleEl){titleEl.style.color='rgba(200,200,255,.95)';titleEl.textContent='Reabertura da Rodada de 32 está chegando!';}
-    if(subEl)subEl.textContent='Você poderá editar seus palpites do mata-mata em breve';
-    if(countLabel){countLabel.textContent='Abre em';countLabel.style.color='rgba(180,180,255,.55)';}
-    var _tillR32=_r32Deadline.getTime()-_nowMs;
-    if(countEl){countEl.style.color='rgba(200,200,255,.95)';countEl.textContent=_bolaoFmtCountdown(Math.max(0,_tillR32));}
-    if(_tillR32>0)setTimeout(bolaoUpdateReopenBanner,1000);
+    var _isOpen=_nowMs>=_r32OpenFrom.getTime();
+    if(_isOpen){
+      // Fase aberta: countdown para fechar
+      var _till=_r32Deadline.getTime()-_nowMs;
+      var _urgent=_till<3600000;
+      inner.style.background=_urgent?'linear-gradient(135deg,rgba(255,23,68,.18),rgba(255,23,68,.08))':'linear-gradient(135deg,rgba(255,223,0,.18),rgba(255,223,0,.08))';
+      inner.style.border='2px solid '+(_urgent?'var(--red)':'var(--gold)');
+      if(iconEl)iconEl.textContent='🔓';
+      if(titleEl){titleEl.style.color=_urgent?'var(--red)':'var(--gold)';titleEl.textContent='Reabertura da Rodada de 32 está ABERTA!';}
+      if(subEl)subEl.textContent='Edite seus palpites — fecha 5 min antes do jogo 73 ↓';
+      if(countLabel){countLabel.textContent='Prazo fecha em';countLabel.style.color=_urgent?'var(--red)':'rgba(255,255,255,.55)';}
+      if(countEl){countEl.style.color=_urgent?'var(--red)':'var(--gold)';countEl.textContent=_bolaoFmtCountdown(Math.max(0,_till));}
+      if(_till>0)setTimeout(bolaoUpdateReopenBanner,1000);
+    }else{
+      // Antes de abrir: countdown para abertura (após fim dos jogos 71+72)
+      var _tillOpen=_r32OpenFrom.getTime()-_nowMs;
+      inner.style.background='linear-gradient(135deg,rgba(80,80,200,.14),rgba(60,60,150,.08))';
+      inner.style.border='2px solid rgba(150,150,255,.35)';
+      if(iconEl)iconEl.textContent='⏳';
+      if(titleEl){titleEl.style.color='rgba(200,200,255,.95)';titleEl.textContent='Reabertura da Rodada de 32 em breve!';}
+      if(subEl)subEl.textContent='Abre após o fim dos jogos 71 e 72 (últimos da fase de grupos)';
+      if(countLabel){countLabel.textContent='Os palpites abrem em';countLabel.style.color='rgba(180,180,255,.55)';}
+      if(countEl){countEl.style.color='rgba(200,200,255,.95)';countEl.textContent=_bolaoFmtCountdown(Math.max(0,_tillOpen));}
+      if(_tillOpen>0)setTimeout(bolaoUpdateReopenBanner,1000);
+    }
     return;
   }
   banner.style.display='none';
@@ -3967,6 +3992,7 @@ function bolaoTestReopen(phase, isOpen){
 function bolaoInit(){
   bolaoLoadRanking();
   _initSpecialBanner();
+  bolaoUpdateReopenBanner(); // imediato: mostra fallback hardcoded antes do fetch
   // Reopen: busca fases abertas/agendadas e atualiza UI
   _bolaoFetch('/reopen-status').then(function(d){
     _bolaoOpenPhases={};_bolaoClosedPhases={};
