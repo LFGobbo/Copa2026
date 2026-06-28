@@ -509,16 +509,20 @@ async function handle(req) {
         ? new Date(phaseRows[0].deadline)
         : phaseReopenDeadline(phaseName);
       if (phaseDeadline && now >= phaseDeadline.getTime()) return error('Prazo da fase encerrado', 403);
-      // Upsert em picks_reopen — NUNCA modifica a tabela picks original
+      // Upsert em picks_reopen via DELETE+INSERT (Supabase requer Prefer header para on_conflict)
+      // NUNCA modifica a tabela picks original
+      var goalsA = body.goals_a !== undefined ? body.goals_a : body.score_a;
+      var goalsB = body.goals_b !== undefined ? body.goals_b : body.score_b;
       var payload = {
         participant_id: user.sub,
         game_n: gameN,
-        goals_a: (body.goals_a !== undefined && body.goals_a !== null) ? parseInt(body.goals_a, 10) : null,
-        goals_b: (body.goals_b !== undefined && body.goals_b !== null) ? parseInt(body.goals_b, 10) : null,
+        goals_a: (goalsA !== undefined && goalsA !== null) ? parseInt(goalsA, 10) : null,
+        goals_b: (goalsB !== undefined && goalsB !== null) ? parseInt(goalsB, 10) : null,
         ko_pick: body.ko_pick || null,
         updated_at: new Date().toISOString()
       };
-      await supaFetch('picks_reopen?on_conflict=participant_id,game_n', 'POST', payload);
+      await supaFetch('picks_reopen?participant_id=eq.' + user.sub + '&game_n=eq.' + gameN, 'DELETE').catch(function(){});
+      await supaFetch('picks_reopen', 'POST', payload);
       return json({ ok: true });
     }
 
