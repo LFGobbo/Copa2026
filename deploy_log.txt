@@ -1,18 +1,8 @@
-=== Deploy Worker via Node.js - 28/06/2026  2:43:35,31 === 
+=== Deploy Worker via Node.js - 28/06/2026  2:45:22,93 === 
 
 === Node Deploy ===
 [...] Autenticando...
 [OK] Account ID: 2df2e28b8c8d1b2a96aac34eb62cd72d
 [...] Enviando copa2026-bolao (7 bindings)...
-[ERRO] HTTP 400: {
-  "result": null,
-  "success": false,
-  "errors": [
-    {
-      "code": 10021,
-      "message": "Uncaught SyntaxError: Unexpected end of input\n  at worker.js:635:2\n",
-      "documentation_url": "https://developers.cloudflare.com/workers/observability/errors/#validation-errors-10021"
-    }
-  ],
- 
-=== Fim - 28/06/2026  2:43:37,27 === 
+[OK] copa2026-bolao deployado com sucesso! (2026-06-28T05:45:25.274Z)
+=== Fim - 28/06/2026  2:45:25,30 === 

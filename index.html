@@ -4112,6 +4112,7 @@ function bolaoReopenUnlock(gn){
     +'<button class="reopen-ko-btn" data-side="b" onclick="bolaoReopenKOPick('+gn+',\'b\')">'+flag(rB)+' '+rB+'</button>'
     +'</div></div>'
     +'<button class="reopen-cancel-btn" onclick="bolaoRenderReopenSection()">✕ Cancelar</button>';
+  setTimeout(function(){bolaoReopenCheckDraw(gn);},0);
   var inp=document.getElementById('rp-a-'+gn);if(inp)inp.focus();
 }
 function bolaoReopenCheckDraw(gn){
@@ -4134,8 +4135,8 @@ function bolaoReopenKOPick(gn,side){
   var sel=_bolaoMyPicksReopen[gn].ko;
   var btnA=card.querySelector('.reopen-ko-btn[data-side="a"]');
   var btnB=card.querySelector('.reopen-ko-btn[data-side="b"]');
-  if(btnA){btnA.className='reopen-ko-btn'+(sel==='a'?' reopen-ko-sel':'');btnA.textContent=(sel==='a'?'✔ ':'')+flag(rA)+' '+rA;}
-  if(btnB){btnB.className='reopen-ko-btn'+(sel==='b'?' reopen-ko-sel':'');btnB.textContent=(sel==='b'?'✔ ':'')+flag(rB)+' '+rB;}
+  if(btnA){btnA.className='reopen-ko-btn'+(sel==='a'?' reopen-ko-sel':'');btnA.innerHTML=(sel==='a'?'✔ ':'')+flag(rA)+' '+esc(rA);}
+  if(btnB){btnB.className='reopen-ko-btn'+(sel==='b'?' reopen-ko-sel':'');btnB.innerHTML=(sel==='b'?'✔ ':'')+flag(rB)+' '+esc(rB);}
 }
 function bolaoSaveReopenPick(gn){
   var inA=document.getElementById('rp-a-'+gn);
