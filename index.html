@@ -4654,7 +4654,7 @@ function bolaoShowParcialR32(){
       var edited=reopens[gn]&&reopens[gn].a!==null&&reopens[gn].a!==undefined;
       if(edited){editou.push(gn);return;}
       // Não editou: verifica se acertou confronto via bracket
-      var realA=resolveTeam(g.a),realB=resolveTeam(g.b);
+      var realA=resolveTeam(g.a,gn),realB=resolveTeam(g.b,gn);
       if(!realA||!realB||realA.pending||realB.pending){errou.push(gn);return;}
       var predA=_bolaoResolveTeam(g.a,gn,picks);
       var predB=_bolaoResolveTeam(g.b,gn,picks);
