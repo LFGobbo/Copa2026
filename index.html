@@ -3689,6 +3689,10 @@ async function bolaoLoadMyData(){
     _bolaoMyPicks[p.game_n]={a:p.goals_a,b:p.goals_b};
     if(p.ko_pick)_bolaoKOPicks[p.game_n]=p.ko_pick;
   });
+  _bolaoMyPicksReopen={};
+  (data.picksReopen||[]).forEach(function(p){
+    _bolaoMyPicksReopen[p.game_n]={a:p.goals_a,b:p.goals_b,ko:p.ko_pick||null};
+  });
   _bolaoMySpecial=data.specialPicks;
   _bolaoConfirmed=data.confirmed||false;
   _cacheMyPicks();
@@ -3696,6 +3700,19 @@ async function bolaoLoadMyData(){
 async function bolaoLoadRanking(){
   if(_rankingCachedAt&&Date.now()-_rankingCachedAt<30000&&Object.keys(_bolaoParticipants).length){
     bolaoRenderRanking();return;
+  }
+  // Mostra cache do localStorage imediatamente (qualquer idade), depois atualiza em background
+  var _triedCache=false;
+  if(!Object.keys(_bolaoParticipants).length){
+    try{
+      var cached=JSON.parse(localStorage.getItem('copa2026_ranking_cache')||'null');
+      if(cached&&cached.participants){
+        _bolaoParticipants=cached.participants;_bolaoConfirmedStatus=cached.confirmedStatus||{};_bolaoConfirmedAt=cached.confirmedAt||{};_bolaoAllPicks=cached.picks||{};_bolaoAllSpecials=cached.specials||{};_bolaoPickCounts=cached.pickCounts||{};
+        _rankingCachedAt=cached.ts;
+        bolaoRenderRanking();
+        _triedCache=true;
+      }
+    }catch(ce){}
   }
   try{
     var maxG=0;
@@ -3713,21 +3730,23 @@ async function bolaoLoadRanking(){
     bolaoRenderRanking();
     try{localStorage.setItem('copa2026_ranking_cache',JSON.stringify({ts:Date.now(),participants:_bolaoParticipants,confirmedStatus:_bolaoConfirmedStatus,confirmedAt:_bolaoConfirmedAt,picks:_bolaoAllPicks,specials:_bolaoAllSpecials,pickCounts:_bolaoPickCounts}))}catch(e){}
   }catch(e){
-    try{
-      var cached=JSON.parse(localStorage.getItem('copa2026_ranking_cache')||'null');
-      if(cached&&cached.participants&&Date.now()-cached.ts<3600000){
-        _bolaoParticipants=cached.participants;
-        _bolaoConfirmedStatus=cached.confirmedStatus||{};
-        _bolaoConfirmedAt=cached.confirmedAt||{};
-        _bolaoAllPicks=cached.picks||{};
-        _bolaoAllSpecials=cached.specials||{};
-        _bolaoPickCounts=cached.pickCounts||{};
-        bolaoRenderRanking();
-        var tb=document.getElementById('bolao-rank-body');
-        if(tb)tb.insertAdjacentHTML('afterend','<div style="text-align:center;color:var(--orange);font-size:11px;padding:4px 0">&#9888; Dados offline (até 1h atrás)</div>');
-        return;
-      }
-    }catch(ce){}
+    if(!_triedCache){
+      try{
+        var cached=JSON.parse(localStorage.getItem('copa2026_ranking_cache')||'null');
+        if(cached&&cached.participants&&Date.now()-cached.ts<3600000){
+          _bolaoParticipants=cached.participants;
+          _bolaoConfirmedStatus=cached.confirmedStatus||{};
+          _bolaoConfirmedAt=cached.confirmedAt||{};
+          _bolaoAllPicks=cached.picks||{};
+          _bolaoAllSpecials=cached.specials||{};
+          _bolaoPickCounts=cached.pickCounts||{};
+          bolaoRenderRanking();
+          var tb=document.getElementById('bolao-rank-body');
+          if(tb)tb.insertAdjacentHTML('afterend','<div style="text-align:center;color:var(--orange);font-size:11px;padding:4px 0">&#9888; Dados offline (até 1h atrás)</div>');
+          return;
+        }
+      }catch(ce){}
+    }
     var tb=document.getElementById('bolao-rank-body');
     if(tb)tb.innerHTML='<tr><td colspan="6" style="color:var(--muted);padding:16px">Erro ao carregar ranking. Verifique sua conexão.</td></tr>';
   }
@@ -3780,9 +3799,10 @@ async function _onLoginSuccess(res){
   document.getElementById('bolao-logged-area').style.display='block';
   document.getElementById('bolao-stats-section').style.display='block';
   document.getElementById('bolao-evolution-section').style.display='block';
-  bolaoLoadStats();
-  bolaoLoadEvolution();
-  // Carrega picks e ranking em paralelo para reduzir tempo de espera
+  // Estats usa dados do ranking (sem fetch extra). Evolution carrega em background.
+  try{var _sw=document.getElementById('bolao-stats-wrap');if(_sw)bolaoRenderStats(_sw);}catch(_se){}
+  setTimeout(function(){bolaoLoadEvolution();},100);
+  // Carrega picks e ranking em paralelo
   await Promise.all([bolaoLoadMyData().catch(function(e){}), bolaoLoadRanking().catch(function(e){})]);
   // Se token expirou (session limpa), reverter UI para login
   if(!_bolaoToken){
@@ -3795,7 +3815,7 @@ async function _onLoginSuccess(res){
     return;
   }
   bolaoRenderPicksGrid();
-  bolaoLoadMajority();
+  setTimeout(function(){bolaoLoadMajority();},200);
   bolaoPopulateSpecials();
   if(Object.keys(_bolaoOpenPhases||{}).length)try{bolaoRenderReopenSection();}catch(e){}
   if(_bolaoConfirmed)document.getElementById('bolao-confirmed-banner').style.display='block';
