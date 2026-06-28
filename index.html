@@ -2193,7 +2193,12 @@ var map={};if(!d||!d.Results)return map;
 d.Results.forEach(function(m){var h=FIFA_TEAM_MAP[m.Home.Abbreviation],a=FIFA_TEAM_MAP[m.Away.Abbreviation],hs=m.HomeTeamScore,as=m.AwayTeamScore;
 if(!FIFA_MAP_READY&&m.Home&&m.Home.Abbreviation&&m.Home.IdTeam)FIFA_TEAM_IDS[m.Home.Abbreviation]=m.Home.IdTeam;
 if(!FIFA_MAP_READY&&m.Away&&m.Away.Abbreviation&&m.Away.IdTeam)FIFA_TEAM_IDS[m.Away.Abbreviation]=m.Away.IdTeam;
-if(h&&a&&m.IdMatch){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){if(!FIFA_MATCH_IDS[g.n])FIFA_MATCH_IDS[g.n]=m.IdMatch;FIFA_MATCH_META[g.n]={id:m.IdMatch,homeId:m.Home.IdTeam,awayId:m.Away.IdTeam};break}}}
+if(h&&a&&m.IdMatch){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];
+  var _ga=g.a,_gb=g.b;
+  // Jogos KO: g.a/g.b são placeholders — resolver para nome real
+  if(_ga&&(_ga==='0'||_ga.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rta=resolveTeam(_ga,g.n);if(!_rta.pending)_ga=_rta.name;}
+  if(_gb&&(_gb==='0'||_gb.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rtb=resolveTeam(_gb,g.n);if(!_rtb.pending)_gb=_rtb.name;}
+  if((_ga===h&&_gb===a)||(_ga===a&&_gb===h)){if(!FIFA_MATCH_IDS[g.n])FIFA_MATCH_IDS[g.n]=m.IdMatch;FIFA_MATCH_META[g.n]={id:m.IdMatch,homeId:m.Home.IdTeam,awayId:m.Away.IdTeam,homeTeam:h,awayTeam:a};break}}}
 // MatchStatus: 0=FT, 1=agendado, 3=ao vivo, 4=intervalo, 5=prorrogação, 6=pênaltis
 if(m.MatchStatus===0&&m.IdMatch){MATCH_ENDED[m.IdMatch]=true;if(!MATCH_STARTED[m.IdMatch])MATCH_STARTED[m.IdMatch]=true}
 if(m.MatchStatus===3&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true}
@@ -2202,7 +2207,10 @@ if(m.MatchTime&&m.IdMatch&&typeof m.MatchTime==='string'){var rt=m.MatchTime.rep
 if(m.SecondHalfKickOffTime&&m.IdMatch&&!MATCH_SECOND_KICKOFF[m.IdMatch])MATCH_SECOND_KICKOFF[m.IdMatch]=new Date(m.SecondHalfKickOffTime)
 if(!h||!a||hs===null||as===null)return;
 for(var i=0;i<GAMES.length;i++){var g=GAMES[i];
-if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){map[g.n]={};if(g.a===h){map[g.n].a=hs;map[g.n].b=as}else{map[g.n].a=as;map[g.n].b=hs};if(hs!==null&&as!==null&&hs===as&&m.HomeTeamPenaltyScore!==null&&m.AwayTeamPenaltyScore!==null){map[g.n].pen=(g.a===h)?(parseInt(m.HomeTeamPenaltyScore,10)>parseInt(m.AwayTeamPenaltyScore,10)?'a':'b'):(parseInt(m.AwayTeamPenaltyScore,10)>parseInt(m.HomeTeamPenaltyScore,10)?'a':'b')}break}}
+  var _ga=g.a,_gb=g.b;
+  if(_ga&&(_ga==='0'||_ga.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rta=resolveTeam(_ga,g.n);if(!_rta.pending)_ga=_rta.name;}
+  if(_gb&&(_gb==='0'||_gb.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rtb=resolveTeam(_gb,g.n);if(!_rtb.pending)_gb=_rtb.name;}
+  if((_ga===h&&_gb===a)||(_ga===a&&_gb===h)){map[g.n]={};if(_ga===h){map[g.n].a=hs;map[g.n].b=as}else{map[g.n].a=as;map[g.n].b=hs};if(hs!==null&&as!==null&&hs===as&&m.HomeTeamPenaltyScore!==null&&m.AwayTeamPenaltyScore!==null){map[g.n].pen=(_ga===h)?(parseInt(m.HomeTeamPenaltyScore,10)>parseInt(m.AwayTeamPenaltyScore,10)?'a':'b'):(parseInt(m.AwayTeamPenaltyScore,10)>parseInt(m.HomeTeamPenaltyScore,10)?'a':'b')}break}}
   });return map})["catch"](function(){return null})}
 
 function mergeScores(map){if(!map||Object.keys(map).length===0)return false;var changed=false;
@@ -2233,9 +2241,12 @@ function auditData(){
         if(!h||!a||m.HomeTeamScore===null||m.AwayTeamScore===null)return;
         for(var i=0;i<GAMES.length;i++){
           var g=GAMES[i];
-          if((g.a===h&&g.b===a)||(g.a===a&&g.b===h)){
+          var _ga=g.a,_gb=g.b;
+          if(_ga&&(_ga==='0'||_ga.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rta=resolveTeam(_ga,g.n);if(!_rta.pending)_ga=_rta.name;}
+          if(_gb&&(_gb==='0'||_gb.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rtb=resolveTeam(_gb,g.n);if(!_rtb.pending)_gb=_rtb.name;}
+          if((_ga===h&&_gb===a)||(_ga===a&&_gb===h)){
             var na=parseInt(m.HomeTeamScore,10),nb=parseInt(m.AwayTeamScore,10);
-            if(g.a!==h){var tmp=na;na=nb;nb=tmp}
+            if(_ga!==h){var tmp=na;na=nb;nb=tmp}
             var local=scores[g.n];
             if(local&&local.a!==undefined){
               if(local.a===na&&local.b===nb)ok++;
