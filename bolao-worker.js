@@ -104,14 +104,14 @@ async function sha256(data) {
   }).join('');
 }
 
-async function supaFetch(path, method, body) {
+async function supaFetch(path, method, body, extraHeaders) {
   var opts = {
     method: method || 'GET',
-    headers: {
+    headers: Object.assign({
       apikey: SUPABASE_KEY,
       Authorization: 'Bearer ' + SUPABASE_KEY,
       'Content-Type': 'application/json',
-    },
+    }, extraHeaders || {}),
   };
   if (body) opts.body = JSON.stringify(body);
   var res = await fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
@@ -509,8 +509,7 @@ async function handle(req) {
         ? new Date(phaseRows[0].deadline)
         : phaseReopenDeadline(phaseName);
       if (phaseDeadline && now >= phaseDeadline.getTime()) return error('Prazo da fase encerrado', 403);
-      // Upsert em picks_reopen via DELETE+INSERT (Supabase requer Prefer header para on_conflict)
-      // NUNCA modifica a tabela picks original
+      // Upsert atômico via Supabase on_conflict (NUNCA modifica a tabela picks original)
       var goalsA = body.goals_a !== undefined ? body.goals_a : body.score_a;
       var goalsB = body.goals_b !== undefined ? body.goals_b : body.score_b;
       var payload = {
@@ -521,8 +520,7 @@ async function handle(req) {
         ko_pick: body.ko_pick || null,
         updated_at: new Date().toISOString()
       };
-      await supaFetch('picks_reopen?participant_id=eq.' + user.sub + '&game_n=eq.' + gameN, 'DELETE').catch(function(){});
-      await supaFetch('picks_reopen', 'POST', payload);
+      await supaFetch('picks_reopen?on_conflict=participant_id,game_n', 'POST', payload, { 'Prefer': 'resolution=merge-duplicates' });
       return json({ ok: true });
     }
 
