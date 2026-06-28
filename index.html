@@ -4645,7 +4645,7 @@ function bolaoShowParcialR32(){
   console.log('');
   ids.forEach(function(id){
     var name=_bolaoParticipants[id]||'?';
-    var picks=(id===_bolaoParticipantId?_bolaoMyPicks:_bolaoAllPicks[id])||{};
+    var picks=_bolaoAllPicks[id]||{};
     var reopens=_bolaoAllPicksReopen[id]||{};
     var editou=[],manteve=[],errou=[];
     r32games.forEach(function(gn){
@@ -4659,7 +4659,12 @@ function bolaoShowParcialR32(){
       var predA=_bolaoResolveTeam(g.a,gn,picks);
       var predB=_bolaoResolveTeam(g.b,gn,picks);
       if(predA===realA.name&&predB===realB.name)manteve.push(gn);
-      else errou.push(gn);
+      else{
+        errou.push(gn);
+        var _reasonA=predA?'esperado '+predA+' ≠ real '+realA.name:'predA=null';
+        var _reasonB=predB?'esperado '+predB+' ≠ real '+realB.name:'predB=null';
+        console.log('  ❌ #'+gn+': '+_reasonA+' | '+_reasonB);
+      }
     });
     var e=editou.length,m=manteve.length,x=errou.length;
     var line=name.padEnd(24)+'E'+e+' M'+m+' X'+x+'  ';
