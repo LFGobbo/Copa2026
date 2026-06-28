@@ -629,7 +629,7 @@ async function handle(req) {
           // sao pontuados pelo frontend via checkAutoSnapshot quando encerram.
           var GAME_KEY_MAP = {"MEX_RSA":1,"KOR_CZE":2,"CAN_BIH":3,"USA_PAR":4,"QAT_SUI":5,"BRA_MAR":6,"HAI_SCO":7,"AUS_TUR":8,"GER_CUW":9,"NED_JPN":10,"CIV_ECU":11,"SWE_TUN":12,"ESP_CPV":13,"BEL_EGY":14,"KSA_URU":15,"IRN_NZL":16,"ARG_ALG":17,"FRA_SEN":18,"IRQ_NOR":19,"AUT_JOR":20,"POR_COD":21,"ENG_CRO":22,"GHA_PAN":23,"UZB_COL":24,"CZE_RSA":25,"SUI_BIH":26,"CAN_QAT":27,"MEX_KOR":28,"TUR_PAR":29,"USA_AUS":30,"SCO_MAR":31,"BRA_HAI":32,"NED_SWE":33,"GER_CIV":34,"ECU_CUW":35,"TUN_JPN":36,"ESP_KSA":37,"BEL_IRN":38,"URU_CPV":39,"NZL_EGY":40,"ARG_AUT":41,"FRA_IRQ":42,"NOR_SEN":43,"JOR_ALG":44,"POR_UZB":45,"ENG_GHA":46,"PAN_CRO":47,"COL_COD":48,"BIH_QAT":50,"SUI_CAN":49,"MAR_HAI":52,"SCO_BRA":51,"RSA_KOR":54,"CZE_MEX":53,"CUW_CIV":56,"ECU_GER":55,"TUN_NED":58,"JPN_SWE":57,"PAR_AUS":60,"TUR_USA":59,"SEN_IRQ":62,"NOR_FRA":61,"URU_ESP":64,"CPV_KSA":63,"NZL_BEL":66,"EGY_IRN":65,"CRO_GHA":68,"PAN_ENG":67,"COD_UZB":70,"COL_POR":69,"JOR_ARG":72,"ALG_AUT":71};
 
-          // Funcao de pontuacao: identica ao bolaoCalcPickPts do frontend
+          // Funcao de pontuacao grupos: identica ao bolaoCalcPickPts do frontend
           function calcPts(pA,pB,rA,rB){
             if(pA===null||pA===undefined||pB===null||pB===undefined)return -1;
             if(rA===null||rA===undefined||rB===null||rB===undefined)return -1;
@@ -639,6 +639,26 @@ async function handle(req) {
             if(Math.max(pA,pB)===Math.max(rA,rB))return 6;
             if(Math.min(pA,pB)===Math.min(rA,rB))return 4;
             return 2;
+          }
+          // Funcao KO: tabela cheia (acertou confronto, nao reabriu) ou reduzida (reabriu/errou)
+          function calcKOPts(pA,pB,rA,rB,useFullTable){
+            if(pA===null||pA===undefined||pB===null||pB===undefined)return -1;
+            if(rA===null||rA===undefined||rB===null||rB===undefined)return -1;
+            var exact=pA===rA&&pB===rB;
+            var pr=Math.sign(pA-pB),rr=Math.sign(rA-rB);
+            if(useFullTable){
+              if(exact)return 15;
+              if(pr!==rr)return 0;
+              if(Math.max(pA,pB)===Math.max(rA,rB))return 9;
+              if(Math.min(pA,pB)===Math.min(rA,rB))return 6;
+              return 3;
+            }else{
+              if(exact)return 10;
+              if(pr!==rr)return 0;
+              if(Math.max(pA,pB)===Math.max(rA,rB))return 6;
+              if(Math.min(pA,pB)===Math.min(rA,rB))return 4;
+              return 2;
+            }
           }
 
           // 1. Buscar placares reais do Supabase (gravados pelo task=fifa)
@@ -677,24 +697,51 @@ async function handle(req) {
               picksByPid[p.participant_id][p.game_n] = p;
             });
 
-            // 4. Calcular pontuacao por participante
+            // 3b. Buscar picks reabertos (mata-mata) — tabela separada, picks originais intocados
+            var snapPicksReopen = [];
+            try {
+              var rpBase = SUPABASE_URL + '/rest/v1/picks_reopen?select=participant_id,game_n,goals_a,goals_b,ko_pick';
+              var rpOpts = { method:'GET', headers:{ apikey:SUPABASE_KEY, Authorization:'Bearer '+SUPABASE_KEY, 'Content-Type':'application/json', 'Range':'0-9999' } };
+              var rpr = await fetch(rpBase, rpOpts);
+              if (rpr.ok || rpr.status === 206) { snapPicksReopen = (await rpr.json()) || []; }
+            } catch(e) {}
+            var reopenByPid = {};
+            snapPicksReopen.forEach(function(p) {
+              if (!reopenByPid[p.participant_id]) reopenByPid[p.participant_id] = {};
+              reopenByPid[p.participant_id][p.game_n] = p;
+            });
+
+            // 4. Calcular pontuacao por participante (grupos + KO com picks_reopen)
+            var KO_PHASE_BONUS = {r32:5,r16:10,qf:15,sf:20,'3rd':20,final:30};
             var rows = snapParticipants.map(function(part) {
               var myPicks = picksByPid[part.id] || {};
+              var myReopen = reopenByPid[part.id] || {};
               var total = 0, exactCount = 0, resultCount = 0;
               var confirmTs = part.confirmed_at ? new Date(part.confirmed_at).getTime() : null;
               Object.keys(realScores).forEach(function(gn) {
                 var gnNum = parseInt(gn, 10);
-                // Verificar se confirmou antes do jogo comecar
-                // (usando deadline = kickoff - 2h, igual ao BOLAO_TWO_H do frontend)
                 var dl = bolaoDeadline(gnNum);
-                if (dl && confirmTs && (dl.getTime() + BOLAO_DEADLINE_MS) < confirmTs) return; // confirmou apos o kickoff
+                if (dl && confirmTs && (dl.getTime() + BOLAO_DEADLINE_MS) < confirmTs) return;
                 var pick = myPicks[gnNum];
-                if (!pick || pick.goals_a === null || pick.goals_b === null) return;
                 var real = realScores[gn];
-                var pts = calcPts(pick.goals_a, pick.goals_b, real.a, real.b);
+                var isKO = !!KO_GAME_PHASE[gnNum];
+                var pts;
+                if (isKO) {
+                  // KO: reopen tem prioridade; sem reopen usa pick original com tabela cheia
+                  var reopenPick = myReopen[gnNum];
+                  var hasReopen = reopenPick && reopenPick.goals_a !== null && reopenPick.goals_a !== undefined;
+                  var activePick = hasReopen ? reopenPick : pick;
+                  if (!activePick || activePick.goals_a === null || activePick.goals_a === undefined) return;
+                  var useFullTable = !hasReopen;
+                  pts = calcKOPts(activePick.goals_a, activePick.goals_b, real.a, real.b, useFullTable);
+                  if (pts >= 0 && useFullTable) total += (KO_PHASE_BONUS[KO_GAME_PHASE[gnNum]] || 0);
+                } else {
+                  if (!pick || pick.goals_a === null || pick.goals_b === null) return;
+                  pts = calcPts(pick.goals_a, pick.goals_b, real.a, real.b);
+                }
                 if (pts < 0) return;
                 total += pts;
-                if (pts === 10) exactCount++;
+                if (pts === 10 || pts === 15) exactCount++;
                 else if (pts >= 2) resultCount++;
               });
               return { participant_id: part.id, points: total, exact_count: exactCount, result_count: resultCount, position: 0 };

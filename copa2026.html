@@ -2777,6 +2777,7 @@ var KO_PHASE_BONUS_FRONTEND={r32:5,r16:10,qf:15,sf:20,'3rd':20,final:30};
 var KO_PHASE_GAMES={r32:[73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88],r16:[89,90,91,92,93,94,95,96],qf:[97,98,99,100],sf:[101,102],'3rd':[103],final:[104]};
 var KO_GAME_PHASE_FRONTEND=(function(){var m={};if(typeof KO_PHASE_GAMES!=='undefined'){Object.keys(KO_PHASE_GAMES).forEach(function(ph){(KO_PHASE_GAMES[ph]||[]).forEach(function(n){m[n]=ph;});})}return m;}());
 var _bolaoMyPicksReopen={},_bolaoAllPicksReopen={},_bolaoOpenPhases={},_bolaoClosedPhases={};
+var _bolaoReopenStatusFetched=false; // true após 1ª resposta do /reopen-status (evita fallback hardcoded sobrescrever dado do banco)
 var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
 var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmedStatus={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[],_bolaoKOPicks={},_bolaoPicksLoadFailed=false;
 var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0;
@@ -3937,49 +3938,6 @@ function bolaoUpdateReopenBanner(){
     return;
   }
 
-  // Fallback hardcoded: duas fases
-  // Jogos 71+72 (últimos da fase de grupos): 27/Jun 23:00 CDT = 28/Jun 04:00 UTC ? terminam ~06:00 UTC
-  // Jogo 73 (1º R32): 28/Jun 16:00 BRT = 19:00 UTC ? deadline 18:55 UTC (5min antes)
-  var _r32OpenFrom=new Date('2026-06-28T04:10:00Z');   // após fim dos jogos 71+72 (04:00 UTC + 90+acréscimos ? ~06:00 UTC)
-  var _r32Deadline=new Date('2026-06-28T18:55:00Z');   // 5min antes do jogo 73 (28/06 16:00 BRT = 19:00 UTC)
-  var _r32AnnounceFrom=new Date('2026-06-27T00:00:00-03:00');
-  var _nowMs=Date.now();
-  if(_nowMs>=_r32AnnounceFrom.getTime()&&_nowMs<_r32Deadline.getTime()){
-    bolaoShowReopenPopup('r32'); // sempre mostra enquanto countdown ativo
-    banner.style.display='block';
-    var _isOpen=_nowMs>=_r32OpenFrom.getTime();
-    if(_isOpen){
-      // Fase aberta: popula _bolaoOpenPhases e renderiza seção (uma vez)
-      if(!_bolaoOpenPhases['r32']){
-        _bolaoOpenPhases['r32']={deadline:_r32Deadline.toISOString(),game_ns:KO_PHASE_GAMES['r32']};
-        try{bolaoRenderReopenSection();}catch(e){}
-        try{bolaoShowReopenPopup('r32');}catch(e){}
-      }
-      // Countdown para fechar
-      var _till=_r32Deadline.getTime()-_nowMs;
-      var _urgent=_till<3600000;
-      inner.style.background=_urgent?'linear-gradient(135deg,rgba(255,23,68,.18),rgba(255,23,68,.08))':'linear-gradient(135deg,rgba(255,223,0,.18),rgba(255,223,0,.08))';
-      inner.style.border='2px solid '+(_urgent?'var(--red)':'var(--gold)');
-      if(iconEl)iconEl.textContent='??';
-      if(titleEl){titleEl.style.color=_urgent?'var(--red)':'var(--gold)';titleEl.textContent='Reabertura da Rodada de 32 está ABERTA!';}
-      if(subEl)subEl.textContent='Edite seus palpites abaixo ? fecha em breve';
-      if(countLabel){countLabel.textContent='Prazo fecha em';countLabel.style.color=_urgent?'var(--red)':'rgba(255,255,255,.55)';}
-      if(countEl){countEl.style.color=_urgent?'var(--red)':'var(--gold)';countEl.textContent=_bolaoFmtCountdown(Math.max(0,_till));}
-      if(_till>0)setTimeout(bolaoUpdateReopenBanner,1000);
-    }else{
-      // Antes de abrir: countdown para abertura (após fim dos jogos 71+72)
-      var _tillOpen=_r32OpenFrom.getTime()-_nowMs;
-      inner.style.background='linear-gradient(135deg,rgba(80,80,200,.14),rgba(60,60,150,.08))';
-      inner.style.border='2px solid rgba(150,150,255,.35)';
-      if(iconEl)iconEl.textContent='?';
-      if(titleEl){titleEl.style.color='rgba(200,200,255,.95)';titleEl.textContent='Reabertura da Rodada de 32 em breve!';}
-      if(subEl)subEl.textContent='Abre após o fim dos jogos 71 e 72 (últimos da fase de grupos)';
-      if(countLabel){countLabel.textContent='Os palpites abrem em';countLabel.style.color='rgba(180,180,255,.55)';}
-      if(countEl){countEl.style.color='rgba(200,200,255,.95)';countEl.textContent=_bolaoFmtCountdown(Math.max(0,_tillOpen));}
-      if(_tillOpen>0)setTimeout(bolaoUpdateReopenBanner,1000);
-    }
-    return;
-  }
   banner.style.display='none';
 }
 
@@ -4182,21 +4140,19 @@ function bolaoTestReopen(phase, isOpen){
 function bolaoInit(){
   bolaoLoadRanking();
   _initSpecialBanner();
-  bolaoUpdateReopenBanner(); // imediato: mostra fallback hardcoded antes do fetch
+  bolaoUpdateReopenBanner();
   // Reopen: busca fases abertas/agendadas e atualiza UI
   _bolaoFetch('/reopen-status').then(function(d){
+    _bolaoReopenStatusFetched=true;
     _bolaoOpenPhases={};_bolaoClosedPhases={};
     (d.phases||[]).forEach(function(p){
       if(p.open)_bolaoOpenPhases[p.phase_name]={deadline:p.deadline,game_ns:p.game_ns};
       else if(p.opened_at)_bolaoClosedPhases[p.phase_name]={open_at:p.opened_at};
     });
+    bolaoUpdateReopenBanner();
     var hasOpen=Object.keys(_bolaoOpenPhases).length>0;
-    var hasClosed=Object.keys(_bolaoClosedPhases).length>0;
-    if(hasOpen||hasClosed){
-      bolaoUpdateReopenBanner();
-      if(hasOpen){bolaoRenderReopenSection();Object.keys(_bolaoOpenPhases).forEach(function(ph){bolaoShowReopenPopup(ph);});}
-    }
-  }).catch(function(){});
+    if(hasOpen){bolaoRenderReopenSection();Object.keys(_bolaoOpenPhases).forEach(function(ph){bolaoShowReopenPopup(ph);});}
+  }).catch(function(){_bolaoReopenStatusFetched=false;});
   var el=document.getElementById('bolao-deadline-info');if(!el)return;
   var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);if(!deadline){el.textContent='';return}
   var now=new Date();
