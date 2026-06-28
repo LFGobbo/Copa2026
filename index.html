@@ -668,9 +668,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .reopen-badge-saved{background:rgba(74,222,128,.18);color:#4ade80}
 .reopen-badge-editing{background:rgba(255,193,7,.12);color:#ffc107}
 .reopen-teams{font-size:13px;font-weight:600;color:var(--text);min-height:18px;line-height:1.3}
-.reopen-orig-confronto{font-size:11px;color:var(--muted);margin:1px 0;font-style:italic}
-.reopen-orig{font-size:11px;color:var(--muted);margin:1px 0}
-.reopen-orig strong{color:rgba(255,255,255,.55)}
+.reopen-orig-block{display:flex;align-items:center;justify-content:space-between;gap:6px;background:rgba(255,255,255,.05);border-radius:6px;padding:5px 8px;margin:4px 0 2px}.reopen-orig-team{font-size:11px;color:rgba(255,255,255,.7);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.reopen-orig-team.right{text-align:right}.reopen-orig-score{font-size:13px;font-weight:700;color:var(--gold);white-space:nowrap;padding:0 4px}.reopen-orig-label{font-size:10px;color:var(--muted);text-align:center;margin-bottom:1px}.reopen-orig-score-none{font-size:11px;color:var(--muted);font-style:italic}
 .reopen-info{font-size:11px;color:rgba(255,180,0,.75);padding:5px 8px;background:rgba(255,140,0,.06);border-left:2px solid rgba(255,140,0,.3);border-radius:0 5px 5px 0;line-height:1.4;margin:3px 0}
 .reopen-info-gold{font-size:11px;color:rgba(255,215,0,.85);padding:5px 8px;background:rgba(255,223,0,.05);border-left:2px solid rgba(255,223,0,.3);border-radius:0 5px 5px 0;line-height:1.4;margin:3px 0}
 .reopen-score-row{display:flex;align-items:center;gap:8px;justify-content:center;margin:5px 0 2px}
@@ -3986,13 +3984,15 @@ function bolaoRenderReopenSection(){
       var hasReopen=!!(reopen&&reopen.a!==null&&reopen.a!==undefined);
       if(hasReopen)savedCount++;
       var fl=flag(rA)+' '+rA+' vs '+flag(rB)+' '+rB;
-      var origConfrontoHtml=(ptA&&ptB&&(ptA!==rA||ptB!==rB))
-        ?'<div class="reopen-orig-confronto">Confronto original: '+flag(ptA)+' '+esc(ptA)+' vs '+flag(ptB)+' '+esc(ptB)+'</div>'
-        :'';
-      var origHtml=origConfrontoHtml+'<div class="reopen-orig">Palpite original: '
-        +(origPick.a!==undefined&&origPick.b!==undefined
-          ?'<strong>'+origPick.a+' × '+origPick.b+'</strong>'
-          :'<em>—</em>')
+      var _origTA=ptA||rA,_origTB=ptB||rB;
+      var _hasScore=origPick.a!==undefined&&origPick.b!==undefined;
+      var origHtml='<div class="reopen-orig-label">Seu palpite original</div>'
+        +'<div class="reopen-orig-block">'
+        +'<span class="reopen-orig-team">'+flag(_origTA)+' '+esc(_origTA)+'</span>'
+        +(_hasScore
+          ?'<span class="reopen-orig-score">'+origPick.a+' × '+origPick.b+'</span>'
+          :'<span class="reopen-orig-score-none">— × —</span>')
+        +'<span class="reopen-orig-team right">'+esc(_origTB)+' '+flag(_origTB)+'</span>'
         +'</div>';
       if(hasReopen){
         // ✓ Salvo — limpo, sem inputs
@@ -4049,10 +4049,16 @@ function bolaoReopenUnlock(gn){
   var fl=flag(rA)+' '+rA+' vs '+flag(rB)+' '+rB;
   var myPicks=_bolaoAllPicks[_bolaoParticipantId]||{};
   var origPick=_bolaoMyPicks[gn]||myPicks[gn]||{};
-  var origHtml='<div class="reopen-orig">Palpite original: '
-    +(origPick.a!==undefined&&origPick.b!==undefined
-      ?'<strong>'+origPick.a+' × '+origPick.b+'</strong>'
-      :'<em>—</em>')
+  var ptA2=_bolaoResolveTeam(g.a,gn,myPicks),ptB2=_bolaoResolveTeam(g.b,gn,myPicks);
+  var _origTA2=ptA2||rA,_origTB2=ptB2||rB;
+  var _hasScore2=origPick.a!==undefined&&origPick.b!==undefined;
+  var origHtml='<div class="reopen-orig-label">Seu palpite original</div>'
+    +'<div class="reopen-orig-block">'
+    +'<span class="reopen-orig-team">'+flag(_origTA2)+' '+esc(_origTA2)+'</span>'
+    +(_hasScore2
+      ?'<span class="reopen-orig-score">'+origPick.a+' × '+origPick.b+'</span>'
+      :'<span class="reopen-orig-score-none">— × —</span>')
+    +'<span class="reopen-orig-team right">'+esc(_origTB2)+' '+flag(_origTB2)+'</span>'
     +'</div>';
   var existing=(_bolaoMyPicksReopen||{})[gn];
   var valA=existing&&existing.a!==undefined?existing.a:'';
