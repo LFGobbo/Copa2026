@@ -3778,7 +3778,8 @@ async function _onLoginSuccess(res){
   document.getElementById('bolao-evolution-section').style.display='block';
   bolaoLoadStats();
   bolaoLoadEvolution();
-  try{await bolaoLoadMyData()}catch(e){}
+  // Carrega picks e ranking em paralelo para reduzir tempo de espera
+  await Promise.all([bolaoLoadMyData().catch(function(e){}), bolaoLoadRanking().catch(function(e){})]);
   // Se token expirou (session limpa), reverter UI para login
   if(!_bolaoToken){
     document.getElementById('bolao-name').readOnly=false;
@@ -3792,7 +3793,6 @@ async function _onLoginSuccess(res){
   bolaoRenderPicksGrid();
   bolaoLoadMajority();
   bolaoPopulateSpecials();
-  try{await bolaoLoadRanking()}catch(e){}
   if(Object.keys(_bolaoOpenPhases||{}).length)try{bolaoRenderReopenSection();}catch(e){}
   if(_bolaoConfirmed)document.getElementById('bolao-confirmed-banner').style.display='block';
   else bolaoShowConfirmButton();
@@ -3877,7 +3877,7 @@ function bolaoUpdateReopenBanner(){
     inner.style.border='2px solid '+(urgent?'var(--red)':'var(--gold)');
     if(iconEl)iconEl.textContent='🔓';
     if(titleEl){titleEl.style.color=urgent?'var(--red)':'var(--gold)';titleEl.textContent='Reabertura da '+_bolaoPhaseLabel(ph)+' está ABERTA!';}
-    if(subEl)subEl.textContent=_bolaoParticipantId?'Edite seus palpites do mata-mata abaixo ↓':'Faça login abaixo para preencher seus palpites ↓';
+    if(subEl)subEl.textContent=_bolaoParticipantId?'Edite seus palpites do mata-mata abaixo ↓':'Faça login para preencher seus palpites';
     if(countLabel){countLabel.textContent='Prazo fecha em';countLabel.style.color=urgent?'var(--red)':'rgba(255,255,255,.55)';}
     if(countEl){countEl.style.color=urgent?'var(--red)':'var(--gold)';countEl.textContent=remaining!==null?_bolaoFmtCountdown(Math.max(0,remaining)):'--:--:--';}
     if(remaining!==null&&remaining>0){setTimeout(bolaoUpdateReopenBanner,1000);}
@@ -4958,4 +4958,3 @@ var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.re
 </script>
 </body>
 </html>
-
