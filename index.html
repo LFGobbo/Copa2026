@@ -3832,7 +3832,7 @@ function _bolaoPhaseLabel(ph){
   return map[ph]||ph;
 }
 function bolaoShowReopenPopup(phaseName){
-  var _sk='bolao-reopen-shown-'+phaseName;
+  var _sk='bolao-reopen-shown-'+phaseName+'-'+new Date().toDateString();
   try{if(sessionStorage.getItem(_sk))return;sessionStorage.setItem(_sk,'1');}catch(e){}
   var label=_bolaoPhaseLabel(phaseName);
   var overlay=document.createElement('div');
