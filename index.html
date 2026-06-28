@@ -4085,7 +4085,7 @@ function bolaoSaveReopenPick(gn){
   if(isNaN(a)||isNaN(b)||a<0||b<0){alert('Palpite inválido');return;}
   var btn=inA.closest('.reopen-card')?inA.closest('.reopen-card').querySelector('.reopen-save-btn'):null;
   if(btn){btn.disabled=true;btn.textContent='Salvando...';}
-  _bolaoFetch('/picks-reopen',{method:'POST',body:JSON.stringify({game_n:gn,score_a:a,score_b:b})})
+  _bolaoFetch('/picks-reopen','POST',{game_n:gn,score_a:a,score_b:b})
     .then(function(){
       if(!_bolaoMyPicksReopen)_bolaoMyPicksReopen={};
       _bolaoMyPicksReopen[gn]={a:a,b:b};
