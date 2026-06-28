@@ -4642,21 +4642,31 @@ function bolaoShowParcialR32(){
   var ids=Object.keys(_bolaoParticipants||{});
   if(!ids.length){console.log('Nenhum participante.');return;}
   console.log('=== PARCIAL REABERTURA R32 ===');
-  var header='Nome'.padEnd(24)+'R32   Games';
-  console.log(header);
-  console.log('-'.repeat(60));
+  console.log('E=Editou  M=Manteve(acertou,não editou)  X=Errou(confronto)');
+  console.log('');
   ids.forEach(function(id){
     var name=_bolaoParticipants[id]||'?';
+    var picks=_bolaoAllPicks[id]||{};
     var reopens=_bolaoAllPicksReopen[id]||{};
-    var filled=r32games.filter(function(gn){return reopens[gn]&&reopens[gn].a!==null&&reopens[gn].a!==undefined;});
-    var count=filled.length;
-    var line=name.padEnd(24)+String(count).padStart(2)+'/16  ';
-    if(count){
-      line+=filled.map(function(gn){
-        var p=reopens[gn];
-        return '#'+gn+'='+p.a+(p.ko&&p.ko==='a'?'W':p.ko==='b'?'w':'')+'-'+(p.ko&&p.ko==='b'?'W':p.ko==='a'?'w':'')+p.b;
-      }).join(' ');
-    }
+    var editou=[],manteve=[],errou=[];
+    r32games.forEach(function(gn){
+      var g=GAME_BY_ID[gn];
+      if(!g)return;
+      var edited=reopens[gn]&&reopens[gn].a!==null&&reopens[gn].a!==undefined;
+      if(edited){editou.push(gn);return;}
+      // Não editou: verifica se acertou confronto via bracket
+      var realA=resolveTeam(g.a),realB=resolveTeam(g.b);
+      if(!realA||!realB||realA.pending||realB.pending){errou.push(gn);return;}
+      var predA=_bolaoResolveTeam(g.a,gn,picks);
+      var predB=_bolaoResolveTeam(g.b,gn,picks);
+      if(predA===realA.name&&predB===realB.name)manteve.push(gn);
+      else errou.push(gn);
+    });
+    var e=editou.length,m=manteve.length,x=errou.length;
+    var line=name.padEnd(24)+'E'+e+' M'+m+' X'+x+'  ';
+    if(editou.length)line+='✅'+editou.join(' ');
+    if(manteve.length)line+='  🔒'+manteve.join(' ');
+    if(errou.length)line+='  ❌'+errou.join(' ');
     console.log(line);
   });
   console.log('=== FIM R32 ===');
