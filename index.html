@@ -3007,7 +3007,7 @@ function _bolaoTp(g,side){
   if(!isKOPh)return '<span>'+esc(placeholder)+'</span>';
 
   // Tentar resolução real primeiro (bracket oficial já definido)
-  try{var _rr=resolveTeam(placeholder,g.n);if(_rr&&!_rr.pending&&_rr.name){return '<span style="font-weight:600">'+flag(_rr.name)+' '+esc(_rr.name)+'</span>';}}catch(e){}
+  try{var _rr=resolveTeam(placeholder,g.n);if(_rr&&_rr.name&&_rr.name!==placeholder){return '<span style="font-weight:600"'+((!_rr.pending)?'':' title="Provisório"')+'>'+((!_rr.pending)?flag(_rr.name):'')+' '+esc(_rr.name)+'</span>';}}catch(e){}
   // Fallback: simulação pelo bolão do usuário
   var resolved=_bolaoResolveTeam(placeholder,g.n,_bolaoMyPicks);
   if(resolved){
@@ -3273,7 +3273,10 @@ function bolaoRenderDetail(pid){
       :wrongTeams?'<span style="color:var(--red);font-weight:600">TIME DIFERENTE</span> <span style="font-size:11px;opacity:.7">(0 pts)</span>'
       :(pts>=0&&isFinal)?(pts+(bonus?'+'+bonus:''))+' pts':(pts>=0)?'<span style="opacity:.5;font-style:italic">'+(pts+(bonus?'+'+bonus:''))+' pts</span>':'';
     if(!hasReal)pickStr='<span style="filter:blur(3px)">'+pickStr+'</span>';
-    var card='<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">'+flag(g.a)+' '+esc(g.a)+' vs '+flag(g.b)+' '+esc(g.b)+'</div><div><span class="bolao-pick-score">Palpite: '+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">\u2192 '+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>';
+    // Resolver placeholder KO para exibição no card (PRÓXIMOS e forfeit)
+    var _dA=g.a,_dB=g.b;
+    if(isKO){try{var _rrA=resolveTeam(g.a,g.n);if(!_rrA.pending&&_rrA.name)_dA=_rrA.name;}catch(e){} try{var _rrB=resolveTeam(g.b,g.n);if(!_rrB.pending&&_rrB.name)_dB=_rrB.name;}catch(e){}}
+    var card='<div class="bolao-pick-card '+cls+'"><div class="bolao-pick-teams">'+flag(_dA)+' '+esc(_dA)+' vs '+flag(_dB)+' '+esc(_dB)+'</div><div><span class="bolao-pick-score">Palpite: '+pickStr+'</span>'+(realStr?' <span class="bolao-pick-real">\u2192 '+realStr+'</span>':'')+'<span class="bolao-pick-pts">'+ptsStr+'</span></div></div>';
     if(hasReal){scored.push(card)}else{future.push(card)}
   });
   var out='';
@@ -4815,10 +4818,30 @@ function computeBolaoStats(){
     if(g.n<BOLAO_FIRST||!isGameLive(g))return;
     var sc=scores[g.n];if(!sc||sc.a===undefined||sc.b===undefined)return;
     var dist={h:0,d:0,a:0,t:0},scoringNow=[];
+    var _lgIsKO=g.f&&!g.f.startsWith('Grupo');
+    var _lgRealA=null,_lgRealB=null;
+    if(_lgIsKO){try{var _rla=resolveTeam(g.a,g.n);if(!_rla.pending&&_rla.name)_lgRealA=_rla.name;}catch(e){} try{var _rlb=resolveTeam(g.b,g.n);if(!_rlb.pending&&_rlb.name)_lgRealB=_rlb.name;}catch(e){}}
     ids.forEach(function(id){
-      var pk=_bolaoAllPicks[id]&&_bolaoAllPicks[id][g.n];if(!pk||pk.a===null||pk.b===null)return;
-      var pr=pk.a>pk.b?'h':(pk.a<pk.b?'a':'d');dist[pr]++;dist.t++;
-      var pts=bolaoCalcPickPts(pk.a,pk.b,sc.a,sc.b);
+      var origPk=_bolaoAllPicks[id]&&_bolaoAllPicks[id][g.n];
+      var reopenPk=(_bolaoAllPicksReopen[id]||{})[g.n];
+      var hasReopen=!!(reopenPk&&reopenPk.a!==null&&reopenPk.a!==undefined);
+      var activePk,pts;
+      if(_lgIsKO){
+        // KO: verificar confronto e usar pick ativo correto
+        var myPks=_bolaoAllPicks[id]||{};
+        var predA=_bolaoResolveTeam(g.a,g.n,myPks),predB=_bolaoResolveTeam(g.b,g.n,myPks);
+        var acertou=!!(_lgRealA&&_lgRealB&&predA&&predB&&predA===_lgRealA&&predB===_lgRealB);
+        if(!acertou&&!hasReopen)return;
+        activePk=hasReopen?reopenPk:origPk;
+        if(!activePk||activePk.a===null||activePk.a===undefined)return;
+        var useFullTable=acertou&&!hasReopen;
+        pts=bolaoCalcKOPickPts(activePk.a,activePk.b,sc.a,sc.b,useFullTable);
+      }else{
+        if(!origPk||origPk.a===null||origPk.b===null)return;
+        activePk=origPk;
+        pts=bolaoCalcPickPts(activePk.a,activePk.b,sc.a,sc.b);
+      }
+      var pr=activePk.a>activePk.b?'h':(activePk.a<activePk.b?'a':'d');dist[pr]++;dist.t++;
       if(pts>0)scoringNow.push({id:id,name:_bolaoParticipants[id]||'?',pts:pts});
     });
     scoringNow.sort(function(a,b){return b.pts-a.pts||(a.name<b.name?-1:1);});
