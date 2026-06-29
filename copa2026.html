@@ -3063,7 +3063,9 @@ function _bolaoGetBracket(picks){
   return res;
 }
 function bolaoCalcTotal(participantId){
-  if(!_bolaoConfirmedStatus[participantId])return{total:0,exactCount:0,resultCount:0,bonusCount:0};
+  // Bônus manual (admin) — aplicado mesmo sem confirmação
+  var adminBonus=_bolaoBonusPts[participantId]||0;
+  if(!_bolaoConfirmedStatus[participantId])return{total:adminBonus,exactCount:0,resultCount:0,bonusCount:adminBonus};
   var myPicks=_bolaoAllPicks[participantId]||{},sp=_bolaoAllSpecials[participantId];
   var total=0,exactCount=0,resultCount=0,bonusCount=0;
   var confirmTs=_bolaoConfirmedAt[participantId]?new Date(_bolaoConfirmedAt[participantId]).getTime():null;
@@ -3132,8 +3134,6 @@ function bolaoCalcTotal(participantId){
     if(topScorer.exact&&matchName(sp.top_scorer,topScorer.name)){total+=20;bonusCount++;}
     else if(!topScorer.exact&&topScorer.tied&&topScorer.tied.some(function(t){return matchName(sp.top_scorer,t)})){total+=10;bonusCount++;}
   }
-  // Bônus manual (admin): campo bonus_points na tabela participants
-  var adminBonus=_bolaoBonusPts[participantId]||0;
   if(adminBonus>0){total+=adminBonus;bonusCount+=adminBonus;}
   return{total:total,exactCount:exactCount,resultCount:resultCount,bonusCount:bonusCount};
 }
@@ -5082,5 +5082,4 @@ document.addEventListener('keydown', function(e){
 });
 var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED'&&!_refreshing){_refreshing=true;window.location.reload()}})}
 </script>
-</body>
-</html>
+</bo
