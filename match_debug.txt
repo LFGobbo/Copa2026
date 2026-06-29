@@ -1,6 +1,0 @@
-if(!h||!a||hs===null||as===null)return;
-for(var i=0;i<GAMES.length;i++){var g=GAMES[i];
-  var _ga=g.a,_gb=g.b;
-  if(_ga&&(_ga==='0'||_ga.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rta=resolveTeam(_ga,g.n);if(!_rta.pending)_ga=_rta.name;}
-  if(_gb&&(_gb==='0'||_gb.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rtb=resolveTeam(_gb,g.n);if(!_rtb.pending)_gb=_rtb.name;}
-  if((_ga===h&&_gb===a)||(_ga===a&&_gb===h)){map[g.n]={};if(_ga===h){map[g.n].a=hs;map[g.n].b=as}else{map[g.n].a=as;map[g.n].b=h
