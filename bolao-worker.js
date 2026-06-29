@@ -357,6 +357,20 @@ async function handle(req) {
       return json({ ok: true });
     }
 
+    // PATCH /admin/confirm — seta confirmed=true (admin). Ex: { adminPass, name }
+    if (method === 'PATCH' && path === '/admin/confirm') {
+      var body = await req.json();
+      if (!body.name || !body.adminPass) return error('name e adminPass obrigatorios');
+      var h = await sha256(body.adminPass + ':' + JWT_SECRET);
+      if (h !== ADMIN_HASH) return error('Admin pass invalida', 403);
+      var allParts = await supaFetch("participants?select=id,name,confirmed,confirmed_at");
+      var target = normalizeName(body.name);
+      var parts = allParts ? allParts.filter(function(p){ return normalizeName(p.name) === target; }) : [];
+      if (!parts || !parts.length) return error('Participante nao encontrado', 404);
+      console.log('[AUDIT] PATCH /admin/confirm para "' + parts[0].name + '" (' + parts[0].id + ') em ' + new Date().toISOString());
+      await supaFetch("participants?id=eq." + parts[0].id, 'PATCH', { confirmed: true, confirmed_at: new Date().toISOString() });
+      return json({ ok: true, name: parts[0].name, confirmed: true });
+    }
 
     // GET /stats?participantId=...
     if (method === 'GET' && path === '/stats') {
@@ -809,7 +823,7 @@ async function handle(req) {
       return json({ ok: true, tasks: results });
     }
 
-        return json({ ok: true, message: 'Copa2026 Bolao — API do Worker. Rotas: GET /ranking, POST /register, POST /login, GET|POST /picks, GET /mypicks, POST /special-picks, PATCH /confirm, PATCH /admin/unlock, DELETE /reset, GET /health, GET /cron, GET /reopen-status, POST /picks-reopen, PATCH /admin/phase-reopen' });
+        return json({ ok: true, message: 'Copa2026 Bolao — API do Worker. Rotas: GET /ranking, POST /register, POST /login, GET|POST /picks, GET /mypicks, POST /special-picks, PATCH /confirm, PATCH /admin/unlock, PATCH /admin/confirm, DELETE /reset, GET /health, GET /cron, GET /reopen-status, POST /picks-reopen, PATCH /admin/phase-reopen' });
   } catch (e) {
     return json({ error: 'Internal: ' + e.message }, 500);
   }
