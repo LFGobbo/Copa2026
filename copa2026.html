@@ -1257,7 +1257,8 @@ function getSuspensions(forGame){
     // Quem estava suspenso CUMPRE a suspensão NESTE jogo → libera
     // (executa mesmo SEM cartões no jogo, senão suspensão nunca era liberada)
     ['a','b'].forEach(function(side){
-      var tn=side==='a'?g.a:g.b;
+      var _raw=side==='a'?g.a:g.b;var tn=_raw;
+      if(g.f&&!g.f.startsWith('Grupo')){try{var _rtn=resolveTeam(_raw,g.n);if(!_rtn.pending&&_rtn.name)tn=_rtn.name;}catch(e){}}
       if(state[tn])Object.keys(state[tn]).forEach(function(pn){
         if(state[tn][pn].suspended){state[tn][pn].suspended=false;state[tn][pn].yellows=0;state[tn][pn].redCard=false}
       });
@@ -1265,7 +1266,8 @@ function getSuspensions(forGame){
     var c=cards[gn];if(!c)return;
     // Processa cartões DESTE jogo (afetam o PRÓXIMO)
     ['a','b'].forEach(function(side){
-      var tn=side==='a'?g.a:g.b,list=c[side];if(!list)return;
+      var _raw2=side==='a'?g.a:g.b,list=c[side];if(!list)return;
+      var tn=_raw2;if(g.f&&!g.f.startsWith('Grupo')){try{var _rtn2=resolveTeam(_raw2,g.n);if(!_rtn2.pending&&_rtn2.name)tn=_rtn2.name;}catch(e){}}
       list.forEach(function(card){
         if(!state[tn])state[tn]={};
         if(!state[tn][card.pname])state[tn][card.pname]={yellows:0,suspended:false,redCard:false};
@@ -1705,7 +1707,15 @@ function _loserOf(gameNum){
 
 // Resolve um placeholder de time para o nome real (ou etiqueta pendente)
 // Retorna {name, flag, pending}
+var _resolveTeamCache={};
 function resolveTeam(placeholder,gameNum){
+  var _ck=(placeholder||'')+'|'+(gameNum!=null?gameNum:'');
+  var _cached=_resolveTeamCache[_ck];if(_cached)return _cached;
+  var _r=_resolveTeamFn(placeholder,gameNum);
+  if(_r&&!_r.pending)_resolveTeamCache[_ck]=_r;
+  return _r;
+}
+function _resolveTeamFn(placeholder,gameNum){
   if(!placeholder||placeholder==='')return{name:'—',flag:'',pending:true};
 
   // "1° Grupo X" ou "2° Grupo X"
@@ -2217,7 +2227,7 @@ for(var i=0;i<GAMES.length;i++){var g=GAMES[i];
   if((_ga===h&&_gb===a)||(_ga===a&&_gb===h)){map[g.n]={};if(_ga===h){map[g.n].a=hs;map[g.n].b=as}else{map[g.n].a=as;map[g.n].b=hs};if(hs!==null&&as!==null&&hs===as&&m.HomeTeamPenaltyScore!==null&&m.AwayTeamPenaltyScore!==null){map[g.n].pen=(_ga===h)?(parseInt(m.HomeTeamPenaltyScore,10)>parseInt(m.AwayTeamPenaltyScore,10)?'a':'b'):(parseInt(m.AwayTeamPenaltyScore,10)>parseInt(m.HomeTeamPenaltyScore,10)?'a':'b')}break}}
   });return map})["catch"](function(){return null})}
 
-function mergeScores(map){if(!map||Object.keys(map).length===0)return false;var changed=false;
+function mergeScores(map){if(!map||Object.keys(map).length===0)return false;var changed=false;_resolveTeamCache={};
 Object.keys(map).forEach(function(id){var s=map[id],na=parseInt(s.a,10),nb=parseInt(s.b,10);if(isNaN(na)||isNaN(nb))return;
 if(!scores[id])scores[id]={};if(scores[id].a!==na||scores[id].b!==nb||(s.pen&&scores[id].pen!==s.pen)||(!s.pen&&scores[id].pen))changed=true;scores[id].a=na;scores[id].b=nb;if(s.pen)scores[id].pen=s.pen;else delete scores[id].pen
 // Se o jogo ja foi marcado como encerrado pela calendar API, finaliza
@@ -2364,8 +2374,9 @@ function _resolveMatchTeams(game){
 function processTimeline(idMatch,gameId){
   if(_fetchingTimelines[idMatch])return;
   _fetchingTimelines[idMatch]=true;
-  fetch('https://api.fifa.com/api/v3/timelines/'+idMatch)
-    .then(function(r){return r.json()})
+  var _tlAc=new AbortController(),_tlTo=setTimeout(function(){_tlAc.abort();},12000);
+  fetch('https://api.fifa.com/api/v3/timelines/'+idMatch,{signal:_tlAc.signal})
+    .then(function(r){clearTimeout(_tlTo);return r.json()})
     .then(function(d){
       if(!d||!d.Event||!d.Event.length){if(d)FIFA_TIMELINES_RAW[idMatch]={ts:Date.now(),data:d};saveFifaRaw();MATCH_TIMELINE_EMPTY[idMatch]=Date.now();if(!PROCESSED_EVENTS[idMatch])PROCESSED_EVENTS[idMatch]='empty';saveState();return;}
       FIFA_TIMELINES_RAW[idMatch]={ts:Date.now(),data:d};saveFifaRaw();
@@ -2589,7 +2600,7 @@ function processTimeline(idMatch,gameId){
       if(_gf){var _gdu=gameUTC(_gf);if(_gdu&&Date.now()-_gdu.getTime()>86400000&&MATCH_TIMELINE_FAILED[idMatch]>=5&&!MATCH_FINALIZED[gameId]){MATCH_FINALIZED[gameId]=true}}
       if(!PROCESSED_EVENTS[idMatch])PROCESSED_EVENTS[idMatch]='unavailable';
       saveState()
-    }).then(function(){delete _fetchingTimelines[idMatch];},function(){delete _fetchingTimelines[idMatch];});
+    }).then(function(){clearTimeout(_tlTo);delete _fetchingTimelines[idMatch];},function(){clearTimeout(_tlTo);delete _fetchingTimelines[idMatch];});
 }
 
 // --- Botão de atualização manual ---
@@ -4588,127 +4599,6 @@ async function bolaoLoadMajority(){
   }catch(e){}
 }
 
-async function bolaoShowParcial(){
-  // Buscar especiais direto do Supabase (sem worker)
-  var supaKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0YmV6bXJheWxidmxueWNsdGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNzQxNDAsImV4cCI6MjA5Njg1MDE0MH0.SC_k3ztY-uSyQAB60ctJvb1iAMGkJJYlG5qy7RJhuqY';
-  var allSpec={};
-  try{var r=await fetch('https://etbezmraylbvlnycltha.supabase.co/rest/v1/special_picks?select=participant_id,champion,top_scorer',{headers:{apikey:supaKey,Authorization:'Bearer '+supaKey}});if(r.ok){var sp=await r.json();sp.forEach(function(p){allSpec[p.participant_id]=p})}}catch(e){}
-  var ids=Object.keys(_bolaoParticipants);
-  if(!ids.length){console.log('Nenhum participante cadastrado.');return;}
-  console.log('=== PARCIAL DO BOLÃO ===');
-  console.log('Nome'.padEnd(28)+'Palpites  Esp.  Confirmado');
-  console.log('-' .repeat(65));
-  ids.forEach(function(id){
-    var name=_bolaoParticipants[id];
-    var confirmed=_bolaoConfirmedStatus[id];
-    var confirmTs=_bolaoConfirmedAt[id]?new Date(_bolaoConfirmedAt[id]).getTime():null;
-    var especiais=allSpec[id]||(id===_bolaoParticipantId?_bolaoMySpecial:null)||{};
-    var pickCount=_bolaoPickCounts[id]||0;
-    var eligibleTotal=99;
-    if(confirmTs){
-      eligibleTotal=0;
-      GAMES.forEach(function(g){
-        if(g.n<BOLAO_FIRST)return;
-        var gd=gameUTC(g);if(!gd)return;
-        if(gd.getTime()-BOLAO_TWO_H>confirmTs)eligibleTotal++;
-      });
-    }
-    var total=confirmed?eligibleTotal:99;
-    var displayCount=confirmed?Math.min(pickCount,eligibleTotal):pickCount;
-    var especiaisStr=especiais.champion&&especiais.top_scorer?'OK':(especiais.champion||especiais.top_scorer?'Parcial':'Nenhum');
-    var confirmStr=confirmed?'Sim':'Nao';
-    var dt=_bolaoConfirmedAt[id]?new Date(_bolaoConfirmedAt[id]).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
-    var linha=(name||'?').padEnd(28)+String(displayCount).padStart(3)+'/'+total+'  '+especiaisStr.padEnd(7)+'  '+confirmStr;
-    if(dt)linha+='  ('+dt+')';
-    if(!confirmed&&pickCount<99)linha+='  FALTA '+(99-pickCount);
-    if(especiais.champion)linha+='  Campeao: '+especiais.champion;
-    if(especiais.top_scorer)linha+='  Art: '+especiais.top_scorer;
-    console.log(linha);
-  });
-  console.log('=== FIM ===');
-}
-function bolaoShowParcialR32(){
-  var r32games=KO_PHASE_GAMES&&KO_PHASE_GAMES['r32']?KO_PHASE_GAMES['r32']:[];
-  var ids=Object.keys(_bolaoParticipants||{});
-  if(!ids.length){console.log('Nenhum participante.');return;}
-  console.log('=== PARCIAL REABERTURA R32 ===');
-  console.log('E=Editou  M=Manteve(acertou,não editou)  X=Errou(confronto)');
-  console.log('');
-  ids.forEach(function(id){
-    var name=_bolaoParticipants[id]||'?';
-    var picks=_bolaoAllPicks[id]||{};
-    var reopens=_bolaoAllPicksReopen[id]||{};
-    var editou=[],manteve=[],errou=[];
-    r32games.forEach(function(gn){
-      var g=GAME_BY_ID[gn];
-      if(!g)return;
-      var edited=reopens[gn]&&reopens[gn].a!==null&&reopens[gn].a!==undefined;
-      if(edited){editou.push(gn);return;}
-      // Não editou: verifica se acertou confronto via bracket
-      var realA=resolveTeam(g.a,gn),realB=resolveTeam(g.b,gn);
-      if(!realA||!realB||realA.pending||realB.pending){errou.push(gn);return;}
-      var predA=_bolaoResolveTeam(g.a,gn,picks);
-      var predB=_bolaoResolveTeam(g.b,gn,picks);
-      if(predA===realA.name&&predB===realB.name)manteve.push(gn);
-      else errou.push(gn);
-    });
-    var e=editou.length,m=manteve.length,x=errou.length;
-    var line=name.padEnd(24)+'E'+e+' M'+m+' X'+x+'  ';
-    if(editou.length)line+='✅'+editou.join(' ');
-    if(manteve.length)line+='  🔒'+manteve.join(' ');
-    if(errou.length)line+='  ❌'+errou.join(' ');
-    console.log(line);
-  });
-  console.log('=== FIM R32 ===');
-}
-async function heitorAcertaTudo(){
-  // ATENCAO: bolaoCalcTotal() le pick.a/pick.b/pick.ko — formato {a,b,ko}, nao goals_a/goals_b
-  var pid='e46cea09-6e10-4580-bb43-9b46cee94b31';
-  var sk='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0YmV6bXJheWxidmxueWNsdGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNzQxNDAsImV4cCI6MjA5Njg1MDE0MH0.SC_k3ztY-uSyQAB60ctJvb1iAMGkJJYlG5qy7RJhuqY';
-  var hd={apikey:sk,Authorization:'Bearer '+sk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'};
-  // Pegar todos os jogos 6-72 que tem placar real
-  var games=[];
-  for(var gn=6;gn<=72;gn++){
-    var s=scores[gn];
-    if(s&&s.a!==undefined&&s.b!==undefined)games.push({n:gn,a:s.a,b:s.b});
-  }
-  // Primeiros 10 = exato (10pts cada = 100pts). Resto = resultado oposto (0pts)
-  var ok=0,err=0,exatos=0;
-  var localPicks={};
-  for(var i=0;i<games.length;i++){
-    var gn=games[i].n,s=games[i];
-    var isExact=i<10;
-    var pa,pb;
-    if(isExact){pa=s.a;pb=s.b;exatos++}
-    else{
-      if(s.a>s.b){pa=0;pb=1}
-      else if(s.b>s.a){pa=1;pb=0}
-      else{pa=0;pb=1}
-    }
-    localPicks[gn]={a:pa,b:pb};
-    try{
-      var r=await fetch('https://etbezmraylbvlnycltha.supabase.co/rest/v1/picks?on_conflict=participant_id,game_n',
-        {method:'POST',headers:hd,body:JSON.stringify({participant_id:pid,game_n:gn,goals_a:pa,goals_b:pb})});
-      if(r.ok||r.status===201)ok++;else err++;
-    }catch(e){err++}
-  }
-  // Confirmar via Worker (admin) — PATCH direto no Supabase falha por RLS
-  var heitorName='Heitor Guilherme';
-  try{
-    await fetch(BOLAO_WORKER+'/admin/confirm',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPass:'BolaoAdmin2026!',name:heitorName})});
-  }catch(e){}
-  // Atualizar cache local (formato {a,b} igual bolaoCalcTotal espera)
-  var name=heitorName;
-  _bolaoParticipants[pid]=name;
-  _bolaoConfirmedStatus[pid]=true;
-  _bolaoAllPicks[pid]=_bolaoAllPicks[pid]||{};
-  for(var gn in localPicks)_bolaoAllPicks[pid][gn]=localPicks[gn];
-  bolaoRenderRanking();
-  console.log('Heitor: '+games.length+' jogos, '+ok+' ok, '+err+' erros');
-  console.log(exatos+' exatos = '+(exatos*10)+' pts. Demais zerados (resultado oposto).');
-  var t=bolaoCalcTotal(pid);
-  console.log('bolaoCalcTotal retornou: '+t.total+' pts');
-}
 async function bolaoSnapshotRound(round){
   var rows=Object.keys(_bolaoParticipants).map(function(id){
     var r=bolaoCalcTotal(id);
