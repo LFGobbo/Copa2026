@@ -2791,7 +2791,7 @@ var _bolaoMyPicksReopen={},_bolaoAllPicksReopen={},_bolaoOpenPhases={},_bolaoClo
 var _bolaoReopenStatusFetched=false; // true após 1ª resposta do /reopen-status (evita fallback hardcoded sobrescrever dado do banco)
 var _bolaoParticipantId=null,_bolaoName=null,_bolaoMyPicks={},_bolaoMySpecial=null;
 var _bolaoAllPicks={},_bolaoAllSpecials={},_bolaoParticipants={},_bolaoConfirmedStatus={},_bolaoGameLocked={},_bolaoConfirmed=false,_bolaoTeamPicks={},_bolaoTeams=[],_bolaoKOPicks={},_bolaoPicksLoadFailed=false;
-var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0;
+var _bolaoSnappedGames={},_bolaoMajority={},_bolaoConfirmedAt={},_bolaoPickCounts={},_rankingCachedAt=0,_bolaoBonusPts={};
 var _bolaoStatsLoading=false,_bolaoStats=null;
 var BOLAO_PICKS_CACHE='copa2026_mypicks_cache';
 try{_bolaoSnappedGames=JSON.parse(localStorage.getItem('copa2026_snapped')||'{}')}catch(e){}
@@ -3132,6 +3132,9 @@ function bolaoCalcTotal(participantId){
     if(topScorer.exact&&matchName(sp.top_scorer,topScorer.name)){total+=20;bonusCount++;}
     else if(!topScorer.exact&&topScorer.tied&&topScorer.tied.some(function(t){return matchName(sp.top_scorer,t)})){total+=10;bonusCount++;}
   }
+  // Bônus manual (admin): campo bonus_points na tabela participants
+  var adminBonus=_bolaoBonusPts[participantId]||0;
+  if(adminBonus>0){total+=adminBonus;bonusCount+=adminBonus;}
   return{total:total,exactCount:exactCount,resultCount:resultCount,bonusCount:bonusCount};
 }
 function bolaoRenderRanking(){
@@ -3734,6 +3737,7 @@ async function bolaoLoadRanking(){
     _bolaoParticipants={};(data.participants||[]).forEach(function(p){_bolaoParticipants[p.id]=p.name});
     _bolaoConfirmedStatus={};(data.participants||[]).forEach(function(p){_bolaoConfirmedStatus[p.id]=p.confirmed||false});
     _bolaoConfirmedAt={};(data.participants||[]).forEach(function(p){if(p.confirmed_at)_bolaoConfirmedAt[p.id]=p.confirmed_at});
+    _bolaoBonusPts={};(data.participants||[]).forEach(function(p){if(p.bonus_points)_bolaoBonusPts[p.id]=p.bonus_points||0});
     _bolaoAllPicks={};(data.picks||[]).forEach(function(p){if(!_bolaoAllPicks[p.participant_id])_bolaoAllPicks[p.participant_id]={};_bolaoAllPicks[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b,ko:p.ko_pick}});
     _bolaoAllSpecials={};(data.specialPicks||[]).forEach(function(p){_bolaoAllSpecials[p.participant_id]=p});
     _bolaoPickCounts=data.pickCounts||{};
