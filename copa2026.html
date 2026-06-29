@@ -3006,6 +3006,9 @@ function _bolaoTp(g,side){
               placeholder==='0';
   if(!isKOPh)return '<span>'+esc(placeholder)+'</span>';
 
+  // Tentar resolução real primeiro (bracket oficial já definido)
+  try{var _rr=resolveTeam(placeholder,g.n);if(_rr&&!_rr.pending&&_rr.name){return '<span style="font-weight:600">'+flag(_rr.name)+' '+esc(_rr.name)+'</span>';}}catch(e){}
+  // Fallback: simulação pelo bolão do usuário
   var resolved=_bolaoResolveTeam(placeholder,g.n,_bolaoMyPicks);
   if(resolved){
     return '<span style="font-weight:600">'+flag(resolved)+' '+esc(resolved)+'</span>';
@@ -4894,6 +4897,10 @@ function renderBolaoStats(){
     parts.push('<div class="bstats-section"><div class="bstats-section-title" title="Jogos que estão acontecendo agora">🔴 Jogos Ao Vivo</div>');
     s.liveGames.forEach(function(lg){
       var g=lg.game,d=lg.dist,tid='lgs'+(Math.random()*1e9|0).toString(36);
+      // Resolver placeholders KO para exibição
+      var _lga=g.a,_lgb=g.b;
+      try{var _rla=resolveTeam(_lga,g.n);if(!_rla.pending&&_rla.name)_lga=_rla.name;}catch(e){}
+      try{var _rlb=resolveTeam(_lgb,g.n);if(!_rlb.pending&&_rlb.name)_lgb=_rlb.name;}catch(e){}
       var snHtml=lg.scoringNow.slice(0,5).map(function(sn){return esc(sn.name)+' <span style="color:var(--green)">+'+sn.pts+'</span>';}).join(', ');
       if(lg.scoringNow.length>5){
         var extra=lg.scoringNow.slice(5).map(function(sn){return esc(sn.name)+' <span style="color:var(--green)">+'+sn.pts+'</span>';}).join(', ');
@@ -4901,7 +4908,7 @@ function renderBolaoStats(){
         snHtml+='<span id="'+tid+'" style="display:none">, '+extra+'</span>';
       }
       parts.push('<div class="bstats-card" style="margin-bottom:10px;border-left:3px solid var(--green)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
-        '<strong style="font-size:14px">⚽ #'+g.n+' '+flag(g.a)+' '+esc(g.a)+' vs '+flag(g.b)+' '+esc(g.b)+'</strong>'+
+        '<strong style="font-size:14px">⚽ #'+g.n+' '+flag(_lga)+' '+esc(_lga)+' vs '+flag(_lgb)+' '+esc(_lgb)+'</strong>'+
         '<span style="font-size:22px;font-weight:800;color:var(--gold)">'+lg.score.a+'-'+lg.score.b+'</span></div>'+
         '<div style="font-size:11px;color:var(--muted);margin-bottom:4px">📊 Palpites: '+
         (d.t?'Mandante <strong>'+d.h+'</strong> ('+Math.round(d.h/d.t*100)+'%) · Empate <strong>'+d.d+'</strong> ('+Math.round(d.d/d.t*100)+'%) · Visitante <strong>'+d.a+'</strong> ('+Math.round(d.a/d.t*100)+'%)':'Nenhum palpite')+'</div>'+
