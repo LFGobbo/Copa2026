@@ -2207,9 +2207,11 @@ if(m.MatchTime&&m.IdMatch&&typeof m.MatchTime==='string'){var rt=m.MatchTime.rep
 if(m.SecondHalfKickOffTime&&m.IdMatch&&!MATCH_SECOND_KICKOFF[m.IdMatch])MATCH_SECOND_KICKOFF[m.IdMatch]=new Date(m.SecondHalfKickOffTime)
 if(!h||!a||hs===null||as===null)return;
 for(var i=0;i<GAMES.length;i++){var g=GAMES[i];
-  var _ga=g.a,_gb=g.b;
-  if(_ga&&(_ga==='0'||_ga.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rta=resolveTeam(_ga,g.n);if(!_rta.pending)_ga=_rta.name;}
-  if(_gb&&(_gb==='0'||_gb.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rtb=resolveTeam(_gb,g.n);if(!_rtb.pending)_gb=_rtb.name;}
+  var _ga=FIFA_MATCH_META[g.n]?FIFA_MATCH_META[g.n].homeTeam:null;
+  var _gb=FIFA_MATCH_META[g.n]?FIFA_MATCH_META[g.n].awayTeam:null;
+  if(!_ga||!_gb){_ga=g.a;_gb=g.b;
+    if(_ga&&(_ga==='0'||_ga.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rta=resolveTeam(_ga,g.n);if(!_rta.pending)_ga=_rta.name;}
+    if(_gb&&(_gb==='0'||_gb.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rtb=resolveTeam(_gb,g.n);if(!_rtb.pending)_gb=_rtb.name;}}
   if((_ga===h&&_gb===a)||(_ga===a&&_gb===h)){map[g.n]={};if(_ga===h){map[g.n].a=hs;map[g.n].b=as}else{map[g.n].a=as;map[g.n].b=hs};if(hs!==null&&as!==null&&hs===as&&m.HomeTeamPenaltyScore!==null&&m.AwayTeamPenaltyScore!==null){map[g.n].pen=(_ga===h)?(parseInt(m.HomeTeamPenaltyScore,10)>parseInt(m.AwayTeamPenaltyScore,10)?'a':'b'):(parseInt(m.AwayTeamPenaltyScore,10)>parseInt(m.HomeTeamPenaltyScore,10)?'a':'b')}break}}
   });return map})["catch"](function(){return null})}
 
@@ -5082,4 +5084,5 @@ document.addEventListener('keydown', function(e){
 });
 var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED'&&!_refreshing){_refreshing=true;window.location.reload()}})}
 </script>
-</bo
+</body>
+</html>
