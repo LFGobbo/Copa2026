@@ -4642,19 +4642,34 @@ async function heitorAcertaTudo(){
   var pid='e46cea09-6e10-4580-bb43-9b46cee94b31';
   var sk='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0YmV6bXJheWxidmxueWNsdGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNzQxNDAsImV4cCI6MjA5Njg1MDE0MH0.SC_k3ztY-uSyQAB60ctJvb1iAMGkJJYlG5qy7RJhuqY';
   var hd={apikey:sk,Authorization:'Bearer '+sk,'Content-Type':'application/json'};
-  var ok=0,err=0;
+  // Pegar todos os jogos 6-72 que tem placar real
+  var games=[];
   for(var gn=6;gn<=72;gn++){
-    var s=scores[gn];if(!s||s.a===undefined||s.b===undefined)continue;
+    var s=scores[gn];
+    if(s&&s.a!==undefined&&s.b!==undefined)games.push({n:gn,a:s.a,b:s.b});
+  }
+  // Primeiros 10 = exato (10pts cada = 100pts). Resto = resultado oposto (0pts)
+  var ok=0,err=0,exatos=0;
+  for(var i=0;i<games.length;i++){
+    var gn=games[i].n,s=games[i];
+    var isExact=i<10;
+    var pa,pb;
+    if(isExact){pa=s.a;pb=s.b;exatos++}
+    else{
+      // Garantir resultado oposto: se real foi vitória A, coloca vitória B
+      if(s.a>s.b){pa=0;pb=1}
+      else if(s.b>s.a){pa=1;pb=0}
+      else{pa=0;pb=1} // empate vira vitória B
+    }
     try{
       var r=await fetch('https://etbezmraylbvlnycltha.supabase.co/rest/v1/picks?on_conflict=participant_id,game_n',
         {method:'POST',headers:Object.assign({},hd,{Prefer:'resolution=merge-duplicates'}),
-         body:JSON.stringify({participant_id:pid,game_n:gn,goals_a:s.a,goals_b:s.b})});
+         body:JSON.stringify({participant_id:pid,game_n:gn,goals_a:pa,goals_b:pb})});
       if(r.ok||r.status===201)ok++;else err++;
     }catch(e){err++}
   }
-  console.log('Heitor: '+(ok+err)+' jogos, '+ok+' ok, '+err+' erros');
-  var pts=ok*10;
-  console.log('Pontos estimados (grupos 6-72): '+pts+' ('+ok+' exatos)');
+  console.log('Heitor: '+games.length+' jogos, '+ok+' ok, '+err+' erros');
+  console.log(exatos+' exatos = '+(exatos*10)+' pts. Demais zerados (resultado oposto).');
 }
 async function bolaoSnapshotRound(round){
   var rows=Object.keys(_bolaoParticipants).map(function(id){
