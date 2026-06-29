@@ -2352,9 +2352,10 @@ function fetchCalendar(){
 }
 
 function _resolveMatchTeams(game){
-  // Resolve homeId/awayId sem depender de FIFA_MATCH_META
-  // usa FIFA_TEAM_REV (nome PT → abreviação) + FIFA_TEAM_IDS (abreviação → IdTeam)
-  var abbA=FIFA_TEAM_REV[game.a],abbB=FIFA_TEAM_REV[game.b];
+  var _ga=game.a,_gb=game.b;
+  if(_ga&&(_ga==='0'||_ga.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rta=resolveTeam(_ga,game.n);if(!_rta.pending&&_rta.name)_ga=_rta.name;}
+  if(_gb&&(_gb==='0'||_gb.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rtb=resolveTeam(_gb,game.n);if(!_rtb.pending&&_rtb.name)_gb=_rtb.name;}
+  var abbA=FIFA_TEAM_REV[_ga],abbB=FIFA_TEAM_REV[_gb];
   var homeId=abbA?FIFA_TEAM_IDS[abbA]:null;
   var awayId=abbB?FIFA_TEAM_IDS[abbB]:null;
   return{homeId:homeId,awayId:awayId};
