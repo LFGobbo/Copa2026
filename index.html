@@ -4638,6 +4638,24 @@ function bolaoShowParcialR32(){
   });
   console.log('=== FIM R32 ===');
 }
+async function heitorAcertaTudo(){
+  var pid='e46cea09-6e10-4580-bb43-9b46cee94b31';
+  var sk='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0YmV6bXJheWxidmxueWNsdGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNzQxNDAsImV4cCI6MjA5Njg1MDE0MH0.SC_k3ztY-uSyQAB60ctJvb1iAMGkJJYlG5qy7RJhuqY';
+  var hd={apikey:sk,Authorization:'Bearer '+sk,'Content-Type':'application/json'};
+  var ok=0,err=0;
+  for(var gn=6;gn<=72;gn++){
+    var s=scores[gn];if(!s||s.a===undefined||s.b===undefined)continue;
+    try{
+      var r=await fetch('https://etbezmraylbvlnycltha.supabase.co/rest/v1/picks?on_conflict=participant_id,game_n',
+        {method:'POST',headers:Object.assign({},hd,{Prefer:'resolution=merge-duplicates'}),
+         body:JSON.stringify({participant_id:pid,game_n:gn,goals_a:s.a,goals_b:s.b})});
+      if(r.ok||r.status===201)ok++;else err++;
+    }catch(e){err++}
+  }
+  console.log('Heitor: '+(ok+err)+' jogos, '+ok+' ok, '+err+' erros');
+  var pts=ok*10;
+  console.log('Pontos estimados (grupos 6-72): '+pts+' ('+ok+' exatos)');
+}
 async function bolaoSnapshotRound(round){
   var rows=Object.keys(_bolaoParticipants).map(function(id){
     var r=bolaoCalcTotal(id);

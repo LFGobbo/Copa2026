@@ -194,9 +194,13 @@ async function handle(req) {
         // (evita aceitar palpites para game_n inválidos/inexistentes).
         if (!dl) { rejected.push(pick.game_n); continue; }
         if (now >= dl.getTime()) { rejected.push(pick.game_n); continue; }
-        // Deletar pick existente (caso seja atualização) e inserir novo
-        await supaFetch("picks?participant_id=eq." + user.sub + "&game_n=eq." + pick.game_n, 'DELETE').catch(function(){});
-        await supaFetch('picks', 'POST', { participant_id: user.sub, game_n: pick.game_n, goals_a: pick.goals_a, goals_b: pick.goals_b, ko_pick: pick.ko_pick || null });
+        // Bug 5: validar placar antes de salvar
+        var ga = parseInt(pick.goals_a, 10), gb = parseInt(pick.goals_b, 10);
+        if (isNaN(ga) || isNaN(gb) || ga < 0 || gb < 0) { rejected.push(pick.game_n); continue; }
+        var isKOPick = !!(BOLAO_GAME_BY_ID[pick.game_n] && BOLAO_GAME_BY_ID[pick.game_n].f && BOLAO_GAME_BY_ID[pick.game_n].f.indexOf('Grupo') !== 0);
+        if (isKOPick && pick.ko_pick && pick.ko_pick !== 'a' && pick.ko_pick !== 'b') { rejected.push(pick.game_n); continue; }
+        // Bug 4a: upsert atômico (on_conflict) — elimina janela de perda entre DELETE e INSERT
+        await supaFetch('picks?on_conflict=participant_id,game_n', 'POST', { participant_id: user.sub, game_n: pick.game_n, goals_a: ga, goals_b: gb, ko_pick: pick.ko_pick || null }, { 'Prefer': 'resolution=merge-duplicates' });
         await supaFetch('pick_history', 'POST', { participant_id: user.sub, game_n: pick.game_n, goals_a: pick.goals_a, goals_b: pick.goals_b, ko_pick: pick.ko_pick || null });
       }
       if (rejected.length === body.picks.length) {
@@ -276,8 +280,8 @@ async function handle(req) {
       var existing = ((await supaFetch("special_picks?participant_id=eq." + user.sub + "&select=champion,top_scorer")) || [])[0] || {};
       var champion  = (body.champion  !== undefined && body.champion  !== '' && body.champion  !== null) ? body.champion  : (existing.champion  || null);
       var topScorer = (body.topScorer !== undefined && body.topScorer !== '' && body.topScorer !== null) ? body.topScorer : (existing.top_scorer || null);
-      await supaFetch("special_picks?participant_id=eq." + user.sub, 'DELETE').catch(function(){});
-      await supaFetch('special_picks', 'POST', { participant_id: user.sub, champion: champion, top_scorer: topScorer });
+      // Bug 4b: upsert atômico para special_picks
+      await supaFetch('special_picks?on_conflict=participant_id', 'POST', { participant_id: user.sub, champion: champion, top_scorer: topScorer }, { 'Prefer': 'resolution=merge-duplicates' });
       return json({ ok: true });
     }
 
@@ -509,17 +513,23 @@ async function handle(req) {
         ? new Date(phaseRows[0].deadline)
         : phaseReopenDeadline(phaseName);
       if (phaseDeadline && now >= phaseDeadline.getTime()) return error('Prazo da fase encerrado', 403);
-      // Upsert atômico via Supabase on_conflict (NUNCA modifica a tabela picks original)
+      // Bug 5: validar placar antes de salvar
       var goalsA = body.goals_a !== undefined ? body.goals_a : body.score_a;
       var goalsB = body.goals_b !== undefined ? body.goals_b : body.score_b;
+      var parsedA = (goalsA !== null && goalsA !== undefined) ? parseInt(goalsA, 10) : null;
+      var parsedB = (goalsB !== null && goalsB !== undefined) ? parseInt(goalsB, 10) : null;
+      if (parsedA !== null && (isNaN(parsedA) || parsedA < 0)) return error('goals_a invalido', 400);
+      if (parsedB !== null && (isNaN(parsedB) || parsedB < 0)) return error('goals_b invalido', 400);
+      if (body.ko_pick && body.ko_pick !== 'a' && body.ko_pick !== 'b') return error('ko_pick invalido', 400);
       var payload = {
         participant_id: user.sub,
         game_n: gameN,
-        goals_a: (goalsA !== undefined && goalsA !== null) ? parseInt(goalsA, 10) : null,
-        goals_b: (goalsB !== undefined && goalsB !== null) ? parseInt(goalsB, 10) : null,
+        goals_a: parsedA,
+        goals_b: parsedB,
         ko_pick: body.ko_pick || null,
         updated_at: new Date().toISOString()
       };
+      // Upsert atômico via Supabase on_conflict (NUNCA modifica a tabela picks original)
       await supaFetch('picks_reopen?on_conflict=participant_id,game_n', 'POST', payload, { 'Prefer': 'resolution=merge-duplicates' });
       return json({ ok: true });
     }
@@ -773,7 +783,7 @@ async function handle(req) {
             }).length;
           }
           // Threshold por fase (cumulativo)
-          var PHASE_THRESHOLD = { r32: 72, r16: 88, qf: 96, sf: 100, '3rd': 102, final: 103 };
+          var PHASE_THRESHOLD = { r32: 72, r16: 88, qf: 96, sf: 100, '3rd': 102, final: 102 }; // final abre com semifinalistas conhecidos (igual sf)
           var phaseRows = (await supaFetch('phase_reopen?select=phase_name,open,deadline')) || [];
           var opened = [];
           for (var pri = 0; pri < phaseRows.length; pri++) {
