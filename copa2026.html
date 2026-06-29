@@ -2999,7 +2999,7 @@ function _bolaoTp(g,side){
               placeholder==='0';
   if(!isKOPh)return '<span>'+esc(placeholder)+'</span>';
 
-  var resolved=_bolaoResolveTeam(placeholder,g.n);
+  var resolved=_bolaoResolveTeam(placeholder,g.n,_bolaoMyPicks);
   if(resolved){
     return '<span style="font-weight:600">'+flag(resolved)+' '+esc(resolved)+'</span>';
   }
