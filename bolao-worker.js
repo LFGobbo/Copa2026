@@ -652,8 +652,14 @@ async function handle(req) {
                 goals_away: as,
                 game_n: GAME_KEY_MAP[gkFifa] || null,
                 match_id: m.IdMatch || null,
+                match_status: m.MatchStatus || null,
                 updated_at: new Date().toISOString()
               });
+              // Prorrogação: capturar placar de 90min (empate que disparou a prorr.)
+              // Só grava se ainda não foi gravado (PATCH condicional com goals_home_90=is.null)
+              if (m.MatchStatus === 5 && hs === as) {
+                try { await supaFetch('live_scores?game_key=eq.' + gkFifa + '&goals_home_90=is.null', 'PATCH', { goals_home_90: hs, goals_away_90: as }); } catch(e) {}
+              }
               stored++;
             }
             results.fifa = stored + ' scores stored';
@@ -699,12 +705,12 @@ async function handle(req) {
           }
 
           // 1. Buscar placares reais do Supabase (gravados pelo task=fifa)
-          var liveScores = (await supaFetch('live_scores?select=game_key,game_n,goals_home,goals_away')) || [];
+          var liveScores = (await supaFetch('live_scores?select=game_key,game_n,goals_home,goals_away,goals_home_90,goals_away_90')) || [];
           // Montar mapa game_n -> {a, b}
           var realScores = {};
           liveScores.forEach(function(s) {
             var gn = s.game_n || GAME_KEY_MAP[s.game_key] || null;
-            if (gn) realScores[gn] = { a: s.goals_home, b: s.goals_away };
+            if (gn) { realScores[gn] = { a: s.goals_home, b: s.goals_away }; if (s.goals_home_90 !== null && s.goals_home_90 !== undefined) realScores[gn].ft = { a: s.goals_home_90, b: s.goals_away_90 }; }
           });
 
           // 2. Buscar participantes confirmados
@@ -775,7 +781,7 @@ async function handle(req) {
                   var activePick = hasReopen ? reopenPick : pick;
                   if (!activePick || activePick.goals_a === null || activePick.goals_a === undefined) return;
                   var useFullTable = !hasReopen;
-                  pts = calcKOPts(activePick.goals_a, activePick.goals_b, real.a, real.b, useFullTable);
+                  var _r90 = real.ft || real; pts = calcKOPts(activePick.goals_a, activePick.goals_b, _r90.a, _r90.b, useFullTable);
                   if (pts >= 0 && useFullTable) total += (KO_PHASE_BONUS[KO_GAME_PHASE[gnNum]] || 0);
                 } else {
                   if (!pick || pick.goals_a === null || pick.goals_b === null) return;
@@ -809,7 +815,7 @@ async function handle(req) {
         try {
           // Contar partidas concluídas via live_scores (Supabase) — consistente com o snapshot.
           // Cada registro em live_scores representa um jogo com placar confirmado.
-          var arLiveScores = (await supaFetch('live_scores?select=game_key')) || [];
+          var arLiveScores = (await supaFetch('live_scores?select=game_key&match_status=eq.0')) || [];
           var completedCount = arLiveScores.length;
           // Threshold por fase (cumulativo)
           var PHASE_THRESHOLD = { r32: 72, r16: 88, qf: 96, sf: 100, '3rd': 102, final: 102 }; // final abre com semifinalistas conhecidos (igual sf)
