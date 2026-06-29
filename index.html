@@ -3080,7 +3080,11 @@ function bolaoCalcTotal(participantId){
       if(gd&&gd.getTime()<confirmTs)return;
     }
     var pick=myPicks[g.n],real=scores[g.n];
-    if(!real||real.a===undefined||real.b===undefined||!pick||pick.a===undefined)return;
+    if(!real||real.a===undefined||real.b===undefined)return;
+    var reopenPick=(_bolaoAllPicksReopen[participantId]||{})[g.n];
+    var temReopen=!!(reopenPick&&reopenPick.a!==null&&reopenPick.a!==undefined);
+    if((!pick||pick.a===undefined)&&!temReopen)return;
+    if(temReopen)pick=reopenPick;
     // Validar times: só pontua se os times do palpite batem com os times reais
     var teamPickA=_bolaoResolveTeam(g.a,g.n,myPicks);
     var teamPickB=_bolaoResolveTeam(g.b,g.n,myPicks);
