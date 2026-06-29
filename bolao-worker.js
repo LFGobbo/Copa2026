@@ -574,6 +574,22 @@ async function handle(req) {
       return json({ ok: true, phase_name: body.phase_name, open: isOpen });
     }
 
+    // PATCH /admin/set-game-n — admin associa game_n a um registro de live_scores (necessario para jogos KO)
+    // Body: { adminPass, game_key, game_n }
+    if (method === 'PATCH' && path === '/admin/set-game-n') {
+      var body = await req.json();
+      if (!body.game_key || !body.game_n || body.adminPass === undefined) return error('game_key, game_n e adminPass obrigatorios');
+      var h = await sha256(body.adminPass + ':' + JWT_SECRET);
+      if (h !== ADMIN_HASH) return error('Admin pass invalida', 403);
+      var gnInt = parseInt(body.game_n, 10);
+      if (isNaN(gnInt) || gnInt < 1 || gnInt > 104) return error('game_n invalido (1-104)');
+      var existing = (await supaFetch('live_scores?game_key=eq.' + encodeURIComponent(body.game_key) + '&select=game_key,game_n')) || [];
+      if (!existing.length) return error('game_key nao encontrado em live_scores', 404);
+      await supaFetch('live_scores?game_key=eq.' + encodeURIComponent(body.game_key), 'PATCH', { game_n: gnInt });
+      console.log('[AUDIT] /admin/set-game-n: game_key=' + body.game_key + ' game_n=' + gnInt + ' em ' + new Date().toISOString());
+      return json({ ok: true, game_key: body.game_key, game_n: gnInt });
+    }
+
     // GET /health — monitoramento
     if (method === 'GET' && path === '/health') {
       return json({ ok: true, uptime: Math.floor(Date.now() / 1000) });
@@ -600,6 +616,9 @@ async function handle(req) {
 
       var task = url.searchParams.get('task') || '';
       var results = {};
+      // Mapa game_key -> game_n para jogos de grupo (72 jogos). Compartilhado por task=fifa e task=snapshot.
+      var GAME_KEY_MAP = {"MEX_RSA":1,"KOR_CZE":2,"CAN_BIH":3,"USA_PAR":4,"QAT_SUI":5,"BRA_MAR":6,"HAI_SCO":7,"AUS_TUR":8,"GER_CUW":9,"NED_JPN":10,"CIV_ECU":11,"SWE_TUN":12,"ESP_CPV":13,"BEL_EGY":14,"KSA_URU":15,"IRN_NZL":16,"ARG_ALG":17,"FRA_SEN":18,"IRQ_NOR":19,"AUT_JOR":20,"POR_COD":21,"ENG_CRO":22,"GHA_PAN":23,"UZB_COL":24,"CZE_RSA":25,"SUI_BIH":26,"CAN_QAT":27,"MEX_KOR":28,"TUR_PAR":29,"USA_AUS":30,"SCO_MAR":31,"BRA_HAI":32,"NED_SWE":33,"GER_CIV":34,"ECU_CUW":35,"TUN_JPN":36,"ESP_KSA":37,"BEL_IRN":38,"URU_CPV":39,"NZL_EGY":40,"ARG_AUT":41,"FRA_IRQ":42,"NOR_SEN":43,"JOR_ALG":44,"POR_UZB":45,"ENG_GHA":46,"PAN_CRO":47,"COL_COD":48,"BIH_QAT":50,"SUI_CAN":49,"MAR_HAI":52,"SCO_BRA":51,"RSA_KOR":54,"CZE_MEX":53,"CUW_CIV":56,"ECU_GER":55,"TUN_NED":58,"JPN_SWE":57,"PAR_AUS":60,"TUR_USA":59,"SEN_IRQ":62,"NOR_FRA":61,"URU_ESP":64,"CPV_KSA":63,"NZL_BEL":66,"EGY_IRN":65,"CRO_GHA":68,"PAN_ENG":67,"COD_UZB":70,"COL_POR":69,"JOR_ARG":72,"ALG_AUT":71};
+
 
       // keepalive: pingar Supabase para evitar pausa do Free Tier
       if (task === 'keepalive' || task === 'all') {
@@ -624,12 +643,14 @@ async function handle(req) {
               var hs = parseInt(m.HomeTeamScore, 10);
               var as = parseInt(m.AwayTeamScore, 10);
               if (!h || !a || isNaN(hs) || isNaN(as)) continue;
+              var gkFifa = h + '_' + a;
               await supaFetch('live_scores?on_conflict=game_key', 'POST', {
-                game_key: h + '_' + a,
+                game_key: gkFifa,
                 home_team: h,
                 away_team: a,
                 goals_home: hs,
                 goals_away: as,
+                game_n: GAME_KEY_MAP[gkFifa] || null,
                 match_id: m.IdMatch || null,
                 updated_at: new Date().toISOString()
               });
@@ -645,12 +666,6 @@ async function handle(req) {
       // snapshot: calcular ranking real com placares da FIFA (live_scores no Supabase)
       if (task === 'snapshot' || task === 'all') {
         try {
-          // Mapa game_key (homeAbbr_awayAbbr) -> game_n para jogos de grupo.
-          // Gerado a partir de GAMES + FIFA_TEAM_MAP do index.html. Cobre 72 jogos (grupos).
-          // Jogos de mata-mata nao tem abreviacoes fixas (times sao placeholders) -- esses
-          // sao pontuados pelo frontend via checkAutoSnapshot quando encerram.
-          var GAME_KEY_MAP = {"MEX_RSA":1,"KOR_CZE":2,"CAN_BIH":3,"USA_PAR":4,"QAT_SUI":5,"BRA_MAR":6,"HAI_SCO":7,"AUS_TUR":8,"GER_CUW":9,"NED_JPN":10,"CIV_ECU":11,"SWE_TUN":12,"ESP_CPV":13,"BEL_EGY":14,"KSA_URU":15,"IRN_NZL":16,"ARG_ALG":17,"FRA_SEN":18,"IRQ_NOR":19,"AUT_JOR":20,"POR_COD":21,"ENG_CRO":22,"GHA_PAN":23,"UZB_COL":24,"CZE_RSA":25,"SUI_BIH":26,"CAN_QAT":27,"MEX_KOR":28,"TUR_PAR":29,"USA_AUS":30,"SCO_MAR":31,"BRA_HAI":32,"NED_SWE":33,"GER_CIV":34,"ECU_CUW":35,"TUN_JPN":36,"ESP_KSA":37,"BEL_IRN":38,"URU_CPV":39,"NZL_EGY":40,"ARG_AUT":41,"FRA_IRQ":42,"NOR_SEN":43,"JOR_ALG":44,"POR_UZB":45,"ENG_GHA":46,"PAN_CRO":47,"COL_COD":48,"BIH_QAT":50,"SUI_CAN":49,"MAR_HAI":52,"SCO_BRA":51,"RSA_KOR":54,"CZE_MEX":53,"CUW_CIV":56,"ECU_GER":55,"TUN_NED":58,"JPN_SWE":57,"PAR_AUS":60,"TUR_USA":59,"SEN_IRQ":62,"NOR_FRA":61,"URU_ESP":64,"CPV_KSA":63,"NZL_BEL":66,"EGY_IRN":65,"CRO_GHA":68,"PAN_ENG":67,"COD_UZB":70,"COL_POR":69,"JOR_ARG":72,"ALG_AUT":71};
-
           // Funcao de pontuacao grupos: identica ao bolaoCalcPickPts do frontend
           function calcPts(pA,pB,rA,rB){
             if(pA===null||pA===undefined||pB===null||pB===undefined)return -1;
@@ -684,11 +699,11 @@ async function handle(req) {
           }
 
           // 1. Buscar placares reais do Supabase (gravados pelo task=fifa)
-          var liveScores = (await supaFetch('live_scores?select=game_key,goals_home,goals_away')) || [];
+          var liveScores = (await supaFetch('live_scores?select=game_key,game_n,goals_home,goals_away')) || [];
           // Montar mapa game_n -> {a, b}
           var realScores = {};
           liveScores.forEach(function(s) {
-            var gn = GAME_KEY_MAP[s.game_key];
+            var gn = s.game_n || GAME_KEY_MAP[s.game_key] || null;
             if (gn) realScores[gn] = { a: s.goals_home, b: s.goals_away };
           });
 
@@ -749,7 +764,12 @@ async function handle(req) {
                 var isKO = !!KO_GAME_PHASE[gnNum];
                 var pts;
                 if (isKO) {
-                  // KO: reopen tem prioridade; sem reopen usa pick original com tabela cheia
+                  // KO: reopen tem prioridade; sem reopen usa pick original com tabela cheia.
+                  // LIMITACAO CONHECIDA (Bug 3): o worker nao tem como calcular acertouConfronto
+                  // (verificar se o usuario previu os times corretos para o confronto) sem replicar
+                  // toda a logica de resolucao de bracket do frontend. Por isso, useFullTable=!hasReopen
+                  // em vez de useFullTable=acertouConfrunto&&!hasReopen. O snapshot pode sobrestimar
+                  // pontos KO para usuarios com confronto errado. O ranking ao vivo (frontend) e correto.
                   var reopenPick = myReopen[gnNum];
                   var hasReopen = reopenPick && reopenPick.goals_a !== null && reopenPick.goals_a !== undefined;
                   var activePick = hasReopen ? reopenPick : pick;
@@ -787,15 +807,10 @@ async function handle(req) {
       // Thresholds: r32 após 72 grupos, r16 após 88, qf após 96, sf após 100, 3rd+final após 102
       if (task === 'auto-reopen' || task === 'all') {
         try {
-          // Contar partidas concluídas via FIFA API (todas as fases)
-          var arFresp = await fetch('https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200');
-          var arData = await arFresp.json();
-          var completedCount = 0;
-          if (arData && arData.Results) {
-            completedCount = arData.Results.filter(function(m) {
-              return m.HomeTeamScore !== null && m.AwayTeamScore !== null;
-            }).length;
-          }
+          // Contar partidas concluídas via live_scores (Supabase) — consistente com o snapshot.
+          // Cada registro em live_scores representa um jogo com placar confirmado.
+          var arLiveScores = (await supaFetch('live_scores?select=game_key')) || [];
+          var completedCount = arLiveScores.length;
           // Threshold por fase (cumulativo)
           var PHASE_THRESHOLD = { r32: 72, r16: 88, qf: 96, sf: 100, '3rd': 102, final: 102 }; // final abre com semifinalistas conhecidos (igual sf)
           var phaseRows = (await supaFetch('phase_reopen?select=phase_name,open,deadline')) || [];

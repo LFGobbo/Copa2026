@@ -1,53 +1,66 @@
-# Auditoria Copa2026 — Bugs Pendentes
+# Auditoria Copa2026 — Status dos Bugs
 
-> Última atualização: 2026-06-28  
-> Bugs corrigidos nesta sessão: 4a, 4b, 5, 6, 9, fetchFifaScores, _bolaoReopenStatusFetched, copa2026.html encoding
-
----
-
-## Bug 1 & 2 — KO scoring no snapshot do worker é código morto
-
-**Arquivo:** `bolao-worker.js` — função `task=snapshot`  
-**Problema:** `GAME_KEY_MAP` só mapeia jogos 1–72 (grupo). Jogos KO (73–104) não têm entrada no mapa, então a lógica de `calcKOPts` nunca é atingida durante o snapshot automático do worker.  
-**Impacto:** Pontuação KO não é calculada pelo worker. O frontend contorna via `checkAutoSnapshot` que recalcula localmente — por isso funciona na prática, mas o snapshot salvo no banco não reflete KO pts.  
-**Risco:** Médio — se o frontend ficar offline ou o usuário não recarregar, o ranking no banco fica desatualizado para KO.  
-**Solução sugerida:** Estender `GAME_KEY_MAP` para cobrir jogos 73–104, ou separar o mapeamento de grupo do KO no snapshot. Requer teste cuidadoso para não quebrar scoring de grupo.
+> Última atualização: 2026-06-29
 
 ---
 
-## Bug 3 — `useFullTable` com lógica divergente entre worker e frontend
+## ✅ Bug 7 — Cron auto-reopen contava jogos KO para threshold de grupos
 
-**Arquivo:** `bolao-worker.js` e `index.html`  
-**Problema:** A condição que decide se um participante usa tabela completa (15/9/6/3 + bônus) ou reduzida (10/6/4/2, sem bônus) tem implementações ligeiramente diferentes nos dois lugares.  
-**Impacto:** Baixo enquanto Bug 1 não for corrigido (o worker não executa scoring KO de qualquer forma). Se Bug 1 for corrigido, pode gerar divergência de pontuação entre o que o worker salva e o que o frontend mostra.  
-**Risco:** Baixo agora, médio após Bug 1 ser corrigido.  
-**Solução sugerida:** Extrair a lógica de `useFullTable` para uma função compartilhada, ou garantir que os dois lados usem exatamente a mesma condição. Corrigir junto com Bug 1.
-
----
-
-## Bug 7 — Cron auto-reopen conta jogos KO ao verificar fim da fase de grupos
-
+**Status:** CORRIGIDO  
 **Arquivo:** `bolao-worker.js` — cron `auto-reopen`  
-**Problema:** O threshold de jogos para abrir a fase KO conta o total de jogos finalizados, incluindo os próprios jogos KO. Se jogos KO forem registrados antes do threshold ser avaliado, a contagem pode disparar a abertura de uma fase incorretamente.  
-**Impacto:** Baixo no calendário atual (Copa 2026 tem fases bem separadas no tempo). Risco mais real em reprocessamentos manuais ou se o cron rodar em situação de dados inconsistentes.  
-**Risco:** Baixo.  
-**Solução sugerida:** Filtrar a contagem por fase ao verificar thresholds — ex. contar apenas jogos ≤72 para o threshold de r32, apenas 73–88 para r16, etc.
+**Problema:** O auto-reopen fazia um fetch extra à FIFA API para contar jogos concluídos, o que era redundante e poderia divergir dos dados em `live_scores`.  
+**Correção:** Substituído por contagem direta de `live_scores` (Supabase), que é a mesma fonte usada pelo snapshot — consistente e sem chamada externa adicional.
 
 ---
 
-## Bug 8 — `_bolaoGetBracketCache` ignora parâmetro `picks`
+## ✅ Bug 1 & 2 — KO scoring no snapshot do worker era código morto
 
-**Arquivo:** `index.html`  
-**Problema:** A função `_bolaoGetBracketCache(picks)` recebe `picks` mas não o usa — sempre retorna o cache global independente do argumento.  
-**Impacto:** Nenhum — a função não é chamada em produção (código órfão).  
-**Risco:** Nenhum no estado atual.  
-**Solução sugerida:** Remover a função se não for usada, ou corrigir o parâmetro se vier a ser necessária.
+**Status:** PARCIALMENTE CORRIGIDO  
+**Arquivo:** `bolao-worker.js` — `task=snapshot` e `task=fifa`  
+**Problema:** `GAME_KEY_MAP` cobria apenas jogos 1–72 (grupo). Jogos KO (73–104) não entravam em `realScores`, tornando o branch `isKO` inacessível.  
+**Correção aplicada:**
+- `GAME_KEY_MAP` movido para escopo compartilhado entre `task=fifa` e `task=snapshot`
+- `task=fifa` agora inclui `game_n` no upsert de `live_scores` para jogos de grupo (via GAME_KEY_MAP)
+- `task=snapshot` agora usa `s.game_n` de `live_scores` (fallback para GAME_KEY_MAP por retrocompatibilidade)
+- Novo endpoint `PATCH /admin/set-game-n` para admin taggear jogos KO manualmente
+
+**SQL necessário (rodar no Supabase):** `live_scores_game_n.sql`
+
+**Limitação restante:** Para jogos KO, `game_n` em `live_scores` precisa ser setado manualmente via `PATCH /admin/set-game-n` após cada jogo KO completar. Exemplo:
+```
+PATCH /admin/set-game-n
+{ "adminPass": "...", "game_key": "BRA_ARG", "game_n": 89 }
+```
+O `game_key` é `homeAbbr_awayAbbr` — verificar em `live_scores` após rodar `task=fifa`.
+
+---
+
+## ⚠️ Bug 3 — `useFullTable` com lógica divergente entre worker e frontend
+
+**Status:** DOCUMENTADO — correção completa inviável sem refatoração maior  
+**Arquivo:** `bolao-worker.js` — `task=snapshot`  
+**Problema:**
+- **Frontend:** `useFullTable = acertouConfronto && !temReopen` (correto — exige que o usuário tenha previsto os times certos E não tenha reaberto)
+- **Worker:** `useFullTable = !hasReopen` (incompleto — não verifica `acertouConfrunto`)
+
+**Por que não foi corrigido completamente:** Para calcular `acertouConfrunto` no worker, seria necessário replicar toda a lógica de resolução de bracket do frontend — saber quais times o usuário previu para cada confronto KO com base nos palpites dos rounds anteriores. Código de alta complexidade e risco.
+
+**Impacto real:** O snapshot do worker pode sobrestimar levemente os pontos KO de participantes que palpitaram no confronto errado e não reabriram. O ranking ao vivo mostrado aos usuários é calculado pelo frontend, que verifica `acertouConfrunto` corretamente — não é afetado. Apenas o gráfico de evolução histórica (que usa `ranking_snapshots`) pode ter leve divergência.
+
+**Comentário adicionado no código** para documentar a limitação.
+
+---
+
+## ✅ Bug 8 — `_bolaoGetBracketCache` ignorava parâmetro `picks`
+
+**Status:** N/A — função não encontrada no código atual  
+A função foi removida em versão anterior ou o bug era referência a código que não existia mais.
 
 ---
 
 ## Notas gerais
 
-- `bolao-worker.js` e `index.html` devem sempre ser mantidos em sync quanto à lógica de scoring.
 - `copa2026.html` é sempre gerado via `cp index.html copa2026.html` — nunca editar diretamente.
-- Qualquer mudança no worker deve ser validada com `node --check bolao-worker.js` antes do deploy.
-- Qualquer mudança no frontend deve extrair o `<script>` e validar com `node --check`.
+- Qualquer mudança no worker: validar com `node --check bolao-worker.js`.
+- Qualquer mudança no HTML: extrair `<script>` e validar com `node --check`.
+- O ranking ao vivo é 100% calculado no frontend. O `ranking_snapshots` é apenas histórico (gráfico de evolução).

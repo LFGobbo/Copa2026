@@ -2439,6 +2439,10 @@ function processTimeline(idMatch,gameId){
 
       var autoGoalsA=[], autoGoalsB=[];
       var prevHome=0, prevAway=0;
+      // Resolver placeholders KO para nomes reais antes de validar
+      var _resolvedA=game.a,_resolvedB=game.b;
+      try{if(_resolvedA&&(_resolvedA==='0'||/°\s*Grupo|V\.\s*Jogo|Perd\./.test(_resolvedA))){var _rTeamA=resolveTeam(_resolvedA,game.n);if(!_rTeamA.pending&&_rTeamA.name)_resolvedA=_rTeamA.name;}}catch(e){}
+      try{if(_resolvedB&&(_resolvedB==='0'||/°\s*Grupo|V\.\s*Jogo|Perd\./.test(_resolvedB))){var _rTeamB=resolveTeam(_resolvedB,game.n);if(!_rTeamB.pending&&_rTeamB.name)_resolvedB=_rTeamB.name;}}catch(e){}
 
       allEvents.forEach(function(e,idx){
         if(e.HomeGoals===undefined||e.AwayGoals===undefined)return;
@@ -2459,8 +2463,8 @@ function processTimeline(idMatch,gameId){
         var info=FIFA_PLAYER_MAP[e.IdPlayer];
         // Validar que o jogador do gol é do time correto
         if(info&&info.team){
-          var _gt=_rev?(scoredForHome?game.b:game.a):(scoredForHome?game.a:game.b);
-          var _pt=isOwn?(_gt===game.a?game.b:game.a):_gt;
+          var _gt=_rev?(scoredForHome?_resolvedB:_resolvedA):(scoredForHome?_resolvedA:_resolvedB);
+          var _pt=isOwn?(_gt===_resolvedA?_resolvedB:_resolvedA):_gt;
           if(info.team!==_pt)info=null;
         }
         if(!info&&e.EventDescription&&e.EventDescription[0]){
@@ -2468,8 +2472,8 @@ function processTimeline(idMatch,gameId){
           var nm=desc.match(/^(.+?)\s*\(/);
           if(nm){
             var parsedName=nm[1].trim();
-            var _bt=_rev?(scoredForHome?game.b:game.a):(scoredForHome?game.a:game.b);
-            var squad=PLAYERS[isOwn?(_bt===game.a?game.b:game.a):_bt]||[];
+            var _bt=_rev?(scoredForHome?_resolvedB:_resolvedA):(scoredForHome?_resolvedA:_resolvedB);
+            var squad=PLAYERS[isOwn?(_bt===_resolvedA?_resolvedB:_resolvedA):_bt]||[];
             for(var pi=0;pi<squad.length;pi++){
               var pNames=parsedName.split(' '),pFirst=pNames[0].toUpperCase(),pLast=pNames.pop().toUpperCase();
               var sNames=squad[pi].name.split(' '),sFirst=sNames[0].toUpperCase(),sLast=sNames.pop().toUpperCase();
@@ -2485,7 +2489,7 @@ function processTimeline(idMatch,gameId){
         var min=e.MatchMinute?(e.MatchMinute.replace(/'/g,'')):(''+idx);
         // Assistência: validar que é do mesmo time do gol
         var aNum=null,aName=null;
-        var _gt=_rev?(scoredForHome?game.b:game.a):(scoredForHome?game.a:game.b),_pt=isOwn?(_gt===game.a?game.b:game.a):_gt;
+        var _gt=_rev?(scoredForHome?_resolvedB:_resolvedA):(scoredForHome?_resolvedA:_resolvedB),_pt=isOwn?(_gt===_resolvedA?_resolvedB:_resolvedA):_gt;
         if(e.AssistPlayerId){
           var ai=FIFA_PLAYER_MAP[e.AssistPlayerId];
           if(ai&&(!ai.team||ai.team===_pt)){aNum=ai.num;aName=ai.pname;}
