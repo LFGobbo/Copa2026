@@ -3963,6 +3963,7 @@ function bolaoRenderReopenSection(){
     var phGames=KO_PHASE_GAMES&&KO_PHASE_GAMES[ph]?KO_PHASE_GAMES[ph]:[];
     var cardsHtml='';
     phGames.forEach(function(gn){
+      if(gn===73)return; // Jogo 73 ja ocorreu (28/06)
       var g=GAMES.find(function(x){return x.n===gn;});if(!g)return;
       var rtA=resolveTeam(g.a,g.n),rtB=resolveTeam(g.b,g.n);
       var rA=rtA&&rtA.name&&!rtA.pending?rtA.name:null;
