@@ -674,7 +674,7 @@ Toda melhoria deve:
 - Executar balanço de chaves + verificação de funções críticas
 - Se alterar persistência, verificar `saveState()` sem exceções
 
-## 12.1 Convenções de Código (validadas no código real em 2026-06-20)
+### 12.1 Convenções de Código (validadas no código real em 2026-06-20)
 
 ### Declaração de variáveis
 - `var` é o padrão dominante (1034 ocorrências). `const` só é usado para dados estruturais imutáveis no topo do arquivo (`GAMES`, `GROUPS`, `PLAYERS`, `DATA_VERSION`, `FLAG_ISO`, `GROUP_NAMES`, `GROUP_ORDER`, `BRACKET_ROUNDS`). `let` só aparece 3 vezes, para o estado runtime que é reatribuído (`scores`, `goals`, `cards`).
@@ -813,23 +813,6 @@ Toda melhoria deve:
 - **Worker deploy automático**: `deploy-worker.ps1` copia `bolao-worker.js.backup` antes de subir
 - **`bolao-worker.js.backup` sincronizado** pelo próprio script de deploy
 
-### v19.10 (2026-06-14) - Ajustes finais + Correcoes de Live/Ao Vivo
-
-- **Scroll bouncing corrigido**: _scrolledToLive flag global so permite scroll-into-view na primeira renderizacao. Resetado ao trocar filtro ou clicar na aba Jogos. Elimina salto a cada polling
-- **Aba Bolao movida para primeira posicao**: tab bar agora inicia com Bolao, seguido de Jogos. Enfase na funcionalidade de Bolao durante a Copa
-- **Regras do bolao recolhidas por padrao**: adicionada classe collapsed ao abrir a pagina. Usuario clica para expandir
-- **copa2026.html sincronizado** com index.html
-- **bolaoShowParcial()**: funcao console que mostra tabela de participantes com picks preenchidos/total, confirmacao, e FALTA para nao confirmados
-- **Worker retorna pickCounts**: /ranking agora inclui pickCounts (picks nao-nulos, busca paginada com Range headers). Frontend armazena em _bolaoPickCounts com cache offline
-- **MATCH_ENDED check movido para dentro do .then()**: antes rodava sincronamente antes do fetch resolver; agora a comparacao acontece dentro da callback, detectando MatchStatus=0 corretamente
-- **Re-render sempre na poll**: renderGames(), renderGroups(), renderBracket(), renderScorers() chamados em toda poll completa. dynRender evita flicker
-- **MATCH_ENDED persistido**: saveState() salva matchEnded/matchStarted, _loadPersistent() restaura - sobrevive a refresh
-- **Fallback game_+n para MATCH_ENDED**: no load, marca jogos com placar + >2.5h como encerrados mesmo sem FIFA_MATCH_IDS populado. isGameLive/gameIsPast verificam essa chave
-- **Heuristica preservada em 2.5h** (9000000ms): cobre 90min+15HT+30ET+15penaltis. Protege acuracia do bolao em jogos KO
-- **backup-supabase.ps1**: script PowerShell que faz dump de todas as 6 tabelas do Supabase para JSONs em /backups/
-- **Seguranca de exclusao documentada**: secao 15 do AGENTS.md - backup obrigatorio antes de deletar, nunca deletar sem confirmar com o usuario
-- **Console Reference**: secao 17 do AGENTS.md - documentacao completa de todas as funcoes e variaveis acessiveis via DevTools
-
 ### v19.21b (2026-06-17) - Reverte colunas desktop + remove diff/LIDER do mobile
 
 - **Desktop**: Colunas voltam ao original (Especiais | Exatos | Jogos | Pontos) — 6 colunas. Sem coluna Desempenho, sem coluna Distancia, sem "(líder)" no nome
@@ -929,6 +912,23 @@ Toda melhoria deve:
 - **Relogio ao vivo refinado**: badge `.live-clock` injetado dinamicamente pelo `updateCountdown()` (nao depende do render). Usa `_parseMinute` para comparar minuto de evento vs tempo decorrido do `MATCH_KICKOFF`. `dynRender` normaliza removendo `.live-clock` da comparacao para evitar re-render a cada poll. Badge posicionado com `flex:0 0 100%; margin-top:-20px` dentro do `.game-score`, visualmente acima do placar sem `overflow:hidden` no card
 - **dynRender(): normalizacao de relogio**: regex remove `<div class="live-clock...>` da comparacao de HTML para evitar que o conteudo dinamico do badge cause substituicao desnecessaria do DOM (e o consequente pula-pula)
 - **overflow:hidden removido do .game-card**: impedia o badge do relogio de aparecer em telas menores (posicionado absolute acima do placar)
+
+### v19.10 (2026-06-14) - Ajustes finais + Correcoes de Live/Ao Vivo
+
+- **Scroll bouncing corrigido**: _scrolledToLive flag global so permite scroll-into-view na primeira renderizacao. Resetado ao trocar filtro ou clicar na aba Jogos. Elimina salto a cada polling
+- **Aba Bolao movida para primeira posicao**: tab bar agora inicia com Bolao, seguido de Jogos. Enfase na funcionalidade de Bolao durante a Copa
+- **Regras do bolao recolhidas por padrao**: adicionada classe collapsed ao abrir a pagina. Usuario clica para expandir
+- **copa2026.html sincronizado** com index.html
+- **bolaoShowParcial()**: funcao console que mostra tabela de participantes com picks preenchidos/total, confirmacao, e FALTA para nao confirmados
+- **Worker retorna pickCounts**: /ranking agora inclui pickCounts (picks nao-nulos, busca paginada com Range headers). Frontend armazena em _bolaoPickCounts com cache offline
+- **MATCH_ENDED check movido para dentro do .then()**: antes rodava sincronamente antes do fetch resolver; agora a comparacao acontece dentro da callback, detectando MatchStatus=0 corretamente
+- **Re-render sempre na poll**: renderGames(), renderGroups(), renderBracket(), renderScorers() chamados em toda poll completa. dynRender evita flicker
+- **MATCH_ENDED persistido**: saveState() salva matchEnded/matchStarted, _loadPersistent() restaura - sobrevive a refresh
+- **Fallback game_+n para MATCH_ENDED**: no load, marca jogos com placar + >2.5h como encerrados mesmo sem FIFA_MATCH_IDS populado. isGameLive/gameIsPast verificam essa chave
+- **Heuristica preservada em 2.5h** (9000000ms): cobre 90min+15HT+30ET+15penaltis. Protege acuracia do bolao em jogos KO
+- **backup-supabase.ps1**: script PowerShell que faz dump de todas as 6 tabelas do Supabase para JSONs em /backups/
+- **Seguranca de exclusao documentada**: secao 15 do AGENTS.md - backup obrigatorio antes de deletar, nunca deletar sem confirmar com o usuario
+- **Console Reference**: secao 17 do AGENTS.md - documentacao completa de todas as funcoes e variaveis acessiveis via DevTools
 
 ### v19.9 (2026-06-13) — Auditoria final: correções críticas para produção
 
