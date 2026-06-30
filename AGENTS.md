@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-06-27 (v20.1 — Bracket fix + protocolo de engenharia)
+**Última atualização:** 2026-06-29 (v20.4 — Worker cron + live_scores + fixes KO stats)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -1204,6 +1204,78 @@ powershell
 - O Worker e sobrescrito a cada deploy (versao anterior e perdida)
 - Sempre manter bolao-worker.js.backup sincronizado com a ultima versao estavel
 - Backup automatico: Copy-Item bolao-worker.js bolao-worker.js.backup
+
+## 17.1 Diagnóstico do Worker
+
+### Script diagnose-worker.ps1
+- Verifica se o token CF está válido
+- Lista os bindings atuais do worker (env vars configuradas)
+- Testa o endpoint /cron e /health
+- Uso: `powershell -ExecutionPolicy Bypass -File ".\diagnose-worker.ps1"`
+
+### Bindings atuais (deploy-worker.ps1 configura todos)
+| Variável | Tipo |
+|---|---|
+| SUPABASE_URL | plain_text |
+| SUPABASE_KEY | secret_text |
+| JWT_SECRET | secret_text |
+| TURNSTILE_SEC | secret_text |
+| ADMIN_KEY | secret_text |
+| ADMIN_HASH | secret_text |
+| CRON_SECRET | secret_text |
+
+> ⚠️ NUNCA usar `wrangler deploy` direto — limpa todos os bindings. Usar sempre `deploy-worker.ps1`.
+
+### Cron manual (durante jogos)
+```powershell
+# Atualizar placares FIFA → live_scores:
+Invoke-RestMethod "https://copa2026-bolao.luizfelipegobbo.workers.dev/cron?secret=<CRON_SECRET>&task=fifa"
+
+# Tudo (keepalive + fifa + snapshot + auto-reopen):
+Invoke-RestMethod "https://copa2026-bolao.luizfelipegobbo.workers.dev/cron?secret=<CRON_SECRET>&task=all"
+```
+Ver CREDENCIAIS_COPA2026.md para o valor real de CRON_SECRET.
+
+### Abrir fase KO manualmente
+```powershell
+Invoke-RestMethod "https://copa2026-bolao.luizfelipegobbo.workers.dev/admin/phase-reopen" `
+  -Method PATCH -ContentType "application/json" `
+  -Body '{"phase_name":"r32","open":true,"adminPass":"<ADMIN_PASS>","deadline":null}'
+# Fases válidas: r32, r16, qf, sf, 3rd, final
+```
+
+### Tabela live_scores (Supabase)
+Criada manualmente em 2026-06-29. Schema:
+```sql
+CREATE TABLE live_scores (
+  game_key text PRIMARY KEY,     -- "MEX_RSA" (home_abbrev_away_abbrev da FIFA)
+  home_team text, away_team text,
+  goals_home integer, goals_away integer,
+  game_n integer,                -- número do jogo no bolão (mapeado via GAME_KEY_MAP)
+  match_id text,
+  match_status integer,          -- 0=FT 1=scheduled 3=live 4=HT 5=ET 6=penalties
+  goals_home_90 integer,         -- placar de 90min (só preenchido em ET)
+  goals_away_90 integer,
+  updated_at timestamptz DEFAULT now()
+);
+```
+Popular: rodar `task=fifa` no cron.
+
+## 17.2 Bugs corrigidos (2026-06-29, sessão v20.4)
+
+### Worker (bolao-worker.js)
+1. **`match_status: m.MatchStatus || null`** — `0 || null = null` em JS; jogos encerrados (FT=0) eram gravados com status null, quebrando o auto-reopen. Fix: `(m.MatchStatus != null) ? m.MatchStatus : null`
+
+2. **Upsert sem `Prefer: resolution=merge-duplicates`** — PostgREST retornava 409 em vez de atualizar. Fix: adicionado header em todos os POSTs com `on_conflict` (live_scores e ranking_snapshots).
+
+3. **Limite de 50 subrequests CF** — `task=fifa` fazia 1 supaFetch por jogo (~75 jogos). Fix: acumula tudo em array e faz 1 POST em batch.
+
+4. **auto-reopen pulava fases com deadline vencido** — a r32 nunca abria automaticamente porque o prazo (5min antes do jogo 73) já tinha passado. Fix: remove o guard de deadline no auto-reopen; abre a fase mesmo assim (sem definir deadline).
+
+5. **`ranking_snapshots` sem UNIQUE constraint** — upsert falhava com 42P10. Fix: `ALTER TABLE ranking_snapshots ADD CONSTRAINT ... UNIQUE (participant_id, round)` após `DELETE` de duplicatas.
+
+### Frontend (index.html)
+6. **Placeholders KO não resolvidos em Zebra da Copa e Palpite da Maioria** — seções de estatísticas usavam `g.a`/`g.b` direto. Fix: aplicar `resolveTeam()` antes de exibir, igual ao que já era feito nos jogos ao vivo.
 
 ## 18. Console Reference (DevTools F12)
 
