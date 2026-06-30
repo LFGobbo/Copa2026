@@ -1522,13 +1522,14 @@ function renderThirdPlaced(){
         if(s.a>s.b){pts[a]+=3;w[a]++;l[b]++}else if(s.a<s.b){pts[b]+=3;w[b]++;l[a]++}else{pts[a]+=1;pts[b]+=1;d[a]++;d[b]++}
       }
     });
+    var _rtCond={};teams.forEach(function(t){_rtCond[t]=0});
+    GAMES.filter(function(g){return g.f===GROUP_NAMES[letter]}).forEach(function(g){var cc=cards[g.n];if(!cc)return;[g.a,g.b].forEach(function(t,i){var side=i===0?'a':'b';(cc[side]||[]).forEach(function(ev){if(ev.type==='yellow')_rtCond[t]+=1;else if(ev.type==='red'||ev.type==='second-yellow')_rtCond[t]+=3;});});});
     var sorted=teams.slice().sort(function(a,b){
       if(pts[b]!==pts[a])return pts[b]-pts[a];
       var gdA=gf[a]-ga[a],gdB=gf[b]-ga[b];
       if(gdB!==gdA)return gdB-gdA;
       if(gf[b]!==gf[a])return gf[b]-gf[a];
-      var condA=0,condB=0;GAMES.filter(function(g){return g.f===GROUP_NAMES[letter]}).forEach(function(g){var c=cards[g.n];if(!c)return;[g.a,g.b].forEach(function(t,i){var side=i===0?'a':'b';(c[side]||[]).forEach(function(ev){if(t===a){if(ev.type==='yellow')condA+=1;else if(ev.type==='red'||ev.type==='second-yellow')condA+=3;}if(t===b){if(ev.type==='yellow')condB+=1;else if(ev.type==='red'||ev.type==='second-yellow')condB+=3;}})});});
-      if(condA!==condB)return condA-condB;
+      if(_rtCond[a]!==_rtCond[b])return _rtCond[a]-_rtCond[b];
       if((FIFA_RANK[a]||999)!==(FIFA_RANK[b]||999))return(FIFA_RANK[a]||999)-(FIFA_RANK[b]||999);
       return a.localeCompare(b);
     });
@@ -2272,7 +2273,7 @@ Object.keys(map).forEach(function(id){var s=map[id],na=parseInt(s.a,10),nb=parse
 if(!scores[id])scores[id]={};if(scores[id].a!==na||scores[id].b!==nb||(s.pen&&scores[id].pen!==s.pen)||(!s.pen&&scores[id].pen))changed=true;scores[id].a=na;scores[id].b=nb;if(s.pen)scores[id].pen=s.pen;else delete scores[id].pen;if(s.ft)scores[id].ft=s.ft;
 // Se o jogo ja foi marcado como encerrado pela calendar API, finaliza
 if(FIFA_MATCH_IDS[id]&&MATCH_ENDED[FIFA_MATCH_IDS[id]]&&!MATCH_FINALIZED[id]){MATCH_FINALIZED[id]=true;changed=true}});
-if(changed){_bolaoBracketCache=null;saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();setTimeout(checkAutoSnapshot,500)}setTimeout(function(){if(typeof reconcileScores==='function')reconcileScores()},0);return changed}
+if(changed){_bolaoBracketCache=null;saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();setTimeout(checkAutoSnapshot,500)}return changed}
 
 function _hide(ab){
   if(!ab||ab.style.display==='none')return;
@@ -2460,7 +2461,7 @@ function processTimeline(idMatch,gameId){
       allEvents.forEach(function(e){var id=parseInt(e.EventId,10);if(id>maxId)maxId=id;});
       var lastId=PROCESSED_EVENTS[idMatch]||0;
       var hasNew=maxId>lastId;
-      PROCESSED_EVENTS[idMatch]=maxId;
+      PROCESSED_EVENTS[idMatch]=maxId||'done';
       // Hash da timeline: detecta correcoes sem novo EventId
       var timelineKey=allEvents.map(function(e){return e.EventId+'_'+e.Type+'_'+(e.HomeGoals||0)+'_'+(e.AwayGoals||0)+'_'+e.IdPlayer}).join('|');
       var hashChanged=TIMELINE_HASH[idMatch]&&TIMELINE_HASH[idMatch]!==timelineKey;
@@ -2723,7 +2724,7 @@ function reconcileScores() {
 }
 // --- Polling automático da FIFA API ---
 initFifaMaps();
-(function(){var FAST=10000,SLOW=60000,iv=FAST,_pollFails=0,_pollTimer=null;function poll(){if(_pollTimer)clearTimeout(_pollTimer);var endedBefore=Object.keys(MATCH_ENDED).length;fetchFifaScores(8000).then(function(m){
+(function(){var FAST=10000,SLOW=60000,iv=FAST,_pollFails=0,_pollTimer=null,_lastPollTime=0;function poll(){if(_pollTimer)clearTimeout(_pollTimer);_lastPollTime=Date.now();var endedBefore=Object.keys(MATCH_ENDED).length;fetchFifaScores(8000).then(function(m){
   _pollFails=0;
   if(m&&Object.keys(m).length){mergeScores(m)}else{_bolaoFetch('/scores').then(function(d){if(d&&d.scores&&d.scores.length){var sm={};d.scores.forEach(function(s){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];var abbA=FIFA_TEAM_REV[g.a],abbB=FIFA_TEAM_REV[g.b];if((abbA===s.home_team&&abbB===s.away_team)||(abbA===s.away_team&&abbB===s.home_team)){sm[g.n]={a:abbA===s.home_team?s.goals_home:s.goals_away,b:abbA===s.home_team?s.goals_away:s.goals_home};break}}});if(Object.keys(sm).length)mergeScores(sm)}}).catch(function(e){console.warn('Fallback scores failed:',e&&e.message?e.message:'');})};
   saveState();
@@ -2734,10 +2735,10 @@ initFifaMaps();
   reconcileScores();
   console.warn('FIFA poll error (%s), backoff %dms:',_pollFails,iv,err&&err.message?err.message:'');
 });
-var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);var stale=scores[g.n]&&scores[g.n].a!==undefined&&!PROCESSED_EVENTS[id]&&now>new Date(gd.getTime()+_LIVE_WINDOW);if(live||recent||stale){processTimeline(id,g.n);if(live)hasLive=true}})};iv=_pollFails>0?iv:(hasLive?FAST:SLOW);_pollTimer=setTimeout(poll,iv)}
+var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);var stale=scores[g.n]&&scores[g.n].a!==undefined&&!PROCESSED_EVENTS[id]&&now>new Date(gd.getTime()+_LIVE_WINDOW);if(live||(recent&&!PROCESSED_EVENTS[id])||stale){processTimeline(id,g.n);if(live)hasLive=true}})};iv=_pollFails>0?iv:(hasLive?FAST:SLOW);_pollTimer=setTimeout(poll,iv)}
 fetchFifaScores(8000);_pollTimer=setTimeout(poll,FAST);
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,100)}});
-window.addEventListener('focus',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,200)});
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){if(Date.now()-_lastPollTime<5000)return;if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,100)}});
+window.addEventListener('focus',function(){if(Date.now()-_lastPollTime<5000)return;if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,200)});
 window.addEventListener('pagehide',function(){if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=null;if(window._specCDInterval){clearInterval(window._specCDInterval);window._specCDInterval=null;}});
 // Cleanup memória a cada 10min: remove hashes/events de jogos encerrados há mais de 24h
 // setTimeout recursivo (PERF-03) em vez de setInterval — sem cleanup, sem acumulação
@@ -2746,6 +2747,7 @@ function _memoryCleanup(){
   Object.keys(TIMELINE_HASH).forEach(function(k){var g=FIFA_MATCH_META[k];if(g&&g.gameIdx){var gn=parseInt(g.gameIdx,10);var gd=GAME_BY_ID[gn]&&gameUTC(GAME_BY_ID[gn]);if(gd&&gd.getTime()<cut){delete TIMELINE_HASH[k];rem++}}});
   Object.keys(PROCESSED_EVENTS).forEach(function(k){var g=FIFA_MATCH_META[k];if(g&&g.gameIdx){var gn=parseInt(g.gameIdx,10);var gd=GAME_BY_ID[gn]&&gameUTC(GAME_BY_ID[gn]);if(gd&&gd.getTime()<cut){delete PROCESSED_EVENTS[k];rem++}}});
   Object.keys(MATCH_MINUTE).forEach(function(k){var g=FIFA_MATCH_META[k];if(g&&g.gameIdx){var gn=parseInt(g.gameIdx,10);var gd=GAME_BY_ID[gn]&&gameUTC(GAME_BY_ID[gn]);if(gd&&gd.getTime()<cut){delete MATCH_MINUTE[k];rem++}}});
+  Object.keys(FIFA_TIMELINES_RAW).forEach(function(k){var g=FIFA_MATCH_META[k];if(g&&g.gameIdx){var gn=parseInt(g.gameIdx,10);var gd=GAME_BY_ID[gn]&&gameUTC(GAME_BY_ID[gn]);if(gd&&gd.getTime()<cut){delete FIFA_TIMELINES_RAW[k];rem++}}});
   if(rem)console.log('Memory cleanup: removed',rem,'stale entries');
   setTimeout(_memoryCleanup,600000);
 }

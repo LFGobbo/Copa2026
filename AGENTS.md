@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-06-30 (v20.6 — Fixes bracket, reabertura read-only, bônus pênaltis, pontos por fase KO)
+**Última atualização:** 2026-06-30 (v20.10 — Fix PROCESSED_EVENTS falsy → loop infinito reconcileScores)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -696,6 +696,28 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v20.10 (2026-06-30) - Fix PROCESSED_EVENTS falsy — loop infinito em reconcileScores
+
+- **Root cause:** `PROCESSED_EVENTS[idMatch]=maxId` — se `maxId=0` (jogo sem EventId numérico), valor é falsy. `reconcileScores` checa `if(PROCESSED_EVENTS[id])return` → nunca pulava o jogo → chamava `processTimeline` para todos os jogos stale a cada poll.
+- **Impacto medido:** 77× processTimeline de reconcileScores + 42× do poll loop = 119 chamadas em 30s → 370 dynRender/elemento em 77s.
+- **Fix:** `PROCESSED_EVENTS[idMatch]=maxId||'done'` — sempre truthy após processamento bem-sucedido.
+- **Resultado:** dynRender 370 → **5** em 30s (-98%).
+
+### v20.9 (2026-06-30) - Guard PROCESSED_EVENTS em recent no poll
+
+- **processTimeline spam corrigido:** poll chamava `processTimeline` para todos os jogos com `recent=true` (dentro de 24h) sem verificar se já foram processados. Resultado: 14 chamadas por poll, 56 em 38s — incluindo jogos de ontem já finalizados. Fix: `(recent&&!PROCESSED_EVENTS[id])` em vez de `recent`. Resultado verificado ao vivo: 6 processTimeline em 56s (1/poll, só o jogo ao vivo).
+- **saveState spam corrigido:** consequência direta — caiu de 50 chamadas em 38s para 6 (1/poll). Tempo total em saveState: 85ms → 30ms.
+- `copa2026.html` sincronizado.
+
+### v20.8 (2026-06-30) - Debounce poll focus/visibilitychange
+
+- **Poll flooding corrigido**: `window.focus` e `document.visibilitychange` disparavam `poll()` imediatamente a cada alternância de foco (ex: DevTools). Confirmado ao vivo: 13 polls em 15s em vez de 1-2. Fix: `_lastPollTime` registra o timestamp do último poll; listeners ignoram o evento se o último poll foi há menos de 5s. Resultado verificado ao vivo: 3 polls em 30s (correto para intervalo de 10s com live).
+- `copa2026.html` sincronizado.
+
+### v20.7 (2026-06-30) - Otimizações de performance (ver §20)
+
+- Cache getSuspensions, H2H pré-computado em renderGroups, regex dynRender compilada, clearInterval pagehide, renderHoje removido, poll reordenado (mergeScores antes dos renders)
 
 ### v20.6 (2026-06-30) - Fixes bracket + reabertura + bônus pênaltis + pontos por fase
 
@@ -1672,6 +1694,57 @@ O `window._specCDInterval` (countdown de palpites especiais) não tinha cleanup 
 | Timeline incremental | Lógica de reconciliação complexa com edge cases documentados na seção 11 |
 | bolaoCalcTotal cache | Depende de versioning correto de `scores`; implementar só se bolão render ficar lento na prática |
 | SW Cache First para JSONs | Mudança simples mas separada — não misturar com otimizações de runtime |
+
+### 20.10 Fix PROCESSED_EVENTS falsy — loop infinito em reconcileScores (v20.10)
+
+**Root cause identificado via instrumentação ao vivo:**
+
+`processTimeline` registrava `PROCESSED_EVENTS[idMatch]=maxId`. Quando o jogo tinha eventos sem `EventId` numérico (ou nenhum evento), `maxId=0` — valor **falsy**. O guard em `reconcileScores`:
+
+```js
+if(PROCESSED_EVENTS[id])return;  // 0 é falsy → não retorna
+```
+
+...nunca pulava o jogo. Resultado: a cada poll, `reconcileScores` chamava `processTimeline` para **todos os jogos stale não finalizados** (~25 jogos da fase de grupos).
+
+**Medição ao vivo (30s, jogo 77 ao vivo):**
+- Chamadas de processTimeline: 119 (77× de reconcileScores + 42× do poll loop)
+- dynRender: **370 por elemento** em 77s
+
+**Fix (L2464):**
+```js
+// ANTES:
+PROCESSED_EVENTS[idMatch]=maxId;
+// DEPOIS:
+PROCESSED_EVENTS[idMatch]=maxId||'done';
+```
+
+`||'done'` garante valor truthy após qualquer processamento bem-sucedido — `reconcileScores` pula o jogo nas próximas rodadas.
+
+**Resultado verificado ao vivo (30s):**
+- dynRender: 370 → **5** (-98%)
+- processTimeline por poll: ~119 → ~3 (apenas o jogo ao vivo)
+
+### 20.9 Guard PROCESSED_EVENTS em recent no poll (v20.9)
+
+**Problema:** o loop do poll chamava `processTimeline(id, g.n)` para todo jogo com `recent=true` (game UTC + 24h > now), sem verificar `PROCESSED_EVENTS[id]`. A cada poll: ~14 chamadas de processTimeline para jogos já processados → ~14 saveState desnecessários. Confirmado ao vivo: 56 processTimeline e 50 saveState em 38s.
+
+**Fix:** `if(live||(recent&&!PROCESSED_EVENTS[id])||stale)` — `recent` agora tem o mesmo guard que `stale` já tinha.
+
+**Resultado verificado ao vivo (56s, 6 polls):**
+- processTimeline: 56 → **6** (-89%)
+- saveState: 50 → **6** (-88%)
+- dynRender: só games-list atualizado (grupos/bracket/scorers com HTML idêntico → dynRender descartou)
+
+### 20.8 Debounce nos listeners focus/visibilitychange (v20.8)
+
+**Problema:** `window.focus` e `document.visibilitychange` cancelavam o timer do poll e disparavam um novo a cada vez que a janela recebia foco. Com DevTools aberto, simples interações no console geravam 13 polls em 15s — 6× mais que o esperado (1 a cada 10s).
+
+**Confirmado ao vivo:** antes do fix: 13 polls/15s. Após: 3 polls/30s.
+
+**Fix:** `_lastPollTime=0` declarado junto com `_pollTimer`. Atualizado para `Date.now()` no início de cada `poll()`. Ambos os listeners checam `Date.now()-_lastPollTime<5000` antes de agir — ignoram o evento se o último poll foi há menos de 5s.
+
+**Impacto:** elimina o flood de polls ao usar DevTools ou alternar janelas. Sem efeito em uso normal (a cada 10s com live o debounce já expirou).
 
 ### 20.7 Reordenamento do poll — mergeScores antes dos renders (v20.7, implementado)
 
