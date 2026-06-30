@@ -1782,15 +1782,16 @@ function _resolveTeamFn(placeholder,gameNum){
     // TODOS os 8 melhores terceiros já estão decididos — ou seja, todos os 12 grupos
     // já terminaram seus jogos. Antes disso, a lista de 8 ainda pode mudar.
     var allFinished=thirds.length===8&&thirds.every(function(t){return t.finished});
-    var resolvedTeam=(allFinished&&gameNum!==undefined)?_resolveThirdPlaceSlot(thirds,gameNum):null;
+    // Tentar resolver mesmo sem allFinished — mostrar best guess como pending até confirmar
+    var resolvedTeam=(thirds.length>=8&&gameNum!==undefined)?_resolveThirdPlaceSlot(thirds,gameNum):null;
     if(resolvedTeam){
-      return{name:resolvedTeam,flag:flag(resolvedTeam),pending:false};
+      return{name:resolvedTeam,flag:flag(resolvedTeam),pending:!allFinished};
     }
     if(slotIdx>=0&&thirds[slotIdx]){
       var t=thirds[slotIdx].team;
-      return{name:posLabel+'3\u00ba '+t,flag:flag(t),pending:true};
+      return{name:t,flag:flag(t),pending:true};
     }
-    return{name:posLabel+'3\u00ba colocado',flag:'',pending:true};
+    return{name:'3\u00ba colocado',flag:'',pending:true};
   }
 
   // Nome literal (já resolvido, ex. "Brasil")
