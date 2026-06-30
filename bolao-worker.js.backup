@@ -654,7 +654,7 @@ async function handle(req) {
                 goals_away: as,
                 game_n: GAME_KEY_MAP[gkFifa] || null,
                 match_id: m.IdMatch || null,
-                match_status: m.MatchStatus || null,
+                match_status: (m.MatchStatus != null) ? m.MatchStatus : null,
                 updated_at: now
               });
               // Prorrogação: registrar para PATCH posterior (placar de 90min)
@@ -840,10 +840,10 @@ async function handle(req) {
             if (threshold === undefined) continue;
             if (completedCount >= threshold) {
               var autoDlAR = phaseReopenDeadline(pr.phase_name);
-              // Só abre se ainda há tempo (deadline futuro ou não definido)
-              if (autoDlAR && Date.now() >= autoDlAR.getTime()) continue;
+              // Abre a fase mesmo que o deadline já tenha passado (ex: fase iniciada antes do cron rodar).
+              // Nesse caso não define deadline — fica aberta até admin fechar manualmente.
               var patchAR = { open: true, opened_at: new Date().toISOString(), closed_at: null };
-              if (autoDlAR) patchAR.deadline = autoDlAR.toISOString();
+              if (autoDlAR && Date.now() < autoDlAR.getTime()) patchAR.deadline = autoDlAR.toISOString();
               await supaFetch('phase_reopen?phase_name=eq.' + pr.phase_name, 'PATCH', patchAR);
               console.log('[AUTO-REOPEN] Fase ' + pr.phase_name + ' aberta automaticamente. Partidas concluídas: ' + completedCount);
               opened.push(pr.phase_name);
