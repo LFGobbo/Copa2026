@@ -1387,7 +1387,9 @@ function updateCountdown(){
     if(id&&MATCH_ENDED[id]){timeStr='FT';}
     else if(id&&MATCH_HALFTIME[id]){timeStr='HT';}
     else if(rawStr.indexOf('+')>=0){
-      timeStr=(id&&MATCH_EXTRA_TIME[id]?'Prorr. ':'')+rawStr+"'";
+      var _baseET=parseInt(rawStr.split('+')[0],10);
+      var _isET=(id&&MATCH_EXTRA_TIME[id])||(!isNaN(_baseET)&&_baseET>=105);
+      timeStr=(_isET?'Prorr. ':'')+rawStr+"'";
     }else{
       // rawMin da API é a fonte da verdade. Só calcula por kickoff quando não há dado.
       var dispMin;
@@ -4031,15 +4033,16 @@ function bolaoRenderReopenSection(){
       var rtA=resolveTeam(g.a,g.n),rtB=resolveTeam(g.b,g.n);
       var rA=rtA&&rtA.name&&!rtA.pending?rtA.name:null;
       var rB=rtB&&rtB.name&&!rtB.pending?rtB.name:null;
-      if(!rA||!rB)return;
+      var reopen=(_bolaoMyPicksReopen||{})[gn];
+      var hasReopen=!!(reopen&&reopen.a!==null&&reopen.a!==undefined);
+      // Se times não resolvidos ainda E não tem palpite salvo, pular
+      if(!rA||!rB){if(!hasReopen)return;rA=rA||g.a;rB=rB||g.b;}
       totalCount++;
       var myPicks=_bolaoAllPicks[_bolaoParticipantId]||{};
       var origPick=_bolaoMyPicks[gn]||myPicks[gn]||{};
       var ptA=_bolaoResolveTeam(g.a,g.n,myPicks);
       var ptB=_bolaoResolveTeam(g.b,g.n,myPicks);
       var acertou=!!(ptA&&ptB&&ptA===rA&&ptB===rB);
-      var reopen=(_bolaoMyPicksReopen||{})[gn];
-      var hasReopen=!!(reopen&&reopen.a!==null&&reopen.a!==undefined);
       if(hasReopen)savedCount++;
       var fl=flag(rA)+' '+rA+' vs '+flag(rB)+' '+rB;
       var _origTA=ptA||rA,_origTB=ptB||rB;
