@@ -2184,8 +2184,6 @@ function _loadAllData(){
 // Iniciar carregamento imediato em paralelo com o resto do app
 _loadAllData();
 
-renderGroups();renderGames("all");renderBracket();renderScorers();updateCountdown();
-
 // --- Mapeamento de times (código FIFA → português) ---
 var FIFA_TEAM_MAP={
 "MEX":"México","RSA":"África do Sul","KOR":"Coreia do Sul","CZE":"República Tcheca",
@@ -2205,6 +2203,8 @@ var FIFA_URL="https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSe
 
 var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},TIMELINE_HASH={},MATCH_STARTED={},MATCH_ENDED={},MATCH_KICKOFF={},MATCH_MINUTE={},MATCH_RAW_MINUTE={},MATCH_HALFTIME={},MATCH_SECOND_KICKOFF={},MATCH_EXTRA_TIME={},MATCH_90_SCORE={},MATCH_PEN_WINNER={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={},FIFA_CALENDAR_RAW={},FIFA_TIMELINES_RAW={},MATCH_FINALIZED={},MATCH_TIMELINE_FAILED={},MATCH_TIMELINE_EMPTY={},_fetchingTimelines={};
 for(var abbr in FIFA_TEAM_MAP)FIFA_TEAM_REV[FIFA_TEAM_MAP[abbr]]=abbr;
+
+renderGroups();renderGames("all");renderBracket();renderScorers();updateCountdown();
 
 function fetchFifaScores(t){var ac=new AbortController(),to=setTimeout(function(){ac.abort()},t||10000);
 return fetch(FIFA_URL,{cache:"no-store",signal:ac.signal}).then(function(r){clearTimeout(to);return r.json()}).then(function(d){
