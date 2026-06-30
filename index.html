@@ -1389,7 +1389,8 @@ function updateCountdown(){
     else if(rawStr.indexOf('+')>=0){
       var _baseET=parseInt(rawStr.split('+')[0],10);
       var _isET=(id&&MATCH_EXTRA_TIME[id])||(!isNaN(_baseET)&&_baseET>=105);
-      timeStr=(_isET?'Prorr. ':'')+rawStr+"'";
+      var _isPen=id&&MATCH_PENALTIES[id];
+      timeStr=(_isPen?'Pên. ':_isET?'Prorr. ':'')+rawStr+"'";
     }else{
       // rawMin da API é a fonte da verdade. Só calcula por kickoff quando não há dado.
       var dispMin;
@@ -1413,7 +1414,7 @@ function updateCountdown(){
         }
       }
       if(id&&MATCH_EXTRA_TIME[id]&&dispMin>90){
-        timeStr='Prorr. '+dispMin+"'";
+        timeStr=(MATCH_PENALTIES[id]?'Pên. ':'Prorr. ')+dispMin+"'";
       }else{
         timeStr=dispMin<=90?dispMin+"'":dispMin<=105?'90+'+(dispMin-90)+"'":'120+'+(dispMin-105)+"'";
       }
@@ -2209,7 +2210,7 @@ var FIFA_TEAM_MAP={
 };
 var FIFA_URL="https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200";
 
-var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},TIMELINE_HASH={},MATCH_STARTED={},MATCH_ENDED={},MATCH_KICKOFF={},MATCH_MINUTE={},MATCH_RAW_MINUTE={},MATCH_HALFTIME={},MATCH_SECOND_KICKOFF={},MATCH_EXTRA_TIME={},MATCH_90_SCORE={},MATCH_PEN_WINNER={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={},FIFA_CALENDAR_RAW={},FIFA_TIMELINES_RAW={},MATCH_FINALIZED={},MATCH_TIMELINE_FAILED={},MATCH_TIMELINE_EMPTY={},_fetchingTimelines={};
+var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},TIMELINE_HASH={},MATCH_STARTED={},MATCH_ENDED={},MATCH_KICKOFF={},MATCH_MINUTE={},MATCH_RAW_MINUTE={},MATCH_HALFTIME={},MATCH_SECOND_KICKOFF={},MATCH_EXTRA_TIME={},MATCH_PENALTIES={},MATCH_90_SCORE={},MATCH_PEN_WINNER={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={},FIFA_CALENDAR_RAW={},FIFA_TIMELINES_RAW={},MATCH_FINALIZED={},MATCH_TIMELINE_FAILED={},MATCH_TIMELINE_EMPTY={},_fetchingTimelines={};
 for(var abbr in FIFA_TEAM_MAP)FIFA_TEAM_REV[FIFA_TEAM_MAP[abbr]]=abbr;
 
 renderGroups();renderGames("all");renderBracket();renderScorers();updateCountdown();
@@ -2232,7 +2233,7 @@ if(m.MatchStatus===0&&m.IdMatch){MATCH_ENDED[m.IdMatch]=true;if(!MATCH_STARTED[m
 if(m.MatchStatus===3&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true}
 if(m.MatchStatus===4&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true;MATCH_HALFTIME[m.IdMatch]=true}
 if(m.MatchStatus===5&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true;MATCH_EXTRA_TIME[m.IdMatch]=true;if(hs!==null&&as!==null&&hs===as&&!MATCH_90_SCORE[m.IdMatch])MATCH_90_SCORE[m.IdMatch]={a:hs,b:as};}
-if(m.MatchStatus===6&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true;MATCH_EXTRA_TIME[m.IdMatch]=true;if(hs!==null&&as!==null&&!MATCH_90_SCORE[m.IdMatch])MATCH_90_SCORE[m.IdMatch]={a:hs,b:as};}
+if(m.MatchStatus===6&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true;MATCH_EXTRA_TIME[m.IdMatch]=true;MATCH_PENALTIES[m.IdMatch]=true;if(hs!==null&&as!==null&&!MATCH_90_SCORE[m.IdMatch])MATCH_90_SCORE[m.IdMatch]={a:hs,b:as};}
 if(m.MatchTime&&m.IdMatch&&typeof m.MatchTime==='string'){var rt=m.MatchTime.replace(/'/g,'');var rn=parseInt(rt,10);if(!isNaN(rn)&&(!MATCH_MINUTE[m.IdMatch]||rn>MATCH_MINUTE[m.IdMatch])){MATCH_MINUTE[m.IdMatch]=rn;MATCH_RAW_MINUTE[m.IdMatch]=rt}}
 if(m.SecondHalfKickOffTime&&m.IdMatch&&!MATCH_SECOND_KICKOFF[m.IdMatch])MATCH_SECOND_KICKOFF[m.IdMatch]=new Date(m.SecondHalfKickOffTime)
 if(!h||!a||hs===null||as===null)return;
@@ -2366,8 +2367,8 @@ function initFifaMaps(){
   }
   fetchSquads();
 }
-function saveFifaRaw(){try{var _cut=Date.now()-172800000;var _tls={};Object.keys(FIFA_TIMELINES_RAW).forEach(function(k){var _t=FIFA_TIMELINES_RAW[k];if(_t&&_t.ts&&_t.ts>=_cut)_tls[k]=_t;});var _mks={};Object.keys(MATCH_KICKOFF).forEach(function(k){if(MATCH_KICKOFF[k])_mks[k]=MATCH_KICKOFF[k].getTime();});localStorage.setItem('copa2026_fifa_raw',JSON.stringify({ts:Date.now(),calendar:FIFA_CALENDAR_RAW,timelines:_tls,m90:MATCH_90_SCORE,met:MATCH_EXTRA_TIME,mk:_mks,mpw:MATCH_PEN_WINNER}));}catch(e){}}
-function loadFifaRaw(){try{var raw=localStorage.getItem('copa2026_fifa_raw');if(raw){var p=JSON.parse(raw);if(p&&p.calendar)FIFA_CALENDAR_RAW=p.calendar;if(p&&p.timelines)FIFA_TIMELINES_RAW=p.timelines;if(p&&p.m90)Object.assign(MATCH_90_SCORE,p.m90);if(p&&p.met)Object.assign(MATCH_EXTRA_TIME,p.met);if(p&&p.mk)Object.keys(p.mk).forEach(function(k){if(p.mk[k]&&!MATCH_KICKOFF[k])MATCH_KICKOFF[k]=new Date(p.mk[k]);});if(p&&p.mpw)Object.assign(MATCH_PEN_WINNER,p.mpw);}}catch(e){}}
+function saveFifaRaw(){try{var _cut=Date.now()-172800000;var _tls={};Object.keys(FIFA_TIMELINES_RAW).forEach(function(k){var _t=FIFA_TIMELINES_RAW[k];if(_t&&_t.ts&&_t.ts>=_cut)_tls[k]=_t;});var _mks={};Object.keys(MATCH_KICKOFF).forEach(function(k){if(MATCH_KICKOFF[k])_mks[k]=MATCH_KICKOFF[k].getTime();});localStorage.setItem('copa2026_fifa_raw',JSON.stringify({ts:Date.now(),calendar:FIFA_CALENDAR_RAW,timelines:_tls,m90:MATCH_90_SCORE,met:MATCH_EXTRA_TIME,mpen:MATCH_PENALTIES,mk:_mks,mpw:MATCH_PEN_WINNER}));}catch(e){}}
+function loadFifaRaw(){try{var raw=localStorage.getItem('copa2026_fifa_raw');if(raw){var p=JSON.parse(raw);if(p&&p.calendar)FIFA_CALENDAR_RAW=p.calendar;if(p&&p.timelines)FIFA_TIMELINES_RAW=p.timelines;if(p&&p.m90)Object.assign(MATCH_90_SCORE,p.m90);if(p&&p.met)Object.assign(MATCH_EXTRA_TIME,p.met);if(p&&p.mpen)Object.assign(MATCH_PENALTIES,p.mpen);if(p&&p.mk)Object.keys(p.mk).forEach(function(k){if(p.mk[k]&&!MATCH_KICKOFF[k])MATCH_KICKOFF[k]=new Date(p.mk[k]);});if(p&&p.mpw)Object.assign(MATCH_PEN_WINNER,p.mpw);}}catch(e){}}
 loadFifaRaw();
 function fetchCalendar(){
   return fetch('https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200',{cache:"no-store"})
