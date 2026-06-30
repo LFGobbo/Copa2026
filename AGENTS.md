@@ -1552,26 +1552,48 @@ Se qualquer resposta for "não" ou "não sei", continuar investigando antes de m
 
 ---
 
-### 19.12 Edição segura de arquivos grandes (index.html)
+### 19.12 Edição segura de arquivos grandes (index.html e AGENTS.md)
 
-O arquivo `index.html` tem ~435KB. O **Edit tool** e `open(path,'w').write(c)` do Python **truncam o arquivo** ao reescrever inteiro em mounts de rede (`/sessions/`). Isso já causou perda de código em múltiplas sessões neste projeto.
+Os arquivos `index.html` (~445KB) e `AGENTS.md` (~87KB) vivem em mounts de rede (`/sessions/`). Dois padrões **proibidos** que já causaram perda de conteúdo neste projeto:
 
-**Regra obrigatória: nunca usar Edit tool nem `f.write(c)` direto no `index.html`.**
+**Proibido 1 — Edit tool ou `f.write()` direto no mount:** trunca o arquivo ao reescrever inteiro.
 
-#### Padrão seguro — Python com move atômico
+**Proibido 2 — `python3 -c "..."` com backticks, `$` ou `!` na string:** o bash interpreta os caracteres especiais antes do Python, o script falha no meio, o arquivo fica partido. Já causou perda da seção §20 inteira do AGENTS.md.
+
+**Regra obrigatória para `index.html` e `AGENTS.md`: sempre usar Python salvo em `/tmp` + `shutil.move`.**
+
+#### Padrão seguro — Python salvo em /tmp + move atômico
+
+Escrever o script em `/tmp/script.py` e rodar `python3 /tmp/script.py` — nunca `python3 -c "..."` com conteúdo complexo.
 
 ```python
+# /tmp/edit_file.py  ← SEMPRE salvar em /tmp, nunca -c inline
+import shutil
+
 with open('index.html', 'r', encoding='utf-8') as f:
     c = f.read()
 c = c.replace(old, new, 1)
 with open('/tmp/index_new.html', 'w', encoding='utf-8') as f:
     f.write(c)
-import shutil
 shutil.move('/tmp/index_new.html', 'index.html')
-# Verificar sempre:
 v = open('index.html', encoding='utf-8').read()
 assert v.strip().endswith('</html>'), "TRUNCADO!"
 ```
+
+O mesmo padrão para `AGENTS.md`:
+
+```python
+# /tmp/edit_agents.py
+import shutil
+with open('AGENTS.md', encoding='utf-8') as f:
+    c = f.read()
+c = c.replace(old, new, 1)
+with open('/tmp/agents_new.md', 'w', encoding='utf-8') as f:
+    f.write(c)
+shutil.move('/tmp/agents_new.md', 'AGENTS.md')
+```
+
+`shutil.move` é atômico — ou funciona completamente ou falha, nunca trunca pela metade.
 
 `shutil.move` é atômico — ou funciona completamente ou falha, nunca trunca pela metade.
 
@@ -1602,4 +1624,71 @@ open('/tmp/check.js','w').write('\n'.join(scripts))
 assert subprocess.run(['node','--check','/tmp/check.js']).returncode == 0, "JS INVÁLIDO!"
 ```
 
+--
 
+## 20. Performance — Otimizações Aplicadas
+
+**Referência:** Auditoria de desempenho realizada em 2026-06-30. A02 estava marcado como problema na auditoria mas **já havia sido corrigido na v19.5** (scheduleCountdown usa setTimeout recursivo, não setInterval fixo).
+
+### 20.1 Cache de getSuspensions (v20.7)
+
+**Problema:** `getSuspensions(forGame)` era chamada 104× por `renderGames` — uma vez para cada `renderGameCard`. Cada chamada executava `GAMES.slice().sort().forEach` (104 iterações) mais 5 níveis de loop aninhado. Total: ~5400 iterações desnecessárias por render cycle.
+
+**Solução:** `var _suspCache=null` declarado globalmente. No início de `renderGames`, `_suspCache={}` reseta o cache. `getSuspensions` verifica `_suspCache[forGame]` antes de computar e armazena o resultado ao final.
+
+**Segurança:** Cache vive apenas dentro de um único `renderGames` síncrono. `cards` e `scores` não mudam durante uma renderização. Resultado idêntico ao original, zero risco de dado incorreto.
+
+### 20.2 H2H e fair-play pré-computados em renderGroups (v20.7)
+
+**Problema:** O comparator do `.sort()` em `renderGroups` chamava `GAMES.filter(...)` (104 itens) a cada par comparado. Para 12 grupos × ~6 comparações por sort × 2 filtros por comparação = ~1440 iterações de GAMES extras por render.
+
+**Solução:** Antes do `.sort()`, pré-computar `_grpGames` (jogos do grupo), `_h2h` (resultado H2H entre todos os pares) e `_cond` (fair-play por time). O comparator consulta esses objetos em O(1).
+
+**Validação:** Testado com `node` usando dados reais do Grupo A. Output idêntico ao algoritmo original em todos os grupos com e sem scores.
+
+**Atenção:** `renderGroups` usa comparator par-a-par (sort JS padrão). Em empates cíclicos de 3 times, o resultado pode não ser totalmente determinístico. O `_resolveGroupOrder` (usado pelo bracket) tem lógica própria para esse caso. Não alterar essa diferença sem entender o impacto no bracket.
+
+### 20.3 Regex de dynRender compilada (v20.7)
+
+**Problema:** A regex `/<div class="live-clock[^>]*>[^<]*<\/div>/g` era recompilada a cada chamada de `dynRender` (centenas de vezes por ciclo).
+
+**Solução:** `var _LIVE_CLOCK_RE = /<div class="live-clock[^>]*>[^<]*<\/div>/g` declarado uma vez antes da função. `dynRender` usa `_LIVE_CLOCK_RE` nas duas substituições.
+
+**Nota:** A flag `g` com `.replace()` é segura para reutilização — `.replace` reseta `lastIndex`. Não usar `_LIVE_CLOCK_RE` com `.exec()` ou `.test()` sem resetar `lastIndex` manualmente.
+
+### 20.4 clearInterval de _specCDInterval no pagehide (v20.7)
+
+O `window._specCDInterval` (countdown de palpites especiais) não tinha cleanup ao fechar a aba. Adicionado ao listener `pagehide` que já existia na linha que limpa `_pollTimer`.
+
+### 20.5 Chamadas de renderHoje() removidas (v20.7)
+
+`function renderHoje(){}` é stub vazio desde v19.17 (aba Hoje fundida com Jogos). As 6 chamadas foram removidas. A definição da função permanece para não quebrar referências externas eventuais.
+
+### 20.6 O que NÃO foi feito e por quê
+
+| Item | Motivo |
+|---|---|
+| Dirty flag global | Risco de perder render ao esquecer setar flag em alguma fonte de mudança |
+| Timeline incremental | Lógica de reconciliação complexa com edge cases documentados na seção 11 |
+| bolaoCalcTotal cache | Depende de versioning correto de `scores`; implementar só se bolão render ficar lento na prática |
+| SW Cache First para JSONs | Mudança simples mas separada — não misturar com otimizações de runtime |
+
+### 20.7 Reordenamento do poll — mergeScores antes dos renders (v20.7, implementado)
+
+**Problema:** No `.then()` do poll, renders incondicionais ocorriam ANTES de `mergeScores`. Quando a FIFA retornava scores novos: 1 render com dados velhos + 1 render dentro de `mergeScores` = 2 renders, o primeiro sempre desperdiçado.
+
+**Fix aplicado:** `mergeScores(m)` (ou fallback) movido para o início do `.then`. Renders incondicionais **removidos** do poll. O único render por poll é o condicional dentro de `mergeScores` (quando `changed=true`).
+
+**Bloco atual do .then:**
+
+```js
+_pollFails=0;
+if(m&&Object.keys(m).length){mergeScores(m)}else{...fallback...};
+saveState();
+if(Object.keys(MATCH_ENDED).length!==endedBefore)setTimeout(checkAutoSnapshot,500);
+reconcileScores();
+```
+
+**Impacto:** Quando scores mudam: 1 render (antes: 2). Quando nada muda: 0 renders (antes: 1). Dados sempre atualizados no único render que ocorre.
+
+**Segurança verificada:** `scores[]` só é mutado por `mergeScores`, `processTimeline` e funções de console — todas já disparam seus próprios renders. Bolão não toca `scores[]`. Abas mata-mata, jogos e bolão investigadas antes da implementação. `copa2026.html` sincronizado. JS válido. Chaves balanceadas.
