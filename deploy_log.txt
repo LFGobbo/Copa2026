@@ -1,8 +1,27 @@
-=== Deploy Worker via Node.js - 29/06/2026 13:26:29,70 === 
-
-=== Node Deploy ===
-[...] Autenticando...
+﻿**********************
+Início da transcrição do Windows PowerShell
+Hora de início: 20260629211752
+Nome de Usuário: Gobbo\Luiz Felipe
+Executar como Usuário: Gobbo\Luiz Felipe
+Nome da Configuração: 
+Computador: GOBBO (Microsoft Windows NT 10.0.26100.0)
+Aplicativo Host: c:\windows\system32\windowspowershell\v1.0\powershell.exe -ExecutionPolicy Bypass -File .\deploy-worker.ps1
+ID do Processo: 19548
+PSVersion: 5.1.26100.8655
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8655
+BuildVersion: 10.0.26100.8655
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[OK] Backup criado: bolao-worker.js.backup
+[...] Autenticando no Cloudflare...
 [OK] Account ID: 2df2e28b8c8d1b2a96aac34eb62cd72d
-[...] Enviando copa2026-bolao (7 bindings)...
-[OK] copa2026-bolao deployado com sucesso! (2026-06-29T16:26:35.626Z)
-=== Fim - 29/06/2026 13:26:35,65 === 
+[...] Enviando bolao-worker.js -> copa2026-bolao (multipart com 7 bindings) ...
+[OK] copa2026-bolao deployado com sucesso!
+**********************
+Fim da transcrição do Windows PowerShell
+Hora de término: 20260629211755
+**********************

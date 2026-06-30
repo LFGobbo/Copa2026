@@ -451,7 +451,7 @@ async function handle(req) {
           result_count: entry.result_count || 0
         };
       });
-      await supaFetch('ranking_snapshots?on_conflict=participant_id,round', 'POST', batchData);
+      await supaFetch('ranking_snapshots?on_conflict=participant_id,round', 'POST', batchData, { 'Prefer': 'resolution=merge-duplicates' });
       return json({ ok: true, round: round, count: batchData.length });
     }
 
@@ -634,7 +634,9 @@ async function handle(req) {
           var fresp = await fetch('https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200');
           var fdata = await fresp.json();
           if (fdata && fdata.Results) {
-            var stored = 0;
+            var batch = [];
+            var etPatches = []; // jogos em prorrogação que precisam do placar de 90min
+            var now = new Date().toISOString();
             for (var i = 0; i < fdata.Results.length; i++) {
               var m = fdata.Results[i];
               if (m.HomeTeamScore === null || m.AwayTeamScore === null) continue;
@@ -644,7 +646,7 @@ async function handle(req) {
               var as = parseInt(m.AwayTeamScore, 10);
               if (!h || !a || isNaN(hs) || isNaN(as)) continue;
               var gkFifa = h + '_' + a;
-              await supaFetch('live_scores?on_conflict=game_key', 'POST', {
+              batch.push({
                 game_key: gkFifa,
                 home_team: h,
                 away_team: a,
@@ -653,16 +655,26 @@ async function handle(req) {
                 game_n: GAME_KEY_MAP[gkFifa] || null,
                 match_id: m.IdMatch || null,
                 match_status: m.MatchStatus || null,
-                updated_at: new Date().toISOString()
+                updated_at: now
               });
-              // Prorrogação: capturar placar de 90min (empate que disparou a prorr.)
-              // Só grava se ainda não foi gravado (PATCH condicional com goals_home_90=is.null)
+              // Prorrogação: registrar para PATCH posterior (placar de 90min)
               if (m.MatchStatus === 5 && hs === as) {
-                try { await supaFetch('live_scores?game_key=eq.' + gkFifa + '&goals_home_90=is.null', 'PATCH', { goals_home_90: hs, goals_away_90: as }); } catch(e) {}
+                etPatches.push(gkFifa);
               }
-              stored++;
             }
-            results.fifa = stored + ' scores stored';
+            // Um único upsert em batch (1 subrequest) em vez de N individuais
+            if (batch.length > 0) {
+              await supaFetch('live_scores?on_conflict=game_key', 'POST', batch, { 'Prefer': 'resolution=merge-duplicates' });
+            }
+            // PATCH para placar de 90min (apenas jogos em ET, condicional)
+            for (var pi = 0; pi < etPatches.length; pi++) {
+              var gk = etPatches[pi];
+              var row = batch.find(function(r){ return r.game_key === gk; });
+              if (row) {
+                try { await supaFetch('live_scores?game_key=eq.' + gk + '&goals_home_90=is.null', 'PATCH', { goals_home_90: row.goals_home, goals_away_90: row.goals_away }); } catch(e) {}
+              }
+            }
+            results.fifa = batch.length + ' scores stored';
           } else {
             results.fifa = 'no data';
           }
@@ -803,7 +815,7 @@ async function handle(req) {
               return { participant_id:r.participant_id, round:parseInt(round,10), position:r.position,
                        points:r.points, exact_count:r.exact_count, result_count:r.result_count };
             });
-            await supaFetch('ranking_snapshots?on_conflict=participant_id,round', 'POST', snapData);
+            await supaFetch('ranking_snapshots?on_conflict=participant_id,round', 'POST', snapData, { 'Prefer': 'resolution=merge-duplicates' });
             results.snapshot = rows.length+' participants, round='+round+', '+Object.keys(realScores).length+' scored games';
           }
         } catch (e) { results.snapshot = 'fail: ' + e.message; }
