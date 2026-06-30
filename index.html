@@ -3974,7 +3974,7 @@ function bolaoUpdateReopenBanner(){
     if(countLabel){countLabel.textContent='Prazo fecha em';countLabel.style.color=urgent?'var(--red)':'rgba(255,255,255,.55)';}
     if(countEl){countEl.style.color=urgent?'var(--red)':'var(--gold)';countEl.textContent=remaining!==null?_bolaoFmtCountdown(Math.max(0,remaining)):'--:--:--';}
     if(remaining!==null&&remaining>0){setTimeout(bolaoUpdateReopenBanner,1000);}
-    else if(remaining!==null&&remaining<=0){_bolaoClosedPhases[ph]={open_at:info.deadline||null};delete _bolaoOpenPhases[ph];bolaoUpdateReopenBanner();try{bolaoRenderReopenSection();}catch(e){}}
+    else if(remaining!==null&&remaining<=0){_bolaoClosedPhases[ph]={open_at:info.deadline||null};delete _bolaoOpenPhases[ph];try{bolaoRenderReopenSection();}catch(e){}}
     return;
   }
 
@@ -3996,12 +3996,13 @@ function bolaoUpdateReopenBanner(){
       _bolaoFetch('/reopen-status').then(function(d){
         _bolaoOpenPhases={};_bolaoClosedPhases={};
         (d.phases||[]).forEach(function(p){
-          if(p.open)_bolaoOpenPhases[p.phase_name]={deadline:p.deadline,game_ns:p.game_ns};
-          else if(p.opened_at)_bolaoClosedPhases[p.phase_name]={open_at:p.opened_at};
+          var _dl=p.deadline?new Date(p.deadline).getTime():null;
+          if(p.open&&(!_dl||_dl>Date.now()))_bolaoOpenPhases[p.phase_name]={deadline:p.deadline,game_ns:p.game_ns};
+          else _bolaoClosedPhases[p.phase_name]={open_at:p.opened_at||p.deadline};
         });
         bolaoUpdateReopenBanner();bolaoRenderReopenSection();
         Object.keys(_bolaoOpenPhases).forEach(function(ph){bolaoShowReopenPopup(ph);});
-      }).catch(function(){bolaoUpdateReopenBanner();});
+      }).catch(function(){});
     }
     return;
   }
@@ -4224,8 +4225,9 @@ function bolaoInit(){
     _bolaoReopenStatusFetched=true;
     _bolaoOpenPhases={};_bolaoClosedPhases={};
     (d.phases||[]).forEach(function(p){
-      if(p.open)_bolaoOpenPhases[p.phase_name]={deadline:p.deadline,game_ns:p.game_ns};
-      else if(p.opened_at)_bolaoClosedPhases[p.phase_name]={open_at:p.opened_at};
+      var _dl=p.deadline?new Date(p.deadline).getTime():null;
+      if(p.open&&(!_dl||_dl>Date.now()))_bolaoOpenPhases[p.phase_name]={deadline:p.deadline,game_ns:p.game_ns};
+      else _bolaoClosedPhases[p.phase_name]={open_at:p.opened_at||p.deadline};
     });
     bolaoUpdateReopenBanner();
     bolaoRenderReopenSection();
