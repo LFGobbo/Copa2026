@@ -1697,6 +1697,10 @@ function _winnerOf(gameNum){
   if(s.b>s.a)return g.b;
   if(s.pen==='a')return g.a;
   if(s.pen==='b')return g.b;
+  // Fallback: MATCH_PEN_WINNER persiste entre sessões (pen some após 48h de timelines)
+  var _mId=FIFA_MATCH_IDS[g.n];
+  if(_mId&&MATCH_PEN_WINNER[_mId]==='a')return g.a;
+  if(_mId&&MATCH_PEN_WINNER[_mId]==='b')return g.b;
   return null;
 }
 function _loserOf(gameNum){
@@ -2199,7 +2203,7 @@ var FIFA_TEAM_MAP={
 };
 var FIFA_URL="https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200";
 
-var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},TIMELINE_HASH={},MATCH_STARTED={},MATCH_ENDED={},MATCH_KICKOFF={},MATCH_MINUTE={},MATCH_RAW_MINUTE={},MATCH_HALFTIME={},MATCH_SECOND_KICKOFF={},MATCH_EXTRA_TIME={},MATCH_90_SCORE={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={},FIFA_CALENDAR_RAW={},FIFA_TIMELINES_RAW={},MATCH_FINALIZED={},MATCH_TIMELINE_FAILED={},MATCH_TIMELINE_EMPTY={},_fetchingTimelines={};
+var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},TIMELINE_HASH={},MATCH_STARTED={},MATCH_ENDED={},MATCH_KICKOFF={},MATCH_MINUTE={},MATCH_RAW_MINUTE={},MATCH_HALFTIME={},MATCH_SECOND_KICKOFF={},MATCH_EXTRA_TIME={},MATCH_90_SCORE={},MATCH_PEN_WINNER={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={},FIFA_CALENDAR_RAW={},FIFA_TIMELINES_RAW={},MATCH_FINALIZED={},MATCH_TIMELINE_FAILED={},MATCH_TIMELINE_EMPTY={},_fetchingTimelines={};
 for(var abbr in FIFA_TEAM_MAP)FIFA_TEAM_REV[FIFA_TEAM_MAP[abbr]]=abbr;
 
 function fetchFifaScores(t){var ac=new AbortController(),to=setTimeout(function(){ac.abort()},t||10000);
@@ -2230,7 +2234,7 @@ for(var i=0;i<GAMES.length;i++){var g=GAMES[i];
   if(!_ga||!_gb){_ga=g.a;_gb=g.b;
     if(_ga&&(_ga==='0'||_ga.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rta=resolveTeam(_ga,g.n);if(!_rta.pending)_ga=_rta.name;}
     if(_gb&&(_gb==='0'||_gb.match(/°\s*Grupo|V\.\s*Jogo|Perd\./))){var _rtb=resolveTeam(_gb,g.n);if(!_rtb.pending)_gb=_rtb.name;}}
-  if((_ga===h&&_gb===a)||(_ga===a&&_gb===h)){map[g.n]={};if(_ga===h){map[g.n].a=hs;map[g.n].b=as}else{map[g.n].a=as;map[g.n].b=hs};if(hs!==null&&as!==null&&hs===as&&m.HomeTeamPenaltyScore!==null&&m.AwayTeamPenaltyScore!==null){map[g.n].pen=(_ga===h)?(parseInt(m.HomeTeamPenaltyScore,10)>parseInt(m.AwayTeamPenaltyScore,10)?'a':'b'):(parseInt(m.AwayTeamPenaltyScore,10)>parseInt(m.HomeTeamPenaltyScore,10)?'a':'b')};if(m.IdMatch&&MATCH_90_SCORE[m.IdMatch]){var _ft90=MATCH_90_SCORE[m.IdMatch];map[g.n].ft={a:(_ga===h?_ft90.a:_ft90.b),b:(_ga===h?_ft90.b:_ft90.a)};}break}}
+  if((_ga===h&&_gb===a)||(_ga===a&&_gb===h)){map[g.n]={};if(_ga===h){map[g.n].a=hs;map[g.n].b=as}else{map[g.n].a=as;map[g.n].b=hs};if(hs!==null&&as!==null&&hs===as&&m.HomeTeamPenaltyScore!==null&&m.AwayTeamPenaltyScore!==null){map[g.n].pen=(_ga===h)?(parseInt(m.HomeTeamPenaltyScore,10)>parseInt(m.AwayTeamPenaltyScore,10)?'a':'b'):(parseInt(m.AwayTeamPenaltyScore,10)>parseInt(m.HomeTeamPenaltyScore,10)?'a':'b');if(m.IdMatch)MATCH_PEN_WINNER[m.IdMatch]=map[g.n].pen;};if(m.IdMatch&&MATCH_90_SCORE[m.IdMatch]){var _ft90=MATCH_90_SCORE[m.IdMatch];map[g.n].ft={a:(_ga===h?_ft90.a:_ft90.b),b:(_ga===h?_ft90.b:_ft90.a)};}break}}
   });return map})["catch"](function(){return null})}
 
 function mergeScores(map){if(!map||Object.keys(map).length===0)return false;var changed=false;_resolveTeamCache={};
@@ -2354,8 +2358,8 @@ function initFifaMaps(){
   }
   fetchSquads();
 }
-function saveFifaRaw(){try{var _cut=Date.now()-172800000;var _tls={};Object.keys(FIFA_TIMELINES_RAW).forEach(function(k){var _t=FIFA_TIMELINES_RAW[k];if(_t&&_t.ts&&_t.ts>=_cut)_tls[k]=_t;});var _mks={};Object.keys(MATCH_KICKOFF).forEach(function(k){if(MATCH_KICKOFF[k])_mks[k]=MATCH_KICKOFF[k].getTime();});localStorage.setItem('copa2026_fifa_raw',JSON.stringify({ts:Date.now(),calendar:FIFA_CALENDAR_RAW,timelines:_tls,m90:MATCH_90_SCORE,met:MATCH_EXTRA_TIME,mk:_mks}));}catch(e){}}
-function loadFifaRaw(){try{var raw=localStorage.getItem('copa2026_fifa_raw');if(raw){var p=JSON.parse(raw);if(p&&p.calendar)FIFA_CALENDAR_RAW=p.calendar;if(p&&p.timelines)FIFA_TIMELINES_RAW=p.timelines;if(p&&p.m90)Object.assign(MATCH_90_SCORE,p.m90);if(p&&p.met)Object.assign(MATCH_EXTRA_TIME,p.met);if(p&&p.mk)Object.keys(p.mk).forEach(function(k){if(p.mk[k]&&!MATCH_KICKOFF[k])MATCH_KICKOFF[k]=new Date(p.mk[k]);});}}catch(e){}}
+function saveFifaRaw(){try{var _cut=Date.now()-172800000;var _tls={};Object.keys(FIFA_TIMELINES_RAW).forEach(function(k){var _t=FIFA_TIMELINES_RAW[k];if(_t&&_t.ts&&_t.ts>=_cut)_tls[k]=_t;});var _mks={};Object.keys(MATCH_KICKOFF).forEach(function(k){if(MATCH_KICKOFF[k])_mks[k]=MATCH_KICKOFF[k].getTime();});localStorage.setItem('copa2026_fifa_raw',JSON.stringify({ts:Date.now(),calendar:FIFA_CALENDAR_RAW,timelines:_tls,m90:MATCH_90_SCORE,met:MATCH_EXTRA_TIME,mk:_mks,mpw:MATCH_PEN_WINNER}));}catch(e){}}
+function loadFifaRaw(){try{var raw=localStorage.getItem('copa2026_fifa_raw');if(raw){var p=JSON.parse(raw);if(p&&p.calendar)FIFA_CALENDAR_RAW=p.calendar;if(p&&p.timelines)FIFA_TIMELINES_RAW=p.timelines;if(p&&p.m90)Object.assign(MATCH_90_SCORE,p.m90);if(p&&p.met)Object.assign(MATCH_EXTRA_TIME,p.met);if(p&&p.mk)Object.keys(p.mk).forEach(function(k){if(p.mk[k]&&!MATCH_KICKOFF[k])MATCH_KICKOFF[k]=new Date(p.mk[k]);});if(p&&p.mpw)Object.assign(MATCH_PEN_WINNER,p.mpw);}}catch(e){}}
 loadFifaRaw();
 function fetchCalendar(){
   return fetch('https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200',{cache:"no-store"})
@@ -3083,12 +3087,15 @@ function _bolaoGetBracket(picks){
     if(p&&p.a!==undefined)scores[gn]=Object.assign({},scores[gn],{a:p.a,b:p.b});
   });
   var res={};
-  GAMES.forEach(function(g){
-    res[g.n]={a:resolveTeam(g.a,g.n),b:resolveTeam(g.b,g.n)};
-  });
-  // Restaurar scores global exatamente como estava
-  Object.keys(scores).forEach(function(k){delete scores[k]});
-  Object.assign(scores,savedScores);
+  try{
+    GAMES.forEach(function(g){
+      res[g.n]={a:resolveTeam(g.a,g.n),b:resolveTeam(g.b,g.n)};
+    });
+  }finally{
+    // Garantir restauração mesmo se resolveTeam lançar exceção
+    Object.keys(scores).forEach(function(k){delete scores[k]});
+    Object.assign(scores,savedScores);
+  }
   _bolaoBracketCache=res;
   return res;
 }
@@ -3434,11 +3441,12 @@ function bolaoRenderPicksGrid(){
     var missingStyle=(!hasPick&&!isLocked)?'border:2px solid #ff1744;box-shadow:0 0 16px rgba(255,23,68,.5);':'';
     var stateClass='';
     if(isLocked&&hasPick&&hasReal&&gameIsPast(g)){
-      var pts=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);
-      var bonus=g.n===BOLAO_FINAL&&pts===10?20:0;
-      if(g.n===BOLAO_FINAL&&pts===10)stateClass=' bsp-final';
-      else if(pts===10)stateClass=' bsp-exact';
-      else if(pts>=2)stateClass=' bsp-result';
+      // Bug 5 fix: usar gPts (já calculado com bolaoCalcKOPickPts para KO) em vez de recalcular com função de grupos
+      var _scPts=gPts>=0?gPts:bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);
+      var _scBonus=gBonus||0;
+      if(g.n===BOLAO_FINAL&&_scPts===10)stateClass=' bsp-final';
+      else if(_scPts===15||_scPts===10)stateClass=' bsp-exact';
+      else if(_scPts>=2)stateClass=' bsp-result';
     }else if(isLocked&&hasPick&&(!hasReal||!gameIsPast(g))){
       stateClass=' bsp-live-neutral';
     }
@@ -4004,8 +4012,8 @@ function bolaoRenderReopenSection(){
     var phGames=KO_PHASE_GAMES&&KO_PHASE_GAMES[ph]?KO_PHASE_GAMES[ph]:[];
     var cardsHtml='';
     phGames.forEach(function(gn){
-      if(gn===73)return; // Jogo 73 ja ocorreu (28/06)
       var g=GAMES.find(function(x){return x.n===gn;});if(!g)return;
+      if(gameIsPast(g))return; // Jogo ja ocorreu — nao exibir na reabertura
       var rtA=resolveTeam(g.a,g.n),rtB=resolveTeam(g.b,g.n);
       var rA=rtA&&rtA.name&&!rtA.pending?rtA.name:null;
       var rB=rtB&&rtB.name&&!rtB.pending?rtB.name:null;
@@ -4219,7 +4227,8 @@ function bolaoInit(){
 // --- Simulação: bolaoSimular() no console ---
 function bolaoSimular(){
   var simScores={7:{a:3,b:1},8:{a:2,b:0},9:{a:1,b:1},10:{a:2,b:2},11:{a:0,b:0},12:{a:3,b:0},13:{a:1,b:0},14:{a:2,b:1},15:{a:0,b:2},16:{a:1,b:3},17:{a:2,b:2},18:{a:3,b:2},19:{a:1,b:0},20:{a:0,b:0},21:{a:4,b:1},22:{a:0,b:1},23:{a:2,b:2},24:{a:1,b:1},25:{a:3,b:0},26:{a:0,b:2},27:{a:1,b:0},28:{a:2,b:3},29:{a:0,b:0},30:{a:2,b:1},31:{a:1,b:2},32:{a:3,b:1},33:{a:0,b:4},34:{a:2,b:0},35:{a:1,b:1},36:{a:0,b:0}};
-  ['copa2026_data','copa2026_bak1','copa2026_bak2','copa2026_teampicks'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
+  ['copa2026_data','copa2026_bak1','copa2026_bak2','copa2026_teampicks','copa2026_ranking_cache'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
+  _bolaoParticipants={};_bolaoRankingCache=null;_bolaoStatsCache=null;
   Object.keys(simScores).forEach(function(gn){scores[gn]={a:simScores[gn].a,b:simScores[gn].b}});
   bolaoLoadRanking();
   renderGames(currentFilter);
