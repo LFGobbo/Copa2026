@@ -1387,7 +1387,7 @@ function updateCountdown(){
     if(id&&MATCH_ENDED[id]){timeStr='FT';}
     else if(id&&MATCH_HALFTIME[id]){timeStr='HT';}
     else if(rawStr.indexOf('+')>=0){
-      timeStr=rawStr+"'";
+      timeStr=(id&&MATCH_EXTRA_TIME[id]?'Prorr. ':'')+rawStr+"'";
     }else{
       // rawMin da API é a fonte da verdade. Só calcula por kickoff quando não há dado.
       var dispMin;
@@ -1419,7 +1419,10 @@ function updateCountdown(){
     }
     // Injetar badge dentro do .game-score (order:-1 no flex)
     if(id&&!MATCH_ENDED[id]){try{var cel=document.getElementById('live-clock-'+g.n);if(!cel){var scDiv=document.querySelector('#g-'+g.n+' .game-score');if(scDiv){var b=document.createElement('div');b.id='live-clock-'+g.n;b.className='live-clock';var sp=document.createElement('span');sp.textContent=timeStr;b.appendChild(sp);scDiv.insertBefore(b,scDiv.firstChild);}}else{var sp=cel.querySelector('span');if(sp&&sp.textContent!==timeStr)sp.textContent=timeStr;}}catch(e){}}
-    cards.push('<div class="countdown-event"><span class="countdown-event-live">\u25cf</span><span class="countdown-event-num">#'+g.n+'</span><span class="countdown-event-teams">'+g.a+" vs "+g.b+'</span><span class="countdown-event-time">'+sc+'</span><span class="countdown-event-date">'+timeStr+'</span></div>');
+    var _rtA=resolveTeam(g.a,g.n),_rtB=resolveTeam(g.b,g.n);
+    var _tnA=_rtA&&_rtA.name&&!_rtA.pending?_rtA.name:g.a;
+    var _tnB=_rtB&&_rtB.name&&!_rtB.pending?_rtB.name:g.b;
+    cards.push('<div class="countdown-event"><span class="countdown-event-live">\u25cf</span><span class="countdown-event-num">#'+g.n+'</span><span class="countdown-event-teams">'+_tnA+" vs "+_tnB+'</span><span class="countdown-event-time">'+sc+'</span><span class="countdown-event-date">'+timeStr+'</span></div>');
   });
   upcoming.forEach(function(x,idx){
     try{
@@ -4008,6 +4011,14 @@ function bolaoRenderReopenSection(){
   var sec=document.getElementById('bolao-reopen-section');
   if(!sec||!_bolaoParticipantId)return;
   var phases=Object.keys(_bolaoOpenPhases||{});
+  // Também mostra fases fechadas onde o usuário tem palpites reabertos salvos
+  var myReopenKeys=Object.keys(_bolaoMyPicksReopen||{}).map(Number);
+  Object.keys(_bolaoClosedPhases||{}).forEach(function(ph){
+    if(phases.indexOf(ph)>=0)return;
+    var phGames=KO_PHASE_GAMES&&KO_PHASE_GAMES[ph]?KO_PHASE_GAMES[ph]:[];
+    var hasMyPick=phGames.some(function(gn){return myReopenKeys.indexOf(gn)>=0;});
+    if(hasMyPick)phases.push(ph);
+  });
   if(!phases.length){sec.innerHTML='';return;}
   var savedCount=0,totalCount=0;
   var innerHtml='';
@@ -4080,42 +4091,6 @@ function bolaoRenderReopenSection(){
           +'</div></div>'
           +'</div>';
       }
-    });
-    if(cardsHtml){
-      innerHtml+='<div class="reopen-phase-label">'+_bolaoPhaseLabel(ph)+'</div>'
-        +'<div class="reopen-grid">'+cardsHtml+'</div>';
-    }
-  });
-  // Closed phases — read-only
-  closedPhases2.forEach(function(ph){
-    var phGames=KO_PHASE_GAMES&&KO_PHASE_GAMES[ph]?KO_PHASE_GAMES[ph]:[];
-    var cardsHtml='';
-    phGames.forEach(function(gn){
-      var g=GAMES.find(function(x){return x.n===gn;});if(!g)return;
-      var rtA=resolveTeam(g.a,g.n),rtB=resolveTeam(g.b,g.n);
-      var rA=rtA&&rtA.name&&!rtA.pending?rtA.name:null;
-      var rB=rtB&&rtB.name&&!rtB.pending?rtB.name:null;
-      if(!rA||!rB)return;
-      var myPicks=_bolaoAllPicks[_bolaoParticipantId]||{};
-      var origPick=_bolaoMyPicks[gn]||myPicks[gn]||{};
-      var ptA=_bolaoResolveTeam(g.a,g.n,myPicks);
-      var ptB=_bolaoResolveTeam(g.b,g.n,myPicks);
-      var fl=flag(rA)+' '+rA+' vs '+flag(rB)+' '+rB;
-      var _origTA=ptA||rA,_origTB=ptB||rB;
-      var _hasScore=origPick.a!==undefined&&origPick.b!==undefined;
-      var origHtml='<div class="reopen-orig-label">Seu palpite original</div>'
-        +'<div class="reopen-orig-block">'
-        +'<span class="reopen-orig-team">'+flag(_origTA)+' '+esc(_origTA)+'</span>'
-        +(_hasScore
-          ?'<span class="reopen-orig-score">'+origPick.a+' × '+origPick.b+'</span>'
-          :'<span class="reopen-orig-score-none">— × —</span>')
-        +'<span class="reopen-orig-team right">'+esc(_origTB)+' '+flag(_origTB)+'</span>'
-        +'</div>';
-      cardsHtml+='<div class="reopen-card reopen-card-closed" id="reopen-card-hist-'+gn+'">'
-        +'<div class="reopen-card-header"><span class="reopen-card-meta">#'+gn+' · '+esc(g.f)+'</span><span class="reopen-card-badge reopen-badge-closed">🔒 Fechado</span></div>'
-        +'<div class="reopen-teams">'+fl+'</div>'
-        +origHtml
-        +'</div>';
     });
     if(cardsHtml){
       innerHtml+='<div class="reopen-phase-label">'+_bolaoPhaseLabel(ph)+'</div>'
