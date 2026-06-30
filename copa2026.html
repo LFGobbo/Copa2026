@@ -3162,7 +3162,7 @@ function bolaoCalcTotal(participantId){
       var _real90=real.ft||real;var scoreKO=bolaoCalcKOPickPts(activePick.a,activePick.b,_real90.a,_real90.b,useFullTable);
       if(scoreKO<0)return;
       var koBonus=0;
-      if(real.a===real.b){var rw=_winnerOf(g.n);if(activePick.ko&&rw&&activePick.ko===rw)koBonus=5;}
+      if(real.a===real.b){var _ps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_ps){var _rw=_winnerOf(g.n);var _gb=GAME_BY_ID[g.n];_ps=_rw&&_gb?(_rw===_gb.a?'a':_rw===_gb.b?'b':null):null;}if(activePick.ko&&_ps&&activePick.ko===_ps)koBonus=5;}
       var phaseBonus=0;
       if(acertouConfronto){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_FRONTEND[cph]||0;}
       total+=scoreKO+koBonus+phaseBonus;
@@ -3273,7 +3273,7 @@ function bolaoRenderDetail(pid){
       var dUseFullTable=dAcertou&&!dHasReopen;
       var _dreal90=real.ft||real;var dScoreKO=bolaoCalcKOPickPts(dActivePick.a,dActivePick.b,_dreal90.a,_dreal90.b,dUseFullTable);
       var dKoBonus=0;
-      if(real.a===real.b){var drw=_winnerOf(g.n);if(dActivePick.ko&&drw&&dActivePick.ko===drw)dKoBonus=5;}
+      if(real.a===real.b){var _dps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_dps){var _drw=_winnerOf(g.n);var _dgb=GAME_BY_ID[g.n];_dps=_drw&&_dgb?(_drw===_dgb.a?'a':_drw===_dgb.b?'b':null):null;}if(dActivePick.ko&&_dps&&dActivePick.ko===_dps)dKoBonus=5;}
       var dPhaseBonus=0;
       if(dAcertou){var dph=KO_GAME_PHASE_FRONTEND[g.n];dPhaseBonus=KO_PHASE_BONUS_FRONTEND[dph]||0;}
       var dTotal=dScoreKO<0?-1:dScoreKO+dKoBonus+dPhaseBonus;
@@ -3431,7 +3431,7 @@ function bolaoRenderPicksGrid(){
           var gActivePick=gTemReopen?gReopenPick:pick;
           var gUseFullTable=gAcertou&&!gTemReopen;
           var _greal90=real.ft||real;gPts=bolaoCalcKOPickPts(gActivePick.a,gActivePick.b,_greal90.a,_greal90.b,gUseFullTable);
-          if(real.a===real.b){var grw=_winnerOf(g.n);if(gActivePick.ko&&grw&&gActivePick.ko===grw)gBonus+=5;}
+          if(real.a===real.b){var _gps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_gps){var _grw=_winnerOf(g.n);var _ggb=GAME_BY_ID[g.n];_gps=_grw&&_ggb?(_grw===_ggb.a?'a':_grw===_ggb.b?'b':null):null;}if(gActivePick.ko&&_gps&&gActivePick.ko===_gps)gBonus+=5;}
           if(gAcertou){var gph=KO_GAME_PHASE_FRONTEND[g.n];gBonus+=(KO_PHASE_BONUS_FRONTEND[gph]||0);}
         }
         gCol=gPts<0?'var(--red)':gPts===15||gPts===10?'var(--gold)':gPts>=2?'#4ade80':'var(--red)';
@@ -4624,7 +4624,7 @@ function bolaoRenderStats(el){
       var scoreKO=bolaoCalcKOPickPts(activePick.a,activePick.b,_real90.a,_real90.b,useFullTable);
       if(scoreKO<0)return;
       var koBonus=0;
-      if(real.a===real.b){var rw=_winnerOf(g.n);if(activePick.ko&&rw&&activePick.ko===rw)koBonus=5;}
+      if(real.a===real.b){var _ps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_ps){var _rw=_winnerOf(g.n);var _gb=GAME_BY_ID[g.n];_ps=_rw&&_gb?(_rw===_gb.a?'a':_rw===_gb.b?'b':null):null;}if(activePick.ko&&_ps&&activePick.ko===_ps)koBonus=5;}
       var phaseBonus=0;
       if(acertouC){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_FRONTEND[cph]||0;}
       phasePts[ph]=(phasePts[ph]||0)+scoreKO+koBonus+phaseBonus;
