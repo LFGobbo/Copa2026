@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-06-29 (v20.4 — Worker cron + live_scores + fixes KO stats)
+**Última atualização:** 2026-06-30 (v20.6 — Fixes bracket, reabertura read-only, bônus pênaltis, pontos por fase KO)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -696,6 +696,18 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v20.6 (2026-06-30) - Fixes bracket + reabertura + bônus pênaltis + pontos por fase
+
+- **Relógio prorrogação/pênaltis**: badge mostrava `120+7'` em vez de `Prorr. 120+7'`. Detecção por base ≥ 105 min. Adicionado `MATCH_PENALTIES` para mostrar `Pên. 120+X'` separado de `Prorr.`
+- **Palpites R32 visíveis no login**: check `hasReopen` movido antes do early return — palpites de reabertura agora aparecem mesmo quando times ainda não resolvidos
+- **Loop infinito `bolaoUpdateReopenBanner`**: r32 com `open=true` mas deadline expirado causava recursão infinita (`ERR_INSUFFICIENT_RESOURCES`). Removidas chamadas recursivas no `else if(remaining<=0)` e no `.catch()`; fases expiradas agora movidas corretamente para `_bolaoClosedPhases`
+- **Crash silencioso na seção reopen**: `TypeError` em `reopen.a` quando jogo passado mas sem palpite. Condição `if(hasReopen||gameIsPast(g))` corrigida para `if(hasReopen)`
+- **Bracket mostrando "0" e grupos**: `resolveTeam('V. Jogo N')` retornava `{name:'0'}` sem resolver o placeholder de 3° colocado. Corrigido: quando `_winnerOf(N)` retorna um placeholder (`'0'`, `'1° Grupo X'`, etc.), agora chama `resolveTeam()` recursivamente em vez de retornar direto
+- **Bracket mostrando "0" antes de `allFinished`**: `_resolveThirdPlaceSlot` só resolvia quando todos os 8 terceiros estavam decididos. Agora resolve com `pending:true` assim que `thirds.length>=8`
+- **Reabertura somente leitura em fase fechada**: fases com prazo encerrado (`_bolaoClosedPhases`) não exibem mais inputs editáveis — apenas cards `✓ Salvo/Concluído` para palpites já salvos
+- **Pontos por fase KO incorretos**: `bolaoRenderStats` usava `bolaoCalcPickPts` (fórmula de grupos) com palpite original, ignorando reopen picks, tabela cheia/reduzida e bônus. Corrigido para usar mesma lógica de `bolaoCalcTotal`
+- **Bônus pênaltis nunca concedido**: `activePick.ko` guarda `'a'`/`'b'` (lado), mas comparação era feita contra `_winnerOf()` que retorna nome do time — nunca batiam. Corrigido em 4 lugares (bolaoCalcTotal, detalhe, ranking, stats) para comparar lado via `MATCH_PEN_WINNER`
 
 ### v20.5 (2026-06-28) - Fix palpite original + perf login + docs
 
