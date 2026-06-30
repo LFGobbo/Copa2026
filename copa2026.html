@@ -4604,9 +4604,34 @@ function bolaoRenderStats(el){
     if(g.n<BOLAO_FIRST||!gameIsPast(g))return;
     if(confirmTsStats){var gd=gameUTC(g);if(gd&&gd.getTime()<confirmTsStats)return;}
     var pick=myPicks[g.n],real=scores[g.n];
-    if(!real||real.a===undefined||!pick||pick.a===undefined)return;
-    var p=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);if(p<0)return;
+    if(!real||real.a===undefined||real.b===undefined)return;
     var ph=g.f.startsWith('Grupo')?'grupos':g.f==='Rodada de 32'?'r32':g.f==='Oitavas de Final'?'oitavas':g.f==='Quartas de Final'?'quartas':g.f==='Semifinal'?'semi':'final';
+    var isKO=g.f&&!g.f.startsWith('Grupo');
+    if(isKO){
+      var realTeamA=resolveTeam(g.a,g.n),realTeamB=resolveTeam(g.b,g.n);
+      realTeamA=realTeamA&&realTeamA.name?realTeamA.name:null;
+      realTeamB=realTeamB&&realTeamB.name?realTeamB.name:null;
+      var teamPickA=_bolaoResolveTeam(g.a,g.n,myPicks),teamPickB=_bolaoResolveTeam(g.b,g.n,myPicks);
+      var acertouC=!!(realTeamA&&realTeamB&&teamPickA&&teamPickB&&teamPickA===realTeamA&&teamPickB===realTeamB);
+      var myReopens=(_bolaoAllPicksReopen[_bolaoParticipantId]||{});
+      var reopenPick=myReopens[g.n];
+      var temReopen=!!(reopenPick&&reopenPick.a!==null&&reopenPick.a!==undefined);
+      if(!acertouC&&!temReopen)return;
+      var activePick=temReopen?reopenPick:pick;
+      if(!activePick||activePick.a===undefined)return;
+      var useFullTable=acertouC&&!temReopen;
+      var _real90=real.ft||real;
+      var scoreKO=bolaoCalcKOPickPts(activePick.a,activePick.b,_real90.a,_real90.b,useFullTable);
+      if(scoreKO<0)return;
+      var koBonus=0;
+      if(real.a===real.b){var rw=_winnerOf(g.n);if(activePick.ko&&rw&&activePick.ko===rw)koBonus=5;}
+      var phaseBonus=0;
+      if(acertouC){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_FRONTEND[cph]||0;}
+      phasePts[ph]=(phasePts[ph]||0)+scoreKO+koBonus+phaseBonus;
+      return;
+    }
+    if(!pick||pick.a===undefined)return;
+    var p=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);if(p<0)return;
     phasePts[ph]=(phasePts[ph]||0)+p;
   });
   var phHtml=Object.keys(phasePts).filter(function(k){return phasePts[k]>0;}).map(function(k){
