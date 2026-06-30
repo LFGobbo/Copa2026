@@ -661,6 +661,13 @@ async function handle(req) {
               var as = parseInt(m.AwayTeamScore, 10);
               if (!h || !a || isNaN(hs) || isNaN(as)) continue;
               var gkFifa = h + '_' + a;
+              // Detectar vencedor nos pênaltis (hs===as após ET + penaltyScores disponíveis)
+              var penWinner = null;
+              if (hs === as && m.HomeTeamPenaltyScore !== null && m.HomeTeamPenaltyScore !== undefined &&
+                  m.AwayTeamPenaltyScore !== null && m.AwayTeamPenaltyScore !== undefined) {
+                var hp = parseInt(m.HomeTeamPenaltyScore, 10), ap2 = parseInt(m.AwayTeamPenaltyScore, 10);
+                if (!isNaN(hp) && !isNaN(ap2) && hp !== ap2) penWinner = hp > ap2 ? 'home' : 'away';
+              }
               batch.push({
                 game_key: gkFifa,
                 home_team: h,
@@ -670,6 +677,7 @@ async function handle(req) {
                 game_n: (function() { var gn = GAME_KEY_MAP[gkFifa]; if (!gn && m.Date) { var dk = (m.Date+'').slice(0,16); gn = dateToGameN[dk] || null; } return gn || null; })(),
                 match_id: m.IdMatch || null,
                 match_status: (m.MatchStatus != null) ? m.MatchStatus : null,
+                pen_winner: penWinner,
                 updated_at: now
               });
               // Prorrogação: registrar para PATCH posterior (placar de 90min)
@@ -733,12 +741,16 @@ async function handle(req) {
           }
 
           // 1. Buscar placares reais do Supabase (gravados pelo task=fifa)
-          var liveScores = (await supaFetch('live_scores?select=game_key,game_n,goals_home,goals_away,goals_home_90,goals_away_90')) || [];
+          var liveScores = (await supaFetch('live_scores?select=game_key,game_n,goals_home,goals_away,goals_home_90,goals_away_90,pen_winner,home_team,away_team')) || [];
           // Montar mapa game_n -> {a, b}
           var realScores = {};
           liveScores.forEach(function(s) {
             var gn = s.game_n || GAME_KEY_MAP[s.game_key] || null;
-            if (gn) { realScores[gn] = { a: s.goals_home, b: s.goals_away }; if (s.goals_home_90 !== null && s.goals_home_90 !== undefined) realScores[gn].ft = { a: s.goals_home_90, b: s.goals_away_90 }; }
+            if (!gn) return;
+            realScores[gn] = { a: s.goals_home, b: s.goals_away, homeTeam: s.home_team, awayTeam: s.away_team };
+            if (s.goals_home_90 !== null && s.goals_home_90 !== undefined) realScores[gn].ft = { a: s.goals_home_90, b: s.goals_away_90 };
+            // pen_winner: 'home' ou 'away' → converter para 'a'/'b' (home=a, away=b no jogo)
+            if (s.pen_winner) realScores[gn].penWinner = s.pen_winner === 'home' ? 'a' : 'b';
           });
 
           // 2. Buscar participantes confirmados
@@ -811,6 +823,10 @@ async function handle(req) {
                   var useFullTable = !hasReopen;
                   var _r90 = real.ft || real; pts = calcKOPts(activePick.goals_a, activePick.goals_b, _r90.a, _r90.b, useFullTable);
                   if (pts >= 0 && useFullTable) total += (KO_PHASE_BONUS[KO_GAME_PHASE[gnNum]] || 0);
+                  // +5 se acertou ko_pick nos pênaltis (real.a===real.b = placar final empatado = pênaltis)
+                  if (pts >= 0 && real.a === real.b && activePick.ko_pick && real.penWinner) {
+                    if (activePick.ko_pick === real.penWinner) { total += 5; }
+                  }
                 } else {
                   if (!pick || pick.goals_a === null || pick.goals_b === null) return;
                   pts = calcPts(pick.goals_a, pick.goals_b, real.a, real.b);

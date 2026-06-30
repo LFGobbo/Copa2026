@@ -666,6 +666,9 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .reopen-badge-locked{background:rgba(74,222,128,.12);color:#4ade80}
 .reopen-badge-open{background:rgba(96,165,250,.12);color:#60a5fa}
 .reopen-badge-saved{background:rgba(74,222,128,.18);color:#4ade80}
+.reopen-card-closed::before{background:linear-gradient(180deg,#6a6a8e,#55557a)}
+.reopen-card-closed{border-color:rgba(106,106,142,.25);background:rgba(106,106,142,.03)}
+.reopen-badge-closed{background:rgba(106,106,142,.18);color:#6a6a8e}
 .reopen-badge-editing{background:rgba(255,193,7,.12);color:#ffc107}
 .reopen-teams{font-size:13px;font-weight:600;color:var(--text);min-height:18px;line-height:1.3}
 .reopen-ko-row{margin-top:6px}
@@ -3689,7 +3692,7 @@ async function bolaoConfirmAll(){
     document.getElementById('bolao-confirmed-banner').style.display='block';
     if(st)st.textContent='';
     bolaoRenderPicksGrid();
-  if(Object.keys(_bolaoOpenPhases||{}).length)try{bolaoRenderReopenSection();}catch(e){}bolaoPopulateSpecials();
+  try{bolaoRenderReopenSection();}catch(e){}bolaoPopulateSpecials();
   }catch(e){btn.disabled=false;btn.textContent='Confirmar todos os palpites';if(st){st.style.color='var(--red)';st.textContent='Erro ao confirmar: '+e.message}}
 }
 function bolaoShowConfirmButton(){if(_bolaoConfirmed)return;var area=document.getElementById('bolao-confirm-area');if(area)area.style.display='block'}
@@ -3879,7 +3882,7 @@ async function _onLoginSuccess(res){
   bolaoRenderPicksGrid();
   setTimeout(function(){bolaoLoadMajority();},200);
   bolaoPopulateSpecials();
-  if(Object.keys(_bolaoOpenPhases||{}).length)try{bolaoRenderReopenSection();}catch(e){}
+  try{bolaoRenderReopenSection();}catch(e){}
   if(_bolaoConfirmed)document.getElementById('bolao-confirmed-banner').style.display='block';
   else bolaoShowConfirmButton();
 }
@@ -3966,7 +3969,7 @@ function bolaoUpdateReopenBanner(){
     if(countLabel){countLabel.textContent='Prazo fecha em';countLabel.style.color=urgent?'var(--red)':'rgba(255,255,255,.55)';}
     if(countEl){countEl.style.color=urgent?'var(--red)':'var(--gold)';countEl.textContent=remaining!==null?_bolaoFmtCountdown(Math.max(0,remaining)):'--:--:--';}
     if(remaining!==null&&remaining>0){setTimeout(bolaoUpdateReopenBanner,1000);}
-    else if(remaining!==null&&remaining<=0){delete _bolaoOpenPhases[ph];bolaoUpdateReopenBanner();}
+    else if(remaining!==null&&remaining<=0){_bolaoClosedPhases[ph]={open_at:info.deadline||null};delete _bolaoOpenPhases[ph];bolaoUpdateReopenBanner();try{bolaoRenderReopenSection();}catch(e){}}
     return;
   }
 
@@ -4013,7 +4016,7 @@ function bolaoRenderReopenSection(){
     var cardsHtml='';
     phGames.forEach(function(gn){
       var g=GAMES.find(function(x){return x.n===gn;});if(!g)return;
-      if(gameIsPast(g))return; // Jogo ja ocorreu — nao exibir na reabertura
+      // Jogo ja ocorreu — nao exibir na reabertura
       var rtA=resolveTeam(g.a,g.n),rtB=resolveTeam(g.b,g.n);
       var rA=rtA&&rtA.name&&!rtA.pending?rtA.name:null;
       var rB=rtB&&rtB.name&&!rtB.pending?rtB.name:null;
@@ -4038,10 +4041,10 @@ function bolaoRenderReopenSection(){
           :'<span class="reopen-orig-score-none">— × —</span>')
         +'<span class="reopen-orig-team right">'+esc(_origTB)+' '+flag(_origTB)+'</span>'
         +'</div>';
-      if(hasReopen){
+      if(hasReopen||gameIsPast(g)){
         // ✓ Salvo — read-only
         cardsHtml+='<div class="reopen-card reopen-card-saved" id="reopen-card-'+gn+'">'
-          +'<div class="reopen-card-header"><span class="reopen-card-meta">#'+gn+' · '+esc(g.f)+'</span><span class="reopen-card-badge reopen-badge-saved">✓ Salvo</span></div>'
+          +'<div class="reopen-card-header"><span class="reopen-card-meta">#'+gn+' · '+esc(g.f)+'</span><span class="reopen-card-badge reopen-badge-saved">'+(gameIsPast(g)?'✓ Concluído':'✓ Salvo')+'</span></div>'
           +'<div class="reopen-teams">'+fl+'</div>'
           +origHtml
           +'<div class="reopen-saved-score">'+reopen.a+' &times; '+reopen.b+'</div>'
@@ -4077,6 +4080,42 @@ function bolaoRenderReopenSection(){
           +'</div></div>'
           +'</div>';
       }
+    });
+    if(cardsHtml){
+      innerHtml+='<div class="reopen-phase-label">'+_bolaoPhaseLabel(ph)+'</div>'
+        +'<div class="reopen-grid">'+cardsHtml+'</div>';
+    }
+  });
+  // Closed phases — read-only
+  closedPhases2.forEach(function(ph){
+    var phGames=KO_PHASE_GAMES&&KO_PHASE_GAMES[ph]?KO_PHASE_GAMES[ph]:[];
+    var cardsHtml='';
+    phGames.forEach(function(gn){
+      var g=GAMES.find(function(x){return x.n===gn;});if(!g)return;
+      var rtA=resolveTeam(g.a,g.n),rtB=resolveTeam(g.b,g.n);
+      var rA=rtA&&rtA.name&&!rtA.pending?rtA.name:null;
+      var rB=rtB&&rtB.name&&!rtB.pending?rtB.name:null;
+      if(!rA||!rB)return;
+      var myPicks=_bolaoAllPicks[_bolaoParticipantId]||{};
+      var origPick=_bolaoMyPicks[gn]||myPicks[gn]||{};
+      var ptA=_bolaoResolveTeam(g.a,g.n,myPicks);
+      var ptB=_bolaoResolveTeam(g.b,g.n,myPicks);
+      var fl=flag(rA)+' '+rA+' vs '+flag(rB)+' '+rB;
+      var _origTA=ptA||rA,_origTB=ptB||rB;
+      var _hasScore=origPick.a!==undefined&&origPick.b!==undefined;
+      var origHtml='<div class="reopen-orig-label">Seu palpite original</div>'
+        +'<div class="reopen-orig-block">'
+        +'<span class="reopen-orig-team">'+flag(_origTA)+' '+esc(_origTA)+'</span>'
+        +(_hasScore
+          ?'<span class="reopen-orig-score">'+origPick.a+' × '+origPick.b+'</span>'
+          :'<span class="reopen-orig-score-none">— × —</span>')
+        +'<span class="reopen-orig-team right">'+esc(_origTB)+' '+flag(_origTB)+'</span>'
+        +'</div>';
+      cardsHtml+='<div class="reopen-card reopen-card-closed" id="reopen-card-hist-'+gn+'">'
+        +'<div class="reopen-card-header"><span class="reopen-card-meta">#'+gn+' · '+esc(g.f)+'</span><span class="reopen-card-badge reopen-badge-closed">🔒 Fechado</span></div>'
+        +'<div class="reopen-teams">'+fl+'</div>'
+        +origHtml
+        +'</div>';
     });
     if(cardsHtml){
       innerHtml+='<div class="reopen-phase-label">'+_bolaoPhaseLabel(ph)+'</div>'
@@ -4211,8 +4250,8 @@ function bolaoInit(){
       else if(p.opened_at)_bolaoClosedPhases[p.phase_name]={open_at:p.opened_at};
     });
     bolaoUpdateReopenBanner();
-    var hasOpen=Object.keys(_bolaoOpenPhases).length>0;
-    if(hasOpen){bolaoRenderReopenSection();Object.keys(_bolaoOpenPhases).forEach(function(ph){bolaoShowReopenPopup(ph);});}
+    bolaoRenderReopenSection();
+    Object.keys(_bolaoOpenPhases).forEach(function(ph){bolaoShowReopenPopup(ph);});
   }).catch(function(){_bolaoReopenStatusFetched=false;});
   var el=document.getElementById('bolao-deadline-info');if(!el)return;
   var deadline=_bolaoDeadline(BOLAO_SIGNUP_GAME);if(!deadline){el.textContent='';return}

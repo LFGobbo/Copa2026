@@ -47,3 +47,12 @@ CREATE TABLE IF NOT EXISTS live_scores (
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
 
+-- 5. live_scores: colunas adicionais para mata-mata
+--    goals_home_90 / goals_away_90: placar exato aos 90min (capturado ao entrar na prorrogação)
+--    pen_winner: 'home' ou 'away' — quem venceu nos pênaltis (null se não houve pênaltis)
+ALTER TABLE live_scores ADD COLUMN IF NOT EXISTS goals_home_90 int;
+ALTER TABLE live_scores ADD COLUMN IF NOT EXISTS goals_away_90 int;
+ALTER TABLE live_scores ADD COLUMN IF NOT EXISTS game_n int;
+ALTER TABLE live_scores ADD COLUMN IF NOT EXISTS match_status int;
+ALTER TABLE live_scores ADD COLUMN IF NOT EXISTS pen_winner text CHECK (pen_winner IN ('home','away'));
+
