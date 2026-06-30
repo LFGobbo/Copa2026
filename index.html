@@ -4034,6 +4034,7 @@ function bolaoRenderReopenSection(){
   phases.forEach(function(ph){
     var phGames=KO_PHASE_GAMES&&KO_PHASE_GAMES[ph]?KO_PHASE_GAMES[ph]:[];
     var cardsHtml='';
+    var phIsOpen=!!((_bolaoOpenPhases||{})[ph]);
     phGames.forEach(function(gn){
       var g=GAMES.find(function(x){return x.n===gn;});if(!g)return;
       // Jogo ja ocorreu — nao exibir na reabertura
@@ -4044,6 +4045,8 @@ function bolaoRenderReopenSection(){
       var hasReopen=!!(reopen&&reopen.a!==null&&reopen.a!==undefined);
       // Se times não resolvidos ainda E não tem palpite salvo, pular
       if(!rA||!rB){if(!hasReopen)return;rA=rA||g.a;rB=rB||g.b;}
+      // Fase fechada sem palpite salvo — não exibir
+      if(!phIsOpen&&!hasReopen)return;
       totalCount++;
       var myPicks=_bolaoAllPicks[_bolaoParticipantId]||{};
       var origPick=_bolaoMyPicks[gn]||myPicks[gn]||{};
