@@ -1753,7 +1753,11 @@ function _resolveTeamFn(placeholder,gameNum){
   if(mV){
     var vn=parseInt(mV[1],10);
     var w=_winnerOf(vn);
-    if(w)return{name:w,flag:flag(w),pending:false};
+    if(w){
+      // w pode ser placeholder ('0', '1° Grupo X', etc.) — resolver recursivamente
+      if(w==='0'||/°\s*Grupo|V\.\s*Jogo|Perd\./.test(w)){var _wr=resolveTeam(w,vn);return{name:_wr.name,flag:_wr.flag,pending:_wr.pending};}
+      return{name:w,flag:flag(w),pending:false};
+    }
     // Mostrar times esperados se o jogo ainda não ocorreu
     var g=GAME_BY_ID[vn];
     if(g){
