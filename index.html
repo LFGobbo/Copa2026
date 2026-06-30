@@ -4057,7 +4057,7 @@ function bolaoRenderReopenSection(){
           :'<span class="reopen-orig-score-none">— × —</span>')
         +'<span class="reopen-orig-team right">'+esc(_origTB)+' '+flag(_origTB)+'</span>'
         +'</div>';
-      if(hasReopen||gameIsPast(g)){
+      if(hasReopen){
         // ✓ Salvo — read-only
         cardsHtml+='<div class="reopen-card reopen-card-saved" id="reopen-card-'+gn+'">'
           +'<div class="reopen-card-header"><span class="reopen-card-meta">#'+gn+' · '+esc(g.f)+'</span><span class="reopen-card-badge reopen-badge-saved">'+(gameIsPast(g)?'✓ Concluído':'✓ Salvo')+'</span></div>'
