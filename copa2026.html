@@ -4848,7 +4848,10 @@ function renderBolaoStats(){
     parts.push('<div class="bstats-section"><div class="bstats-section-title" title="Jogos onde a maioria dos participantes errou o resultado">🦓 Zebra da Copa</div><div class="bstats-hint">Jogos onde a maioria errou — maior % de erro primeiro</div><div class="bstats-table-wrap"><table class="bstats-rank"><tr><th>#</th><th>Jogo</th><th>Resultado</th><th>Maioria apostou</th><th>% da maioria</th></tr>');
     s.zebra.sort(function(a,b){return b.pct-a.pct}).slice(0,10).forEach(function(z,i){
       var ml={h:'Mandante',d:'Empate',a:'Visitante'};
-      parts.push('<tr><td class="pos">'+(i+1)+'</td><td>#'+z.game.n+' '+flag(z.game.a)+' '+esc(z.game.a)+' vs '+flag(z.game.b)+' '+esc(z.game.b)+'</td><td><strong>'+scores[z.game.n].a+'-'+scores[z.game.n].b+'</strong></td><td>'+ml[z.mr]+'</td><td><strong>'+z.pct+'%</strong></td></tr>');
+      var _za=z.game.a,_zb=z.game.b;
+      try{var _rza=resolveTeam(_za,z.game.n);if(_rza&&!_rza.pending&&_rza.name)_za=_rza.name;}catch(e){}
+      try{var _rzb=resolveTeam(_zb,z.game.n);if(_rzb&&!_rzb.pending&&_rzb.name)_zb=_rzb.name;}catch(e){}
+      parts.push('<tr><td class="pos">'+(i+1)+'</td><td>#'+z.game.n+' '+flag(_za)+' '+esc(_za)+' vs '+flag(_zb)+' '+esc(_zb)+'</td><td><strong>'+scores[z.game.n].a+'-'+scores[z.game.n].b+'</strong></td><td>'+ml[z.mr]+'</td><td><strong>'+z.pct+'%</strong></td></tr>');
     });
     parts.push('</table></div></div>');
   }
@@ -4860,7 +4863,10 @@ function renderBolaoStats(){
       gdn.sort(function(a,b){return a-b;}).forEach(function(gn){
         var d=gd[gn],g=GAME_BY_ID[gn];
         if(!g)return;
-        parts.push('<tr><td>#'+gn+' '+flag(g.a)+' '+esc(g.a)+' vs '+flag(g.b)+' '+esc(g.b)+'</td><td><div class="bstats-bar"><div class="bstats-bar-fill bstats-bar-home" style="width:'+d.h+'%"></div></div>'+d.h+'%</td><td><div class="bstats-bar"><div class="bstats-bar-fill bstats-bar-draw" style="width:'+d.d+'%"></div></div>'+d.d+'%</td><td><div class="bstats-bar"><div class="bstats-bar-fill bstats-bar-away" style="width:'+d.a+'%"></div></div>'+d.a+'%</td><td>'+d.t+'</td></tr>');
+        var _ma=g.a,_mb=g.b;
+        try{var _rma=resolveTeam(_ma,parseInt(gn,10));if(_rma&&!_rma.pending&&_rma.name)_ma=_rma.name;}catch(e){}
+        try{var _rmb=resolveTeam(_mb,parseInt(gn,10));if(_rmb&&!_rmb.pending&&_rmb.name)_mb=_rmb.name;}catch(e){}
+        parts.push('<tr><td>#'+gn+' '+flag(_ma)+' '+esc(_ma)+' vs '+flag(_mb)+' '+esc(_mb)+'</td><td><div class="bstats-bar"><div class="bstats-bar-fill bstats-bar-home" style="width:'+d.h+'%"></div></div>'+d.h+'%</td><td><div class="bstats-bar"><div class="bstats-bar-fill bstats-bar-draw" style="width:'+d.d+'%"></div></div>'+d.d+'%</td><td><div class="bstats-bar"><div class="bstats-bar-fill bstats-bar-away" style="width:'+d.a+'%"></div></div>'+d.a+'%</td><td>'+d.t+'</td></tr>');
       });
       parts.push('</table></div></div>');
     }
