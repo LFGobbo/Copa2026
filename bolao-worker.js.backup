@@ -658,7 +658,8 @@ async function handle(req) {
                 updated_at: now
               });
               // Prorrogação: registrar para PATCH posterior (placar de 90min)
-              if (m.MatchStatus === 5 && hs === as) {
+              // Status 5 = ET (empate após 90min). Status 6 = pênaltis (pode não ter passado por 5).
+              if ((m.MatchStatus === 5 && hs === as) || m.MatchStatus === 6) {
                 etPatches.push(gkFifa);
               }
             }
@@ -726,7 +727,7 @@ async function handle(req) {
           });
 
           // 2. Buscar participantes confirmados
-          var snapParticipants = (await supaFetch('participants?select=id,name,confirmed,confirmed_at&confirmed=eq.true')) || [];
+          var snapParticipants = (await supaFetch('participants?select=id,name,confirmed,confirmed_at,bonus_points&confirmed=eq.true')) || [];
           if (!snapParticipants.length) { results.snapshot = 'nenhum participante confirmado'; }
           else if (!Object.keys(realScores).length) { results.snapshot = 'nenhum placar disponivel em live_scores (rodar task=fifa primeiro)'; }
           else {
@@ -804,6 +805,7 @@ async function handle(req) {
                 if (pts === 10 || pts === 15) exactCount++;
                 else if (pts >= 2) resultCount++;
               });
+              total += (part.bonus_points || 0);
               return { participant_id: part.id, points: total, exact_count: exactCount, result_count: resultCount, position: 0 };
             });
             rows.sort(function(a,b){ return b.points-a.points || b.exact_count-a.exact_count || b.result_count-a.result_count; });
@@ -827,7 +829,7 @@ async function handle(req) {
         try {
           // Contar partidas concluídas via live_scores (Supabase) — consistente com o snapshot.
           // Cada registro em live_scores representa um jogo com placar confirmado.
-          var arLiveScores = (await supaFetch('live_scores?select=game_key&match_status=eq.0')) || [];
+          var arLiveScores = (await supaFetch('live_scores?select=game_key&match_status=eq.0&game_n=lte.72')) || [];
           var completedCount = arLiveScores.length;
           // Threshold por fase (cumulativo)
           var PHASE_THRESHOLD = { r32: 72, r16: 88, qf: 96, sf: 100, '3rd': 102, final: 102 }; // final abre com semifinalistas conhecidos (igual sf)

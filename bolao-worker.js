@@ -535,6 +535,7 @@ async function handle(req) {
       if (parsedA !== null && (isNaN(parsedA) || parsedA < 0)) return error('goals_a invalido', 400);
       if (parsedB !== null && (isNaN(parsedB) || parsedB < 0)) return error('goals_b invalido', 400);
       if (body.ko_pick && body.ko_pick !== 'a' && body.ko_pick !== 'b') return error('ko_pick invalido', 400);
+      if (parsedA !== null && parsedB !== null && parsedA === parsedB && !body.ko_pick) return error('ko_pick obrigatorio em empate KO', 400);
       var payload = {
         participant_id: user.sub,
         game_n: gameN,
@@ -620,6 +621,20 @@ async function handle(req) {
       var GAME_KEY_MAP = {"MEX_RSA":1,"KOR_CZE":2,"CAN_BIH":3,"USA_PAR":4,"QAT_SUI":5,"BRA_MAR":6,"HAI_SCO":7,"AUS_TUR":8,"GER_CUW":9,"NED_JPN":10,"CIV_ECU":11,"SWE_TUN":12,"ESP_CPV":13,"BEL_EGY":14,"KSA_URU":15,"IRN_NZL":16,"ARG_ALG":17,"FRA_SEN":18,"IRQ_NOR":19,"AUT_JOR":20,"POR_COD":21,"ENG_CRO":22,"GHA_PAN":23,"UZB_COL":24,"CZE_RSA":25,"SUI_BIH":26,"CAN_QAT":27,"MEX_KOR":28,"TUR_PAR":29,"USA_AUS":30,"SCO_MAR":31,"BRA_HAI":32,"NED_SWE":33,"GER_CIV":34,"ECU_CUW":35,"TUN_JPN":36,"ESP_KSA":37,"BEL_IRN":38,"URU_CPV":39,"NZL_EGY":40,"ARG_AUT":41,"FRA_IRQ":42,"NOR_SEN":43,"JOR_ALG":44,"POR_UZB":45,"ENG_GHA":46,"PAN_CRO":47,"COL_COD":48,"BIH_QAT":50,"SUI_CAN":49,"MAR_HAI":52,"SCO_BRA":51,"RSA_KOR":54,"CZE_MEX":53,"CUW_CIV":56,"ECU_GER":55,"TUN_NED":58,"JPN_SWE":57,"PAR_AUS":60,"TUR_USA":59,"SEN_IRQ":62,"NOR_FRA":61,"URU_ESP":64,"CPV_KSA":63,"NZL_BEL":66,"EGY_IRN":65,"CRO_GHA":68,"PAN_ENG":67,"COD_UZB":70,"COL_POR":69,"JOR_ARG":72,"ALG_AUT":71};
 
 
+      // Mapa data ISO (YYYY-MM-DDTHH:MM) -> game_n para jogos KO (game_n > 72)
+      // Usado como fallback quando GAME_KEY_MAP não tem a chave (equipes KO são desconhecidas antes da partida)
+      var dateToGameN = {};
+      BOLAO_GAMES.forEach(function(g) {
+        if (g.n > 72) {
+          var p = g.d.split(' ')[0].split('/');
+          var tp = g.t.split(':');
+          try {
+            var t = new Date(Date.UTC(2026, parseInt(p[1],10)-1, parseInt(p[0],10), parseInt(tp[0],10)+3, parseInt(tp[1],10)));
+            dateToGameN[t.toISOString().slice(0,16)] = g.n;
+          } catch(e) {}
+        }
+      });
+
       // keepalive: pingar Supabase para evitar pausa do Free Tier
       if (task === 'keepalive' || task === 'all') {
         try {
@@ -652,13 +667,14 @@ async function handle(req) {
                 away_team: a,
                 goals_home: hs,
                 goals_away: as,
-                game_n: GAME_KEY_MAP[gkFifa] || null,
+                game_n: (function() { var gn = GAME_KEY_MAP[gkFifa]; if (!gn && m.Date) { var dk = (m.Date+'').slice(0,16); gn = dateToGameN[dk] || null; } return gn || null; })(),
                 match_id: m.IdMatch || null,
                 match_status: (m.MatchStatus != null) ? m.MatchStatus : null,
                 updated_at: now
               });
               // Prorrogação: registrar para PATCH posterior (placar de 90min)
-              if (m.MatchStatus === 5 && hs === as) {
+              // Status 5 = ET (empate após 90min). Status 6 = pênaltis (pode não ter passado por 5).
+              if ((m.MatchStatus === 5 && hs === as) || m.MatchStatus === 6) {
                 etPatches.push(gkFifa);
               }
             }
@@ -726,7 +742,7 @@ async function handle(req) {
           });
 
           // 2. Buscar participantes confirmados
-          var snapParticipants = (await supaFetch('participants?select=id,name,confirmed,confirmed_at&confirmed=eq.true')) || [];
+          var snapParticipants = (await supaFetch('participants?select=id,name,confirmed,confirmed_at,bonus_points&confirmed=eq.true')) || [];
           if (!snapParticipants.length) { results.snapshot = 'nenhum participante confirmado'; }
           else if (!Object.keys(realScores).length) { results.snapshot = 'nenhum placar disponivel em live_scores (rodar task=fifa primeiro)'; }
           else {
@@ -804,6 +820,7 @@ async function handle(req) {
                 if (pts === 10 || pts === 15) exactCount++;
                 else if (pts >= 2) resultCount++;
               });
+              total += (part.bonus_points || 0);
               return { participant_id: part.id, points: total, exact_count: exactCount, result_count: resultCount, position: 0 };
             });
             rows.sort(function(a,b){ return b.points-a.points || b.exact_count-a.exact_count || b.result_count-a.result_count; });
@@ -827,7 +844,7 @@ async function handle(req) {
         try {
           // Contar partidas concluídas via live_scores (Supabase) — consistente com o snapshot.
           // Cada registro em live_scores representa um jogo com placar confirmado.
-          var arLiveScores = (await supaFetch('live_scores?select=game_key&match_status=eq.0')) || [];
+          var arLiveScores = (await supaFetch('live_scores?select=game_key&match_status=eq.0&game_n=lte.72')) || [];
           var completedCount = arLiveScores.length;
           // Threshold por fase (cumulativo)
           var PHASE_THRESHOLD = { r32: 72, r16: 88, qf: 96, sf: 100, '3rd': 102, final: 102 }; // final abre com semifinalistas conhecidos (igual sf)
