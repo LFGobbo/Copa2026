@@ -150,13 +150,17 @@ async function handle(req) {
       var allParts = await supaFetch("participants?select=id,name,password,confirmed");
       var target = normalizeName(body.name);
       var existing = allParts ? allParts.filter(function(p){ return normalizeName(p.name) === target; }) : [];
-      if (!existing || !existing.length) return error('Participante nao encontrado', 404);
+      // SEGURANCA: resposta identica (mesma mensagem, mesmo status 401) tanto para nome
+      // inexistente quanto para senha errada. Antes, 404 vs 401 permitia enumerar nomes
+      // cadastrados so testando o endpoint. O hash e sempre calculado (mesmo sem usuario
+      // encontrado) para nao vazar a diferenca por tempo de resposta.
+      var found = (existing && existing.length) ? existing[0] : null;
       var hash = await sha256(body.password + ':' + JWT_SECRET);
-      if (existing[0].password !== hash) return error('Senha incorreta', 401);
+      if (!found || found.password !== hash) return error('Nome ou senha invalidos', 401);
       var header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-      var payload = btoa(JSON.stringify({ sub: existing[0].id, name: existing[0].name, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 * 90 }));
+      var payload = btoa(JSON.stringify({ sub: found.id, name: found.name, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 * 90 }));
       var sig = await sha256(header + '.' + payload + '.' + JWT_SECRET);
-      return json({ id: existing[0].id, name: existing[0].name, confirmed: existing[0].confirmed, token: header + '.' + payload + '.' + sig });
+      return json({ id: found.id, name: found.name, confirmed: found.confirmed, token: header + '.' + payload + '.' + sig });
     }
 
     // Rotas autenticadas
