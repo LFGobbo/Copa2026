@@ -3951,6 +3951,19 @@ function _bolaoPhaseLabel(ph){
   var map={r32:'Rodada de 32',r16:'Oitavas de Final',qf:'Quartas de Final',sf:'Semifinal','3rd':'Terceiro Lugar',final:'Final'};
   return map[ph]||ph;
 }
+var _PREV_PHASE_GAMES={r16:[73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88],qf:[89,90,91,92,93,94,95,96],sf:[97,98,99,100],'3rd':[101,102],final:[101,102]};
+function _phaseEstimatedOpenAt(ph){
+  var prev=_PREV_PHASE_GAMES[ph];if(!prev)return null;
+  var latest=null;
+  for(var _pi=0;_pi<prev.length;_pi++){for(var _gi=0;_gi<GAMES.length;_gi++){if(GAMES[_gi].n===prev[_pi]){var _d=gameUTC(GAMES[_gi]);if(_d&&(!latest||_d>latest))latest=_d;break;}}}
+  return latest?new Date(latest.getTime()+2*3600000+15*60000):null;
+}
+function _phaseDeadlineAt(gameNs){
+  if(!gameNs||!gameNs.length)return null;
+  var earliest=null;
+  for(var _di=0;_di<gameNs.length;_di++){for(var _gi2=0;_gi2<GAMES.length;_gi2++){if(GAMES[_gi2].n===gameNs[_di]){var _d2=gameUTC(GAMES[_gi2]);if(_d2&&(!earliest||_d2<earliest))earliest=_d2;break;}}}
+  return earliest?new Date(earliest.getTime()-5*60000):null;
+}
 function bolaoShowReopenPopup(phaseName){
   if(window._bolaoPopupShown)return;window._bolaoPopupShown=true;
   var label=_bolaoPhaseLabel(phaseName);
@@ -3987,9 +4000,13 @@ function bolaoShowReopenPopup(phaseName){
     +'<span style="font-size:16px">⚠️</span>'
     +'<span><strong style="color:#ff8c00">Preencha TODOS os jogos da fase</strong> — palpites em branco não pontuam!</span>'
     +'</div>'
+    var _phInfo=_bolaoOpenPhases[phaseName];var _phDl=_phaseDeadlineAt(_phInfo&&_phInfo.game_ns?_phInfo.game_ns:[]);
+    var _phDlStr=_phDl?_phDl.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'}):'5 min antes do 1º jogo';
+    var _phMsLeft=_phDl?_phDl.getTime()-Date.now():null;
+    var _phCountStr=(_phMsLeft&&_phMsLeft>0)?(' — fecha em <strong style="color:var(--red)">'+_bolaoFmtCountdown(_phMsLeft)+'</strong>'):'';
     +'<div style="background:rgba(255,23,68,.06);border:1px solid rgba(255,23,68,.2);border-radius:8px;padding:10px 12px;margin-bottom:20px;font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:8px">'
     +'<span style="font-size:16px">⏰</span>'
-    +'<span>Prazo: <strong style="color:#fff">5 minutos antes do 1º jogo da '+label+'</strong>. Após isso os palpites travam.</span>'
+    +'<span>Prazo: <strong style="color:var(--gold)">'+_phDlStr+'</strong>'+_phCountStr+'. Após isso os palpites travam.</span>'
     +'</div>'
     +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="width:100%;background:var(--gold);color:#000;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:900;cursor:pointer">Entendido, vamos jogar! 🚀</button>'
     +'</div>';
@@ -4032,6 +4049,8 @@ function bolaoUpdateReopenBanner(){
   if(closedPhases.length){
     var ph2=closedPhases[0];var info2=_bolaoClosedPhases[ph2];
     var openAt=info2&&info2.open_at?new Date(info2.open_at).getTime():null;
+    if(!openAt){var _estOA=_phaseEstimatedOpenAt(ph2);if(_estOA)openAt=_estOA.getTime();}
+    var _openAtIsEst=!(info2&&info2.open_at);
     var now2=Date.now();var tillOpen=openAt?openAt-now2:null;
     banner.style.display='block';
     inner.style.background='linear-gradient(135deg,rgba(80,80,200,.14),rgba(60,60,150,.08))';
@@ -4039,7 +4058,7 @@ function bolaoUpdateReopenBanner(){
     if(iconEl)iconEl.textContent='⏳';
     if(titleEl){titleEl.style.color='rgba(180,180,255,.9)';titleEl.textContent='Reabertura da '+_bolaoPhaseLabel(ph2)+' em breve';}
     if(subEl)subEl.textContent='Os palpites do mata-mata vão abrir em:';
-    if(countLabel){countLabel.textContent='Abre em';countLabel.style.color='rgba(180,180,255,.55)';}
+    if(countLabel){countLabel.textContent=_openAtIsEst?'Abre aprox. em':'Abre em';countLabel.style.color='rgba(180,180,255,.55)';}
     if(countEl){countEl.style.color='rgba(180,180,255,.9)';countEl.textContent=tillOpen!==null&&tillOpen>0?_bolaoFmtCountdown(tillOpen):'Em breve!';}
     if(tillOpen!==null&&tillOpen>0){setTimeout(bolaoUpdateReopenBanner,1000);}
     else if(tillOpen!==null&&tillOpen<=0){
