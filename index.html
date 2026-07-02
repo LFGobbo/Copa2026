@@ -2461,6 +2461,25 @@ function processTimeline(idMatch,gameId){
         }
       });
 
+      // ── Reconstruir placar 90min imediatamente se ET detectado na timeline ─
+      if(MATCH_EXTRA_TIME[idMatch]&&!MATCH_PENALTIES[idMatch]&&!MATCH_90_SCORE[idMatch]){
+        var _h90tl=0,_a90tl=0;
+        for(var _eitl=0;_eitl<allEvents.length;_eitl++){
+          var _evtl=allEvents[_eitl];
+          if(_evtl.HomeGoals===undefined||_evtl.AwayGoals===undefined)continue;
+          var _mmtl=_evtl.MatchMinute?parseInt(_evtl.MatchMinute.replace(/'/g,'').split('+')[0],10):0;
+          if(_mmtl>90)break;
+          _h90tl=_evtl.HomeGoals;_a90tl=_evtl.AwayGoals;
+        }
+        MATCH_90_SCORE[idMatch]={a:_h90tl,b:_a90tl};
+        if(typeof scores!=='undefined'&&scores&&scores[gameId]&&!scores[gameId].ft){
+          scores[gameId].ft={a:_rev?_a90tl:_h90tl,b:_rev?_h90tl:_a90tl};
+          saveFifaRaw();
+          if(typeof bolaoRenderRanking==='function')bolaoRenderRanking();
+          if(typeof renderBolaoStats==='function')renderBolaoStats();
+        }
+      }
+
       // ── Detectar se houve mudança desde o último poll ─────
       var maxId=0;
       allEvents.forEach(function(e){var id=parseInt(e.EventId,10);if(id>maxId)maxId=id;});
