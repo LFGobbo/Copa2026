@@ -2256,8 +2256,11 @@ if(h&&a&&m.IdMatch){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];
 if(m.MatchStatus===0&&m.IdMatch){MATCH_ENDED[m.IdMatch]=true;if(!MATCH_STARTED[m.IdMatch])MATCH_STARTED[m.IdMatch]=true}
 if(m.MatchStatus===3&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true}
 if(m.MatchStatus===4&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true;MATCH_HALFTIME[m.IdMatch]=true}
-if(m.MatchStatus===5&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true;MATCH_EXTRA_TIME[m.IdMatch]=true;if(hs!==null&&as!==null&&hs===as&&!MATCH_90_SCORE[m.IdMatch])MATCH_90_SCORE[m.IdMatch]={a:hs,b:as};}
+if(m.MatchStatus===5&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true;MATCH_EXTRA_TIME[m.IdMatch]=true;if(hs!==null&&as!==null&&!MATCH_90_SCORE[m.IdMatch])MATCH_90_SCORE[m.IdMatch]={a:Math.min(hs,as),b:Math.min(hs,as)};}
 if(m.MatchStatus===6&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true;MATCH_EXTRA_TIME[m.IdMatch]=true;MATCH_PENALTIES[m.IdMatch]=true;if(hs!==null&&as!==null&&!MATCH_90_SCORE[m.IdMatch])MATCH_90_SCORE[m.IdMatch]={a:hs,b:as};}
+// Jogo que foi à ET sem pênaltis e decidido em ET: reconstruir placar dos 90min via timeline
+if(m.IdMatch&&MATCH_EXTRA_TIME[m.IdMatch]&&hs!==null&&as!==null&&hs!==as&&!MATCH_PENALTIES[m.IdMatch]&&!MATCH_90_SCORE[m.IdMatch]){var _tl90=FIFA_TIMELINES_RAW[m.IdMatch];if(_tl90&&_tl90.data&&_tl90.data.Event&&_tl90.data.Event.length){var _h90=0,_a90=0;var _evArr=_tl90.data.Event;for(var _ei=0;_ei<_evArr.length;_ei++){var _ev=_evArr[_ei];if(_ev.HomeGoals===undefined||_ev.AwayGoals===undefined)continue;var _mm=_ev.MatchMinute?parseInt(_ev.MatchMinute.replace(/'/g,'').split('+')[0],10):0;if(_mm>90)break;_h90=_ev.HomeGoals;_a90=_ev.AwayGoals;}MATCH_90_SCORE[m.IdMatch]={a:_h90,b:_a90};}else{// Sem timeline: fallback min(hs,as) — correto apenas se perdedor não marcou em ET
+MATCH_90_SCORE[m.IdMatch]={a:Math.min(hs,as),b:Math.min(hs,as)};}}
 if(m.MatchTime&&m.IdMatch&&typeof m.MatchTime==='string'){var rt=m.MatchTime.replace(/'/g,'');var rn=parseInt(rt,10);if(!isNaN(rn)&&(!MATCH_MINUTE[m.IdMatch]||rn>MATCH_MINUTE[m.IdMatch])){MATCH_MINUTE[m.IdMatch]=rn;MATCH_RAW_MINUTE[m.IdMatch]=rt}}
 if(m.SecondHalfKickOffTime&&m.IdMatch&&!MATCH_SECOND_KICKOFF[m.IdMatch])MATCH_SECOND_KICKOFF[m.IdMatch]=new Date(m.SecondHalfKickOffTime)
 if(!h||!a||hs===null||as===null)return;
@@ -2449,6 +2452,8 @@ function processTimeline(idMatch,gameId){
           if(e.UTC&&!MATCH_SECOND_KICKOFF[idMatch])MATCH_SECOND_KICKOFF[idMatch]=new Date(e.UTC);
         }
         if(e.Type===26){MATCH_ENDED[idMatch]=true;MATCH_FINALIZED[gameId]=true}
+        // Detectar prorrogação via timeline: qualquer evento com minuto > 90
+        if(e.MatchMinute){var _etChk=parseInt(e.MatchMinute.replace(/'/g,'').split('+')[0],10);if(!isNaN(_etChk)&&_etChk>90)MATCH_EXTRA_TIME[idMatch]=true;}
         if(e.MatchMinute){
           var raw=e.MatchMinute.replace(/'/g,'');
           var m=parseInt(raw,10);
