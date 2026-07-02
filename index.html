@@ -2461,8 +2461,9 @@ function processTimeline(idMatch,gameId){
         }
       });
 
-      // ── Reconstruir placar 90min imediatamente se ET detectado na timeline ─
-      if(MATCH_EXTRA_TIME[idMatch]&&!MATCH_PENALTIES[idMatch]&&!MATCH_90_SCORE[idMatch]){
+      // ── Reconstruir placar 90min via timeline ─────────────────────────────
+      // Sempre seta MATCH_90_SCORE para jogos KO — previne needsEtFix de retriggerar
+      if(!MATCH_PENALTIES[idMatch]&&!MATCH_90_SCORE[idMatch]){
         var _h90tl=0,_a90tl=0;
         for(var _eitl=0;_eitl<allEvents.length;_eitl++){
           var _evtl=allEvents[_eitl];
@@ -2472,11 +2473,12 @@ function processTimeline(idMatch,gameId){
           _h90tl=_evtl.HomeGoals;_a90tl=_evtl.AwayGoals;
         }
         MATCH_90_SCORE[idMatch]={a:_h90tl,b:_a90tl};
-        if(typeof scores!=='undefined'&&scores&&scores[gameId]&&!scores[gameId].ft){
+        // Só atualiza scores[gn].ft se o jogo foi à prorrogação (sem pênaltis)
+        if(MATCH_EXTRA_TIME[idMatch]&&typeof scores!=='undefined'&&scores&&scores[gameId]&&!scores[gameId].ft){
           scores[gameId].ft={a:_rev?_a90tl:_h90tl,b:_rev?_h90tl:_a90tl};
           saveFifaRaw();
-          if(typeof bolaoRenderRanking==='function')bolaoRenderRanking();
-          if(typeof renderBolaoStats==='function')renderBolaoStats();
+          // Debounce: re-render único após todos os timelines carregarem
+          if(typeof window!=='undefined'){clearTimeout(window._et90RenderTimer);window._et90RenderTimer=setTimeout(function(){if(typeof bolaoRenderRanking==='function')bolaoRenderRanking();if(typeof renderBolaoStats==='function')renderBolaoStats();},400);}
         }
       }
 
