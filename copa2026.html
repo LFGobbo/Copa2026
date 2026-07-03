@@ -944,12 +944,13 @@ const DATA_VERSION = 4;
 // em outros); unificado em 3h, que cobre 90min+intervalo+30min de prorrogacao+penaltis+atrasos.
 var _LIVE_WINDOW=10800000;
 try{var ver=localStorage.getItem('copa2026_data_version');if(ver!==String(DATA_VERSION)){BAK_KEYS.forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});localStorage.setItem('copa2026_data_version',String(DATA_VERSION));scores={};goals={};cards={};}}catch(e){}
-if(_savedData.matchEnded&&typeof MATCH_ENDED!=='undefined'){try{Object.keys(_savedData.matchEnded).forEach(function(k){MATCH_ENDED[k]=_savedData.matchEnded[k]})}catch(e){}}
-if(_savedData.matchStarted&&typeof MATCH_STARTED!=='undefined'){try{Object.keys(_savedData.matchStarted).forEach(function(k){MATCH_STARTED[k]=_savedData.matchStarted[k]})}catch(e){}}
-if(_savedData.fifaMatchIds&&typeof FIFA_MATCH_IDS!=='undefined'){try{Object.keys(_savedData.fifaMatchIds).forEach(function(k){if(!FIFA_MATCH_IDS[k])FIFA_MATCH_IDS[k]=_savedData.fifaMatchIds[k]})}catch(e){}}
-if(_savedData.matchFinalized&&typeof MATCH_FINALIZED!=='undefined'){try{Object.keys(_savedData.matchFinalized).forEach(function(k){MATCH_FINALIZED[k]=_savedData.matchFinalized[k]})}catch(e){}}
-if(_savedData.timelineFailed&&typeof MATCH_TIMELINE_FAILED!=='undefined'){try{Object.keys(_savedData.timelineFailed).forEach(function(k){MATCH_TIMELINE_FAILED[k]=_savedData.timelineFailed[k]})}catch(e){}}
-if(_savedData.timelineEmpty&&typeof MATCH_TIMELINE_EMPTY!=='undefined'){try{Object.keys(_savedData.timelineEmpty).forEach(function(k){MATCH_TIMELINE_EMPTY[k]=_savedData.timelineEmpty[k]})}catch(e){}}
+// Restauracao de MATCH_ENDED/MATCH_STARTED/FIFA_MATCH_IDS/MATCH_FINALIZED/MATCH_TIMELINE_FAILED/MATCH_TIMELINE_EMPTY/PROCESSED_EVENTS
+// movida para depois da declaracao dessas variaveis (ver mais abaixo, logo apos 'var FIFA_TEAM_IDS=...') —
+// bug encontrado em 2026-07-03 (v20.14): esse bloco rodava ANTES da declaracao 'var' dessas variaveis,
+// entao 'typeof MATCH_ENDED' era sempre 'undefined' aqui e a restauracao NUNCA executava (dead code).
+// Efeito pratico: todo load tratava todos os ~85 jogos ja encerrados como "nunca processados",
+// reprocessando o timeline da FIFA e reenviando pro servidor para cada um — causa raiz real da
+// travada de ~10s no carregamento (rebusca + 4 re-renders x 85 jogos).
 try{(function(){var now=new Date();GAMES.forEach(function(g){var s=scores[g.n];if(!s||s.a===undefined)return;var id=typeof FIFA_MATCH_IDS!=='undefined'?FIFA_MATCH_IDS[g.n]:null;if(id&&MATCH_ENDED&&MATCH_ENDED[id])return;var gd=gameUTC(g);if(!gd)return;if(now.getTime()-gd.getTime()>_LIVE_WINDOW&&MATCH_ENDED){MATCH_ENDED['game_'+g.n]=true;if(id)MATCH_ENDED[id]=true;saveState()}})})()}catch(e){}
 (function(){var _s={scores:{"1":{a:2,b:0},"2":{a:2,b:1}},goals:{"1":{a:[{key:"1_a_16_1",player:16,pname:"Julián Quiñones",type:"gol",minute:"9",assist:6,aname:"Érik Lira",auto:true},{key:"1_a_9_2",player:9,pname:"Raúl Jiménez",type:"gol",minute:"67",assist:25,aname:"Roberto Alvarado",auto:true}]},"2":{a:[{key:"2_a_6_1",player:6,pname:"Hwang In-beom",type:"gol",minute:"67",assist:19,aname:"Lee Kang-in",auto:true},{key:"2_a_18_2",player:18,pname:"Oh Hyeon-gyu",type:"gol",minute:"80",assist:6,aname:"Hwang In-beom",auto:true}],b:[{key:"2_b_7_1",player:7,pname:"Ladislav Krejčí",type:"gol",minute:"59",assist:5,aname:"Vladimír Coufal",auto:true}]}},cards:{"1":{a:[{key:"1_a_26_23",player:26,pname:"Brian Gutiérrez",type:"yellow",minute:"23",auto:true},{key:"1_a_3_90",player:3,pname:"César Montes",type:"red",minute:"90\'+2",auto:true}],b:[{key:"1_b_4_17",player:4,pname:"Teboho Mokoena",type:"yellow",minute:"17",auto:true},{key:"1_b_13_49",player:13,pname:"Sphephelo Sithole",type:"red",minute:"49",auto:true},{key:"1_b_19_74",player:19,pname:"Nkosinathi Sibisi",type:"yellow",minute:"74",auto:true},{key:"1_b_11_84",player:11,pname:"Themba Zwane",type:"red",minute:"84",auto:true}]},"2":{a:[{key:"2_a_3_90",player:3,pname:"Lee Gi-hyuk",type:"yellow",minute:"90\'+6",auto:true}]}}},_ch=false;
 Object.keys(_s.scores).forEach(function(k){if(!scores[k]){scores[k]=_s.scores[k];_ch=true}});
@@ -1021,7 +1022,7 @@ function _idbLoad(key){
 _openDB();
 function saveState(){
   try{
-    var data=JSON.stringify({scores:scores||{},goals:goals||{},cards:cards||{},matchEnded:MATCH_ENDED||{},matchStarted:MATCH_STARTED||{},fifaMatchIds:FIFA_MATCH_IDS||{},matchFinalized:MATCH_FINALIZED||{},timelineFailed:MATCH_TIMELINE_FAILED||{},timelineEmpty:MATCH_TIMELINE_EMPTY||{}});
+    var data=JSON.stringify({scores:scores||{},goals:goals||{},cards:cards||{},matchEnded:MATCH_ENDED||{},matchStarted:MATCH_STARTED||{},fifaMatchIds:FIFA_MATCH_IDS||{},matchFinalized:MATCH_FINALIZED||{},timelineFailed:MATCH_TIMELINE_FAILED||{},timelineEmpty:MATCH_TIMELINE_EMPTY||{},processedEvents:PROCESSED_EVENTS||{}});
     BAK_KEYS.forEach(function(k){try{localStorage.setItem(k,data);}catch(e){}});
     _idbSave('s',scores||{});
     _idbSave('g',goals||{});
@@ -2235,6 +2236,18 @@ var FIFA_TEAM_MAP={
 var FIFA_URL="https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200";
 
 var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},FIFA_MATCH_META={},FIFA_PLAYER_MAP={},PROCESSED_EVENTS={},TIMELINE_HASH={},MATCH_STARTED={},MATCH_ENDED={},MATCH_KICKOFF={},MATCH_MINUTE={},MATCH_RAW_MINUTE={},MATCH_HALFTIME={},MATCH_SECOND_KICKOFF={},MATCH_EXTRA_TIME={},MATCH_PENALTIES={},MATCH_90_SCORE={},MATCH_PEN_WINNER={},FIFA_MAP_READY=false,FIFA_TEAM_REV={},FIFA_PHOTO_BY_TEAM_NUM={},FIFA_PHOTO_BY_TEAM_NAME={},FIFA_CALENDAR_RAW={},FIFA_TIMELINES_RAW={},MATCH_FINALIZED={},MATCH_TIMELINE_FAILED={},MATCH_TIMELINE_EMPTY={},_fetchingTimelines={};
+// Restauracao entre sessoes (movida para AQUI em 2026-07-03, v20.14 — ver comentario no local antigo).
+// Precisa vir DEPOIS da declaracao acima: 'typeof X!==\'undefined\'' so funciona se X ja foi declarada.
+if(_savedData.matchEnded){try{Object.keys(_savedData.matchEnded).forEach(function(k){MATCH_ENDED[k]=_savedData.matchEnded[k]})}catch(e){}}
+if(_savedData.matchStarted){try{Object.keys(_savedData.matchStarted).forEach(function(k){MATCH_STARTED[k]=_savedData.matchStarted[k]})}catch(e){}}
+if(_savedData.fifaMatchIds){try{Object.keys(_savedData.fifaMatchIds).forEach(function(k){if(!FIFA_MATCH_IDS[k])FIFA_MATCH_IDS[k]=_savedData.fifaMatchIds[k]})}catch(e){}}
+if(_savedData.matchFinalized){try{Object.keys(_savedData.matchFinalized).forEach(function(k){MATCH_FINALIZED[k]=_savedData.matchFinalized[k]})}catch(e){}}
+if(_savedData.timelineFailed){try{Object.keys(_savedData.timelineFailed).forEach(function(k){MATCH_TIMELINE_FAILED[k]=_savedData.timelineFailed[k]})}catch(e){}}
+if(_savedData.timelineEmpty){try{Object.keys(_savedData.timelineEmpty).forEach(function(k){MATCH_TIMELINE_EMPTY[k]=_savedData.timelineEmpty[k]})}catch(e){}}
+// PROCESSED_EVENTS nunca era salvo nem restaurado antes (bug separado, mesma causa raiz pratica):
+// sem isso, todo jogo encerrado era retratado como "timeline nao processado" a cada carregamento.
+if(_savedData.processedEvents){try{Object.keys(_savedData.processedEvents).forEach(function(k){if(!PROCESSED_EVENTS[k])PROCESSED_EVENTS[k]=_savedData.processedEvents[k]})}catch(e){}}
+
 for(var abbr in FIFA_TEAM_MAP)FIFA_TEAM_REV[FIFA_TEAM_MAP[abbr]]=abbr;
 
 renderGroups();renderGames("all");renderBracket();renderScorers();updateCountdown();
