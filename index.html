@@ -2626,11 +2626,17 @@ function processTimeline(idMatch,gameId){
       var autoGoalsA_final=autoGoalsA_normal.concat(autoGoalsA_own);
       var autoGoalsB_final=autoGoalsB_normal.concat(autoGoalsB_own);
 
-      goals[gameId]={};
+      // Protecao contra regressao local (incidente 2026-07-03, jogos #83/#84): a timeline da
+      // FIFA as vezes chega parcial (jogador substituto sem mapeamento local, resposta truncada
+      // por rede instavel), e como esta reconstrucao sempre descarta e refaz os eventos 'auto' do
+      // zero, um fetch parcial apagava gol/cartao que ja estava certo localmente (ou que tinha
+      // acabado de vir do cache compartilhado via _bolaoPullEventsOnce). Guarda de nao-regressao:
+      // so sobrescreve se o total novo (gols+cartoes) for >= ao que ja existia.
+      var _oldGCount=((goals[gameId]&&goals[gameId].a)||[]).length+((goals[gameId]&&goals[gameId].b)||[]).length;
+      var _oldCCount=((cards[gameId]&&cards[gameId].a)||[]).length+((cards[gameId]&&cards[gameId].b)||[]).length;
+
       var allA=manualGoalsA.concat(autoGoalsA_final);
       var allB=manualGoalsB.concat(autoGoalsB_final);
-      if(allA.length)goals[gameId].a=allA;
-      if(allB.length)goals[gameId].b=allB;
 
       // ── Reconstruir cartões auto do zero ─────────────────
       // Manter cartões manuais, descartar todos os auto
@@ -2659,9 +2665,22 @@ function processTimeline(idMatch,gameId){
         else autoCardsB.push(cardObj);
       });
 
-      if(!cards[gameId])cards[gameId]={};
       var allCA=manualCardsA.concat(autoCardsA);
       var allCB=manualCardsB.concat(autoCardsB);
+
+      var _newGCount=allA.length+allB.length;
+      var _newCCount=allCA.length+allCB.length;
+      if(_newGCount+_newCCount<_oldGCount+_oldCCount){
+        // Timeline parcial: mantem o que ja tinha, nao marca changed, nao reenvia pro servidor.
+        clearTimeout(_tlTo);delete _fetchingTimelines[idMatch];
+        return;
+      }
+
+      goals[gameId]={};
+      if(allA.length)goals[gameId].a=allA;
+      if(allB.length)goals[gameId].b=allB;
+
+      if(!cards[gameId])cards[gameId]={};
       cards[gameId].a=allCA;
       cards[gameId].b=allCB;
       if(!allCA.length)delete cards[gameId].a;
