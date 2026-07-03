@@ -2925,8 +2925,10 @@ function _bolaoPullEventsOnce(){
     var ch=false;
     d.events.forEach(function(ev){
       var gid=ev.game_n;
-      if(!goals[gid]&&ev.goals&&Object.keys(ev.goals).length){goals[gid]=ev.goals;ch=true;}
-      if(!cards[gid]&&ev.cards&&Object.keys(ev.cards).length){cards[gid]=ev.cards;ch=true;}
+      var localGEmpty=!goals[gid]||!Object.keys(goals[gid]).length;
+      var localCEmpty=!cards[gid]||!Object.keys(cards[gid]).length;
+      if(localGEmpty&&ev.goals&&Object.keys(ev.goals).length){goals[gid]=ev.goals;ch=true;}
+      if(localCEmpty&&ev.cards&&Object.keys(ev.cards).length){cards[gid]=ev.cards;ch=true;}
     });
     if(ch){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();}
   }).catch(function(){});
