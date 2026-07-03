@@ -719,9 +719,12 @@ async function handle(req) {
                 pen_winner: penWinner,
                 updated_at: now
               });
-              // Prorrogação: registrar para PATCH posterior (placar de 90min)
-              // Status 5 = ET (empate após 90min). Status 6 = pênaltis (pode não ter passado por 5).
-              if ((m.MatchStatus === 5 && hs === as) || m.MatchStatus === 6) {
+              // Detecta ir a prorrogação (Status 5 = ET, 6 = pênaltis) — o placar de 90min
+              // é reconstruído depois via Timeline (ver bloco abaixo), não capturado aqui.
+              // A tentativa antiga de capturar isso "ao vivo" (só quando pegava o jogo
+              // empatado exatamente no momento do poll) falhava sempre que o gol da
+              // prorrogação caía entre dois polls de 5min — caso real: Bélgica R32.
+              if (m.MatchStatus === 5 || m.MatchStatus === 6) {
                 etPatches.push(gkFifa);
               }
             }
@@ -738,13 +741,32 @@ async function handle(req) {
             if (batch.length > 0) {
               await supaFetch('live_scores?on_conflict=game_key', 'POST', batch, { 'Prefer': 'resolution=merge-duplicates' });
             }
-            // PATCH para placar de 90min (apenas jogos em ET, condicional)
+            // Placar de 90min via Timeline (robusto — não depende de pegar o jogo "ao vivo"
+            // no instante exato em que está empatado). Reconstrói percorrendo os eventos da
+            // Timeline da FIFA e pegando o último placar com MatchMinute<=90. Só busca para
+            // jogos que ainda não têm goals_home_90 gravado (idempotente, barato no cron seguinte).
             for (var pi = 0; pi < etPatches.length; pi++) {
               var gk = etPatches[pi];
               var row = batch.find(function(r){ return r.game_key === gk; });
-              if (row) {
-                try { await supaFetch('live_scores?game_key=eq.' + gk + '&goals_home_90=is.null', 'PATCH', { goals_home_90: row.goals_home, goals_away_90: row.goals_away }); } catch(e) {}
-              }
+              if (!row || !row.match_id) continue;
+              try {
+                var pending = (await supaFetch('live_scores?game_key=eq.' + gk + '&goals_home_90=is.null&select=game_key')) || [];
+                if (!pending.length) continue; // já resolvido antes
+                var tlResp = await fetch('https://api.fifa.com/api/v3/timelines/' + row.match_id);
+                var tlData = await tlResp.json();
+                if (!tlData || !tlData.Event || !tlData.Event.length) continue;
+                var h90 = 0, a90 = 0, found = false;
+                for (var ei = 0; ei < tlData.Event.length; ei++) {
+                  var ev = tlData.Event[ei];
+                  if (ev.HomeGoals === undefined || ev.AwayGoals === undefined) continue;
+                  var minRaw = ev.MatchMinute ? String(ev.MatchMinute).replace(/'/g, '').split('+')[0] : null;
+                  var minNum = minRaw !== null ? parseInt(minRaw, 10) : NaN;
+                  if (!isNaN(minNum) && minNum <= 90) { h90 = ev.HomeGoals; a90 = ev.AwayGoals; found = true; }
+                }
+                if (found) {
+                  await supaFetch('live_scores?game_key=eq.' + gk + '&goals_home_90=is.null', 'PATCH', { goals_home_90: h90, goals_away_90: a90 });
+                }
+              } catch (e) { /* tenta de novo no próximo cron */ }
             }
             results.fifa = batch.length + ' scores stored';
           } else {
