@@ -2919,16 +2919,23 @@ function _bolaoPushEvents(gameId){
 // Busca o cache compartilhado uma vez ao carregar a página e mescla com o que já existe
 // localmente (sem sobrescrever dados locais mais completos/recentes — só preenche o que
 // este navegador ainda não tem, mesma lógica do seed histórico dos jogos 1/2 acima).
+// Conta quantos eventos (gols+cartões) um objeto {a:[...],b:[...]} tem no total.
+function _bolaoCountEvents(obj){
+  if(!obj)return 0;
+  return (obj.a?obj.a.length:0)+(obj.b?obj.b.length:0);
+}
 function _bolaoPullEventsOnce(){
   fetch(BOLAO_WORKER+'/events').then(function(r){return r.json()}).then(function(d){
     if(!d||!d.events||!d.events.length)return;
     var ch=false;
     d.events.forEach(function(ev){
       var gid=ev.game_n;
-      var localGEmpty=!goals[gid]||!Object.keys(goals[gid]).length;
-      var localCEmpty=!cards[gid]||!Object.keys(cards[gid]).length;
-      if(localGEmpty&&ev.goals&&Object.keys(ev.goals).length){goals[gid]=ev.goals;ch=true;}
-      if(localCEmpty&&ev.cards&&Object.keys(ev.cards).length){cards[gid]=ev.cards;ch=true;}
+      // Adota a versão do servidor sempre que ela tiver MAIS eventos que a local —
+      // não só quando a local está vazia. Um jogo pode ter dado PARCIAL salvo localmente
+      // (ex.: só 1 de 3 gols, de uma resolução antiga incompleta), e nesse caso "vazio?"
+      // retorna falso mesmo faltando dado. Comparar contagem cobre esse caso.
+      if(ev.goals&&_bolaoCountEvents(ev.goals)>_bolaoCountEvents(goals[gid])){goals[gid]=ev.goals;ch=true;}
+      if(ev.cards&&_bolaoCountEvents(ev.cards)>_bolaoCountEvents(cards[gid])){cards[gid]=ev.cards;ch=true;}
     });
     if(ch){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();}
   }).catch(function(){});
