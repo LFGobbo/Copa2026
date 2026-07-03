@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-03 (v20.13 — Fix backfill N+1 requests + protocolo anti-truncamento estendido)
+**Última atualização:** 2026-07-03 (v20.18 — Serie de fixes: PROCESSED_EVENTS nunca restaurava, timeline parcial apagava dado bom, pull sem retry)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -701,6 +701,115 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v20.14 a v20.18 — Serie de incidentes reais: gols/cartões sumindo no celular (2026-07-03)
+
+**Contexto:** depois do v20.13 (fix do backfill N+1), o usuário reportou que o problema original —
+gols/cartões faltando na aba Jogos em alguns jogos (#81, #83, #84, #85), afetando artilheiros —
+persistia, e que a página continuava lenta/travando no carregamento ("tela tremendo"). O usuário
+pediu explicitamente para não teorizar e testar tudo de verdade antes de declarar qualquer coisa
+resolvida (Regra de Ouro, §15). O processo de investigação real, incluindo becos sem saída,
+está registrado abaixo porque cada etapa ensinou algo sobre o sistema.
+
+#### v20.14 — PROCESSED_EVENTS e outros mapas nunca eram restaurados entre sessões
+
+**Causa raiz encontrada e comprovada com teste isolado em Node (reproduzindo hoisting de `var`):**
+o bloco que restaura `MATCH_ENDED`, `MATCH_STARTED`, `FIFA_MATCH_IDS`, `MATCH_FINALIZED`,
+`MATCH_TIMELINE_FAILED`, `MATCH_TIMELINE_EMPTY` do `localStorage` (perto do topo do arquivo,
+logo após `_savedData`) rodava **~1300 linhas antes** da declaração `var` dessas variáveis
+(`var FIFA_TEAM_IDS={},FIFA_MATCH_IDS={},...`). Como a declaração `var` é hoisted mas a
+atribuição só acontece na linha onde está escrita, `typeof MATCH_ENDED` nesse ponto do arquivo
+era sempre `'undefined'`, e o bloco de restauração inteiro era código morto — nunca executava,
+desde sempre. Além disso, `PROCESSED_EVENTS` (que marca "timeline desse jogo já processada,
+não precisa buscar de novo") nunca fazia parte do `saveState()`/restauração.
+
+**Efeito prático:** todo carregamento de página tratava todos os ~85 jogos já encerrados como
+"nunca processados", refazendo a busca do timeline na FIFA e reenviando pro servidor para cada
+um — 85 buscas + 85 envios + até 340 re-renderizações completas da tela, em toda carga.
+
+**Fix:** bloco de restauração movido para logo depois da declaração das variáveis (dentro do
+mesmo `var FIFA_TEAM_IDS=...` statement), estendido para incluir `PROCESSED_EVENTS`, e
+`saveState()` passou a persistir `processedEvents` também.
+
+**Efeito colateral não previsto (só descoberto na v20.16/17):** ao persistir `PROCESSED_EVENTS`
+entre sessões, um jogo que teve UM fetch de timeline parcial/incompleto em qualquer sessão
+anterior (ver v20.15) passou a ficar **permanentemente** marcado como "processado" com dado
+incompleto — antes (bug), toda sessão tinha uma chance nova de tentar de novo; depois do fix,
+não. Isso tornou visível um bug pré-existente mais grave (v20.15).
+
+### v20.15 — Reconstrução de gols/cartões da timeline apagava dado bom (incidente #83/#84)
+
+**Como foi descoberto:** ao simular uma carga "fria" (navegador/localStorage zerados) para
+testar o fix acima, o próprio agente reproduziu o bug ao vivo — e nesse processo **sobrescreveu
+com dado incompleto** os jogos #83 e #84 no cache compartilhado (Supabase `game_events`),
+apagando gol e cartão que já estavam corretos lá, no meio de uma sessão real do usuário. Dados
+reparados manualmente via `POST /events` com os valores corretos (havia backup do dump
+completo feito momentos antes).
+
+**Causa raiz:** a função que processa o timeline da FIFA (`processTimeline`, dentro do
+`.then()` do fetch) **sempre descarta e reconstrói do zero** os eventos `auto` de gol/cartão
+a cada chamada, mesmo que a resposta da FIFA venha parcial (jogador substituto sem
+`FIFA_PLAYER_MAP[e.IdPlayer]` mapeado → evento silenciosamente descartado com `return`/`if(!ci)return`,
+sem fallback). Isso é destrutivo tanto localmente (`goals[gameId]`/`cards[gameId]`) quanto no
+que é enviado pro servidor via `_bolaoPushEvents`.
+
+**Fix em duas camadas:**
+1. **Servidor** (`bolao-worker.js`, rotas `POST /events` e `POST /events/bulk`): antes de
+   gravar, busca o que já existe no Supabase para os `game_n` envolvidos (`_filterNonRegressing`)
+   e descarta qualquer linha nova cujo total de eventos (gols+cartões) seja MENOR que o já salvo.
+   Testado com 3 cenários (timeline parcial bloqueada, dado completo aceito, jogo novo sem
+   histórico aceito) — todos corretos.
+2. **Cliente** (`index.html`/`copa2026.html`, dentro de `processTimeline`): mesma guarda antes
+   de sobrescrever `goals[gameId]`/`cards[gameId]` localmente — se o total novo for menor que o
+   que já existia (local ou vindo do pull do cache compartilhado), mantém o antigo e não marca
+   `changed`/não reenvia pro servidor.
+
+### v20.16 — Pull do cache compartilhado não marcava jogo como resolvido (causa real da travada)
+
+Mesmo depois do v20.14, uma carga fria ainda disparava dezenas de buscas na FIFA porque o
+`_bolaoPullEventsOnce()` (que busca `GET /events` uma vez por carga) preenchia `goals`/`cards`
+mas nunca marcava `PROCESSED_EVENTS`, então o `poll()` — que roda logo depois, em paralelo —
+não tinha como saber que aquele jogo já estava resolvido via cache, e disparava a busca na FIFA
+mesmo assim. **Fix:** `_bolaoPullEventsOnce` agora marca `PROCESSED_EVENTS[matchId]='fromCache'`
+para qualquer jogo que já tenha gol/cartão (local ou recém-vindo do pull), evitando a busca
+redundante. Testado em Node com simulação de 85 jogos: 85 buscas redundantes → 0.
+
+### v20.17 — `.catch(function(){})` vazio escondia falhas do pull
+
+Investigando por que mesmo com os fixes acima um jogo específico (#83) continuava sem dado
+numa carga limpa (confirmado repetidas vezes ao vivo no Chrome, sem theorizar — via
+`performance.getEntriesByType('resource')` e leitura direta do estado `goals`/`cards`/
+`PROCESSED_EVENTS`/`_fetchingTimelines` no console), descobriu-se que a única tentativa de
+`GET /events` do `_bolaoPullEventsOnce()` terminava em `.catch(function(){})` — qualquer falha
+(rede, timing, exceção) era engolida em silêncio, sem log, sem retry. Chamar a função
+manualmente sempre funcionava (prova de que a lógica em si estava correta); o problema era a
+falta de resiliência da única tentativa automática.
+
+**Fix:** `_bolaoPullEventsOnce` agora tenta 3 vezes (0s, 6s, 16s após o load), cada tentativa
+com `fetch(...,{cache:'no-store'})` (elimina qualquer chance de servir resposta antiga do cache
+HTTP do navegador) e loga no console (`console.warn`) se uma tentativa falhar, em vez de
+engolir o erro. **Causa raiz exata de por que a 1ª tentativa às vezes não completava não foi
+100% isolada** (não reproduziu um erro síncrono nem assíncrono capturável nos testes manuais) —
+a mitigação por retry + no-store + log é robusta o suficiente na prática e foi validada com
+teste real ao vivo repetido (ver v20.18), mas se o log de warning aparecer no console de algum
+usuário no futuro, isso vai finalmente dar a pista que faltou aqui.
+
+### v20.18 — Validação final ao vivo (Regra de Ouro cumprida)
+
+Depois de v20.14 a v20.17, validação final feita com o protocolo mais rigoroso da sessão:
+navegação cruzando de domínio (`example.com` → site) para garantir que nenhum timer/handler de
+teste anterior contaminasse a medição, `localStorage`/`IndexedDB`/Cache API/Service Worker
+zerados antes de cada teste, e leitura direta do estado (`goals[83]`, `cards[83]`, `goals[84]`,
+`cards[84]`, contagem total de jogos com dado) 20s após o load. Resultado: **85/85 jogos com
+dado completo automaticamente**, jogos #83/#84 com todos os gols e cartões corretos, sem
+intervenção manual. Confirmado também pelo usuário em dispositivo real.
+
+**Lição de metodologia registrada para o futuro:** neste mesmo processo de investigação, testes
+consecutivos no mesmo domínio sem navegar para outro domínio entre eles causaram contagens de
+rede infladas/contaminadas (chegou a mostrar 383 requisições que eram na verdade sobra de
+testes anteriores acumulados, não de uma única carga). **Sempre que for medir requisições de
+rede ou timing de carregamento no Chrome, navegar para um domínio diferente (ex.: `example.com`)
+antes do teste real, para garantir uma medição limpa de uma única carga.**
 
 ### v20.13 — Fix backfill N+1 requests (trava ~10s no load) + truncamento em 3 arquivos (2026-07-03)
 
