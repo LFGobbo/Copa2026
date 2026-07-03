@@ -646,6 +646,35 @@ async function handle(req) {
       }
     }
 
+    // POST /events/bulk — mesma coisa que /events, mas para varios jogos em uma unica
+    // requisicao. Adicionado em 2026-07-03: o backfill de sessao (varre tudo que o navegador
+    // ja tem localmente) disparava 1 POST /events por jogo — nesta fase do campeonato,
+    // 80-100 requisicoes paralelas de uma vez, travando o carregamento da pagina por
+    // varios segundos (mais grave no celular). Cliente agora manda tudo aqui de uma vez.
+    if (method === 'POST' && path === '/events/bulk') {
+      try {
+        var bulkBody = await req.json();
+        var bulkRows = (bulkBody && bulkBody.rows) || [];
+        if (!Array.isArray(bulkRows) || !bulkRows.length) return json({ ok: true, count: 0 });
+        var validRows = [];
+        for (var bi = 0; bi < bulkRows.length; bi++) {
+          var rn = parseInt(bulkRows[bi] && bulkRows[bi].game_n, 10);
+          if (!rn || rn < 1 || rn > 104) continue;
+          validRows.push({
+            game_n: rn,
+            goals: bulkRows[bi].goals || {},
+            cards: bulkRows[bi].cards || {},
+            updated_at: new Date().toISOString()
+          });
+        }
+        if (!validRows.length) return json({ ok: true, count: 0 });
+        await supaFetch('game_events?on_conflict=game_n', 'POST', validRows, { 'Prefer': 'resolution=merge-duplicates' });
+        return json({ ok: true, count: validRows.length });
+      } catch (e) {
+        return json({ ok: false, error: e.message }, 500);
+      }
+    }
+
     // GET /cron — tarefas agendadas (chamado via cron-job.org ou Cloudflare Cron)
     if (method === 'GET' && path === '/cron') {
       // Usa CRON_SECRET em vez de ADMIN_KEY para isolar permissoes.

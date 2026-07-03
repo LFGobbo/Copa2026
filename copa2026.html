@@ -2947,10 +2947,17 @@ function _bolaoPullEventsOnce(){
 // vez por sessão e garante que o servidor receba, mesmo sem mudança nenhuma.
 function _bolaoBackfillPushEvents(){
   try{
+    var today=new Date().toISOString().slice(0,10);
+    if(localStorage.getItem('copa2026_backfill_date')===today)return;
     var ids={};
     Object.keys(goals||{}).forEach(function(k){ids[k]=true});
     Object.keys(cards||{}).forEach(function(k){ids[k]=true});
-    Object.keys(ids).forEach(function(gid){_bolaoPushEvents(parseInt(gid,10))});
+    var rows=Object.keys(ids).map(function(gid){
+      return{game_n:parseInt(gid,10),goals:goals[gid]||{},cards:cards[gid]||{}};
+    }).filter(function(r){return(r.goals&&(r.goals.a||[]).length)||(r.goals&&(r.goals.b||[]).length)||(r.cards&&(r.cards.a||[]).length)||(r.cards&&(r.cards.b||[]).length)});
+    if(!rows.length)return;
+    fetch(BOLAO_WORKER+'/events/bulk',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({rows:rows})}).then(function(){try{localStorage.setItem('copa2026_backfill_date',today)}catch(e){}}).catch(function(){});
   }catch(e){}
 }
 function _bolaoDeadline(gameN){var g=GAME_BY_ID[gameN];if(!g)return null;var gd=gameUTC(g);return gd?new Date(gd.getTime()-BOLAO_TWO_H):null}

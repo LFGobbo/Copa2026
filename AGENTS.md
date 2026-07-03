@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-02 (v20.12 — Fix completo ET scoring: timeline reconstruction + localStorage migration)
+**Última atualização:** 2026-07-03 (v20.13 — Fix backfill N+1 requests + protocolo anti-truncamento estendido)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -635,6 +635,11 @@ saveState()
 - `ko_pick` coluna precisa ser adicionada na tabela `picks` se não existir
 - SHA-256 via `crypto.subtle` requer HTTPS (ou localhost)
 
+### Cache/atualização (celular "desatualizado")
+
+- **Antes de investigar código**: se o usuário disser que o celular (ou qualquer navegador) está mostrando dado antigo/incompleto que o PC já tem, primeiro pedir para fechar a aba/PWA por completo (não só minimizar) e reabrir. Uma aba já aberta continua com o JS antigo em memória mesmo depois de um deploy novo — o Service Worker atualiza o cache em background, mas isso não afeta uma página já carregada. Só investigar código se o problema persistir depois de um reload de verdade (caso real: 2026-07-03, jogos #83/84/85 "sumidos" no celular — resolvido só com reload, `game_events` no Supabase já tinha os dados certos o tempo todo).
+- **`_bolaoBackfillPushEvents` (varredura de sessão)**: dispara `POST /events/bulk` (1 requisição só) uma vez por dia por navegador. Se precisar forçar reenvio antes de 24h para debug, limpar `localStorage.removeItem('copa2026_backfill_date')` no console.
+
 ---
 
 ## 12. Regras Obrigatórias de Desenvolvimento
@@ -696,6 +701,28 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v20.13 — Fix backfill N+1 requests (trava ~10s no load) + truncamento em 3 arquivos (2026-07-03)
+
+**Contexto:** usuário reportou celular não carregando gols/cartões na aba Jogos (impactando artilheiros) e, separadamente, a página travando ~10s no carregamento ("tela tremendo", inutilizável).
+
+**Bug 1 investigado — celular sem gols/cartões (NÃO era bug de código):**
+- Testado o cache compartilhado (`GET /events`) direto no console do usuário: `count: 86`, dados batendo 100% com o PC.
+- Causa real: aba do celular estava presa em JS antigo em memória, de antes do deploy do dia (`c6ebb8f`). Fechar a aba/PWA por completo e reabrir resolveu — confirmado pelo usuário com teste real, não suposição.
+- **Lição para o futuro**: antes de investigar código quando "celular está desatualizado", pedir para fechar a aba/PWA por completo (não só minimizar) e reabrir. Service Worker atualiza o cache em background, mas uma aba já aberta continua rodando o JS antigo até ser de fato recarregada.
+
+**Bug 2 confirmado e corrigido — trava de ~10s no carregamento:**
+- Medido via Chrome DevTools (network requests reais, não teoria): **239 requisições POST para `/events`** disparadas em duas cargas de página.
+- Causa raiz: `_bolaoBackfillPushEvents()` percorria todo `goals`/`cards` local e chamava `_bolaoPushEvents(gid)` — 1 fetch por jogo — para TODOS os jogos com dado local, toda vez que a página carregava. Nesta fase do campeonato (~85 jogos disputados), isso é ~85-100 requisições HTTP paralelas de uma vez. Mais grave no celular (CPU/rede mais fracas).
+- **Fix cliente** (`index.html` e `copa2026.html`, função `_bolaoBackfillPushEvents`): agrupa tudo em UM único POST para `/events/bulk` em vez de N POSTs para `/events`. Também só roda 1x por dia por navegador (flag em `localStorage['copa2026_backfill_date']`), já que o dado raramente muda de um dia pro outro — mudanças ao vivo continuam indo na hora via `_bolaoPushEvents` (inalterado).
+- **Fix servidor** (`bolao-worker.js`): novo endpoint `POST /events/bulk` que aceita `{rows:[{game_n,goals,cards}...]}` e faz upsert de tudo em uma única chamada ao Supabase (`on_conflict=game_n`, `Prefer: resolution=merge-duplicates`). Endpoint `/events` (singular) mantido intacto para os pushes ao vivo.
+- **Validado antes de aplicar** (Regra de Ouro, §15): lógica de montagem das `rows` testada em Node.js com os dados reais extraídos do próprio `index.html` (seed de scores/goals/cards), sem lançar exceção, contagem de requisições confirmada 1 em vez de N. Sintaxe de `bolao-worker.js` e do `<script>` de `index.html` validada com `node --check` antes de gravar nos arquivos finais.
+- **Pendente**: rodar `deploy-worker.ps1` para publicar o Worker (o endpoint `/events/bulk` só existe localmente até o deploy) e dar commit+push do HTML. Ver §17 e §19.14 para os comandos exatos.
+
+**Incidente paralelo — truncamento em 3 arquivos, não só `index.html`:**
+- Ao investigar, descobriu-se que `index.html`, `copa2026.html` E `bolao-worker.js` estavam truncados localmente (arquivo cortado no meio de uma instrução, sobra de sessão anterior interrompida pelo usuário). A §19.12 já documentava esse risco só para `index.html`/`AGENTS.md` — agora also cobre `bolao-worker.js` e qualquer arquivo grande do repo.
+- Durante a própria recuperação, uma tentativa de restaurar via `git show HEAD:arquivo > arquivo` (redirecionamento de shell direto na pasta sincronizada com OneDrive) **truncou o arquivo de novo**, silenciosamente, sem erro — mesmo o comando aparentando ter funcionado. Ver §19.14 (novo) para o padrão que efetivamente funcionou nesta sessão.
+- Também apareceu um `.git/index.lock` órfão (resíduo de um comando que falhou no meio), bloqueando `git add`/`commit` com "Another git process seems to be running". O agente não conseguiu apagar esse arquivo de dentro do sandbox (`rm`/`git checkout` deram "Operation not permitted" na pasta sincronizada) — precisou pedir para o usuário apagar manualmente. Ver §19.14.
 
 ### v20.12 — Fix completo ET scoring: timeline reconstruction + localStorage migration (2026-07-02)
 
@@ -1691,7 +1718,40 @@ open('/tmp/check.js','w').write('\n'.join(scripts))
 assert subprocess.run(['node','--check','/tmp/check.js']).returncode == 0, "JS INVÁLIDO!"
 ```
 
---
+---
+
+### 19.14 Escrevendo em arquivos grandes dentro da pasta sincronizada com OneDrive (Cowork sandbox)
+
+Validado em 2026-07-03: neste ambiente (sandbox Linux montando uma pasta OneDrive do Windows), dois comportamentos além do já descrito em §19.12:
+
+**1) Redirecionamento de shell (`git show HEAD:arquivo > arquivo`) pode truncar silenciosamente.**
+Em pelo menos uma ocasião nesta sessão, `git show HEAD:index.html > index.html` (rodado direto na pasta sincronizada) produziu um arquivo mais curto que o original, sem nenhum erro ou aviso — só foi detectado porque o arquivo foi conferido linha a linha logo em seguida. **Nunca confiar num write grande na pasta sincronizada sem imediatamente validar** (`wc -l` + `diff` contra a fonte).
+
+**2) `rm`, `mv` e `git checkout`/`git reset` podem falhar com "Operation not permitted" na pasta sincronizada**, mesmo para arquivos criados na mesma sessão. Isso quebra o padrão `shutil.move` recomendado em §19.12 quando o destino já existe e precisa ser substituído via rename — nesse caso o `shutil.move`/`mv` pode falhar do mesmo jeito. `.git/index.lock` órfão criado por um comando que falhou é um exemplo: não dá pra apagar de dentro do sandbox, precisa pedir pro usuário apagar manualmente no PC.
+
+**Padrão que funcionou de forma confiável nesta sessão — gerar fora da pasta sincronizada, validar, copiar por cima (sem apagar o destino):**
+
+```bash
+# 1) Gerar/editar o conteúdo INTEIRO fora da pasta sincronizada (ex: /tmp, que é local ao sandbox)
+git show HEAD:index.html > /tmp/index_base.html      # fonte limpa
+python3 /tmp/edit_script.py                          # edita /tmp/index_base.html -> /tmp/index_novo.html
+
+# 2) Validar ANTES de tocar na pasta sincronizada
+wc -l /tmp/index_novo.html                           # confere numero de linhas esperado
+node --check /tmp/extraido_do_script.js              # sintaxe do JS, se aplicavel
+
+# 3) Copiar por cima do arquivo existente (cp sobrescreve o conteudo, NAO apaga/recria o arquivo —
+#    isso evita o "Operation not permitted" que rm/mv/git checkout deram nesta sessao)
+cp /tmp/index_novo.html "index.html"
+
+# 4) Validar de novo, agora no destino final, IMEDIATAMENTE apos o cp
+diff /tmp/index_novo.html index.html                 # tem que dar 0 linhas de diferenca
+wc -l index.html                                     # tem que bater com o esperado
+```
+
+`cp` (sobrescrever conteúdo de um arquivo que já existe) funcionou de forma confiável quando `rm`/`mv`/`git checkout` (que apagam/recriam o arquivo) falharam. A regra prática: **na pasta sincronizada, prefira sobrescrever conteúdo (`cp`, ou Edit/Write tool) a apagar-e-recriar (`rm`, `mv`, `git checkout`, `shutil.move` quando o destino já existe)** — e sempre valide com `diff`/`wc -l` logo depois, nunca assuma que o comando funcionou só porque não deu erro.
+
+---
 
 ## 20. Performance — Otimizações Aplicadas
 
