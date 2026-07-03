@@ -2753,6 +2753,7 @@ function reconcileScores() {
 // --- Polling automático da FIFA API ---
 initFifaMaps();
 _bolaoPullEventsOnce();
+setTimeout(_bolaoBackfillPushEvents,4000);
 (function(){var FAST=10000,SLOW=60000,iv=FAST,_pollFails=0,_pollTimer=null,_lastPollTime=0;function poll(){if(_pollTimer)clearTimeout(_pollTimer);_lastPollTime=Date.now();var endedBefore=Object.keys(MATCH_ENDED).length;fetchFifaScores(8000).then(function(m){
   _pollFails=0;
   if(m&&Object.keys(m).length){mergeScores(m)}else{_bolaoFetch('/scores').then(function(d){if(d&&d.scores&&d.scores.length){var sm={};d.scores.forEach(function(s){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];var abbA=FIFA_TEAM_REV[g.a],abbB=FIFA_TEAM_REV[g.b];if((abbA===s.home_team&&abbB===s.away_team)||(abbA===s.away_team&&abbB===s.home_team)){sm[g.n]={a:abbA===s.home_team?s.goals_home:s.goals_away,b:abbA===s.home_team?s.goals_away:s.goals_home};break}}});if(Object.keys(sm).length)mergeScores(sm)}}).catch(function(e){console.warn('Fallback scores failed:',e&&e.message?e.message:'');})};
@@ -2929,6 +2930,19 @@ function _bolaoPullEventsOnce(){
     });
     if(ch){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();}
   }).catch(function(){});
+}
+// _bolaoPushEvents só é chamado de dentro de processTimeline quando algo MUDA para aquele
+// jogo — mas jogos já totalmente resolvidos neste navegador (o caso mais comum, já que a
+// maioria dos jogos antigos não muda mais) nunca disparam esse caminho, e portanto nunca
+// enviam nada pro cache compartilhado. Esta função varre TUDO que já existe localmente uma
+// vez por sessão e garante que o servidor receba, mesmo sem mudança nenhuma.
+function _bolaoBackfillPushEvents(){
+  try{
+    var ids={};
+    Object.keys(goals||{}).forEach(function(k){ids[k]=true});
+    Object.keys(cards||{}).forEach(function(k){ids[k]=true});
+    Object.keys(ids).forEach(function(gid){_bolaoPushEvents(parseInt(gid,10))});
+  }catch(e){}
 }
 function _bolaoDeadline(gameN){var g=GAME_BY_ID[gameN];if(!g)return null;var gd=gameUTC(g);return gd?new Date(gd.getTime()-BOLAO_TWO_H):null}
 function _bolaoFinalChampion(){return _winnerOf(BOLAO_FINAL)}

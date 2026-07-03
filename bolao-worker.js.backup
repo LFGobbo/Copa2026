@@ -150,13 +150,17 @@ async function handle(req) {
       var allParts = await supaFetch("participants?select=id,name,password,confirmed");
       var target = normalizeName(body.name);
       var existing = allParts ? allParts.filter(function(p){ return normalizeName(p.name) === target; }) : [];
-      if (!existing || !existing.length) return error('Participante nao encontrado', 404);
+      // SEGURANCA: resposta identica (mesma mensagem, mesmo status 401) tanto para nome
+      // inexistente quanto para senha errada. Antes, 404 vs 401 permitia enumerar nomes
+      // cadastrados so testando o endpoint. O hash e sempre calculado (mesmo sem usuario
+      // encontrado) para nao vazar a diferenca por tempo de resposta.
+      var found = (existing && existing.length) ? existing[0] : null;
       var hash = await sha256(body.password + ':' + JWT_SECRET);
-      if (existing[0].password !== hash) return error('Senha incorreta', 401);
+      if (!found || found.password !== hash) return error('Nome ou senha invalidos', 401);
       var header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-      var payload = btoa(JSON.stringify({ sub: existing[0].id, name: existing[0].name, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 * 90 }));
+      var payload = btoa(JSON.stringify({ sub: found.id, name: found.name, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 * 90 }));
       var sig = await sha256(header + '.' + payload + '.' + JWT_SECRET);
-      return json({ id: existing[0].id, name: existing[0].name, confirmed: existing[0].confirmed, token: header + '.' + payload + '.' + sig });
+      return json({ id: found.id, name: found.name, confirmed: found.confirmed, token: header + '.' + payload + '.' + sig });
     }
 
     // Rotas autenticadas
@@ -607,6 +611,41 @@ async function handle(req) {
       }
     }
 
+    // GET /events — gols/cartões centralizados (fonte compartilhada entre navegadores)
+    // Alimentado pelo POST abaixo: qualquer navegador que já resolveu o timeline de um
+    // jogo (nomes de jogador, gol contra, etc., resolvidos no cliente) envia o resultado
+    // pronto para cá, e quem ainda não tem esse jogo localmente (ex.: celular aberto
+    // >24h depois do jogo) recebe pronto na próxima carga da página.
+    if (method === 'GET' && path === '/events') {
+      try {
+        var evData = (await supaFetch('game_events?select=game_n,goals,cards,updated_at')) || [];
+        return json({ events: evData, count: evData.length });
+      } catch (e) {
+        return json({ events: [], count: 0, warning: 'game_events indisponivel: ' + e.message });
+      }
+    }
+
+    // POST /events — recebe goals/cards já resolvidos de um jogo específico e persiste.
+    // Best-effort: não exige autenticação (só leitura agregada, sem dado sensível de
+    // participante) e falha silenciosamente do lado do cliente se der erro.
+    if (method === 'POST' && path === '/events') {
+      try {
+        var evBody = await request.json();
+        var evGameN = parseInt(evBody && evBody.game_n, 10);
+        if (!evGameN || evGameN < 1 || evGameN > 104) return json({ error: 'game_n inválido' }, 400);
+        var evRow = {
+          game_n: evGameN,
+          goals: evBody.goals || {},
+          cards: evBody.cards || {},
+          updated_at: new Date().toISOString()
+        };
+        await supaFetch('game_events?on_conflict=game_n', 'POST', [evRow], { 'Prefer': 'resolution=merge-duplicates' });
+        return json({ ok: true });
+      } catch (e) {
+        return json({ ok: false, error: e.message }, 500);
+      }
+    }
+
     // GET /cron — tarefas agendadas (chamado via cron-job.org ou Cloudflare Cron)
     if (method === 'GET' && path === '/cron') {
       // Usa CRON_SECRET em vez de ADMIN_KEY para isolar permissoes.
@@ -680,23 +719,54 @@ async function handle(req) {
                 pen_winner: penWinner,
                 updated_at: now
               });
-              // Prorrogação: registrar para PATCH posterior (placar de 90min)
-              // Status 5 = ET (empate após 90min). Status 6 = pênaltis (pode não ter passado por 5).
-              if ((m.MatchStatus === 5 && hs === as) || m.MatchStatus === 6) {
+              // Detecta ir a prorrogação (Status 5 = ET, 6 = pênaltis) — o placar de 90min
+              // é reconstruído depois via Timeline (ver bloco abaixo), não capturado aqui.
+              // A tentativa antiga de capturar isso "ao vivo" (só quando pegava o jogo
+              // empatado exatamente no momento do poll) falhava sempre que o gol da
+              // prorrogação caía entre dois polls de 5min — caso real: Bélgica R32.
+              if (m.MatchStatus === 5 || m.MatchStatus === 6) {
                 etPatches.push(gkFifa);
               }
             }
+            // Deduplicar por game_key antes do upsert em lote. O Postgres rejeita o INSERT
+            // inteiro (23505 duplicate key) se duas linhas do MESMO lote tiverem a mesma
+            // chave -- ON CONFLICT so resolve conflito contra linhas JA existentes na tabela,
+            // nao contra duplicatas dentro do proprio lote sendo inserido. Se a API da FIFA
+            // listar o mesmo jogo duas vezes numa resposta, o lote inteiro falhava e NENHUM
+            // jogo era gravado (foi o que travou o live_scores por dias na virada pro mata-mata).
+            var batchByKey = {};
+            batch.forEach(function(r) { batchByKey[r.game_key] = r; }); // ultima entrada da FIFA vence
+            batch = Object.keys(batchByKey).map(function(k) { return batchByKey[k]; });
             // Um único upsert em batch (1 subrequest) em vez de N individuais
             if (batch.length > 0) {
               await supaFetch('live_scores?on_conflict=game_key', 'POST', batch, { 'Prefer': 'resolution=merge-duplicates' });
             }
-            // PATCH para placar de 90min (apenas jogos em ET, condicional)
+            // Placar de 90min via Timeline (robusto — não depende de pegar o jogo "ao vivo"
+            // no instante exato em que está empatado). Reconstrói percorrendo os eventos da
+            // Timeline da FIFA e pegando o último placar com MatchMinute<=90. Só busca para
+            // jogos que ainda não têm goals_home_90 gravado (idempotente, barato no cron seguinte).
             for (var pi = 0; pi < etPatches.length; pi++) {
               var gk = etPatches[pi];
               var row = batch.find(function(r){ return r.game_key === gk; });
-              if (row) {
-                try { await supaFetch('live_scores?game_key=eq.' + gk + '&goals_home_90=is.null', 'PATCH', { goals_home_90: row.goals_home, goals_away_90: row.goals_away }); } catch(e) {}
-              }
+              if (!row || !row.match_id) continue;
+              try {
+                var pending = (await supaFetch('live_scores?game_key=eq.' + gk + '&goals_home_90=is.null&select=game_key')) || [];
+                if (!pending.length) continue; // já resolvido antes
+                var tlResp = await fetch('https://api.fifa.com/api/v3/timelines/' + row.match_id);
+                var tlData = await tlResp.json();
+                if (!tlData || !tlData.Event || !tlData.Event.length) continue;
+                var h90 = 0, a90 = 0, found = false;
+                for (var ei = 0; ei < tlData.Event.length; ei++) {
+                  var ev = tlData.Event[ei];
+                  if (ev.HomeGoals === undefined || ev.AwayGoals === undefined) continue;
+                  var minRaw = ev.MatchMinute ? String(ev.MatchMinute).replace(/'/g, '').split('+')[0] : null;
+                  var minNum = minRaw !== null ? parseInt(minRaw, 10) : NaN;
+                  if (!isNaN(minNum) && minNum <= 90) { h90 = ev.HomeGoals; a90 = ev.AwayGoals; found = true; }
+                }
+                if (found) {
+                  await supaFetch('live_scores?game_key=eq.' + gk + '&goals_home_90=is.null', 'PATCH', { goals_home_90: h90, goals_away_90: a90 });
+                }
+              } catch (e) { /* tenta de novo no próximo cron */ }
             }
             results.fifa = batch.length + ' scores stored';
           } else {
@@ -858,10 +928,17 @@ async function handle(req) {
       // Thresholds: r32 após 72 grupos, r16 após 88, qf após 96, sf após 100, 3rd+final após 102
       if (task === 'auto-reopen' || task === 'all') {
         try {
-          // Contar partidas concluídas via live_scores (Supabase) — consistente com o snapshot.
-          // Cada registro em live_scores representa um jogo com placar confirmado.
-          var arLiveScores = (await supaFetch('live_scores?select=game_key&match_status=eq.0&game_n=lte.72')) || [];
-          var completedCount = arLiveScores.length;
+          // Contar partidas concluídas diretamente da API da FIFA — não depende do
+          // mapeamento game_n em live_scores (mais frágil nas fases de mata-mata, onde
+          // os times só são conhecidos após o grupo/fase anterior terminar).
+          var arFresp = await fetch('https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200');
+          var arData = await arFresp.json();
+          var completedCount = 0;
+          if (arData && arData.Results) {
+            completedCount = arData.Results.filter(function(m) {
+              return m.HomeTeamScore !== null && m.AwayTeamScore !== null;
+            }).length;
+          }
           // Threshold por fase (cumulativo)
           var PHASE_THRESHOLD = { r32: 72, r16: 88, qf: 96, sf: 100, '3rd': 102, final: 102 }; // final abre com semifinalistas conhecidos (igual sf)
           var phaseRows = (await supaFetch('phase_reopen?select=phase_name,open,deadline')) || [];
