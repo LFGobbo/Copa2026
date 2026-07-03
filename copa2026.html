@@ -2956,8 +2956,14 @@ function _bolaoCountEvents(obj){
   if(!obj)return 0;
   return (obj.a?obj.a.length:0)+(obj.b?obj.b.length:0);
 }
-function _bolaoPullEventsOnce(){
-  fetch(BOLAO_WORKER+'/events').then(function(r){return r.json()}).then(function(d){
+// Fix 2026-07-03 (robustez): antes, uma única tentativa com erro engolido em silêncio
+// (`.catch(function(){})`) — se essa 1ª tentativa falhasse por qualquer motivo (rede, timing,
+// exceção), o navegador nunca mais recebia o cache compartilhado pelo resto da sessão, e não
+// havia nenhum log pra saber que isso tinha acontecido. Agora tenta 3 vezes (0s/6s/16s após o
+// load), sempre com `cache:'no-store'` pra eliminar qualquer chance de servir uma resposta
+// antiga do cache HTTP do navegador, e loga no console se alguma tentativa falhar.
+function _bolaoPullEventsOnceAttempt(){
+  return fetch(BOLAO_WORKER+'/events',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
     if(!d||!d.events||!d.events.length)return;
     var ch=false;
     d.events.forEach(function(ev){
@@ -2968,13 +2974,10 @@ function _bolaoPullEventsOnce(){
       // retorna falso mesmo faltando dado. Comparar contagem cobre esse caso.
       if(ev.goals&&_bolaoCountEvents(ev.goals)>_bolaoCountEvents(goals[gid])){goals[gid]=ev.goals;ch=true;}
       if(ev.cards&&_bolaoCountEvents(ev.cards)>_bolaoCountEvents(cards[gid])){cards[gid]=ev.cards;ch=true;}
-      // Fix 2026-07-03: se o cache compartilhado já tem gol/cartão pra esse jogo, marca aqui
-      // mesmo como PROCESSED_EVENTS — sem isso, o poll() (que roda logo em seguida) não sabia
-      // que esse jogo já estava resolvido e disparava uma busca redundante na API da FIFA +
-      // um novo POST de volta, PARA CADA UM dos ~85 jogos já encerrados. Isso é o que fazia uma
-      // carga "fria" (navegador novo ou com localStorage limpo, ex. iOS Safari) travar a aba
-      // por ~14s (~85 fetches simultâneos na FIFA). Não cobre jogos 0x0 sem nenhum cartão
-      // (contagem fica 0), mas esses são raros e continuam sendo verificados normalmente.
+      // Se o cache compartilhado já tem gol/cartão pra esse jogo, marca aqui mesmo como
+      // PROCESSED_EVENTS — sem isso, o poll() não sabia que esse jogo já estava resolvido e
+      // disparava uma busca redundante na API da FIFA + um novo POST de volta, PARA CADA UM
+      // dos ~85 jogos já encerrados numa carga fria. Não cobre jogos 0x0 sem nenhum cartão.
       var _totalNow=_bolaoCountEvents(goals[gid])+_bolaoCountEvents(cards[gid]);
       if(_totalNow>0&&typeof FIFA_MATCH_IDS!=='undefined'){
         var _mid=FIFA_MATCH_IDS[gid];
@@ -2982,7 +2985,12 @@ function _bolaoPullEventsOnce(){
       }
     });
     if(ch){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();}
-  }).catch(function(){});
+  });
+}
+function _bolaoPullEventsOnce(){
+  _bolaoPullEventsOnceAttempt().catch(function(e){console.warn('_bolaoPullEventsOnce (1a tentativa) falhou:',e&&e.message);});
+  setTimeout(function(){_bolaoPullEventsOnceAttempt().catch(function(e){console.warn('_bolaoPullEventsOnce (2a tentativa) falhou:',e&&e.message);});},6000);
+  setTimeout(function(){_bolaoPullEventsOnceAttempt().catch(function(e){console.warn('_bolaoPullEventsOnce (3a tentativa) falhou:',e&&e.message);});},16000);
 }
 // _bolaoPushEvents só é chamado de dentro de processTimeline quando algo MUDA para aquele
 // jogo — mas jogos já totalmente resolvidos neste navegador (o caso mais comum, já que a
