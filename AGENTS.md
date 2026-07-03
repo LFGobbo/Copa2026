@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-03 (v20.18 — Serie de fixes: PROCESSED_EVENTS nunca restaurava, timeline parcial apagava dado bom, pull sem retry)
+**Última atualização:** 2026-07-03 (v20.19 — Regras clarificadas: palpite vale só 90min, bônus é só pênaltis)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -793,6 +793,20 @@ engolir o erro. **Causa raiz exata de por que a 1ª tentativa às vezes não com
 a mitigação por retry + no-store + log é robusta o suficiente na prática e foi validada com
 teste real ao vivo repetido (ver v20.18), mas se o log de warning aparecer no console de algum
 usuário no futuro, isso vai finalmente dar a pista que faltou aqui.
+
+### v20.19 — Regras clarificadas: palpite vale só 90min, bônus é só pênaltis (2026-07-03)
+
+**Contexto:** usuário pediu clareza nas regras — não estava explícito que o palpite vale apenas para o tempo regulamentar, e o bônus de +5 pts mencionava "prorrogação" junto com pênaltis.
+
+**Mudanças:**
+1. **Linha de pontuação**: "Pontuação" renomeada para "Pontuação (apenas 90 min)" com explicação: palpite vale para o placar ao final do tempo regulamentar, prorrogação e pênaltis não contam para o placar — contam apenas para o bônus de desempate
+2. **Bônus +5 pts**: "Bônus pênaltis / prorrogação" corrigido para "Bônus pênaltis: +5 pts se acertar quem vence nos pênaltis (vale mesmo se editou o palpite). Prorrogação não dá bônus — só pênaltis."
+3. **Item novo na reabertura do mata-mata**: lembrete dourado de que no mata-mata o palpite também vale apenas para 90 min — se for a prorrogação, compara com o resultado ao final do 1º+2º tempo, não com o placar final
+4. **GitHub Pages**: rebuild forçado (commit vazio `78887b3`) após falha do Actions
+5. **Worker**: verificado idêntico à produção (65551 bytes, mesmo hash), deployado mesmo assim
+
+**Commits:** `5f791d9` (regras), `78887b3` (force rebuild)
+**Worker:** deployado (idêntico)
 
 ### v20.18 — Validação final ao vivo (Regra de Ouro cumprida)
 
