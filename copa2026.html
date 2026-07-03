@@ -2968,6 +2968,18 @@ function _bolaoPullEventsOnce(){
       // retorna falso mesmo faltando dado. Comparar contagem cobre esse caso.
       if(ev.goals&&_bolaoCountEvents(ev.goals)>_bolaoCountEvents(goals[gid])){goals[gid]=ev.goals;ch=true;}
       if(ev.cards&&_bolaoCountEvents(ev.cards)>_bolaoCountEvents(cards[gid])){cards[gid]=ev.cards;ch=true;}
+      // Fix 2026-07-03: se o cache compartilhado já tem gol/cartão pra esse jogo, marca aqui
+      // mesmo como PROCESSED_EVENTS — sem isso, o poll() (que roda logo em seguida) não sabia
+      // que esse jogo já estava resolvido e disparava uma busca redundante na API da FIFA +
+      // um novo POST de volta, PARA CADA UM dos ~85 jogos já encerrados. Isso é o que fazia uma
+      // carga "fria" (navegador novo ou com localStorage limpo, ex. iOS Safari) travar a aba
+      // por ~14s (~85 fetches simultâneos na FIFA). Não cobre jogos 0x0 sem nenhum cartão
+      // (contagem fica 0), mas esses são raros e continuam sendo verificados normalmente.
+      var _totalNow=_bolaoCountEvents(goals[gid])+_bolaoCountEvents(cards[gid]);
+      if(_totalNow>0&&typeof FIFA_MATCH_IDS!=='undefined'){
+        var _mid=FIFA_MATCH_IDS[gid];
+        if(_mid&&!PROCESSED_EVENTS[_mid])PROCESSED_EVENTS[_mid]='fromCache';
+      }
     });
     if(ch){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();}
   }).catch(function(){});
