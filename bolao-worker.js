@@ -630,7 +630,7 @@ async function handle(req) {
     // participante) e falha silenciosamente do lado do cliente se der erro.
     if (method === 'POST' && path === '/events') {
       try {
-        var evBody = await request.json();
+        var evBody = await req.json();
         var evGameN = parseInt(evBody && evBody.game_n, 10);
         if (!evGameN || evGameN < 1 || evGameN > 104) return json({ error: 'game_n inválido' }, 400);
         var evRow = {
