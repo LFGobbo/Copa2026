@@ -3464,6 +3464,8 @@ function bolaoRenderDetail(pid){
     var forfeitPts=forfeit&&pts>=0?pts+(bonus||0):0;
     var isFinal=gameIsPast(g);var cls=forfeit||wrongTeams?'forfeit':(!hasReal||!isFinal)?'future':pts===10?'exact':pts>=2?'result':pts===0?'wrong':'future';
     var pickStr=hasPick?(pick.a+'x'+pick.b):'?x?',realStr=hasReal?(real.a+'x'+real.b):'';
+    if(isKO&&hasPick&&pick.a===pick.b&&pick.ko){try{var _koT=pick.ko==='a'?g.a:g.b;var _koN=_bolaoResolveTeam(_koT,g.n,picks);if(_koN)pickStr+=' ('+esc(_koN)+' nos p\u00eAnaltis)';}catch(e){}}
+    if(isKO&&hasReal&&real.a===real.b){try{var _rps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_rps){var _rw=_winnerOf(g.n);var _gb=GAME_BY_ID[g.n];_rps=_rw&&_gb?(_rw===_gb.a?'a':_rw===_gb.b?'b':null):null;}if(_rps){var _rTeam=_rps==='a'?g.a:g.b;var _rName=resolveTeam(_rTeam,g.n);if(_rName&&_rName.name&&!_rName.pending)realStr+=' ('+esc(_rName.name)+' nos p\u00eAnaltis)';}}catch(e){}}
     var ptsStr=forfeit?'<span style="color:var(--red);font-weight:600">PERDEU</span> <span style="text-decoration:line-through;opacity:.4">'+forfeitPts+' pts</span>'
       :wrongTeams?'<span style="color:var(--red);font-weight:600">TIME DIFERENTE</span> <span style="font-size:11px;opacity:.7">(0 pts)</span>'
       :(pts>=0&&isFinal)?(pts+(bonus?'+'+bonus:''))+' pts':(pts>=0)?'<span style="opacity:.5;font-style:italic">'+(pts+(bonus?'+'+bonus:''))+' pts</span>':'';
@@ -3561,6 +3563,8 @@ function bolaoRenderPicksGrid(){
     var lockTime=new Date(gd.getTime()-BOLAO_TWO_H);
     var isLocked=now>=lockTime;
     var pick=_bolaoMyPicks[g.n]||{};
+    var reopenPick=(_bolaoMyPicksReopen||{})[g.n];
+    if(reopenPick&&reopenPick.a!==null&&reopenPick.a!==undefined)pick=reopenPick;
     var hasPick=pick.a!==undefined&&pick.b!==undefined;
     if(isLocked&&!hasPick)return; // Jogo travado sem palpite: invisível
     _bolaoGameLocked[g.n]=isLocked;
@@ -4462,34 +4466,83 @@ function bolaoLimpar(){
   
 }
 // ── bolaoLoadEvolution ─────────────────────────────────────
-async function bolaoLoadEvolution(){
-  try{
-    var d=await _bolaoFetch('/evolution?participantId='+_bolaoParticipantId);
-    _bolaoEvolution=d.evolution||[];
-    var el=document.getElementById('bolao-evolution-wrap');
-    if(el)bolaoRenderEvolution(el);
-  }catch(e){}
+var _evoRankCache=null;
+function bolaoComputeRankCache(){
+  var ids=Object.keys(_bolaoParticipants||{});
+  if(!ids.length)return null;
+  var rows=ids.map(function(id){var r=bolaoCalcTotal(id);return{id:id,total:r.total,exact:r.exactCount,result:r.resultCount,bonus:r.bonusCount};});
+  rows.sort(function(a,b){
+    if(b.total!==a.total)return b.total-a.total;
+    if(b.exact!==a.exact)return b.exact-a.exact;
+    if(b.result!==a.result)return b.result-a.result;
+    return b.bonus-a.bonus;
+  });
+  _evoRankCache=rows;
+  return rows;
 }
-function bolaoRenderEvolution(el){
+function bolaoLoadEvolution(){
+  var el=document.getElementById('bolao-evolution-wrap');
+  if(!el)return;
+  var myId=_bolaoParticipantId;
+  if(!myId||!_bolaoParticipants||!Object.keys(_bolaoParticipants).length){el.innerHTML='<p style="color:var(--muted);font-size:12px;padding:8px 0">Evolução disponível após a primeira rodada</p>';return;}
+  var ids=Object.keys(_bolaoParticipants).filter(function(id){return _bolaoConfirmedStatus[id]&&_bolaoAllPicks[id];});
+  var pastGames=GAMES.filter(function(g){return g.n>=BOLAO_FIRST&&gameIsPast(g)&&scores[g.n]&&scores[g.n].a!==undefined;});
+  pastGames.sort(function(a,b){return a.n-b.n;});
+  if(!pastGames.length||ids.indexOf(myId)<0){el.innerHTML='<p style="color:var(--muted);font-size:12px;padding:8px 0">Evolução disponível após a primeira rodada</p>';return;}
+  var cumPts={};ids.forEach(function(id){cumPts[id]=0;});
+  var evolution=[];
+  pastGames.forEach(function(g){
+    var gn=g.n,isKO=g.f&&!g.f.startsWith('Grupo'),_real=scores[gn];
+    var _rAN=null,_rBN=null,_ps=null,_real90=null,_phaseBonus=0;
+    if(isKO){
+      try{var _rA=resolveTeam(g.a,gn);_rAN=_rA&&_rA.name?_rA.name:null;}catch(e){}
+      try{var _rB=resolveTeam(g.b,gn);_rBN=_rB&&_rB.name?_rB.name:null;}catch(e){}
+      _ps=_real.pen||(FIFA_MATCH_IDS[gn]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[gn]])||null;
+      if(!_ps){try{var _rw=_winnerOf(gn);var _gb=GAME_BY_ID[gn];_ps=_rw&&_gb?(_rw===_gb.a?'a':_rw===_gb.b?'b':null):null;}catch(e){}}
+      _real90=_real.ft||_real;
+      var _cph=KO_GAME_PHASE_FRONTEND[gn];_phaseBonus=KO_PHASE_BONUS_FRONTEND[_cph]||0;
+    }
+    ids.forEach(function(id){
+      var pick=_bolaoAllPicks[id]&&_bolaoAllPicks[id][gn];
+      if(!pick||pick.a===undefined)return;
+      if(isKO){
+        var _tA=_bolaoResolveTeam(g.a,gn,_bolaoAllPicks[id]);
+        var _tB=_bolaoResolveTeam(g.b,gn,_bolaoAllPicks[id]);
+        var _acertou=!!(_rAN&&_rBN&&_tA&&_tB&&_tA===_rAN&&_tB===_rBN);
+        var _reo=(_bolaoAllPicksReopen[id]||{})[gn];
+        var _tr=!!(_reo&&_reo.a!==null&&_reo.a!==undefined);
+        if(!_acertou&&!_tr)return;
+        var _ap=_tr?_reo:pick;
+        var _pts=bolaoCalcKOPickPts(_ap.a,_ap.b,_real90.a,_real90.b,_acertou&&!_tr);
+        if(_pts<0)return;
+        if(_real.a===_real.b&&_ap.ko&&_ps&&_ap.ko===_ps)_pts+=5;
+        if(_acertou)_pts+=_phaseBonus;
+        cumPts[id]+=_pts;
+      }else{
+        var _pts=bolaoCalcPickPts(pick.a,pick.b,_real.a,_real.b);
+        if(_pts<0)return;
+        if(gn===BOLAO_FINAL&&_pts===10)_pts+=20;
+        cumPts[id]+=_pts;
+      }
+    });
+    var ranked=ids.slice().sort(function(a,b){return cumPts[b]-cumPts[a]||(a<b?-1:1);});
+    var pos=ranked.indexOf(myId)+1;
+    if(pos>0)evolution.push({round:gn,position:pos,points:cumPts[myId]});
+  });
+  _bolaoEvolution=evolution;
+  var rankCache=bolaoComputeRankCache();
+  bolaoRenderEvolution(el,rankCache);
+}
+function bolaoRenderEvolution(el,rankCache){
   if(!_bolaoEvolution||!_bolaoEvolution.length){
     el.innerHTML='<p style="color:var(--muted);font-size:12px;padding:8px 0">Evolução disponível após a primeira rodada</p>';return;
   }
   var pts=_bolaoEvolution;
   var totalPlayers=Object.keys(_bolaoParticipants||{}).length||32;
-
-  // Posição atual real (recalculada do ranking, não do snapshot)
   var currentRank=0,currentPts=0;
-  if(_bolaoParticipantId&&Object.keys(_bolaoParticipants).length){
-    var rows=Object.keys(_bolaoParticipants).map(function(id){
-      var r=bolaoCalcTotal(id);return{id:id,total:r.total,exact:r.exactCount,result:r.resultCount,bonus:r.bonusCount};
-    }).sort(function(a,b){
-      if(b.total!==a.total)return b.total-a.total;
-      if(b.exact!==a.exact)return b.exact-a.exact;
-      if(b.result!==a.result)return b.result-a.result;
-      return b.bonus-a.bonus;
-    });
-    var myIdx=rows.findIndex(function(r){return r.id===_bolaoParticipantId;});
-    if(myIdx>=0){currentRank=myIdx+1;currentPts=rows[myIdx].total;}
+  if(rankCache&&rankCache.length){
+    var myIdx=rankCache.findIndex(function(r){return r.id===_bolaoParticipantId;});
+    if(myIdx>=0){currentRank=myIdx+1;currentPts=rankCache[myIdx].total;}
   }
   if(!currentRank){currentRank=pts[pts.length-1].position;currentPts=pts[pts.length-1].points;}
 
