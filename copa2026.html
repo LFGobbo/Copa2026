@@ -2256,8 +2256,11 @@ if(h&&a&&m.IdMatch){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];
 if(m.MatchStatus===0&&m.IdMatch){MATCH_ENDED[m.IdMatch]=true;if(!MATCH_STARTED[m.IdMatch])MATCH_STARTED[m.IdMatch]=true}
 if(m.MatchStatus===3&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true}
 if(m.MatchStatus===4&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true;MATCH_HALFTIME[m.IdMatch]=true}
-if(m.MatchStatus===5&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true;MATCH_EXTRA_TIME[m.IdMatch]=true;if(hs!==null&&as!==null&&hs===as&&!MATCH_90_SCORE[m.IdMatch])MATCH_90_SCORE[m.IdMatch]={a:hs,b:as};}
+if(m.MatchStatus===5&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true;MATCH_EXTRA_TIME[m.IdMatch]=true;if(hs!==null&&as!==null&&!MATCH_90_SCORE[m.IdMatch])MATCH_90_SCORE[m.IdMatch]={a:Math.min(hs,as),b:Math.min(hs,as)};}
 if(m.MatchStatus===6&&m.IdMatch){MATCH_STARTED[m.IdMatch]=true;MATCH_EXTRA_TIME[m.IdMatch]=true;MATCH_PENALTIES[m.IdMatch]=true;if(hs!==null&&as!==null&&!MATCH_90_SCORE[m.IdMatch])MATCH_90_SCORE[m.IdMatch]={a:hs,b:as};}
+// Jogo que foi à ET sem pênaltis e decidido em ET: reconstruir placar dos 90min via timeline
+if(m.IdMatch&&MATCH_EXTRA_TIME[m.IdMatch]&&hs!==null&&as!==null&&hs!==as&&!MATCH_PENALTIES[m.IdMatch]&&!MATCH_90_SCORE[m.IdMatch]){var _tl90=FIFA_TIMELINES_RAW[m.IdMatch];if(_tl90&&_tl90.data&&_tl90.data.Event&&_tl90.data.Event.length){var _h90=0,_a90=0;var _evArr=_tl90.data.Event;for(var _ei=0;_ei<_evArr.length;_ei++){var _ev=_evArr[_ei];if(_ev.HomeGoals===undefined||_ev.AwayGoals===undefined)continue;var _mm=_ev.MatchMinute?parseInt(_ev.MatchMinute.replace(/'/g,'').split('+')[0],10):0;if(_mm>90)break;_h90=_ev.HomeGoals;_a90=_ev.AwayGoals;}MATCH_90_SCORE[m.IdMatch]={a:_h90,b:_a90};}else{// Sem timeline: fallback min(hs,as) — correto apenas se perdedor não marcou em ET
+MATCH_90_SCORE[m.IdMatch]={a:Math.min(hs,as),b:Math.min(hs,as)};}}
 if(m.MatchTime&&m.IdMatch&&typeof m.MatchTime==='string'){var rt=m.MatchTime.replace(/'/g,'');var rn=parseInt(rt,10);if(!isNaN(rn)&&(!MATCH_MINUTE[m.IdMatch]||rn>MATCH_MINUTE[m.IdMatch])){MATCH_MINUTE[m.IdMatch]=rn;MATCH_RAW_MINUTE[m.IdMatch]=rt}}
 if(m.SecondHalfKickOffTime&&m.IdMatch&&!MATCH_SECOND_KICKOFF[m.IdMatch])MATCH_SECOND_KICKOFF[m.IdMatch]=new Date(m.SecondHalfKickOffTime)
 if(!h||!a||hs===null||as===null)return;
@@ -2392,7 +2395,8 @@ function initFifaMaps(){
   fetchSquads();
 }
 function saveFifaRaw(){try{var _cut=Date.now()-172800000;var _tls={};Object.keys(FIFA_TIMELINES_RAW).forEach(function(k){var _t=FIFA_TIMELINES_RAW[k];if(_t&&_t.ts&&_t.ts>=_cut)_tls[k]=_t;});var _mks={};Object.keys(MATCH_KICKOFF).forEach(function(k){if(MATCH_KICKOFF[k])_mks[k]=MATCH_KICKOFF[k].getTime();});localStorage.setItem('copa2026_fifa_raw',JSON.stringify({ts:Date.now(),calendar:FIFA_CALENDAR_RAW,timelines:_tls,m90:MATCH_90_SCORE,met:MATCH_EXTRA_TIME,mpen:MATCH_PENALTIES,mk:_mks,mpw:MATCH_PEN_WINNER}));}catch(e){}}
-function loadFifaRaw(){try{var raw=localStorage.getItem('copa2026_fifa_raw');if(raw){var p=JSON.parse(raw);if(p&&p.calendar)FIFA_CALENDAR_RAW=p.calendar;if(p&&p.timelines)FIFA_TIMELINES_RAW=p.timelines;if(p&&p.m90)Object.assign(MATCH_90_SCORE,p.m90);if(p&&p.met)Object.assign(MATCH_EXTRA_TIME,p.met);if(p&&p.mpen)Object.assign(MATCH_PENALTIES,p.mpen);if(p&&p.mk)Object.keys(p.mk).forEach(function(k){if(p.mk[k]&&!MATCH_KICKOFF[k])MATCH_KICKOFF[k]=new Date(p.mk[k]);});if(p&&p.mpw)Object.assign(MATCH_PEN_WINNER,p.mpw);}}catch(e){}}
+function loadFifaRaw(){try{var raw=localStorage.getItem('copa2026_fifa_raw');if(raw){var p=JSON.parse(raw);if(p&&p.calendar)FIFA_CALENDAR_RAW=p.calendar;if(p&&p.timelines)FIFA_TIMELINES_RAW=p.timelines;if(p&&p.m90)Object.assign(MATCH_90_SCORE,p.m90);if(p&&p.met)Object.assign(MATCH_EXTRA_TIME,p.met);if(p&&p.mpen)Object.assign(MATCH_PENALTIES,p.mpen);if(p&&p.mk)Object.keys(p.mk).forEach(function(k){if(p.mk[k]&&!MATCH_KICKOFF[k])MATCH_KICKOFF[k]=new Date(p.mk[k]);});if(p&&p.mpw)Object.assign(MATCH_PEN_WINNER,p.mpw);// Re-deriva MATCH_90_SCORE para jogos ET — garante que valor obsoleto do localStorage não bloqueie fix
+Object.keys(MATCH_EXTRA_TIME).forEach(function(k){if(MATCH_EXTRA_TIME[k]&&!MATCH_PENALTIES[k])delete MATCH_90_SCORE[k];});}}catch(e){}}
 loadFifaRaw();
 function fetchCalendar(){
   return fetch('https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200',{cache:"no-store"})
@@ -2449,12 +2453,35 @@ function processTimeline(idMatch,gameId){
           if(e.UTC&&!MATCH_SECOND_KICKOFF[idMatch])MATCH_SECOND_KICKOFF[idMatch]=new Date(e.UTC);
         }
         if(e.Type===26){MATCH_ENDED[idMatch]=true;MATCH_FINALIZED[gameId]=true}
+        // Detectar prorrogação via timeline: qualquer evento com minuto > 90
+        if(e.MatchMinute){var _etChk=parseInt(e.MatchMinute.replace(/'/g,'').split('+')[0],10);if(!isNaN(_etChk)&&_etChk>90)MATCH_EXTRA_TIME[idMatch]=true;}
         if(e.MatchMinute){
           var raw=e.MatchMinute.replace(/'/g,'');
           var m=parseInt(raw,10);
           if(!isNaN(m)&&(!MATCH_MINUTE[idMatch]||m>MATCH_MINUTE[idMatch])){MATCH_MINUTE[idMatch]=m;MATCH_RAW_MINUTE[idMatch]=raw;}
         }
       });
+
+      // ── Reconstruir placar 90min via timeline ─────────────────────────────
+      // Sempre seta MATCH_90_SCORE para jogos KO — previne needsEtFix de retriggerar
+      if(!MATCH_PENALTIES[idMatch]&&!MATCH_90_SCORE[idMatch]){
+        var _h90tl=0,_a90tl=0;
+        for(var _eitl=0;_eitl<allEvents.length;_eitl++){
+          var _evtl=allEvents[_eitl];
+          if(_evtl.HomeGoals===undefined||_evtl.AwayGoals===undefined)continue;
+          var _mmtl=_evtl.MatchMinute?parseInt(_evtl.MatchMinute.replace(/'/g,'').split('+')[0],10):0;
+          if(_mmtl>90)break;
+          _h90tl=_evtl.HomeGoals;_a90tl=_evtl.AwayGoals;
+        }
+        MATCH_90_SCORE[idMatch]={a:_h90tl,b:_a90tl};
+        // Só atualiza scores[gn].ft se o jogo foi à prorrogação (sem pênaltis)
+        if(MATCH_EXTRA_TIME[idMatch]&&typeof scores!=='undefined'&&scores&&scores[gameId]&&!scores[gameId].ft){
+          scores[gameId].ft={a:_rev?_a90tl:_h90tl,b:_rev?_h90tl:_a90tl};
+          saveFifaRaw();
+          // Debounce: re-render único após todos os timelines carregarem
+          if(typeof window!=='undefined'){clearTimeout(window._et90RenderTimer);window._et90RenderTimer=setTimeout(function(){if(typeof bolaoRenderRanking==='function')bolaoRenderRanking();if(typeof renderBolaoStats==='function')renderBolaoStats();},400);}
+        }
+      }
 
       // ── Detectar se houve mudança desde o último poll ─────
       var maxId=0;
@@ -2737,7 +2764,7 @@ _bolaoPullEventsOnce();
   reconcileScores();
   console.warn('FIFA poll error (%s), backoff %dms:',_pollFails,iv,err&&err.message?err.message:'');
 });
-var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);var stale=scores[g.n]&&scores[g.n].a!==undefined&&!PROCESSED_EVENTS[id]&&now>new Date(gd.getTime()+_LIVE_WINDOW);if(live||(recent&&!PROCESSED_EVENTS[id])||stale){processTimeline(id,g.n);if(live)hasLive=true}})};iv=_pollFails>0?iv:(hasLive?FAST:SLOW);_pollTimer=setTimeout(poll,iv)}
+var hasLive=false,now=new Date();if(FIFA_MAP_READY){GAMES.forEach(function(g){var id=FIFA_MATCH_IDS[g.n];if(!id)return;var gd=gameUTC(g);if(!gd)return;var live=now>=gd&&now<=new Date(gd.getTime()+_LIVE_WINDOW);var recent=now<=new Date(gd.getTime()+86400000);var stale=scores[g.n]&&scores[g.n].a!==undefined&&!PROCESSED_EVENTS[id]&&now>new Date(gd.getTime()+_LIVE_WINDOW);var needsEtFix=id&&!MATCH_90_SCORE[id]&&!MATCH_PENALTIES[id]&&scores[g.n]&&scores[g.n].a!==undefined&&scores[g.n].a!==scores[g.n].b&&g.f&&!g.f.startsWith('Grupo')&&now>new Date(gd.getTime()+_LIVE_WINDOW);if(live||(recent&&!PROCESSED_EVENTS[id])||stale||needsEtFix){processTimeline(id,g.n);if(live)hasLive=true}})};iv=_pollFails>0?iv:(hasLive?FAST:SLOW);_pollTimer=setTimeout(poll,iv)}
 fetchFifaScores(8000);_pollTimer=setTimeout(poll,FAST);
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){if(Date.now()-_lastPollTime<5000)return;if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,100)}});
 window.addEventListener('focus',function(){if(Date.now()-_lastPollTime<5000)return;if(_pollTimer)clearTimeout(_pollTimer);_pollTimer=setTimeout(poll,200)});
@@ -2823,7 +2850,8 @@ function initTimelineSync(){
     var id=FIFA_MATCH_IDS[g.n];if(!id)return;
     var gd=gameUTC(g);if(!gd)return;
     if(now<gd)return;
-    if(scores[g.n]&&scores[g.n].a!==undefined)return;
+    var _needsEtFix2=id&&!MATCH_90_SCORE[id]&&!MATCH_PENALTIES[id]&&scores[g.n]&&scores[g.n].a!==undefined&&scores[g.n].a!==scores[g.n].b&&g.f&&!g.f.startsWith('Grupo');
+    if(scores[g.n]&&scores[g.n].a!==undefined&&!_needsEtFix2)return;
     processTimeline(id,g.n);
   });
 }
@@ -3952,6 +3980,19 @@ function _bolaoPhaseLabel(ph){
   var map={r32:'Rodada de 32',r16:'Oitavas de Final',qf:'Quartas de Final',sf:'Semifinal','3rd':'Terceiro Lugar',final:'Final'};
   return map[ph]||ph;
 }
+var _PREV_PHASE_GAMES={r16:[73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88],qf:[89,90,91,92,93,94,95,96],sf:[97,98,99,100],'3rd':[101,102],final:[101,102]};
+function _phaseEstimatedOpenAt(ph){
+  var prev=_PREV_PHASE_GAMES[ph];if(!prev)return null;
+  var latest=null;
+  for(var _pi=0;_pi<prev.length;_pi++){for(var _gi=0;_gi<GAMES.length;_gi++){if(GAMES[_gi].n===prev[_pi]){var _d=gameUTC(GAMES[_gi]);if(_d&&(!latest||_d>latest))latest=_d;break;}}}
+  return latest?new Date(latest.getTime()+2*3600000+15*60000):null;
+}
+function _phaseDeadlineAt(gameNs){
+  if(!gameNs||!gameNs.length)return null;
+  var earliest=null;
+  for(var _di=0;_di<gameNs.length;_di++){for(var _gi2=0;_gi2<GAMES.length;_gi2++){if(GAMES[_gi2].n===gameNs[_di]){var _d2=gameUTC(GAMES[_gi2]);if(_d2&&(!earliest||_d2<earliest))earliest=_d2;break;}}}
+  return earliest?new Date(earliest.getTime()-5*60000):null;
+}
 function bolaoShowReopenPopup(phaseName){
   if(window._bolaoPopupShown)return;window._bolaoPopupShown=true;
   var label=_bolaoPhaseLabel(phaseName);
@@ -3988,9 +4029,13 @@ function bolaoShowReopenPopup(phaseName){
     +'<span style="font-size:16px">⚠️</span>'
     +'<span><strong style="color:#ff8c00">Preencha TODOS os jogos da fase</strong> — palpites em branco não pontuam!</span>'
     +'</div>'
+    var _phInfo=_bolaoOpenPhases[phaseName];var _phDl=_phaseDeadlineAt(_phInfo&&_phInfo.game_ns?_phInfo.game_ns:[]);
+    var _phDlStr=_phDl?_phDl.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'}):'5 min antes do 1º jogo';
+    var _phMsLeft=_phDl?_phDl.getTime()-Date.now():null;
+    var _phCountStr=(_phMsLeft&&_phMsLeft>0)?(' — fecha em <strong style="color:var(--red)">'+_bolaoFmtCountdown(_phMsLeft)+'</strong>'):'';
     +'<div style="background:rgba(255,23,68,.06);border:1px solid rgba(255,23,68,.2);border-radius:8px;padding:10px 12px;margin-bottom:20px;font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:8px">'
     +'<span style="font-size:16px">⏰</span>'
-    +'<span>Prazo: <strong style="color:#fff">5 minutos antes do 1º jogo da '+label+'</strong>. Após isso os palpites travam.</span>'
+    +'<span>Prazo: <strong style="color:var(--gold)">'+_phDlStr+'</strong>'+_phCountStr+'. Após isso os palpites travam.</span>'
     +'</div>'
     +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="width:100%;background:var(--gold);color:#000;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:900;cursor:pointer">Entendido, vamos jogar! 🚀</button>'
     +'</div>';
@@ -4033,6 +4078,8 @@ function bolaoUpdateReopenBanner(){
   if(closedPhases.length){
     var ph2=closedPhases[0];var info2=_bolaoClosedPhases[ph2];
     var openAt=info2&&info2.open_at?new Date(info2.open_at).getTime():null;
+    if(!openAt){var _estOA=_phaseEstimatedOpenAt(ph2);if(_estOA)openAt=_estOA.getTime();}
+    var _openAtIsEst=!(info2&&info2.open_at);
     var now2=Date.now();var tillOpen=openAt?openAt-now2:null;
     banner.style.display='block';
     inner.style.background='linear-gradient(135deg,rgba(80,80,200,.14),rgba(60,60,150,.08))';
@@ -4040,7 +4087,7 @@ function bolaoUpdateReopenBanner(){
     if(iconEl)iconEl.textContent='⏳';
     if(titleEl){titleEl.style.color='rgba(180,180,255,.9)';titleEl.textContent='Reabertura da '+_bolaoPhaseLabel(ph2)+' em breve';}
     if(subEl)subEl.textContent='Os palpites do mata-mata vão abrir em:';
-    if(countLabel){countLabel.textContent='Abre em';countLabel.style.color='rgba(180,180,255,.55)';}
+    if(countLabel){countLabel.textContent=_openAtIsEst?'Abre aprox. em':'Abre em';countLabel.style.color='rgba(180,180,255,.55)';}
     if(countEl){countEl.style.color='rgba(180,180,255,.9)';countEl.textContent=tillOpen!==null&&tillOpen>0?_bolaoFmtCountdown(tillOpen):'Em breve!';}
     if(tillOpen!==null&&tillOpen>0){setTimeout(bolaoUpdateReopenBanner,1000);}
     else if(tillOpen!==null&&tillOpen<=0){
@@ -5135,4 +5182,3 @@ var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.re
 </script>
 </body>
 </html>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      

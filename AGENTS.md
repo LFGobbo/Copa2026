@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-06-30 (v20.10 — Fix PROCESSED_EVENTS falsy → loop infinito reconcileScores)
+**Última atualização:** 2026-07-02 (v20.12 — Fix completo ET scoring: timeline reconstruction + localStorage migration)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -696,6 +696,51 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v20.12 — Fix completo ET scoring: timeline reconstruction + localStorage migration (2026-07-02)
+
+**Contexto:** continuação do v20.11. As primeiras tentativas (898d509, 5615b7d, 099c115, 87b2886) corrigiram parcialmente o problema da Bélgica, mas deixavam bugs residuais: fórmula `min(hs,as)` quebrava em jogos onde ambas as equipes marcaram em ET (ex: 2-2 → 5-3: `min(5,3)=3≠2`), performance catastrófica na aba bolão, e o fix bloqueado por dados antigos no localStorage.
+
+**Bugs resolvidos:**
+
+**1. `min(hs,as)` errado para ET com gols de ambos os times (Fix B)**
+- Substituído por leitura de `FIFA_TIMELINES_RAW[idMatch].data.Event[]` — percorre eventos até `MatchMinute > 90`, captura último `HomeGoals`/`AwayGoals` ≤ 90min.
+- Parsing robusto: `parseInt(e.MatchMinute.replace(/'/g,'').split('+')[0], 10)` — trata `"90+5"→90` (regulação) e `"91"→91` (ET).
+
+**2. Detecção ET via timeline (Fix C)**
+- `MATCH_EXTRA_TIME[idMatch]=true` setado ao encontrar qualquer evento com minuto > 90.
+- Não depende mais de capturar `MatchStatus=5` em tempo real durante o poll.
+
+**3. `needsEtFix` — força processTimeline mesmo com `PROCESSED_EVENTS` setado (Fix E/F)**
+- Condição nova em `poll()` e `initTimelineSync()`: `!MATCH_90_SCORE[id]&&!MATCH_PENALTIES[id]&&scores[gn].a!==scores[gn].b&&g.f não começa com 'Grupo'&&now>liveWindow`.
+- Dispara `processTimeline` mesmo que `PROCESSED_EVENTS[id]` esteja setado — cobertura para qualquer sessão que tenha perdido o ET ao vivo.
+
+**4. Lentidão na aba bolão — loop infinito de needsEtFix (Fix D)**
+- **Causa:** `MATCH_90_SCORE` só era setado dentro de `if(MATCH_EXTRA_TIME[idMatch])`. Jogos KO de regulação (placar desigual, sem ET) nunca setavam `MATCH_90_SCORE` → `needsEtFix` retriggava a cada poll infinitamente (8 jogos × cada poll = 8 processTimeline calls/poll).
+- **Fix:** `MATCH_90_SCORE[idMatch]` sempre setado para qualquer jogo KO que passe por `processTimeline`, independente de ET. Atualiza `scores[gn].ft` e re-render apenas se `MATCH_EXTRA_TIME[idMatch]` for true.
+- **Debounce:** `window._et90RenderTimer = setTimeout(bolaoRenderRanking, 400)` — consolida múltiplos timelines concorrentes em um único re-render.
+
+**5. localStorage bloqueando fix para usuários com sessão antiga (Fix G)**
+- **Causa:** `loadFifaRaw()` restaura `MATCH_90_SCORE` do localStorage. Se um usuário tinha valor antigo/errado de `MATCH_90_SCORE[belgium_id]` (ex: `{a:1,b:1}` da fórmula `min()` quebrada), o `needsEtFix` checa `!MATCH_90_SCORE[id]→false` → nunca corrigia.
+- **Fix em `loadFifaRaw()`:** após restaurar `m90` e `met`, deleta `MATCH_90_SCORE[k]` para qualquer jogo onde `MATCH_EXTRA_TIME[k]=true && !MATCH_PENALTIES[k]`. O valor é re-derivado automaticamente da timeline em cache na mesma sessão (via Fix B em `fetchFifaScores`).
+
+**Commits:** 898d509 → 5615b7d → 099c115 → 87b2886 → 8fd29ba
+
+**Validação:** `scores[82]={a:3,b:2,ft:{a:2,b:2}}` — Bélgica: placar final 3-2, 90min 2-2 ✅
+
+---
+
+### v20.11 — Fix placar 90min para jogos decididos na prorrogação (2026-07-02)
+
+**Problema:** Jogos de mata-mata decididos na prorrogação (ex: Bélgica R32, 2-2 nos 90min, 3-2 no ET) marcavam palpites com placar errado. `MATCH_90_SCORE` só era setado se o cron pegasse o jogo durante `MatchStatus=5` COM placar empatado (`hs===as`). Se o gol do ET caísse entre dois polls, a condição falhava e `real.ft` ficava `undefined` → `_real90 = real = {3,2}` (placar final, não dos 90min).
+
+**Causa raiz:** `if(hs===as&&!MATCH_90_SCORE[m.IdMatch]) MATCH_90_SCORE[m.IdMatch]={a:hs,b:as}` — condição `hs===as` elimina o caso onde o gol já caiu em ET.
+
+**Fix inicial (linha 2259):** removida condição `hs===as` no bloco `MatchStatus=5`; usa `Math.min(hs,as)` como aproximação. Substituído integralmente pelo Fix B no v20.12.
+
+**Commit:** 898d509
+
+---
 
 ### v20.10 (2026-06-30) - Fix PROCESSED_EVENTS falsy — loop infinito em reconcileScores
 

@@ -906,14 +906,17 @@ async function handle(req) {
       // Thresholds: r32 após 72 grupos, r16 após 88, qf após 96, sf após 100, 3rd+final após 102
       if (task === 'auto-reopen' || task === 'all') {
         try {
-          // Contar partidas concluídas via live_scores (Supabase) — consistente com o snapshot.
-          // Cada registro em live_scores representa um jogo com placar confirmado.
-          // SEM limite de game_n: o contador precisa passar de 72 para destravar Oitavas
-          // (88), Quartas (96), Semi (100) e Terceiro/Final (102). O filtro antigo
-          // (game_n=lte.72) travava completedCount em no maximo 72 para sempre, o que
-          // tornava esses thresholds matematicamente impossiveis de alcancar.
-          var arLiveScores = (await supaFetch('live_scores?select=game_key&match_status=eq.0')) || [];
-          var completedCount = arLiveScores.length;
+          // Contar partidas concluídas diretamente da API da FIFA — não depende do
+          // mapeamento game_n em live_scores (mais frágil nas fases de mata-mata, onde
+          // os times só são conhecidos após o grupo/fase anterior terminar).
+          var arFresp = await fetch('https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200');
+          var arData = await arFresp.json();
+          var completedCount = 0;
+          if (arData && arData.Results) {
+            completedCount = arData.Results.filter(function(m) {
+              return m.HomeTeamScore !== null && m.AwayTeamScore !== null;
+            }).length;
+          }
           // Threshold por fase (cumulativo)
           var PHASE_THRESHOLD = { r32: 72, r16: 88, qf: 96, sf: 100, '3rd': 102, final: 102 }; // final abre com semifinalistas conhecidos (igual sf)
           var phaseRows = (await supaFetch('phase_reopen?select=phase_name,open,deadline')) || [];
