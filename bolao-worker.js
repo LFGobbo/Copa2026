@@ -625,6 +625,35 @@ async function handle(req) {
       }
     }
 
+    // Conta quantos eventos (gols+cartoes) um objeto {a:[...],b:[...]} tem.
+    function _evCount(obj) {
+      if (!obj) return 0;
+      return (obj.a ? obj.a.length : 0) + (obj.b ? obj.b.length : 0);
+    }
+
+    // Protecao contra regressao (incidente 2026-07-03: um navegador com timeline PARCIAL da
+    // FIFA — ex. rede instavel no meio da busca — sobrescreveu dado completo dos jogos #83/#84
+    // que outros navegadores ja tinham enviado, apagando gols e cartoes para todo mundo).
+    // Antes de gravar, busca o que ja existe para esses jogos e descarta qualquer linha nova
+    // que tenha MENOS eventos (gols+cartoes) que a ja salva — a escrita so pode crescer.
+    async function _filterNonRegressing(rows) {
+      if (!rows.length) return rows;
+      var ns = rows.map(function (r) { return r.game_n; }).join(',');
+      var existing = [];
+      try {
+        existing = (await supaFetch('game_events?game_n=in.(' + ns + ')&select=game_n,goals,cards')) || [];
+      } catch (e) { existing = []; }
+      var existingByN = {};
+      existing.forEach(function (e) { existingByN[e.game_n] = e; });
+      return rows.filter(function (r) {
+        var old = existingByN[r.game_n];
+        if (!old) return true;
+        var oldCount = _evCount(old.goals) + _evCount(old.cards);
+        var newCount = _evCount(r.goals) + _evCount(r.cards);
+        return newCount >= oldCount;
+      });
+    }
+
     // POST /events — recebe goals/cards já resolvidos de um jogo específico e persiste.
     // Best-effort: não exige autenticação (só leitura agregada, sem dado sensível de
     // participante) e falha silenciosamente do lado do cliente se der erro.
@@ -639,7 +668,9 @@ async function handle(req) {
           cards: evBody.cards || {},
           updated_at: new Date().toISOString()
         };
-        await supaFetch('game_events?on_conflict=game_n', 'POST', [evRow], { 'Prefer': 'resolution=merge-duplicates' });
+        var evRowsToWrite = await _filterNonRegressing([evRow]);
+        if (!evRowsToWrite.length) return json({ ok: true, skipped: true });
+        await supaFetch('game_events?on_conflict=game_n', 'POST', evRowsToWrite, { 'Prefer': 'resolution=merge-duplicates' });
         return json({ ok: true });
       } catch (e) {
         return json({ ok: false, error: e.message }, 500);
@@ -668,8 +699,10 @@ async function handle(req) {
           });
         }
         if (!validRows.length) return json({ ok: true, count: 0 });
-        await supaFetch('game_events?on_conflict=game_n', 'POST', validRows, { 'Prefer': 'resolution=merge-duplicates' });
-        return json({ ok: true, count: validRows.length });
+        var bulkRowsToWrite = await _filterNonRegressing(validRows);
+        if (!bulkRowsToWrite.length) return json({ ok: true, count: 0 });
+        await supaFetch('game_events?on_conflict=game_n', 'POST', bulkRowsToWrite, { 'Prefer': 'resolution=merge-duplicates' });
+        return json({ ok: true, count: bulkRowsToWrite.length });
       } catch (e) {
         return json({ ok: false, error: e.message }, 500);
       }
