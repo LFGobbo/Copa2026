@@ -611,6 +611,41 @@ async function handle(req) {
       }
     }
 
+    // GET /events — gols/cartões centralizados (fonte compartilhada entre navegadores)
+    // Alimentado pelo POST abaixo: qualquer navegador que já resolveu o timeline de um
+    // jogo (nomes de jogador, gol contra, etc., resolvidos no cliente) envia o resultado
+    // pronto para cá, e quem ainda não tem esse jogo localmente (ex.: celular aberto
+    // >24h depois do jogo) recebe pronto na próxima carga da página.
+    if (method === 'GET' && path === '/events') {
+      try {
+        var evData = (await supaFetch('game_events?select=game_n,goals,cards,updated_at')) || [];
+        return json({ events: evData, count: evData.length });
+      } catch (e) {
+        return json({ events: [], count: 0, warning: 'game_events indisponivel: ' + e.message });
+      }
+    }
+
+    // POST /events — recebe goals/cards já resolvidos de um jogo específico e persiste.
+    // Best-effort: não exige autenticação (só leitura agregada, sem dado sensível de
+    // participante) e falha silenciosamente do lado do cliente se der erro.
+    if (method === 'POST' && path === '/events') {
+      try {
+        var evBody = await request.json();
+        var evGameN = parseInt(evBody && evBody.game_n, 10);
+        if (!evGameN || evGameN < 1 || evGameN > 104) return json({ error: 'game_n inválido' }, 400);
+        var evRow = {
+          game_n: evGameN,
+          goals: evBody.goals || {},
+          cards: evBody.cards || {},
+          updated_at: new Date().toISOString()
+        };
+        await supaFetch('game_events?on_conflict=game_n', 'POST', [evRow], { 'Prefer': 'resolution=merge-duplicates' });
+        return json({ ok: true });
+      } catch (e) {
+        return json({ ok: false, error: e.message }, 500);
+      }
+    }
+
     // GET /cron — tarefas agendadas (chamado via cron-job.org ou Cloudflare Cron)
     if (method === 'GET' && path === '/cron') {
       // Usa CRON_SECRET em vez de ADMIN_KEY para isolar permissoes.
@@ -690,6 +725,15 @@ async function handle(req) {
                 etPatches.push(gkFifa);
               }
             }
+            // Deduplicar por game_key antes do upsert em lote. O Postgres rejeita o INSERT
+            // inteiro (23505 duplicate key) se duas linhas do MESMO lote tiverem a mesma
+            // chave -- ON CONFLICT so resolve conflito contra linhas JA existentes na tabela,
+            // nao contra duplicatas dentro do proprio lote sendo inserido. Se a API da FIFA
+            // listar o mesmo jogo duas vezes numa resposta, o lote inteiro falhava e NENHUM
+            // jogo era gravado (foi o que travou o live_scores por dias na virada pro mata-mata).
+            var batchByKey = {};
+            batch.forEach(function(r) { batchByKey[r.game_key] = r; }); // ultima entrada da FIFA vence
+            batch = Object.keys(batchByKey).map(function(k) { return batchByKey[k]; });
             // Um único upsert em batch (1 subrequest) em vez de N individuais
             if (batch.length > 0) {
               await supaFetch('live_scores?on_conflict=game_key', 'POST', batch, { 'Prefer': 'resolution=merge-duplicates' });
@@ -864,7 +908,11 @@ async function handle(req) {
         try {
           // Contar partidas concluídas via live_scores (Supabase) — consistente com o snapshot.
           // Cada registro em live_scores representa um jogo com placar confirmado.
-          var arLiveScores = (await supaFetch('live_scores?select=game_key&match_status=eq.0&game_n=lte.72')) || [];
+          // SEM limite de game_n: o contador precisa passar de 72 para destravar Oitavas
+          // (88), Quartas (96), Semi (100) e Terceiro/Final (102). O filtro antigo
+          // (game_n=lte.72) travava completedCount em no maximo 72 para sempre, o que
+          // tornava esses thresholds matematicamente impossiveis de alcancar.
+          var arLiveScores = (await supaFetch('live_scores?select=game_key&match_status=eq.0')) || [];
           var completedCount = arLiveScores.length;
           // Threshold por fase (cumulativo)
           var PHASE_THRESHOLD = { r32: 72, r16: 88, qf: 96, sf: 100, '3rd': 102, final: 102 }; // final abre com semifinalistas conhecidos (igual sf)

@@ -2633,6 +2633,7 @@ function processTimeline(idMatch,gameId){
       renderGroups();
       renderBracket();
       renderScorers();
+      _bolaoPushEvents(gameId);
     })
     .catch(function(e){console.warn('Timeline fetch failed:',e?e.message:'');
       MATCH_TIMELINE_FAILED[idMatch]=(MATCH_TIMELINE_FAILED[idMatch]||0)+1;
@@ -2724,6 +2725,7 @@ function reconcileScores() {
 }
 // --- Polling automático da FIFA API ---
 initFifaMaps();
+_bolaoPullEventsOnce();
 (function(){var FAST=10000,SLOW=60000,iv=FAST,_pollFails=0,_pollTimer=null,_lastPollTime=0;function poll(){if(_pollTimer)clearTimeout(_pollTimer);_lastPollTime=Date.now();var endedBefore=Object.keys(MATCH_ENDED).length;fetchFifaScores(8000).then(function(m){
   _pollFails=0;
   if(m&&Object.keys(m).length){mergeScores(m)}else{_bolaoFetch('/scores').then(function(d){if(d&&d.scores&&d.scores.length){var sm={};d.scores.forEach(function(s){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];var abbA=FIFA_TEAM_REV[g.a],abbB=FIFA_TEAM_REV[g.b];if((abbA===s.home_team&&abbB===s.away_team)||(abbA===s.away_team&&abbB===s.home_team)){sm[g.n]={a:abbA===s.home_team?s.goals_home:s.goals_away,b:abbA===s.home_team?s.goals_away:s.goals_home};break}}});if(Object.keys(sm).length)mergeScores(sm)}}).catch(function(e){console.warn('Fallback scores failed:',e&&e.message?e.message:'');})};
@@ -2872,6 +2874,33 @@ function _bolaoFetch(path,method,body,retries){
     }
     throw e;
   });
+}
+// Envia gols/cartões já resolvidos deste jogo para o cache compartilhado (Supabase),
+// para que outros navegadores (ex.: celular aberto >24h depois do jogo) não precisem
+// refazer a busca/resolução na FIFA — e não fiquem sem o dado se nunca a fizerem.
+// Best-effort: nunca deve travar nem lançar erro visível se falhar.
+function _bolaoPushEvents(gameId){
+  try{
+    var g=goals[gameId]||{},c=cards[gameId]||{};
+    if(!Object.keys(g).length&&!Object.keys(c).length)return;
+    fetch(BOLAO_WORKER+'/events',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({game_n:gameId,goals:g,cards:c})}).catch(function(){});
+  }catch(e){}
+}
+// Busca o cache compartilhado uma vez ao carregar a página e mescla com o que já existe
+// localmente (sem sobrescrever dados locais mais completos/recentes — só preenche o que
+// este navegador ainda não tem, mesma lógica do seed histórico dos jogos 1/2 acima).
+function _bolaoPullEventsOnce(){
+  fetch(BOLAO_WORKER+'/events').then(function(r){return r.json()}).then(function(d){
+    if(!d||!d.events||!d.events.length)return;
+    var ch=false;
+    d.events.forEach(function(ev){
+      var gid=ev.game_n;
+      if(!goals[gid]&&ev.goals&&Object.keys(ev.goals).length){goals[gid]=ev.goals;ch=true;}
+      if(!cards[gid]&&ev.cards&&Object.keys(ev.cards).length){cards[gid]=ev.cards;ch=true;}
+    });
+    if(ch){saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();}
+  }).catch(function(){});
 }
 function _bolaoDeadline(gameN){var g=GAME_BY_ID[gameN];if(!g)return null;var gd=gameUTC(g);return gd?new Date(gd.getTime()-BOLAO_TWO_H):null}
 function _bolaoFinalChampion(){return _winnerOf(BOLAO_FINAL)}
