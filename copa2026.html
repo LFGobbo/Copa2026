@@ -4902,8 +4902,9 @@ function bolaoRenderStats(el){
     var p=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);if(p<0)return;
     phasePts[ph]=(phasePts[ph]||0)+p;
   });
-  var phHtml=Object.keys(phasePts).filter(function(k){return phasePts[k]>0;}).map(function(k){
-    return'<div class="bolao-stat-phase"><span>'+phaseLabels[k]+'</span><span class="bolao-stat-val">'+phasePts[k]+' pts</span></div>';
+  var phOrder=['grupos','r32','oitavas','quartas','semi','final'];
+  var phHtml=phOrder.map(function(k){
+    return'<div class="bolao-stat-phase"><span>'+phaseLabels[k]+'</span><span class="bolao-stat-val">'+(phasePts[k]||0)+' pts</span></div>';
   }).join('');
   el.innerHTML='<div class="bolao-stats-grid">'
     +'<div class="bolao-stat-box"><div class="bolao-stat-num bolao-stat-gold">'+calc.total+'</div><div class="bolao-stat-label">pontos</div></div>'
