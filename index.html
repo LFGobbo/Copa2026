@@ -4085,7 +4085,8 @@ function bolaoShowReopenPopup(phaseName){
   var label=_bolaoPhaseLabel(phaseName);
   var overlay=document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
-  overlay.innerHTML='<div style="background:var(--card);border:2px solid var(--gold);border-radius:18px;padding:28px 24px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto">'
+  overlay.innerHTML='<div style="background:var(--card);border:2px solid var(--gold);border-radius:18px;padding:28px 24px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto;position:relative">'
+    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="position:absolute;top:8px;right:12px;background:none;border:none;color:rgba(255,255,255,.4);font-size:24px;cursor:pointer;line-height:1;padding:4px" title="Fechar">✕</button>'
     +'<div style="text-align:center;margin-bottom:20px">'
     +'<div style="font-size:36px;margin-bottom:8px">🔓</div>'
     +'<div style="font-size:20px;font-weight:900;color:var(--gold);margin-bottom:4px">Reabertura do Mata-Mata!</div>'
@@ -4109,7 +4110,7 @@ function bolaoShowReopenPopup(phaseName){
     +'<div style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.2);border-radius:8px;padding:12px;margin-bottom:14px">'
     +'<div style="font-size:12px;font-weight:700;color:#60a5fa;margin-bottom:8px">🏅 Bônus adicionais</div>'
     +'<div style="font-size:11px;color:rgba(255,255,255,.7);line-height:2">'
-    +'⚽ Acertou quem passa nos <strong style="color:#fff">pênaltis ou prorrogação</strong>: <strong style="color:#fff">+5 pts</strong><br>'
+    +'⚽ Acertou quem passa nos <strong style="color:#fff">pênaltis</strong> (prorrogação não conta): <strong style="color:#fff">+5 pts</strong><br>'
     +'🏅 Bônus por fase (só quem NÃO editou): R32 <strong style="color:#fff">+5</strong> · R16 <strong style="color:#fff">+10</strong> · QF <strong style="color:#fff">+15</strong> · SF <strong style="color:#fff">+20</strong> · 3º <strong style="color:#fff">+20</strong> · Final <strong style="color:#fff">+30</strong>'
     +'</div></div>'
     +'<div style="background:rgba(255,140,0,.07);border:1px solid rgba(255,140,0,.3);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:rgba(255,255,255,.8);display:flex;align-items:center;gap:8px">'
