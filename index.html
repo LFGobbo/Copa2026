@@ -4083,12 +4083,16 @@ function _phaseDeadlineAt(gameNs){
 function bolaoShowReopenPopup(phaseName){
   if(window._bolaoPopupShown)return;window._bolaoPopupShown=true;
   var label=_bolaoPhaseLabel(phaseName);
+  var _phInfo=_bolaoOpenPhases[phaseName];var _phDl=_phaseDeadlineAt(_phInfo&&_phInfo.game_ns?_phInfo.game_ns:[]);
+  var _phDlStr=_phDl?_phDl.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'}):'5 min antes do 1\xba jogo';
+  var _phMsLeft=_phDl?_phDl.getTime()-Date.now():null;
+  var _phCountStr=(_phMsLeft&&_phMsLeft>0)?(' \u2014 fecha em <strong style="color:var(--red)">'+_bolaoFmtCountdown(_phMsLeft)+'</strong>'):'';
   var overlay=document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
   overlay.innerHTML='<div style="background:var(--card);border:2px solid var(--gold);border-radius:18px;padding:28px 24px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto;position:relative">'
-    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="position:absolute;top:8px;right:12px;background:none;border:none;color:rgba(255,255,255,.4);font-size:24px;cursor:pointer;line-height:1;padding:4px" title="Fechar">✕</button>'
+    +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="position:absolute;top:8px;right:12px;background:none;border:none;color:rgba(255,255,255,.4);font-size:24px;cursor:pointer;line-height:1;padding:4px" title="Fechar">\u2715</button>'
     +'<div style="text-align:center;margin-bottom:20px">'
-    +'<div style="font-size:36px;margin-bottom:8px">🔓</div>'
+    +'<div style="font-size:36px;margin-bottom:8px">\uD83D\uDD13</div>'
     +'<div style="font-size:20px;font-weight:900;color:var(--gold);margin-bottom:4px">Reabertura do Mata-Mata!</div>'
     +'<div style="font-size:13px;color:rgba(255,255,255,.5)">'+label+' — leia com atenção</div>'
     +'</div>'
@@ -4117,10 +4121,6 @@ function bolaoShowReopenPopup(phaseName){
     +'<span style="font-size:16px">⚠️</span>'
     +'<span><strong style="color:#ff8c00">Preencha TODOS os jogos da fase</strong> — palpites em branco não pontuam!</span>'
     +'</div>'
-    var _phInfo=_bolaoOpenPhases[phaseName];var _phDl=_phaseDeadlineAt(_phInfo&&_phInfo.game_ns?_phInfo.game_ns:[]);
-    var _phDlStr=_phDl?_phDl.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'}):'5 min antes do 1º jogo';
-    var _phMsLeft=_phDl?_phDl.getTime()-Date.now():null;
-    var _phCountStr=(_phMsLeft&&_phMsLeft>0)?(' — fecha em <strong style="color:var(--red)">'+_bolaoFmtCountdown(_phMsLeft)+'</strong>'):'';
     +'<div style="background:rgba(255,23,68,.06);border:1px solid rgba(255,23,68,.2);border-radius:8px;padding:10px 12px;margin-bottom:20px;font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:8px">'
     +'<span style="font-size:16px">⏰</span>'
     +'<span>Prazo: <strong style="color:var(--gold)">'+_phDlStr+'</strong>'+_phCountStr+'. Após isso os palpites travam.</span>'
@@ -4128,7 +4128,7 @@ function bolaoShowReopenPopup(phaseName){
     +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="width:100%;background:var(--gold);color:#000;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:900;cursor:pointer">Entendido, vamos jogar! 🚀</button>'
     +'</div>';
   document.body.appendChild(overlay);
-  // Não fecha clicando fora — usuário DEVE apertar o botão
+  // Não fecha clicando fora — usuário DEVE apertar o botão ou o X
 }
 
 function bolaoUpdateReopenBanner(){
