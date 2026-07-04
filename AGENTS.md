@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-04 (v20.23 — Fix: score fantasma 0x0 em jogo de mata-mata ainda nao definido, causando "TIME DIFERENTE" indevido pra todo mundo)
+**Última atualização:** 2026-07-04 (v20.24 — Fix: aba Estatísticas não usava placar de 90min em jogos de prorrogação, pontos por fase não batiam com o total)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -793,6 +793,49 @@ engolir o erro. **Causa raiz exata de por que a 1ª tentativa às vezes não com
 a mitigação por retry + no-store + log é robusta o suficiente na prática e foi validada com
 teste real ao vivo repetido (ver v20.18), mas se o log de warning aparecer no console de algum
 usuário no futuro, isso vai finalmente dar a pista que faltou aqui.
+
+### v20.24 — Aba Estatísticas não usava placar de 90min em jogos de prorrogação (2026-07-04)
+
+O usuário elogiou o painel "Suas Estatísticas" (pontos por fase: Grupos/R32/Oitavas/...) mas
+notou que a soma das fases não batia com o total oficial mostrado no topo (284 vs 292, -8).
+Investigado jogo a jogo comparando a função oficial (`bolaoCalcTotal`, instrumentada com log por
+jogo) contra a lógica de `bolaoRenderStats` (duplicada, mesma lógica reescrita à mão) — achou-se
+exatamente 2 jogos divergentes: #82 (diff +2) e #86 (diff +6), somando os 8 pontos.
+
+**Causa raiz:** `bolaoRenderStats` calculava o placar de 90 minutos do mata-mata com
+`var _real90=real.ft||real;` — sem o fallback via `MATCH_90_SCORE` que `bolaoCalcTotal` já tinha
+(ver v20.6/v20.20). Jogos #82 e #86 foram à prorrogação com `real.ft` vazio (placar de 90min
+reconstruído só existe em `MATCH_90_SCORE`), então essa aba comparava o palpite com o placar
+FINAL (incluindo prorrogação/pênaltis: 3x2 nos dois) em vez do placar de 90 minutos de verdade
+(2x2 e 1x1, respectivamente) — violando a regra "palpite vale só 90 min" (v20.19) só nessa aba.
+
+**Verificado:** `MATCH_90_SCORE[FIFA_MATCH_IDS[82]]` = `{a:2,b:2}` vs `scores[82]` (final) =
+`{a:3,b:2}`; `MATCH_90_SCORE[FIFA_MATCH_IDS[86]]` = `{a:1,b:1}` vs `scores[86]` (final) =
+`{a:3,b:2}`. Confirmado ao vivo no Chrome, aplicando o fix em memória e recalculando: soma das
+fases passou a bater exatamente com o total (164+116+4+0+0+0=284).
+
+**Bônus adicional descoberto no mesmo processo:** o bônus de campeão (+50) e artilheiro
+(+20/+10) — que fazem parte do `calc.total` mas não são de nenhum jogo específico — nunca
+apareciam em nenhuma fase da aba Estatísticas, o que faria a soma divergir do total pra qualquer
+participante com esses bônus (mesmo sem o bug do 90min). Adicionada uma fase extra "Especiais"
+que só aparece quando > 0.
+
+**Fix aplicado em `bolaoRenderStats`** (`index.html`/`copa2026.html`):
+1. `_real90` agora usa o mesmo fallback via `MATCH_90_SCORE`/`FIFA_MATCH_META` que
+   `bolaoCalcTotal` já tinha.
+2. Bônus de fase alinhado com a regra final da v20.22 (mantém com reabertura, exige pelo menos
+   1 palpite de grupo).
+3. Nova categoria `especiais` no `phasePts`, somando bônus de campeão/artilheiro, exibida só se
+   > 0.
+
+**Nota para o futuro:** esse é o **terceiro** lugar no código com uma reimplementação separada
+da lógica de pontuação de mata-mata (os outros dois: `bolaoRenderDetail` e o próprio
+`bolaoCalcTotal`; existe ainda um quarto, `computeBolaoStats`, usado em outra parte da aba de
+Estatísticas — usado para "SEUS PALPITES"/comparações — que **não foi auditado nesta sessão** e
+pode ter o mesmo tipo de divergência). Cada vez que a regra de pontuação mudar, os 3-4 lugares
+precisam ser atualizados junto — seria mais seguro no médio prazo extrair uma função única
+`bolaoScoreGame(participantId, gameNumber)` reutilizada em todos esses lugares, em vez de manter
+cópias paralelas.
 
 ### v20.22 — "Bug dos Pontos": bônus de fase indevido pra quem reabriu o palpite (2026-07-04)
 

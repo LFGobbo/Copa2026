@@ -4927,13 +4927,21 @@ function bolaoRenderStats(el){
       var activePick=temReopen?reopenPick:pick;
       if(!activePick||activePick.a===undefined)return;
       var useFullTable=acertouC&&!temReopen;
-      var _real90=real.ft||real;
+      // Fix 2026-07-04 (v20.24): faltava o fallback via MATCH_90_SCORE que bolaoCalcTotal ja
+      // tinha -- se o jogo foi a prorrogacao e real.ft nao estiver preenchido, essa aba de
+      // estatisticas comparava com o placar FINAL (incluindo prorrogacao/penaltis) em vez do
+      // placar de 90 minutos, dando pontuacao errada pra qualquer jogo de mata-mata que foi a
+      // prorrogacao (descoberto: jogos #82 e #86, cada um com 90min != final).
+      var _real90=real.ft;if(!_real90){var _mid=FIFA_MATCH_IDS[g.n];if(_mid&&MATCH_90_SCORE[_mid]){var _m90=MATCH_90_SCORE[_mid];var _meta=FIFA_MATCH_META[g.n]||{};if(_meta.homeId){var _ck=_resolveMatchTeams(GAME_BY_ID[g.n]);var _rev=_ck.homeId&&_meta.homeId&&_ck.homeId!==_meta.homeId;_real90={a:_rev?_m90.b:_m90.a,b:_rev?_m90.a:_m90.b};}}}if(!_real90)_real90=real;
       var scoreKO=bolaoCalcKOPickPts(activePick.a,activePick.b,_real90.a,_real90.b,useFullTable);
       if(scoreKO<0)return;
       var koBonus=0;
       if(real.a===real.b){var _ps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_ps){var _rw=_winnerOf(g.n);var _gb=GAME_BY_ID[g.n];_ps=_rw&&_gb?(_rw===_gb.a?'a':_rw===_gb.b?'b':null):null;}if(activePick.ko&&_ps&&activePick.ko===_ps)koBonus=5;}
       var phaseBonus=0;
-      if(acertouC){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_FRONTEND[cph]||0;}
+      // Regra v20.22: bonus de fase mantido mesmo com reabertura, desde que tenha pelo menos
+      // um palpite de fase de grupos (mesmo criterio de bolaoCalcTotal/bolaoRenderDetail).
+      var _temAlgumPalpiteDeGrupo=Object.keys(myPicks||{}).length>0;
+      if(acertouC&&_temAlgumPalpiteDeGrupo){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_FRONTEND[cph]||0;}
       phasePts[ph]=(phasePts[ph]||0)+scoreKO+koBonus+phaseBonus;
       return;
     }
@@ -4941,8 +4949,23 @@ function bolaoRenderStats(el){
     var p=bolaoCalcPickPts(pick.a,pick.b,real.a,real.b);if(p<0)return;
     phasePts[ph]=(phasePts[ph]||0)+p;
   });
-  var phOrder=['grupos','r32','oitavas','quartas','semi','final'];
-  var phHtml=phOrder.map(function(k){
+  // Fix 2026-07-04 (v20.24): bonus de campeao/artilheiro (palpites especiais) nao estava em
+  // nenhuma fase, entao a soma das fases nunca batia com o total oficial (calc.total) pra quem
+  // tinha algum desses bonus. Adiciona uma fase "Especiais" pra fechar a conta.
+  var sp=_bolaoMySpecial;
+  var _champion=_bolaoFinalChampion(),_topScorer=_bolaoTopScorer();
+  var _finalGameObj=GAMES.find(function(g){return g.n===BOLAO_FINAL;});
+  var _finalDone=_finalGameObj&&gameIsPast(_finalGameObj);
+  var _matchName=function(a,b){if(!a||!b)return false;var na=a.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g,'');var nb=b.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g,'');return na===nb};
+  phasePts.especiais=0;
+  if(sp&&sp.champion&&_champion&&sp.champion===_champion)phasePts.especiais+=50;
+  if(_finalDone&&sp&&sp.top_scorer&&_topScorer){
+    if(_topScorer.exact&&_matchName(sp.top_scorer,_topScorer.name))phasePts.especiais+=20;
+    else if(!_topScorer.exact&&_topScorer.tied&&_topScorer.tied.some(function(t){return _matchName(sp.top_scorer,t)}))phasePts.especiais+=10;
+  }
+  var phOrder=['grupos','r32','oitavas','quartas','semi','final','especiais'];
+  phaseLabels.especiais='Especiais';
+  var phHtml=phOrder.filter(function(k){return k!=='especiais'||phasePts.especiais>0}).map(function(k){
     return'<div class="bolao-stat-phase"><span>'+phaseLabels[k]+'</span><span class="bolao-stat-val">'+(phasePts[k]||0)+' pts</span></div>';
   }).join('');
   el.innerHTML='<div class="bolao-stats-grid">'
