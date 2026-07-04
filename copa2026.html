@@ -3292,15 +3292,9 @@ function bolaoCalcTotal(participantId){
   if(!_bolaoConfirmedStatus[participantId])return{total:adminBonus,exactCount:0,resultCount:0,bonusCount:adminBonus};
   var myPicks=_bolaoAllPicks[participantId]||{},sp=_bolaoAllSpecials[participantId];
   var total=0,exactCount=0,resultCount=0,bonusCount=0;
-  var confirmTs=_bolaoConfirmedAt[participantId]?new Date(_bolaoConfirmedAt[participantId]).getTime():null;
   GAMES.forEach(function(g){
     if(g.n<BOLAO_FIRST)return;
     if(!gameIsPast(g))return;
-    // Se confirmou depois do jogo começar, perde os pontos desse jogo
-    if(confirmTs){
-      var gd=gameUTC(g);
-      if(gd&&gd.getTime()<confirmTs)return;
-    }
     var pick=myPicks[g.n],real=scores[g.n];
     if(!real||real.a===undefined||real.b===undefined)return;
     var reopenPick=(_bolaoAllPicksReopen[participantId]||{})[g.n];
@@ -3434,7 +3428,6 @@ function bolaoRenderRanking(){
 function bolaoToggleDetail(id){var el=document.getElementById('bolao-detail-'+id);if(el)el.classList.toggle('open')}
 function bolaoRenderDetail(pid){
   var picks=_bolaoAllPicks[pid]||{},scored=[],future=[];
-  var confirmTsDetail=_bolaoConfirmedAt[pid]?new Date(_bolaoConfirmedAt[pid]).getTime():null;
   GAMES.forEach(function(g){
     if(g.n<BOLAO_FIRST)return;
     var real=scores[g.n],pick=picks[g.n],hasReal=real&&real.a!==undefined&&real.b!==undefined,hasPick=pick&&pick.a!==undefined&&pick.b!==undefined;
@@ -3442,7 +3435,6 @@ function bolaoRenderDetail(pid){
     var forfeit=false;
     var notConfirmed=!_bolaoConfirmedStatus[pid];
     if(notConfirmed&&hasReal){forfeit=true}
-    else if(confirmTsDetail&&hasReal){var gd=gameUTC(g);if(gd&&gd.getTime()<confirmTsDetail)forfeit=true;}
     // Mesma validacao de times que bolaoCalcTotal usa para o mata-mata: se o time que o
     // usuario palpitou que estaria nesse jogo nao e' o mesmo que realmente jogou, o palpite
     // nao conta -- antes, este card mostrava os pontos calculados sem essa checagem, entao
@@ -4875,10 +4867,8 @@ function bolaoRenderStats(el){
   var phasePts={grupos:0,r32:0,oitavas:0,quartas:0,semi:0,final:0};
   var phaseLabels={grupos:'Grupos',r32:'Rodada 32',oitavas:'Oitavas',quartas:'Quartas',semi:'Semis',final:'Final'};
   var myPicks=_bolaoMyPicks||{};
-  var confirmTsStats=cat?new Date(cat).getTime():null;
   GAMES.forEach(function(g){
     if(g.n<BOLAO_FIRST||!gameIsPast(g))return;
-    if(confirmTsStats){var gd=gameUTC(g);if(gd&&gd.getTime()<confirmTsStats)return;}
     var pick=myPicks[g.n],real=scores[g.n];
     if(!real||real.a===undefined||real.b===undefined)return;
     var ph=g.f.startsWith('Grupo')?'grupos':g.f==='Rodada de 32'?'r32':g.f==='Oitavas de Final'?'oitavas':g.f==='Quartas de Final'?'quartas':g.f==='Semifinal'?'semi':'final';
@@ -4999,7 +4989,6 @@ function computeBolaoStats(){
   var s={perId:{},community:{}};
   ids.forEach(function(id){s.perId[id]={exact:0,result:0,wrong:0,nearMiss:0,gameN:0,gPred:0,gAct:0,streak:0,streakMax:0,dist:{h:0,d:0,a:0},pts:0};});
   var pg=GAMES.filter(function(g){if(g.n<BOLAO_FIRST)return false;if(!gameIsPast(g))return false;var sc=scores[g.n];return sc&&sc.a!==undefined&&sc.b!==undefined;}).sort(function(a,b){return a.n-b.n;});
-  var confirmTs={};ids.forEach(function(id){var ct=_bolaoConfirmedAt[id];confirmTs[id]=ct?new Date(ct).getTime():null;});
   var evoById={};ids.forEach(function(id){evoById[id]=[];});
   var gi=0;
   pg.forEach(function(g){
@@ -5007,7 +4996,6 @@ function computeBolaoStats(){
     var gd={h:0,d:0,a:0,t:0};
     ids.forEach(function(id){
       var pk=_bolaoAllPicks[id][g.n];if(!pk||pk.a===null||pk.b===null)return;
-      var ct=confirmTs[id];if(ct){var gdObj=gameUTC(g);if(gdObj&&gdObj.getTime()<ct)return;}
       var p=s.perId[id];var pr=pk.a>pk.b?'h':(pk.a<pk.b?'a':'d');
       var ex=(pk.a===rs.a&&pk.b===rs.b),res=(pr===ar);
       p.gameN++;p.dist[pr]++;p.gPred+=pk.a+pk.b;p.gAct+=rs.a+rs.b;
