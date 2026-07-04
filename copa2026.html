@@ -3920,7 +3920,7 @@ async function bolaoLoadMyData(){
   }
   _bolaoMyPicks={};_bolaoKOPicks={};
   (data.picks||[]).forEach(function(p){
-    _bolaoMyPicks[p.game_n]={a:p.goals_a,b:p.goals_b};
+    _bolaoMyPicks[p.game_n]={a:p.goals_a,b:p.goals_b,ko:p.ko_pick};
     if(p.ko_pick)_bolaoKOPicks[p.game_n]=p.ko_pick;
   });
   _bolaoMyPicksReopen={};
