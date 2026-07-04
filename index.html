@@ -1724,14 +1724,17 @@ function _resolveThirdPlaceSlot(thirdsList,gameNum){
 function _winnerOf(gameNum){
   var g=GAME_BY_ID[gameNum];if(!g)return null;
   var s=scores[gameNum];if(!s||s.a===undefined||s.b===undefined)return null;
-  if(s.a>s.b)return g.a;
-  if(s.b>s.a)return g.b;
-  if(s.pen==='a')return g.a;
-  if(s.pen==='b')return g.b;
-  // Fallback: MATCH_PEN_WINNER persiste entre sessões (pen some após 48h de timelines)
-  var _mId=FIFA_MATCH_IDS[g.n];
-  if(_mId&&MATCH_PEN_WINNER[_mId]==='a')return g.a;
-  if(_mId&&MATCH_PEN_WINNER[_mId]==='b')return g.b;
+  try{
+    var rA=resolveTeam(g.a,gameNum),rB=resolveTeam(g.b,gameNum);
+    var nA=rA&&rA.name?rA.name:null,nB=rB&&rB.name?rB.name:null;
+    if(s.a>s.b)return nA||g.a;
+    if(s.b>s.a)return nB||g.b;
+    if(s.pen==='a')return nA||g.a;
+    if(s.pen==='b')return nB||g.b;
+    var _mId=FIFA_MATCH_IDS[g.n];
+    if(_mId&&MATCH_PEN_WINNER[_mId]==='a')return nA||g.a;
+    if(_mId&&MATCH_PEN_WINNER[_mId]==='b')return nB||g.b;
+  }catch(e){}
   return null;
 }
 function _loserOf(gameNum){
@@ -1922,7 +1925,7 @@ function renderBracketTree(){
   }
 
   function drawCard(x,y,gn,clr,isFinal){
-    var g=GAME_BY_ID[gn];if(!g)return;
+    try{var g=GAME_BY_ID[gn];if(!g)return;}catch(e){return;}
     var sc=scores[gn]||{};
     var ha=sc.a!==undefined&&sc.a!=='',hb=sc.b!==undefined&&sc.b!=='';
     var hasScore=ha&&hb;
@@ -4291,9 +4294,19 @@ function bolaoRenderReopenSection(){
     }
   });
   if(!innerHtml){sec.innerHTML='';return;}
+  // Só mostra contagem das fases abertas (não inclui fases fechadas já preenchidas)
+  var openPhaseCount=0,openSavedCount=0;
+  phases.forEach(function(ph){
+    if(_bolaoClosedPhases&&_bolaoClosedPhases[ph])return;
+    openPhaseCount+=KO_PHASE_GAMES&&KO_PHASE_GAMES[ph]?KO_PHASE_GAMES[ph].length:0;
+    (KO_PHASE_GAMES&&KO_PHASE_GAMES[ph]||[]).forEach(function(gn){
+      var rp=(_bolaoMyPicksReopen||{})[gn];
+      if(rp&&rp.a!==null&&rp.a!==undefined)openSavedCount++;
+    });
+  });
   sec.innerHTML='<div class="reopen-section">'
     +'<div class="reopen-section-header"><span class="reopen-section-icon">🔓</span><span>Reabertura do Mata-Mata</span>'
-    +'<span class="reopen-section-count" id="reopen-total-count">'+savedCount+'/'+totalCount+' salvos</span></div>'
+    +'<span class="reopen-section-count" id="reopen-total-count">'+openSavedCount+'/'+openPhaseCount+' salvos</span></div>'
     +innerHtml+'</div>';
 }
 function bolaoReopenUnlock(gn){
