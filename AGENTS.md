@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-04 (v20.21 — Fix: ranking geral inteiro quebrava quando um participante tinha zero palpites registrados)
+**Última atualização:** 2026-07-04 (v20.22 — Bug dos Pontos: bônus de fase indevido pra quem reabriu o palpite, 12 participantes afetados)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -793,6 +793,86 @@ engolir o erro. **Causa raiz exata de por que a 1ª tentativa às vezes não com
 a mitigação por retry + no-store + log é robusta o suficiente na prática e foi validada com
 teste real ao vivo repetido (ver v20.18), mas se o log de warning aparecer no console de algum
 usuário no futuro, isso vai finalmente dar a pista que faltou aqui.
+
+### v20.22 — "Bug dos Pontos": bônus de fase indevido pra quem reabriu o palpite (2026-07-04)
+
+**REGISTRO DETALHADO — leia isto inteiro antes de mexer em pontuação de novo.**
+
+**O que é o "bônus de fase":** cada jogo de mata-mata tem uma pontuação normal (placar exato,
+resultado + gol vencedor, etc.) e, ADICIONALMENTE, um bônus fixo por acertar corretamente QUAL
+CONFRONTO ia acontecer (ex.: acertar que seria "Alemanha x Paraguai" e não outro cruzamento),
+com valores por fase: R32=5, Oitavas=10, Quartas=15, Semi=20, 3ºlugar=20, Final=30
+(`KO_PHASE_BONUS_FRONTEND` / `KO_PHASE_BONUS` no worker). Essa é a mecânica de "tabela cheia".
+
+**Regra oficial, documentada na própria interface do site** (aba Regras, linha ~772-773, e no
+aviso do popup de reabertura, linha ~4309/4382 do `index.html`):
+- 🔒 Não editou o palpite (não reabriu): tabela cheia (15/9/6/3 pts) **+ bônus de fase**.
+- 🔓 Editou o palpite (reabriu): tabela reduzida (10/6/4/2 pts), **SEM bônus de fase** — mesmo
+  que a pessoa tivesse acertado o confronto original antes de reabrir. É uma penalidade
+  intencional por ter mexido no palpite, comunicada com aviso explícito ("⚠️ Se editar, pontos
+  valerão menos... sem bônus") no momento em que a pessoa opta por reabrir.
+
+**O bug:** o Worker (`bolao-worker.js`, usado nos snapshots oficiais em `ranking_snapshots`) já
+implementava essa regra corretamente, usando a variável `useFullTable = !hasReopen` para decidir
+se dá o bônus de fase. Mas o cálculo AO VIVO no navegador (`bolaoCalcTotal` e `bolaoRenderDetail`
+em `index.html`/`copa2026.html`) checava só `acertouConfronto` (ou `dAcertou`), SEM considerar se
+a pessoa tinha reaberto o palpite (`temReopen`/`dHasReopen`). Resultado: quem acertava o
+confronto E também salvava um palpite de reabertura pro mesmo jogo (o que a interface permite
+fazer, mesmo sem necessidade) ganhava o bônus de fase E a pontuação da reabertura ao mesmo tempo
+— um "dois-em-um" que a regra oficial não permite.
+
+**Como foi descoberto:** o usuário deu 100 pontos de bônus manual pro participante Heitor
+Guilherme (ver v20.21) com o combinado de que ele pontuaria SÓ pelo bônus fixo + o que
+efetivamente acertasse nos jogos que reabriu — nada de bônus de fase, já que ele não tinha
+nenhum palpite original de fase de grupos (então, por definição, TODOS os seus jogos de
+mata-mata dependiam de reabertura). Depois de restaurar os 23 palpites de reabertura dele
+(perdidos numa limpeza de dados feita por outra sessão/IA — ver nota em v20.21), o total dele
+apareceu em 229 pontos, muito mais do que os ~154 esperados. Investigando a diferença
+(229-154=75 = 15 jogos da Rodada de 32 × 5 pts de bônus cada), achou-se esta segunda causa raiz,
+diferente e mais ampla que o bug de crash do v20.21.
+
+**Participantes afetados (todos jogos da Rodada de 32, bônus de +5 pts cada):**
+
+| Participante | Jogo(s) com bônus indevido | Pontos a menos |
+|---|---|---|
+| Heitor Guilherme | #74 a #88 (15 jogos — TODOS os seus jogos de mata-mata, pois não tem nenhum palpite original de grupo) | -75 |
+| Bruna Figueiredo | #75, #76, #77, #78 | -20 |
+| Jéssica Martins | #74, #75 | -10 |
+| guimim_nao_apaga | #77, #79 | -10 |
+| Renata Queiroz | #74, #78 | -10 |
+| Felipe Ganzarolli | #84 | -5 |
+| Mauricio Biscaro | #85 | -5 |
+| Gabriel rosalem | #88 | -5 |
+| Raphaela Meneses | #78 | -5 |
+| TX | #88 | -5 |
+| Cristina Pedrosa | #78 | -5 |
+| Isabela de Vilar | #86 | -5 |
+
+Importante: para os 11 participantes que não são o Heitor, `acertouConfronto` era **genuinamente
+verdadeiro** (eles realmente previram o confronto certo com os próprios palpites de grupo) — não
+é o mesmo mecanismo do bug do Heitor (que envolvia o fallback do `_bolaoResolveTeam` pra times
+reais na ausência de qualquer palpite, ver v20.21). Nos dois casos, porém, a causa raiz do BUG DE
+CÓDIGO é a mesma linha: a condição do bônus de fase não checava `!temReopen`.
+
+**Verificado antes de aplicar (Golden Rule):** o fix foi testado ao vivo no Chrome, comparando
+`bolaoCalcTotal` antes/depois do patch para todos os 32 participantes. Confirmado que:
+1. O fix reduz a pontuação de exatamente esses 12 participantes, nos jogos listados acima.
+2. **Nenhuma posição no ranking muda** — todo mundo mantém o mesmo lugar relativo, só o número de
+   pontos exibido cai para essas 12 pessoas.
+3. O usuário revisou a lista completa, confirmou que a regra da interface (tabela reduzida sem
+   bônus ao reabrir) é mesmo a intenção, e autorizou aplicar a correção.
+
+**Fix:** em `bolaoCalcTotal` (pontuação oficial ao vivo) e `bolaoRenderDetail` (card de detalhe
+por jogo), a condição do bônus de fase passou a exigir `useFullTable`/`dUseFullTable` (que já
+inclui `!temReopen`/`!dHasReopen`) em vez de só `acertouConfronto`/`dAcertou`:
+```js
+// antes: if(acertouConfronto){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_FRONTEND[cph]||0;}
+if(useFullTable){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_FRONTEND[cph]||0;}
+// (mesmo padrao replicado em dPhaseBonus/dUseFullTable dentro de bolaoRenderDetail)
+```
+Isso alinha o cálculo ao vivo do navegador com o que o Worker já fazia corretamente nos
+snapshots — nenhuma mudança de regra, só correção de um cálculo que estava divergente da fonte
+de verdade oficial.
 
 ### v20.21 — Ranking geral inteiro caía quando um participante tinha zero palpites (2026-07-04)
 

@@ -3330,7 +3330,12 @@ function bolaoCalcTotal(participantId){
       var koBonus=0;
       if(real.a===real.b){var _ps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_ps){var _rw=_winnerOf(g.n);var _gb=GAME_BY_ID[g.n];_ps=_rw&&_gb?(_rw===_gb.a?'a':_rw===_gb.b?'b':null):null;}if(activePick.ko&&_ps&&activePick.ko===_ps)koBonus=5;}
       var phaseBonus=0;
-      if(acertouConfronto){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_FRONTEND[cph]||0;}
+      // Fix 2026-07-04 (v20.22): bonus de fase (tabela cheia) so pode valer pra quem NAO usou
+      // a reabertura -- antes checava so "acertouConfronto", que pode dar true por coincidencia
+      // via fallback do _bolaoResolveTeam mesmo com reabertura ativa (participante sem nenhum
+      // palpite de fase de grupos, como o caso do Heitor). useFullTable ja e' acertouConfronto&&
+      // !temReopen, que e' a mesma condicao que o Worker usa no snapshot (bolao-worker.js).
+      if(useFullTable){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_FRONTEND[cph]||0;}
       total+=scoreKO+koBonus+phaseBonus;
       if(scoreKO===15||scoreKO===10)exactCount++;
       else if(scoreKO>=2)resultCount++;
@@ -3471,7 +3476,9 @@ function bolaoRenderDetail(pid){
       var dKoBonus=0;
       if(real.a===real.b){var _dps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_dps){var _drw=_winnerOf(g.n);var _dgb=GAME_BY_ID[g.n];_dps=_drw&&_dgb?(_drw===_dgb.a?'a':_drw===_dgb.b?'b':null):null;}if(dActivePick.ko&&_dps&&dActivePick.ko===_dps)dKoBonus=5;}
       var dPhaseBonus=0;
-      if(dAcertou){var dph=KO_GAME_PHASE_FRONTEND[g.n];dPhaseBonus=KO_PHASE_BONUS_FRONTEND[dph]||0;}
+      // Fix 2026-07-04 (v20.22): mesmo fix do bolaoCalcTotal -- so conta bonus de fase pra
+      // quem NAO usou a reabertura (dUseFullTable), nao so por dAcertou.
+      if(dUseFullTable){var dph=KO_GAME_PHASE_FRONTEND[g.n];dPhaseBonus=KO_PHASE_BONUS_FRONTEND[dph]||0;}
       var dTotal=dScoreKO<0?-1:dScoreKO+dKoBonus+dPhaseBonus;
       var dBadge=dAcertou&&!dHasReopen?'🔒 tabela cheia':'🔓 tabela reduzida';
       var dCls=!isFinalKO?'future':dScoreKO===15||dScoreKO===10?'exact':dScoreKO>=2?'result':dScoreKO===0?'wrong':'future';
