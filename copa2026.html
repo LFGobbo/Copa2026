@@ -3043,12 +3043,14 @@ function bolaoTeamPick(el){
 
 // Retorna {a, b} do placar a usar na simulação (pick ou real)
 function _bolaoGetScore(gameN,picks){
+  var s=scores[gameN];
   if(gameN < BOLAO_FIRST){
-    var s=scores[gameN];
     return (s&&s.a!==undefined&&s.b!==undefined)?{a:s.a,b:s.b}:null;
   }
   var p=picks?picks[gameN]:_bolaoMyPicks[gameN];
-  return (p&&p.a!==undefined&&p.b!==undefined)?{a:p.a,b:p.b}:null;
+  if(p&&p.a!==undefined&&p.b!==undefined)return {a:p.a,b:p.b};
+  // Fallback: resultado real quando usuario nao tem palpite (ex: jogos de grupo)
+  return (s&&s.a!==undefined&&s.b!==undefined)?{a:s.a,b:s.b}:null;
 }
 
 // Calcula classificação de grupo usando _bolaoGetScore
