@@ -3198,13 +3198,13 @@ function _bolaoTp(g,side){
               placeholder==='0';
   if(!isKOPh)return '<span>'+esc(placeholder)+'</span>';
 
-  // Tentar resolução real primeiro (bracket oficial já definido)
-  try{var _rr=resolveTeam(placeholder,g.n);if(_rr&&_rr.name&&_rr.name!==placeholder){return '<span style="font-weight:600"'+((!_rr.pending)?'':' title="Provisório"')+'>'+((!_rr.pending)?flag(_rr.name):'')+' '+esc(_rr.name)+'</span>';}}catch(e){}
-  // Fallback: simulação pelo bolão do usuário
+  // Simulação do bolão primeiro (o palpite original foi baseado nela)
   var resolved=_bolaoResolveTeam(placeholder,g.n,_bolaoMyPicks);
   if(resolved){
     return '<span style="font-weight:600">'+flag(resolved)+' '+esc(resolved)+'</span>';
   }
+  // Fallback: resolução real (bracket oficial)
+  try{var _rr=resolveTeam(placeholder,g.n);if(_rr&&_rr.name&&_rr.name!==placeholder){return '<span style="font-weight:600"'+((!_rr.pending)?'':' title="Provisório"')+'>'+((!_rr.pending)?flag(_rr.name):'')+' '+esc(_rr.name)+'</span>';}}catch(e){}
   // Ainda não resolvível — mostrar o placeholder original em muted
   return '<span style="color:var(--muted);font-size:11px">'+esc(placeholder)+'</span>';
 }
