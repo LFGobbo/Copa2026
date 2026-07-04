@@ -2956,6 +2956,15 @@ function _bolaoCountEvents(obj){
   if(!obj)return 0;
   return (obj.a?obj.a.length:0)+(obj.b?obj.b.length:0);
 }
+function _bolaoValidGoals(obj){
+  if(!obj||typeof obj!=='object'||Array.isArray(obj))return false;
+  function _validArr(arr){
+    if(!arr)return true;
+    if(!Array.isArray(arr)||!arr.length)return true;
+    return arr.every(function(g){return g&&typeof g==='object'&&typeof g.pname==='string';});
+  }
+  return _validArr(obj.a)&&_validArr(obj.b);
+}
 // Fix 2026-07-03 (robustez): antes, uma única tentativa com erro engolido em silêncio
 // (`.catch(function(){})`) — se essa 1ª tentativa falhasse por qualquer motivo (rede, timing,
 // exceção), o navegador nunca mais recebia o cache compartilhado pelo resto da sessão, e não
@@ -2972,7 +2981,7 @@ function _bolaoPullEventsOnceAttempt(){
       // não só quando a local está vazia. Um jogo pode ter dado PARCIAL salvo localmente
       // (ex.: só 1 de 3 gols, de uma resolução antiga incompleta), e nesse caso "vazio?"
       // retorna falso mesmo faltando dado. Comparar contagem cobre esse caso.
-      if(ev.goals&&_bolaoCountEvents(ev.goals)>_bolaoCountEvents(goals[gid])){goals[gid]=ev.goals;ch=true;}
+      if(ev.goals&&_bolaoValidGoals(ev.goals)&&_bolaoCountEvents(ev.goals)>_bolaoCountEvents(goals[gid])){goals[gid]=ev.goals;ch=true;}
       if(ev.cards&&_bolaoCountEvents(ev.cards)>_bolaoCountEvents(cards[gid])){cards[gid]=ev.cards;ch=true;}
       // Se o cache compartilhado já tem gol/cartão pra esse jogo, marca aqui mesmo como
       // PROCESSED_EVENTS — sem isso, o poll() não sabia que esse jogo já estava resolvido e
