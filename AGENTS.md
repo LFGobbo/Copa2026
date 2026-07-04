@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-04 (v20.22 — Bug dos Pontos: bônus de fase indevido pra quem reabriu o palpite, 12 participantes afetados)
+**Última atualização:** 2026-07-04 (v20.23 — Fix: score fantasma 0x0 em jogo de mata-mata ainda nao definido, causando "TIME DIFERENTE" indevido pra todo mundo)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -873,6 +873,52 @@ if(useFullTable){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_F
 Isso alinha o cálculo ao vivo do navegador com o que o Worker já fazia corretamente nos
 snapshots — nenhuma mudança de regra, só correção de um cálculo que estava divergente da fonte
 de verdade oficial.
+
+**ATUALIZAÇÃO (mesmo dia, poucas horas depois) — usuário mudou de ideia sobre a regra:**
+depois de ver a lista de 12 afetados, o usuário decidiu que quem acerta o confronto **merece o
+bônus de fase mesmo reabrindo o palpite** — reabrir só deveria custar a tabela cheia (15/9/6/3
+vira 10/6/4/2), não o bônus de fase junto. Ou seja, a regra oficial (aba Regras do site, linha
+772-773) que dizia "reabriu = sem bônus de fase" foi INVERTIDA por decisão do usuário: agora é
+"reabriu = tabela reduzida, MAS mantém bônus de fase se acertou o confronto".
+
+**Regra final implementada:**
+- 🔒 Não editou: tabela cheia (15/9/6/3) + bônus de fase (se acertou o confronto).
+- 🔓 Editou (reabriu): tabela reduzida (10/6/4/2) + bônus de fase (se acertou o confronto) —
+  o bônus de fase deixou de depender de `!temReopen`.
+- **Exceção mantida para o caso do Heitor:** bônus de fase exige que o participante tenha feito
+  **pelo menos um palpite de fase de grupos** (`Object.keys(myPicks).length>0`). Sem isso,
+  `acertouConfronto` pode dar `true` só por coincidência do fallback do `_bolaoResolveTeam` pro
+  resultado real (zero palpites = zero mérito em "acertar" nada). O usuário confirmou
+  explicitamente: "Heitor não [merece o bônus] pq ele não acertou nada. Ele não fez [nenhum
+  palpite original de grupo]."
+
+**Fix final aplicado** (substitui o da seção anterior) em `bolaoCalcTotal` e `bolaoRenderDetail`:
+```js
+// bolaoCalcTotal:
+var _temAlgumPalpiteDeGrupo=Object.keys(myPicks||{}).length>0;
+if(acertouConfronto&&_temAlgumPalpiteDeGrupo){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_FRONTEND[cph]||0;}
+// bolaoRenderDetail (mesmo criterio, variaveis com prefixo d):
+var _dTemAlgumPalpiteDeGrupo=Object.keys(picks||{}).length>0;
+if(dAcertou&&_dTemAlgumPalpiteDeGrupo){var dph=KO_GAME_PHASE_FRONTEND[g.n];dPhaseBonus=KO_PHASE_BONUS_FRONTEND[dph]||0;}
+```
+Note que `useFullTable`/`dUseFullTable` continuam controlando a TABELA BASE (15/9/6/3 vs
+10/6/4/2) normalmente — só o bônus de fase mudou de critério. **A tabela de participantes
+afetados acima (v20.22) passa a ser lida ao contrário**: com a regra final, os 11 participantes
+que não são o Heitor voltam a ganhar o bônus de fase listado (nenhum ficou com pontos a menos);
+só o Heitor continua sem o bônus de fase, exatamente como o combinado original com ele (100 pts
+fixos de `bonus_points` + o que efetivamente pontuar nos 23 jogos reabertos, sem bônus de fase).
+
+**Nota importante sobre o Worker:** o `bolao-worker.js` (usado nos snapshots de
+`ranking_snapshots`) **NÃO foi atualizado** para essa regra final — ele continua usando
+`useFullTable` (equivalente à regra antiga, "reabriu = sem bônus"). Isso significa que o
+snapshot periódico e o cálculo ao vivo do navegador voltaram a DIVERGIR entre si, só que agora é
+o cálculo ao vivo que está "certo" (segundo a decisão mais recente) e o snapshot que ficou
+desatualizado. Como o ranking visível pros usuários usa o cálculo ao vivo (`bolaoCalcTotal`), na
+prática ninguém vê o valor do snapshot — mas se algum dia o Worker for usado como fonte de
+verdade de novo (ex: para auditoria, ou se o cálculo ao vivo quebrar e cair no snapshot), os
+números não vão bater. **Pendência registrada para o futuro:** replicar a mesma exceção do
+Heitor (`hasReopen`-independent bonus + guard de "tem pelo menos um pick de grupo") também no
+Worker, se a regra final for para valer também nos snapshots.
 
 ### v20.21 — Ranking geral inteiro caía quando um participante tinha zero palpites (2026-07-04)
 

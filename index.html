@@ -770,7 +770,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:8px">🔓 Reabertura do Mata-Mata</div>
       <ul style="margin:0;padding-left:18px">
         <li>🔒 <strong>Não editou o palpite:</strong> tabela cheia (15/9/6/3 pts) + bônus de fase</li>
-        <li>🔓 <strong>Editou o palpite:</strong> tabela reduzida (10/6/4/2 pts), sem bônus de fase</li>
+        <li>🔓 <strong>Editou o palpite:</strong> tabela reduzida (10/6/4/2 pts) + bônus de fase, se acertou o confronto</li>
         <li>⚽ Bônus pênaltis: +5 pts se acertar quem vence nos pênaltis (vale mesmo se editou o palpite). <strong style="color:var(--orange)">Prorrogação não dá bônus</strong> &mdash; só pênaltis.</li>
         <li>🏅 Bônus por fase: R32 +5 · R16 +10 · QF +15 · SF +20 · 3º +20 · Final +30</li>
         <li>⏰ Prazo: fecha 5 minutos antes do 1º jogo da fase</li>
@@ -953,6 +953,13 @@ try{var ver=localStorage.getItem('copa2026_data_version');if(ver!==String(DATA_V
 // reprocessando o timeline da FIFA e reenviando pro servidor para cada um — causa raiz real da
 // travada de ~10s no carregamento (rebusca + 4 re-renders x 85 jogos).
 try{(function(){var now=new Date();GAMES.forEach(function(g){var s=scores[g.n];if(!s||s.a===undefined)return;var id=typeof FIFA_MATCH_IDS!=='undefined'?FIFA_MATCH_IDS[g.n]:null;if(id&&MATCH_ENDED&&MATCH_ENDED[id])return;var gd=gameUTC(g);if(!gd)return;if(now.getTime()-gd.getTime()>_LIVE_WINDOW&&MATCH_ENDED){MATCH_ENDED['game_'+g.n]=true;if(id)MATCH_ENDED[id]=true;saveState()}})})()}catch(e){}
+// Fix 2026-07-04 (v20.23): limpeza de scores[] fantasma ja persistidos em localStorage de
+// sessoes anteriores (antes do fix da reconstrucao via cache, ver _bolaoPullEventsOnceAttempt).
+// Jogo de mata-mata cujo kickoff ainda nao chegou nao pode ter score nenhum -- se tiver
+// (ex: 0x0 vindo de uma linha vazia do cache compartilhado pra um jogo ainda indefinido),
+// remove. Nao mexe em jogos de grupo (sempre tem data/hora definida desde o inicio) nem em
+// jogos de mata-mata cujo kickoff ja passou (mesmo que ainda em andamento, 0x0 real e valido).
+try{(function(){var _rm=false;GAMES.forEach(function(g){var s=scores[g.n];if(!s||s.a===undefined)return;var gd=gameUTC(g);if(gd&&Date.now()<gd.getTime()){delete scores[g.n];_rm=true;}});if(_rm)saveState();})()}catch(e){}
 (function(){var _s={scores:{"1":{a:2,b:0},"2":{a:2,b:1}},goals:{"1":{a:[{key:"1_a_16_1",player:16,pname:"Julián Quiñones",type:"gol",minute:"9",assist:6,aname:"Érik Lira",auto:true},{key:"1_a_9_2",player:9,pname:"Raúl Jiménez",type:"gol",minute:"67",assist:25,aname:"Roberto Alvarado",auto:true}]},"2":{a:[{key:"2_a_6_1",player:6,pname:"Hwang In-beom",type:"gol",minute:"67",assist:19,aname:"Lee Kang-in",auto:true},{key:"2_a_18_2",player:18,pname:"Oh Hyeon-gyu",type:"gol",minute:"80",assist:6,aname:"Hwang In-beom",auto:true}],b:[{key:"2_b_7_1",player:7,pname:"Ladislav Krejčí",type:"gol",minute:"59",assist:5,aname:"Vladimír Coufal",auto:true}]}},cards:{"1":{a:[{key:"1_a_26_23",player:26,pname:"Brian Gutiérrez",type:"yellow",minute:"23",auto:true},{key:"1_a_3_90",player:3,pname:"César Montes",type:"red",minute:"90\'+2",auto:true}],b:[{key:"1_b_4_17",player:4,pname:"Teboho Mokoena",type:"yellow",minute:"17",auto:true},{key:"1_b_13_49",player:13,pname:"Sphephelo Sithole",type:"red",minute:"49",auto:true},{key:"1_b_19_74",player:19,pname:"Nkosinathi Sibisi",type:"yellow",minute:"74",auto:true},{key:"1_b_11_84",player:11,pname:"Themba Zwane",type:"red",minute:"84",auto:true}]},"2":{a:[{key:"2_a_3_90",player:3,pname:"Lee Gi-hyuk",type:"yellow",minute:"90\'+6",auto:true}]}}},_ch=false;
 Object.keys(_s.scores).forEach(function(k){if(!scores[k]){scores[k]=_s.scores[k];_ch=true}});
 Object.keys(_s.goals).forEach(function(k){if(!goals[k]){goals[k]=_s.goals[k];_ch=true}});
@@ -2986,9 +2993,22 @@ function _bolaoPullEventsOnceAttempt(){
       // Reconstruir scores[] a partir do cache — sem isso, navegador limpo (sem
       // dados persistentes locais) fica com scores[gid] = undefined mesmo tendo
       // goals no Supabase, e o bolão não consegue calcular pontos pra nenhum jogo.
+      // Fix 2026-07-04 (v20.23): so reconstroi scores[] a partir do cache se o jogo ja
+      // comecou de verdade (kickoff no passado). Sem essa checagem, uma linha de game_events
+      // vazia/default (goals:{},cards:{}) pra um jogo de mata-mata AINDA NAO DEFINIDO (ex:
+      // Quartas de Final que depende do vencedor de outro jogo ainda rolando) fazia o app
+      // achar que esse jogo tinha terminado 0x0, mesmo sem os times estarem decididos --
+      // aparecia como "TIME DIFERENTE" pra todo mundo no detalhe do ranking. O filtro antigo
+      // (contagem de gols>0) foi removido porque tambem escondia jogos que realmente
+      // terminaram 0x0 de verdade (ex: mata-mata indo pra penaltis); checar o horario do
+      // jogo resolve os dois casos sem reintroduzir o bug antigo.
       if(!scores[gid]||scores[gid].a===undefined||scores[gid].b===undefined){
-        scores[gid]={a:(ev.goals&&ev.goals.a||[]).filter(function(_g){return _g.type!=='own';}).length,b:(ev.goals&&ev.goals.b||[]).filter(function(_g){return _g.type!=='own';}).length};
-        ch=true;
+        var _gObjChk=GAME_BY_ID[gid];
+        var _gdChk=_gObjChk?gameUTC(_gObjChk):null;
+        if(_gdChk&&Date.now()>=_gdChk.getTime()){
+          scores[gid]={a:(ev.goals&&ev.goals.a||[]).filter(function(_g){return _g.type!=='own';}).length,b:(ev.goals&&ev.goals.b||[]).filter(function(_g){return _g.type!=='own';}).length};
+          ch=true;
+        }
       }
       // Se o cache compartilhado já tem gol/cartão pra esse jogo, marca aqui mesmo como
       // PROCESSED_EVENTS — sem isso, o poll() não sabia que esse jogo já estava resolvido e
@@ -3330,12 +3350,16 @@ function bolaoCalcTotal(participantId){
       var koBonus=0;
       if(real.a===real.b){var _ps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_ps){var _rw=_winnerOf(g.n);var _gb=GAME_BY_ID[g.n];_ps=_rw&&_gb?(_rw===_gb.a?'a':_rw===_gb.b?'b':null):null;}if(activePick.ko&&_ps&&activePick.ko===_ps)koBonus=5;}
       var phaseBonus=0;
-      // Fix 2026-07-04 (v20.22): bonus de fase (tabela cheia) so pode valer pra quem NAO usou
-      // a reabertura -- antes checava so "acertouConfronto", que pode dar true por coincidencia
-      // via fallback do _bolaoResolveTeam mesmo com reabertura ativa (participante sem nenhum
-      // palpite de fase de grupos, como o caso do Heitor). useFullTable ja e' acertouConfronto&&
-      // !temReopen, que e' a mesma condicao que o Worker usa no snapshot (bolao-worker.js).
-      if(useFullTable){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_FRONTEND[cph]||0;}
+      // Regra v20.22 (2026-07-04): reabrir o palpite vira tabela reduzida (10/6/4/2, ver
+      // useFullTable acima) MAS mantem o bonus de fase se o confronto foi acertado -- ao
+      // contrario da v20.22 original (bonus de fase so sem reabertura). Decisao do usuario.
+      // Excecao: bonus de fase exige que o participante tenha feito AO MENOS UM palpite de
+      // fase de grupos -- sem isso, "acertouConfronto" pode dar true por coincidencia via
+      // fallback do _bolaoResolveTeam pro resultado real (caso do Heitor: zero palpites,
+      // zero merito em "acertar" o confronto). Ele so pontua pelo bonus_points manual + o
+      // que realmente acertar nos jogos que reabriu, sem bonus de fase nenhum.
+      var _temAlgumPalpiteDeGrupo=Object.keys(myPicks||{}).length>0;
+      if(acertouConfronto&&_temAlgumPalpiteDeGrupo){var cph=KO_GAME_PHASE_FRONTEND[g.n];phaseBonus=KO_PHASE_BONUS_FRONTEND[cph]||0;}
       total+=scoreKO+koBonus+phaseBonus;
       if(scoreKO===15||scoreKO===10)exactCount++;
       else if(scoreKO>=2)resultCount++;
@@ -3476,9 +3500,11 @@ function bolaoRenderDetail(pid){
       var dKoBonus=0;
       if(real.a===real.b){var _dps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_dps){var _drw=_winnerOf(g.n);var _dgb=GAME_BY_ID[g.n];_dps=_drw&&_dgb?(_drw===_dgb.a?'a':_drw===_dgb.b?'b':null):null;}if(dActivePick.ko&&_dps&&dActivePick.ko===_dps)dKoBonus=5;}
       var dPhaseBonus=0;
-      // Fix 2026-07-04 (v20.22): mesmo fix do bolaoCalcTotal -- so conta bonus de fase pra
-      // quem NAO usou a reabertura (dUseFullTable), nao so por dAcertou.
-      if(dUseFullTable){var dph=KO_GAME_PHASE_FRONTEND[g.n];dPhaseBonus=KO_PHASE_BONUS_FRONTEND[dph]||0;}
+      // Regra v20.22 (2026-07-04): mesmo criterio do bolaoCalcTotal -- bonus de fase mantido
+      // mesmo com reabertura, desde que o participante tenha feito ao menos um palpite de
+      // fase de grupos (exclui o caso de zero palpites, tipo Heitor).
+      var _dTemAlgumPalpiteDeGrupo=Object.keys(picks||{}).length>0;
+      if(dAcertou&&_dTemAlgumPalpiteDeGrupo){var dph=KO_GAME_PHASE_FRONTEND[g.n];dPhaseBonus=KO_PHASE_BONUS_FRONTEND[dph]||0;}
       var dTotal=dScoreKO<0?-1:dScoreKO+dKoBonus+dPhaseBonus;
       var dBadge=dAcertou&&!dHasReopen?'🔒 tabela cheia':'🔓 tabela reduzida';
       var dCls=!isFinalKO?'future':dScoreKO===15||dScoreKO===10?'exact':dScoreKO>=2?'result':dScoreKO===0?'wrong':'future';
@@ -4154,7 +4180,7 @@ function bolaoShowReopenPopup(phaseName){
     +'</div>'
     +'<div style="background:rgba(255,193,7,.06);border:1px solid rgba(255,193,7,.25);border-radius:8px;padding:12px">'
     +'<div style="font-size:12px;font-weight:700;color:#ffc107;margin-bottom:6px">🔓 Editou</div>'
-    +'<div style="font-size:11px;color:rgba(255,255,255,.65);line-height:1.9">Placar exato: <strong style="color:#fff">10 pts</strong><br>Res. + gol venc: <strong style="color:#fff">6 pts</strong><br>Res. + gol perd: <strong style="color:#fff">4 pts</strong><br>Só resultado: <strong style="color:#fff">2 pts</strong><br><span style="color:rgba(255,255,255,.3)">sem bônus de fase</span></div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.65);line-height:1.9">Placar exato: <strong style="color:#fff">10 pts</strong><br>Res. + gol venc: <strong style="color:#fff">6 pts</strong><br>Res. + gol perd: <strong style="color:#fff">4 pts</strong><br>Só resultado: <strong style="color:#fff">2 pts</strong><br><span style="color:var(--gold)">⭐ + bônus de fase, se acertou o confronto</span></div>'
     +'</div>'
     +'</div>'
     +'<div style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.2);border-radius:8px;padding:12px;margin-bottom:14px">'
@@ -4306,7 +4332,7 @@ function bolaoRenderReopenSection(){
           +'<div class="reopen-teams">'+fl+'</div>'
           +origHtml
           +'<div class="reopen-info-gold">⭐ Tabela cheia (15/9/6/3) + bônus de fase garantidos</div>'
-          +'<div class="reopen-info">⚠️ Se editar, pontos valerão menos — tabela reduzida (10/6/4/2), sem bônus</div>'
+          +'<div class="reopen-info">⚠️ Se editar, pontos valerão menos — tabela reduzida (10/6/4/2). O bônus de fase continua valendo, se você acertou o confronto</div>'
           +'<button class="reopen-edit-btn" onclick="bolaoReopenUnlock('+gn+')">✏️ Editar mesmo assim</button>'
           +'</div>';
       }else{
@@ -4379,7 +4405,7 @@ function bolaoReopenUnlock(gn){
   card.innerHTML='<div class="reopen-card-header"><span class="reopen-card-meta">#'+gn+' · '+esc(g.f)+'</span><span class="reopen-card-badge reopen-badge-editing">✏️ Editando</span></div>'
     +'<div class="reopen-teams">'+fl+'</div>'
     +origHtml
-    +'<div class="reopen-info">⚠️ Ao salvar — tabela reduzida (10/6/4/2), sem bônus de fase</div>'
+    +'<div class="reopen-info">⚠️ Ao salvar — tabela reduzida (10/6/4/2). Bônus de fase continua valendo, se você acertar o confronto</div>'
     +'<div class="reopen-score-row">'
     +'<input class="bsp-input" type="text" inputmode="numeric" maxlength="2" id="rp-a-'+gn+'" value="'+valA+'" placeholder="-" oninput="bolaoReopenCheckDraw('+gn+')">'
     +'<span style="color:var(--muted);font-size:18px;font-weight:300">×</span>'
