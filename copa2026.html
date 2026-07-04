@@ -3315,7 +3315,7 @@ function bolaoCalcTotal(participantId){
       if(!acertouConfronto&&!temReopen)return;
       var activePick=temReopen?reopenPick:pick;
       var useFullTable=acertouConfronto&&!temReopen;
-      var _real90=real.ft||real;var scoreKO=bolaoCalcKOPickPts(activePick.a,activePick.b,_real90.a,_real90.b,useFullTable);
+      var _real90=real.ft;if(!_real90){var _mid=FIFA_MATCH_IDS[g.n];if(_mid&&MATCH_90_SCORE[_mid]){var _m90=MATCH_90_SCORE[_mid];var _meta=FIFA_MATCH_META[g.n]||{};if(_meta.homeId){var _ck=_resolveMatchTeams(GAME_BY_ID[g.n]);var _rev=_ck.homeId&&_meta.homeId&&_ck.homeId!==_meta.homeId;_real90={a:_rev?_m90.b:_m90.a,b:_rev?_m90.a:_m90.b};}}}if(!_real90)_real90=real;var scoreKO=bolaoCalcKOPickPts(activePick.a,activePick.b,_real90.a,_real90.b,useFullTable);
       if(scoreKO<0)return;
       var koBonus=0;
       if(real.a===real.b){var _ps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_ps){var _rw=_winnerOf(g.n);var _gb=GAME_BY_ID[g.n];_ps=_rw&&_gb?(_rw===_gb.a?'a':_rw===_gb.b?'b':null):null;}if(activePick.ko&&_ps&&activePick.ko===_ps)koBonus=5;}
