@@ -2987,9 +2987,8 @@ function _bolaoPullEventsOnceAttempt(){
       // dados persistentes locais) fica com scores[gid] = undefined mesmo tendo
       // goals no Supabase, e o bolão não consegue calcular pontos pra nenhum jogo.
       if(!scores[gid]||scores[gid].a===undefined||scores[gid].b===undefined){
-        var _as=(ev.goals&&ev.goals.a||[]).filter(function(_g){return _g.type!=='own';}).length;
-        var _bs=(ev.goals&&ev.goals.b||[]).filter(function(_g){return _g.type!=='own';}).length;
-        if(_as>0||_bs>0){scores[gid]={a:_as,b:_bs};ch=true;}
+        scores[gid]={a:(ev.goals&&ev.goals.a||[]).filter(function(_g){return _g.type!=='own';}).length,b:(ev.goals&&ev.goals.b||[]).filter(function(_g){return _g.type!=='own';}).length};
+        ch=true;
       }
       // Se o cache compartilhado já tem gol/cartão pra esse jogo, marca aqui mesmo como
       // PROCESSED_EVENTS — sem isso, o poll() não sabia que esse jogo já estava resolvido e
