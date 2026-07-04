@@ -1,0 +1,15 @@
+name: Cron Bolão
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chama cron do Worker
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "https://copa2026-bolao.luizfelipegobbo.workers.dev/cron?task=all&secret=${{ secrets.CRON_SECRET }}"
