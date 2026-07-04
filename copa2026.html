@@ -2983,6 +2983,14 @@ function _bolaoPullEventsOnceAttempt(){
       // retorna falso mesmo faltando dado. Comparar contagem cobre esse caso.
       if(ev.goals&&_bolaoValidGoals(ev.goals)&&_bolaoCountEvents(ev.goals)>_bolaoCountEvents(goals[gid])){goals[gid]=ev.goals;ch=true;}
       if(ev.cards&&_bolaoCountEvents(ev.cards)>_bolaoCountEvents(cards[gid])){cards[gid]=ev.cards;ch=true;}
+      // Reconstruir scores[] a partir do cache — sem isso, navegador limpo (sem
+      // dados persistentes locais) fica com scores[gid] = undefined mesmo tendo
+      // goals no Supabase, e o bolão não consegue calcular pontos pra nenhum jogo.
+      if(!scores[gid]||scores[gid].a===undefined||scores[gid].b===undefined){
+        var _as=(ev.goals&&ev.goals.a||[]).filter(function(_g){return _g.type!=='own';}).length;
+        var _bs=(ev.goals&&ev.goals.b||[]).filter(function(_g){return _g.type!=='own';}).length;
+        if(_as>0||_bs>0){scores[gid]={a:_as,b:_bs};ch=true;}
+      }
       // Se o cache compartilhado já tem gol/cartão pra esse jogo, marca aqui mesmo como
       // PROCESSED_EVENTS — sem isso, o poll() não sabia que esse jogo já estava resolvido e
       // disparava uma busca redundante na API da FIFA + um novo POST de volta, PARA CADA UM
