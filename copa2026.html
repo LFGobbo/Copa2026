@@ -1724,17 +1724,13 @@ function _resolveThirdPlaceSlot(thirdsList,gameNum){
 function _winnerOf(gameNum){
   var g=GAME_BY_ID[gameNum];if(!g)return null;
   var s=scores[gameNum];if(!s||s.a===undefined||s.b===undefined)return null;
-  try{
-    var rA=resolveTeam(g.a,gameNum),rB=resolveTeam(g.b,gameNum);
-    var nA=rA&&rA.name?rA.name:null,nB=rB&&rB.name?rB.name:null;
-    if(s.a>s.b)return nA||g.a;
-    if(s.b>s.a)return nB||g.b;
-    if(s.pen==='a')return nA||g.a;
-    if(s.pen==='b')return nB||g.b;
-    var _mId=FIFA_MATCH_IDS[g.n];
-    if(_mId&&MATCH_PEN_WINNER[_mId]==='a')return nA||g.a;
-    if(_mId&&MATCH_PEN_WINNER[_mId]==='b')return nB||g.b;
-  }catch(e){}
+  if(s.a>s.b)return g.a;
+  if(s.b>s.a)return g.b;
+  if(s.pen==='a')return g.a;
+  if(s.pen==='b')return g.b;
+  var _mId=FIFA_MATCH_IDS[g.n];
+  if(_mId&&MATCH_PEN_WINNER[_mId]==='a')return g.a;
+  if(_mId&&MATCH_PEN_WINNER[_mId]==='b')return g.b;
   return null;
 }
 function _loserOf(gameNum){
@@ -4231,8 +4227,8 @@ function bolaoRenderReopenSection(){
       // Fase fechada sem palpite salvo — não exibir
       if(!phIsOpen&&!hasReopen)return;
       totalCount++;
-      var myPicks=_bolaoAllPicks[_bolaoParticipantId]||{};
-      var origPick=_bolaoMyPicks[gn]||myPicks[gn]||{};
+      var myPicks=_bolaoMyPicks||{};
+      var origPick=myPicks[gn]||{};
       var ptA=_bolaoResolveTeam(g.a,g.n,myPicks);
       var ptB=_bolaoResolveTeam(g.b,g.n,myPicks);
       var acertou=!!(ptA&&ptB&&ptA===rA&&ptB===rB);
@@ -4316,8 +4312,8 @@ function bolaoReopenUnlock(gn){
   var rtA=resolveTeam(g.a,g.n),rtB=resolveTeam(g.b,g.n);
   var rA=rtA&&rtA.name?rtA.name:g.a,rB=rtB&&rtB.name?rtB.name:g.b;
   var fl=flag(rA)+' '+rA+' vs '+flag(rB)+' '+rB;
-  var myPicks=_bolaoAllPicks[_bolaoParticipantId]||{};
-  var origPick=_bolaoMyPicks[gn]||myPicks[gn]||{};
+  var myPicks=_bolaoMyPicks||{};
+  var origPick=myPicks[gn]||{};
   var ptA2=_bolaoResolveTeam(g.a,gn,myPicks),ptB2=_bolaoResolveTeam(g.b,gn,myPicks);
   var _origTA2=ptA2||rA,_origTB2=ptB2||rB;
   var _hasScore2=origPick.a!==undefined&&origPick.b!==undefined;
@@ -4838,7 +4834,7 @@ function bolaoRenderStats(el){
   var catStr=cat?new Date(cat).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'&mdash;';
   var phasePts={grupos:0,r32:0,oitavas:0,quartas:0,semi:0,final:0};
   var phaseLabels={grupos:'Grupos',r32:'Rodada 32',oitavas:'Oitavas',quartas:'Quartas',semi:'Semis',final:'Final'};
-  var myPicks=_bolaoAllPicks[_bolaoParticipantId]||{};
+  var myPicks=_bolaoMyPicks||{};
   var confirmTsStats=cat?new Date(cat).getTime():null;
   GAMES.forEach(function(g){
     if(g.n<BOLAO_FIRST||!gameIsPast(g))return;
