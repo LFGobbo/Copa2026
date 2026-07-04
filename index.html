@@ -3451,8 +3451,17 @@ function bolaoRenderDetail(pid){
       var dReopen=dReopenMap[g.n];
       var dHasReopen=!!(dReopen&&dReopen.a!==null&&dReopen.a!==undefined);
       var isFinalKO=gameIsPast(g);
-      if(!dAcertou&&!dHasReopen){
-        // Errou confronto e não reabriu — sem pontos
+      // Fix 2026-07-04 (v20.21): faltava exigir que o participante tivesse um palpite de fato
+      // pra esse jogo do mata-mata. _bolaoResolveTeam cai de volta pro resultado REAL quando o
+      // participante nao tem nenhum palpite de fase de grupos (usado pra simular o chaveamento
+      // restante), entao dAcertou podia dar verdadeiro por coincidencia mesmo sem o usuario ter
+      // palpitado nada -- caindo depois em dActivePick=pick (undefined) e quebrando o card (e a
+      // tabela de ranking inteira, ja que todos os participantes sao desenhados na mesma funcao).
+      // bolaoCalcTotal (que calcula os pontos de verdade) ja tinha essa protecao; faltava
+      // replicar aqui. Descoberto ao vivo com um participante que so tem bonus_points, sem
+      // nenhum palpite registrado.
+      if((!dAcertou||!hasPick)&&!dHasReopen){
+        // Errou confronto e não reabriu (ou nunca teve palpite pra esse jogo) — sem pontos
         var card0='<div class="bolao-pick-card forfeit"><div class="bolao-pick-teams">'+flag(dRealTeamA||g.a)+' '+(dRealTeamA||g.a)+' vs '+flag(dRealTeamB||g.b)+' '+(dRealTeamB||g.b)+'</div><div><span class="bolao-pick-score">Palpite: '+(hasPick?pick.a+'x'+pick.b:'?x?')+'</span> <span class="bolao-pick-real">→ '+real.a+'x'+real.b+'</span><span class="bolao-pick-pts"><span style="color:var(--red);font-weight:600">TIME DIFERENTE</span> <span style="font-size:11px;opacity:.7">(0 pts)</span></span></div></div>';
         scored.push(card0);return;
       }

@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-04 (v20.20 — Fix .ft + _bolaoGetScore: pontuação ET e simulação bolão)
+**Última atualização:** 2026-07-04 (v20.21 — Fix: ranking geral inteiro quebrava quando um participante tinha zero palpites registrados)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -793,6 +793,60 @@ engolir o erro. **Causa raiz exata de por que a 1ª tentativa às vezes não com
 a mitigação por retry + no-store + log é robusta o suficiente na prática e foi validada com
 teste real ao vivo repetido (ver v20.18), mas se o log de warning aparecer no console de algum
 usuário no futuro, isso vai finalmente dar a pista que faltou aqui.
+
+### v20.21 — Ranking geral inteiro caía quando um participante tinha zero palpites (2026-07-04)
+
+**Contexto:** o usuário deu um bônus manual de 100 pontos pro participante Heitor Guilherme
+(entrou depois, via `heitor_bonus.sql`, coluna `bonus_points`), combinado que ele NÃO teria
+nenhum palpite contando normalmente — só o bônus fixo. Resultado: com `bonus_points=100` e
+**zero linhas** em `picks`/`picks_reopen`, a aba Bolão parou de mostrar o ranking pra TODO
+MUNDO, com a mensagem genérica "Erro ao carregar ranking. Verifique sua conexão." (mensagem
+enganosa — o servidor respondia normalmente, o problema era 100% no processamento no navegador).
+
+Nota separada, fora do bug em si: nesta mesma investigação o usuário avisou que havia trabalho
+de outra sessão/IA direto no GitHub que ainda não tinha sido puxado para a cópia local — o
+`git push` do fix foi inicialmente rejeitado (`fetch first`), revelando 34 commits no remoto
+(incluindo `.github/workflows/cron-bolao.yml`, vários fixes em `_bolaoGetScore`/pontuação KO/
+reopen) que não existiam na cópia local usada para diagnosticar o bug. O fix abaixo foi
+re-verificado e reaplicado em cima da versão real do GitHub antes do commit/push, para não
+reverter esse trabalho.
+
+**Causa raiz, confirmada ao vivo no Chrome (não teorizada):** `bolaoRenderRanking()` desenha o
+card de detalhe de TODOS os participantes numa mesma passada via `bolaoRenderDetail(pid)`. Para
+jogos do mata-mata, essa função calcula `dAcertou` (se o participante "acertou o confronto")
+chamando `_bolaoResolveTeam(...)`, que quando o participante não tem NENHUM palpite de fase de
+grupos cai de volta pro resultado REAL (é assim que a função consegue simular o resto do
+chaveamento). Isso faz `dAcertou` dar `true` por coincidência mesmo sem o usuário ter palpitado
+nada. O código então segue pro branch que assume que existe um palpite (`dActivePick=pick`), mas
+`pick` é `undefined` — `dActivePick.a` lança `TypeError: Cannot read properties of undefined
+(reading 'a')`, sem `try/catch` ao redor daquele participante especificamente, derrubando a
+renderização da tabela inteira.
+
+A função que realmente calcula os PONTOS (`bolaoCalcTotal`) já tinha a proteção certa (checagem
+de `hasPick` ANTES de olhar `acertouConfronto`) — por isso a pontuação do Heitor em si (100 pts,
+só o bônus) sempre esteve correta; só a função de RENDERIZAÇÃO do card de detalhe
+(`bolaoRenderDetail`) não tinha o mesmo cuidado. Bug antigo, nunca exposto antes porque nenhum
+participante tinha zero palpites simultaneamente com um jogo do mata-mata já resolvido cujo
+"confronto simulado" batesse por coincidência com o real.
+
+**Como foi validado (Golden Rule cumprida):** reproduzido ao vivo no Chrome via
+`javascript_tool`, isolando `bolaoRenderDetail(heitorId)` do resto do fluxo — erro reproduzido
+game a game até achar o jogo exato (#76, Rodada de 32) e a linha exata (`dActivePick.a`). Fix
+testado ao vivo primeiro (patch da função em memória via `eval`, sem alterar nenhum arquivo),
+rodado contra os 32 participantes reais + `bolaoRenderRanking()` completo, confirmando zero erros
+e `bolaoCalcTotal(heitorId)` retornando `{total:100, bonusCount:100}` como esperado — só depois
+disso o fix foi aplicado nos arquivos de verdade (e, após descobrir a divergência com o remoto,
+reaplicado na versão correta puxada do GitHub).
+
+**Fix:** em `bolaoRenderDetail`, a condição que decide se o jogo do mata-mata deve ser tratado
+como "sem palpite válido" (card de forfeit/pular) passou a exigir também `hasPick`, não só
+`dAcertou`:
+```js
+// antes: if(!dAcertou&&!dHasReopen){
+if((!dAcertou||!hasPick)&&!dHasReopen){
+```
+Aplicado em `index.html` e `copa2026.html` (idênticos), sintaxe validada com `node --check` antes
+do deploy.
 
 ### v20.20 — Fix .ft + _bolaoGetScore: pontuação ET e simulação bolão (2026-07-04)
 
