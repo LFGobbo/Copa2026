@@ -687,6 +687,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .reopen-save-btn:hover{opacity:.88}
 .reopen-save-btn:disabled{opacity:.5;cursor:default}
 .reopen-saved-score{font-size:20px;font-weight:900;color:#4ade80;text-align:center;padding:4px 0;letter-spacing:2px;font-variant-numeric:tabular-nums}
+.reopen-pen-pick{font-size:12px;font-weight:700;color:var(--gold);text-align:center;padding:2px 0 4px}
 .reopen-edit-btn{background:none;border:1px solid rgba(255,255,255,.1);color:var(--muted);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;width:100%;margin-top:2px;transition:all .15s}
 .reopen-edit-btn:hover{border-color:rgba(255,255,255,.25);color:rgba(255,255,255,.7)}
 .reopen-cancel-btn{background:none;border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.3);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;width:100%;margin-top:1px;transition:all .15s}
@@ -4318,12 +4319,23 @@ function bolaoRenderReopenSection(){
         +'<span class="reopen-orig-team right">'+esc(_origTB)+' '+flag(_origTB)+'</span>'
         +'</div>';
       if(hasReopen){
+        // Fix 2026-07-04 (v20.25): card de reabertura salva nao mostrava quem o usuario
+        // escolheu pra passar nos penaltis em caso de empate -- so o card do palpite original
+        // (fora da reabertura) tinha esse texto. Mesmo padrao usado la: "(Time nos pênaltis)".
+        var _reopenPenHtml='';
+        if(reopen.a===reopen.b&&reopen.ko){
+          try{
+            var _rpT=reopen.ko==='a'?rA:rB;
+            if(_rpT)_reopenPenHtml='<div class="reopen-pen-pick">✓ '+flag(_rpT)+' '+esc(_rpT)+' nos pênaltis</div>';
+          }catch(e){}
+        }
         // ✓ Salvo — read-only
         cardsHtml+='<div class="reopen-card reopen-card-saved" id="reopen-card-'+gn+'">'
           +'<div class="reopen-card-header"><span class="reopen-card-meta">#'+gn+' · '+esc(g.f)+'</span><span class="reopen-card-badge reopen-badge-saved">'+(gameIsPast(g)?'✓ Concluído':'✓ Salvo')+'</span></div>'
           +'<div class="reopen-teams">'+fl+'</div>'
           +origHtml
           +'<div class="reopen-saved-score">'+reopen.a+' &times; '+reopen.b+'</div>'
+          +_reopenPenHtml
           +'</div>';
       }else if(acertou){
         // 🔒 Acertou confronto, não editou

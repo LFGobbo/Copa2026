@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-04 (v20.24 — Fix: aba Estatísticas não usava placar de 90min em jogos de prorrogação, pontos por fase não batiam com o total)
+**Última atualização:** 2026-07-04 (v20.25 — Feature: card de reabertura do mata-mata salvo agora mostra quem foi escolhido nos pênaltis, igual ao card do palpite original)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -793,6 +793,31 @@ engolir o erro. **Causa raiz exata de por que a 1ª tentativa às vezes não com
 a mitigação por retry + no-store + log é robusta o suficiente na prática e foi validada com
 teste real ao vivo repetido (ver v20.18), mas se o log de warning aparecer no console de algum
 usuário no futuro, isso vai finalmente dar a pista que faltou aqui.
+
+### v20.25 — Card de reabertura salvo não mostrava escolha de pênaltis (2026-07-04)
+
+O usuário pediu: no card do palpite ORIGINAL (fora da reabertura), quando o jogo de mata-mata
+termina empatado no placar apostado, o app já mostra quem o participante escolheu pra passar
+nos pênaltis (ex: "✓ Egito nos pênaltis"). O card de reabertura SALVA (`reopen-card-saved`,
+dentro de `bolaoRenderReopenSection`) não tinha esse mesmo texto — mesmo quando o participante
+reabriu o palpite, empatou de novo no placar reaberto, e escolheu um time nos pênaltis.
+
+**Fix:** replicado o mesmo padrão usado no card original, mas usando os times reais já resolvidos
+no escopo (`rA`/`rB`), já que a reabertura sempre se refere ao confronto real (não precisa
+`_bolaoResolveTeam` simulando bracket próprio, como no card original). Se `reopen.a===reopen.b`
+e `reopen.ko` estiver definido, monta `<div class="reopen-pen-pick">✓ [bandeira] [Time] nos
+pênaltis</div>` logo abaixo do placar salvo.
+
+CSS novo: `.reopen-pen-pick{font-size:12px;font-weight:700;color:var(--gold);text-align:center;
+padding:2px 0 4px}`.
+
+**Validado ao vivo (Regra de Ouro):** patch aplicado em memória no Chrome (`bolaoRenderReopenSection`
+reescrita via `eval`), re-renderizada a seção de reabertura real do usuário logado. Jogo #88
+(Austrália vs Egito, reabertura empatou 1×1, `ko:'b'`) passou a exibir corretamente "✓ Egito nos
+pênaltis". Toda a seção renderizou sem erros para os demais cards de reabertura (sem regressão).
+
+Aplicado identicamente em `index.html` e `copa2026.html` (arquivos continuam byte-idênticos,
+ambos 5436 linhas).
 
 ### v20.24 — Aba Estatísticas não usava placar de 90min em jogos de prorrogação (2026-07-04)
 
