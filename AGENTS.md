@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-03 (v20.19 — Regras clarificadas: palpite vale só 90min, bônus é só pênaltis)
+**Última atualização:** 2026-07-04 (v20.20 — Fix .ft + _bolaoGetScore: pontuação ET e simulação bolão)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -793,6 +793,54 @@ engolir o erro. **Causa raiz exata de por que a 1ª tentativa às vezes não com
 a mitigação por retry + no-store + log é robusta o suficiente na prática e foi validada com
 teste real ao vivo repetido (ver v20.18), mas se o log de warning aparecer no console de algum
 usuário no futuro, isso vai finalmente dar a pista que faltou aqui.
+
+### v20.20 — Fix .ft + _bolaoGetScore: pontuação ET e simulação bolão (2026-07-04)
+
+**Contexto:** Usuário reportou que a grid de palpites do bolão mostrava times REAIS em vez dos times da simulação do bolão. Ao investigar, descobriu-se que `_bolaoWinnerOf` estava vazando para o bracket real (`resolveTeam`) sempre que a simulação do bolão não resolvia um placeholder. Paralelamente, jogos de mata-mata com prorrogação (#82, #86) estavam pontuando com o placar completo (incluindo ET) porque `scores[gameN].ft` estava ausente.
+
+**Correções:**
+
+**1. `_bolaoGetScore` (linha 3045) — fallback para scores reais:**
+Adicionado fallback para `scores[gameN]` quando o usuário não tem palpite para o jogo. Essencial porque o usuário só tem picks de mata-mata (79-96), sem picks de grupos (6-72). Sem esse fallback, `_bolaoGroupStandings` retornava `null` para todos os grupos, e a simulação inteira quebrava.
+
+```js
+// Antes: retornava null se usuário não tinha pick
+function _bolaoGetScore(gameN,picks){
+  var p=picks?picks[gameN]:_bolaoMyPicks[gameN];
+  if(p&&p.a!==undefined&&p.b!==undefined)return {a:p.a,b:p.b};
+  return null;
+}
+
+// Depois: fallback para scores reais
+function _bolaoGetScore(gameN,picks){
+  var s=scores[gameN];
+  if(gameN < BOLAO_FIRST) return (s&&s.a!==undefined)?{a:s.a,b:s.b}:null;
+  var p=picks?picks[gameN]:_bolaoMyPicks[gameN];
+  if(p&&p.a!==undefined&&p.b!==undefined)return {a:p.a,b:p.b};
+  return (s&&s.a!==undefined&&s.b!==undefined)?{a:s.a,b:s.b}:null;
+}
+```
+
+**2. `_bolaoTp` (linha 3193) — removeu vazamento para bracket real:**
+Substituiu fallback `resolveTeam(placeholder, g.n)` por exibição do placeholder em muted. Impede que a grid mostre times do bracket real quando a simulação falha.
+
+**3. `_bolaoWinnerOf` (linha 3101) — retorna nome do time em vez de g.a/g.b:**
+Revertida alteração anterior que fazia `_winnerOf` retornar placeholders. `_bolaoWinnerOf` agora retorna `_bolaoResolveTeam(g.a, gameN, picks)` (time resolvido) em vez de `g.a` (placeholder literal).
+
+**4. `bolaoCalcTotal` (linha 3318) — fallback MATCH_90_SCORE para placar de 90 min:**
+Adicionado `MATCH_90_SCORE[FIFA_MATCH_IDS[g.n]]` como fallback para `real.ft` no cálculo de pontos KO. Resolve o bug onde `scores[gameN].ft` está ausente para jogos com prorrogação processados antes do v20.12, fazendo a pontuação usar o placar completo (incluindo ET) em vez do placar de 90 min.
+
+**5. `_bolaoMyPicks` — adicionado `.ko` ao pick carregado (linha ~3923):**
+Garante que `_bolaoMyPicks[p.game_n].ko` seja populado a partir de `p.ko_pick`, permitindo que `_bolaoWinnerOf` encontre a escolha de desempate KO sem cair no fallback `_bolaoKOPicks`.
+
+**6. `_bolaoAllPicks[pid]` → `_bolaoMyPicks` em 3 lugares (4234, 4319, 4841):**
+Corrige referências que usavam o mapa global de TODOS os picks quando deveriam usar APENAS os picks do usuário logado.
+
+**Commits:** `0b4971b` (fixes 1-3), `1db2e1b` (fix 4), `1d582e8` (force rebuild), `386a8a8` (refinamento .ft), `2575d1f` (force rebuild final)
+
+**Validação:** Testado em Node com dados reais — `_bolaoGroupStandings` retorna times corretos com fallback para scores reais. `_bolaoTp` mostra times em vez de placeholders na grid.
+
+**Pendente:** Usuário reportou que a grid ainda não mostra os times "certos" (esperava ver times diferentes dos reais). A simulação usa resultados reais de grupos porque o usuário não tem picks de grupos — os picks KO só afetam QUEM VENCE cada jogo, não QUAIS TIMES chegam lá. Para resolver, seria necessário adicionar picks de grupos (6-72).
 
 ### v20.19 — Regras clarificadas: palpite vale só 90min, bônus é só pênaltis (2026-07-03)
 
