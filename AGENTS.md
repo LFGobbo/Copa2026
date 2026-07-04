@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-04 (v20.25 — Feature: card de reabertura do mata-mata salvo agora mostra quem foi escolhido nos pênaltis, igual ao card do palpite original)
+**Última atualização:** 2026-07-04 (v20.26 — Fix real (não era cache): aba Estatísticas renderizava com dados vazios/parciais numa corrida contra o carregamento dos palpites, ficando errada pra sempre em máquinas/redes mais lentas)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -793,6 +793,38 @@ engolir o erro. **Causa raiz exata de por que a 1ª tentativa às vezes não com
 a mitigação por retry + no-store + log é robusta o suficiente na prática e foi validada com
 teste real ao vivo repetido (ver v20.18), mas se o log de warning aparecer no console de algum
 usuário no futuro, isso vai finalmente dar a pista que faltou aqui.
+
+### v20.26 — Aba Estatísticas "não atualizava" num outro PC: era corrida de carregamento, não cache (2026-07-04)
+
+Usuário relatou que a aba "Suas Estatísticas" ficava com números claramente errados
+(fase Grupos zerada, total batendo errado) num segundo computador, mesmo depois de: hard
+refresh, limpar Service Worker, limpar todo o site data do navegador, e até testar em janela
+anônima (sem cache nenhum). Isso descartou cache como causa — se em anônimo (zero cache) o bug
+se repete, o problema é lógico, não de dado velho guardado.
+
+**Causa raiz (achada por instrumentação ao vivo, não suposição):** em `_onLoginSuccess`,
+`bolaoRenderStats(_sw)` era chamado **imediatamente** após o login, antes do
+`await Promise.all([bolaoLoadMyData(), bolaoLoadRanking()])` sequinte sequer começar a resolver.
+Nesse instante, `_bolaoMyPicks` (usado pra fase Grupos) e `_bolaoAllPicksReopen` (usado pros
+jogos de mata-mata reabertos) podiam estar total ou parcialmente vazios — no PC principal do
+usuário, com rede rápida e cache de `localStorage` (`copa2026_mypicks_cache`,
+`copa2026_ranking_cache`) já aquecido de sessões anteriores, essa corrida quase sempre "ganhava"
+sem ninguém notar. No PC secundário (rede mais lenta, ou cache ainda não aquecido pra aquele
+navegador/perfil), a corrida "perdia": a aba renderizava com dados incompletos — e o bug **pior
+ainda**: não existia nenhum redesenho depois que os dados de verdade terminavam de chegar, então
+o erro ficava permanente até trocar de aba e voltar (o que dispara outro caminho de render).
+
+**Confirmado via teste ao vivo:** zerando `_bolaoMyPicks`/`_bolaoAllPicksReopen` em memória no
+console e chamando `bolaoRenderStats` de novo, reproduziu o sintoma exato relatado
+(284→231 pts, Grupos 164→0). Restaurando os dados e rechamando a função, os números voltam a
+bater com o total oficial (164+116+4+0+0+0=284).
+
+**Fix:** mantido o render imediato em `_onLoginSuccess` (ainda útil pra mostrar algo instantâneo
+quando já há cache local), mas adicionado um segundo `bolaoRenderStats(_sw)` logo depois que o
+`Promise.all([bolaoLoadMyData(), bolaoLoadRanking()])` termina — garantindo que a tela sempre
+seja redesenhada com os dados definitivos, não importa quão lenta a rede tenha sido.
+
+Aplicado identicamente em `index.html` e `copa2026.html`.
 
 ### v20.25 — Card de reabertura salvo não mostrava escolha de pênaltis (2026-07-04)
 

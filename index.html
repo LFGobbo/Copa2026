@@ -4109,10 +4109,20 @@ async function _onLoginSuccess(res){
   document.getElementById('bolao-stats-section').style.display='block';
   document.getElementById('bolao-evolution-section').style.display='block';
   // Estats usa dados do ranking (sem fetch extra). Evolution carrega em background.
+  // Fix 2026-07-04 (v20.26): esse primeiro render acontecia ANTES do bolaoLoadMyData()/
+  // bolaoLoadRanking() abaixo terminarem -- em maquinas/redes mais lentas (sem cache local
+  // ainda), _bolaoMyPicks/_bolaoAllPicksReopen estavam parcial ou totalmente vazios nesse
+  // momento, entao a aba de Estatisticas desenhava com dados incompletos (ex: fase Grupos
+  // zerada) e NUNCA era redesenhada depois que os dados de verdade chegavam. Mantido esse
+  // primeiro render (que ainda ajuda a mostrar algo instantaneo quando ha cache), mas agora
+  // redesenha de novo depois que os dados terminam de carregar (ver chamada logo apos o
+  // Promise.all abaixo).
   try{var _sw=document.getElementById('bolao-stats-wrap');if(_sw)bolaoRenderStats(_sw);}catch(_se){}
   setTimeout(function(){bolaoLoadEvolution();},100);
   // Carrega picks e ranking em paralelo
   await Promise.all([bolaoLoadMyData().catch(function(e){}), bolaoLoadRanking().catch(function(e){})]);
+  // Fix v20.26: redesenha as Estatisticas agora que os dados reais chegaram.
+  try{var _sw2=document.getElementById('bolao-stats-wrap');if(_sw2)bolaoRenderStats(_sw2);}catch(_se2){}
   // Se token expirou (session limpa), reverter UI para login
   if(!_bolaoToken){
     document.getElementById('bolao-name').readOnly=false;
