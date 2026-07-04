@@ -3350,17 +3350,19 @@ function bolaoCalcTotal(participantId){
 }
 function bolaoShowOitavas(){
   var ids=Object.keys(_bolaoParticipants);
-  var table=[['Participante','Oitavas','Confirmado','Falta']];
-  ids.forEach(function(id){
+  if(!ids.length){console.warn('Nenhum participante carregado. Entre no bolão ou aguarde o ranking carregar. Digite: _bolaoParticipants');return;}
+  console.log('=== OITAVAS DE FINAL (Jogos 89-96) ===');
+  console.log('Total de participantes:',ids.length);
+  console.log('');
+  var table=[['#','Participante','Oitavas','Confirmado','Falta']];
+  ids.forEach(function(id,i){
     var picks=_bolaoAllPicks[id]||{};
-    var count=0;
-    for(var gn=89;gn<=96;gn++){if(picks[gn]&&picks[gn].a!==undefined)count++;}
+    var count=0,falta=[];
+    for(var gn=89;gn<=96;gn++){if(picks[gn]&&picks[gn].a!==undefined)count++;else falta.push('#'+gn);}
     var conf=_bolaoConfirmedStatus[id]?'SIM':'NÃO';
-    var falta=[];
-    for(var gn=89;gn<=96;gn++){if(!picks[gn]||picks[gn].a===undefined)falta.push('#'+gn);}
-    table.push([_bolaoParticipants[id],count+'/8',conf,falta.length?falta.join(', '):'—']);
+    table.push([(i+1),_bolaoParticipants[id],count+'/8',conf,falta.length?falta.join(', '):'—']);
   });
-  table.sort(function(a,b){return b[1].localeCompare(a[1])||a[0].localeCompare(b[0]);});
+  table.sort(function(a,b){if(typeof b[2]==='string'&&typeof a[2]==='string'){var na=parseInt(a[2],10)||0,nb=parseInt(b[2],10)||0;if(nb!==na)return nb-na}return 0});
   console.table(table);
 }
 function bolaoRenderRanking(){
