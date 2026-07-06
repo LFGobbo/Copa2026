@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-04 (v20.26 — Fix real (não era cache): aba Estatísticas renderizava com dados vazios/parciais numa corrida contra o carregamento dos palpites, ficando errada pra sempre em máquinas/redes mais lentas)
+**Última atualização:** 2026-07-06 (v20.27 — Diagnóstico: tag de versão visível no menu "Mais" + DATA_VERSION bump pra forçar limpeza de placares fantasmas presos em dispositivos com código desatualizado)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -793,6 +793,43 @@ engolir o erro. **Causa raiz exata de por que a 1ª tentativa às vezes não com
 a mitigação por retry + no-store + log é robusta o suficiente na prática e foi validada com
 teste real ao vivo repetido (ver v20.18), mas se o log de warning aparecer no console de algum
 usuário no futuro, isso vai finalmente dar a pista que faltou aqui.
+
+### v20.27 — Diagnóstico remoto: tag de versão + limpeza forçada de placar fantasma (2026-07-06)
+
+Relato: outros participantes reclamaram, pelo celular, de bugs que JÁ tínhamos corrigido (o card
+fantasma "Paraguai/França vs Canadá/Marrocos · TIME DIFERENTE", do jogo #97 — mesma causa raiz da
+v20.23). No PC e celular do dono do projeto, o bug já tinha sumido. A pessoa afetada disse ter
+"atualizado", fechado e aberto o app de novo, sem sucesso.
+
+**Investigação (sem supor):** o jogo #97 (Quartas de Final, `V. Jogo 90 vs V. Jogo 89`) só
+começa em 09/07 — hoje é 06/07, ou seja, ainda estamos ANTES do chute inicial. A limpeza
+automática adicionada em v20.23 (`GAMES.forEach(...) if(gd && Date.now()<gd.getTime()) delete
+scores[g.n]`) deveria ter apagado qualquer placar fantasma desse jogo em TODO carregamento da
+página, pra qualquer usuário, contanto que o código rodando fosse o pós-v20.23. Como o bug
+reapareceu mesmo assim, a conclusão (não suposição, dedução a partir do próprio código já
+corrigido) é que o dispositivo do usuário afetado está executando uma versão de JS anterior à
+v20.23 — não um problema de dados, e sim de deploy/cache não propagado naquele aparelho
+especificamente. O Service Worker (`sw.js`) usa network-first pra `index.html`, então não deveria
+ser o culpado direto num carregamento com rede OK — mas não havia como confirmar isso
+remotamente sem pedir DevTools, inviável em celular.
+
+**Fix (estrutural, não só pontual):**
+1. Adicionada uma tag de versão visível no menu "Mais" (`id="app-build-tag"`, ex: `v20.26`) —
+   de agora em diante, se alguém reportar um bug "já corrigido", basta pedir esse número: se
+   estiver desatualizado, é 100% confirmado que é deploy/cache no aparelho dela, sem precisar
+   adivinhar.
+2. `DATA_VERSION` incrementado de `4` para `5` — isso dispara a rotina já existente (linha ~948)
+   que zera `scores`/`goals`/`cards` de qualquer dispositivo que abrir o app com essa nova versão
+   de código, eliminando de forma automática (sem instrução manual ao usuário) qualquer placar
+   fantasma que ainda estivesse preso no `localStorage`/IndexedDB de alguém.
+
+Aplicado identicamente em `index.html` e `copa2026.html` (ambos 5446 linhas, arquivos continuam
+byte-idênticos).
+
+**Pendente:** ainda não temos confirmação de que o dispositivo do usuário afetado estava
+realmente desatualizado — assim que ele reabrir o app (agora com a tag de versão visível),
+pedir pra ele informar o número mostrado no menu Mais, pra fechar esse diagnóstico com certeza,
+não só dedução.
 
 ### v20.26 — Aba Estatísticas "não atualizava" num outro PC: era corrida de carregamento, não cache (2026-07-04)
 
