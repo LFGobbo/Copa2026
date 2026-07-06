@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-06 (v20.27 — Diagnóstico: tag de versão visível no menu "Mais" + DATA_VERSION bump pra forçar limpeza de placares fantasmas presos em dispositivos com código desatualizado)
+**Última atualização:** 2026-07-06 (v20.29 — Consolidação: função única `_bolaoReal90` pra achar o placar de 90min, com verificação real de gol pós-90min — corrige um dado corrompido da própria FIFA que fez o v20.28 usar um placar errado)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -793,6 +793,100 @@ engolir o erro. **Causa raiz exata de por que a 1ª tentativa às vezes não com
 a mitigação por retry + no-store + log é robusta o suficiente na prática e foi validada com
 teste real ao vivo repetido (ver v20.18), mas se o log de warning aparecer no console de algum
 usuário no futuro, isso vai finalmente dar a pista que faltou aqui.
+
+### v20.29 — CORREÇÃO DO v20.28: MATCH_90_SCORE estava com dado corrompido pro jogo #89 (2026-07-06)
+
+**Isso corrige/substitui parte do que foi feito em v20.28.** Depois de aplicar o fix v20.28, o
+usuário conferiu o resultado oficial e apontou que o jogo #89 (Paraguai x França) **não foi pra
+prorrogação** — o gol do Mbappé (pênalti) foi aos 70 minutos, tempo normal. Isso contradizia o
+que o app tinha registrado (`MATCH_EXTRA_TIME[fifaId]=true`, `MATCH_90_SCORE[fifaId]={a:0,b:0}`),
+que foi exatamente a fonte usada pelo fix v20.28.
+
+**Investigação (consultado a timeline oficial da FIFA diretamente, endpoint
+`api.fifa.com/api/v3/timelines/400021533`):** o jogo teve um acréscimo de 11 minutos no 2º
+tempo, terminando no minuto "101'" segundo o relógio corrido da FIFA — mas sem nenhum evento de
+"início de prorrogação" no meio, e o único gol do jogo (Type 41, pênalti do Mbappé) está
+registrado exatamente aos 70'. Ou seja, o jogo terminou 1×0 (do ponto de vista de gols) já no
+tempo normal, só que com um acréscimo bem mais longo que o normal — a própria API de calendário
+da FIFA (`MatchStatus`) reportou esse jogo como tendo ido a "prorrogação" (status 5), o que se
+mostrou uma classificação equivocada da FIFA nesse caso específico (confirmado pelo usuário, que
+acompanhou o jogo). O código antigo confiava cegamente nesse status pra decidir se reconstruía
+`MATCH_90_SCORE`, e como ele reconstruiu errado (0x0 em vez do 0x1 real) antes do gol ser
+processado, ficou "travado" nesse valor errado (guard `!MATCH_90_SCORE[idMatch]` impedia
+recálculo).
+
+**Fix definitivo:** criada uma função única, `_bolaoReal90(gn, real)`, que centraliza a lógica
+de "qual placar vale pra pontuação" — substituindo as 5 implementações duplicadas que existiam
+(`bolaoCalcTotal`, `bolaoRenderDetail`, `bolaoRenderPicksGrid`, `bolaoLoadEvolution`,
+`bolaoRenderStats`, widget de jogos ao vivo). A diferença chave: em vez de confiar apenas na flag
+`MATCH_EXTRA_TIME`/no `MATCH_90_SCORE` reconstruído, a função agora **verifica diretamente se
+existe algum gol registrado (`goals[gn]`) com minuto real acima de 90** antes de aceitar o
+placar de 90min alternativo — se não houver nenhum gol depois do minuto 90, usa o placar final
+normalmente, ignorando a flag de prorrogação (que se provou não confiável nesse caso).
+
+Essa consolidação também resolve, de uma vez por todas, o risco arquitetural registrado em
+v20.24 (múltiplas implementações duplicadas de pontuação divergindo entre si) — agora existe
+uma função só pra essa lógica específica.
+
+**Validado ao vivo:** com a nova função, o jogo #89 corretamente NÃO é (mais) tratado como tendo
+ido à prorrogação (`_bolaoMatchHadRealET(89)` retorna `false`), o placar de 90min resolvido é
+`{a:0,b:1}` (o real, correto), um palpite `0x0` dá `0 pts` (errou mesmo) e um palpite `0x1`
+daria `10 pts` (acerto exato, tabela reduzida) — batendo com a confirmação do usuário.
+
+Aplicado identicamente em `index.html` e `copa2026.html` (ambos 5447 linhas, byte-idênticos).
+
+**Lição registrada:** dados de fontes externas (nesse caso, a própria API oficial da FIFA) podem
+estar errados ou ser ambíguos — antes de confiar numa flag isolada (`MatchStatus`/
+`MATCH_EXTRA_TIME`), vale cruzar com outro dado independente já disponível (nesse caso, os
+minutos reais dos gols) sempre que o impacto do erro for pontuação de dinheiro/prêmio real.
+
+### v20.28 (SUBSTITUÍDO POR v20.29) — Bug grave: 4 funções zeravam pontos de mata-mata em jogos de prorrogação (2026-07-06)
+
+Usuário reportou, com print, o card de detalhe do participante mostrando "Paraguai vs França
+🔓 tabela reduzida · Palpite: 0x3 → 0x0 · 0 pts" — e destacou que NINGUÉM ganhava pontos pra
+esse confronto, em qualquer participante que abrisse esse card. Marcado como "erro grave".
+
+**Investigação (sem supor):** jogo real #89 (Oitavas de Final) é Paraguai vs França. O jogo foi
+decidido na prorrogação/pênaltis: placar final salvo em `scores[89]` é `{a:0,b:1}`, mas o placar
+de 90 minutos (regra oficial: "palpite vale só 90min", v20.19) foi `{a:0,b:0}` — confirmado via
+`MATCH_90_SCORE[FIFA_MATCH_IDS[89]]`. O participante do print reabriu o palpite e apostou
+exatamente `0x0` — o placar de 90min CORRETO, que deveria valer o máximo de pontos da tabela
+reduzida (10, acerto exato).
+
+**Causa raiz:** a função `bolaoRenderDetail` (o card que abre ao clicar num participante no
+ranking) ainda tinha a linha `var _dreal90=real.ft||real;` — mas `real` aqui é sempre
+`scores[g.n]`, que é `{a,b}` e NUNCA tem campo `.ft`. Ou seja, `real.ft` é sempre `undefined`,
+e o código sempre caía pro placar FINAL (`real`, incluindo prorrogação/pênaltis) em vez do
+placar de 90 minutos. Isso fazia qualquer participante que acertasse o confronto E apostasse o
+placar de 90min correto aparecer com pontuação errada (nesse caso, 0 em vez de 10) — só porque o
+90min e o final divergiam. Bug idêntico ao já corrigido em `bolaoCalcTotal` (v20.20) e
+`bolaoRenderStats` (v20.24), mas que nunca tinha sido replicado aqui.
+
+**Auditoria completa:** como esse é exatamente o tipo de bug recorrente já registrado como risco
+arquitetural (múltiplas implementações duplicadas de pontuação — ver v20.24), foram buscadas
+TODAS as ocorrências do mesmo padrão (`.ft||`) no arquivo. Achadas mais 3, todas com o mesmo
+defeito, em funções diferentes:
+
+1. `bolaoRenderDetail` (linha ~3501) — card de detalhe do participante no ranking (o do print).
+2. `bolaoRenderPicksGrid` (linha ~3676) — grade "Meus Palpites" do próprio usuário logado
+   (mostra o selo de pontos por jogo). Mesmo bug, mesmo efeito, pro próprio usuário.
+3. `bolaoLoadEvolution` (linha ~4609) — gráfico de evolução de pontos ao longo do campeonato.
+4. Widget de "jogos ao vivo" dentro de `computeBolaoStats` (linha ~5157) — pontuação em tempo
+   real durante jogos de mata-mata ao vivo que forem à prorrogação.
+
+Todas as 4 corrigidas com a mesma lógica de fallback via `MATCH_90_SCORE`/`FIFA_MATCH_META`/
+`_resolveMatchTeams` já usada em `bolaoCalcTotal`.
+
+**Validado ao vivo (Regra de Ouro):** reconstruído o cálculo do jogo #89 em memória no Chrome —
+antes do fix, `_dreal90` resolvia pro placar final `{a:0,b:1}`; depois do fix, resolve
+corretamente pra `{a:0,b:0}` (90min), e `bolaoCalcKOPickPts(0,0,0,0,false)` retorna `10` (acerto
+exato, tabela reduzida) em vez de `0`.
+
+Aplicado identicamente em `index.html` e `copa2026.html` (ambos 5412 linhas, byte-idênticos).
+
+**Pendente:** o `bolao-worker.js` (cálculo usado nos snapshots/cron) não foi auditado nessa
+rodada pra esse mesmo padrão de bug — ver nota pendente já registrada em v20.22 sobre o Worker
+estar potencialmente desalinhado com a lógica do frontend.
 
 ### v20.27 — Diagnóstico remoto: tag de versão + limpeza forçada de placar fantasma (2026-07-06)
 

@@ -3256,6 +3256,48 @@ function _loadTeamPicks(){
     document.body.appendChild(dl);
   }
 }
+// Fix 2026-07-06 (v20.29): funcao unica pra achar o placar de 90min de um jogo de mata-mata.
+// Antes, 5 funcoes diferentes reimplementavam essa logica (bolaoCalcTotal, bolaoRenderDetail,
+// bolaoRenderPicksGrid, bolaoLoadEvolution, bolaoRenderStats, widget de jogos ao vivo) -- gerando
+// bugs repetidos (v20.11/20.12/20.20/20.24/20.28) toda vez que só algumas delas recebiam a
+// correcao. Consolidado aqui.
+//
+// v20.29 corrige um bug NOVO descoberto ao vivo: o jogo #89 (Paraguai x Franca) teve um
+// acrescimo de 11min no 2o tempo (terminou no minuto "101'" nos dados da FIFA) e por isso
+// MATCH_EXTRA_TIME/MatchStatus da propria API da FIFA reportou (por engano, confirmado pelo
+// usuario que esse jogo NAO foi pra prorrogacao de verdade) que o jogo tinha ido a prorrogacao.
+// Isso fazia MATCH_90_SCORE ser reconstruido errado (0x0 em vez do 0x1 real, ja que o unico gol
+// do jogo foi aos 70min, bem dentro do tempo normal). Confiar cegamente em MATCH_EXTRA_TIME é
+// arriscado -- agora só usamos o placar reconstruido de MATCH_90_SCORE se houver pelo menos um
+// gol registrado (em `goals[gn]`) com minuto REAL acima de 90 (prorrogacao de verdade
+// acontecendo). Sem isso, usamos o placar final normalmente.
+function _bolaoMatchHadRealET(gn){
+  var gset=(typeof goals!=='undefined')?goals[gn]:null;
+  if(!gset)return false;
+  var maxMin=0;
+  ['a','b'].forEach(function(side){
+    (gset[side]||[]).forEach(function(gl){
+      if(!gl||!gl.minute)return;
+      var raw=(''+gl.minute).replace(/'/g,'');
+      var base=parseInt(raw.split('+')[0],10);
+      if(!isNaN(base)&&base>maxMin)maxMin=base;
+    });
+  });
+  return maxMin>90;
+}
+function _bolaoReal90(gn,real){
+  if(!real||real.a===undefined||real.b===undefined)return real;
+  if(real.ft)return real.ft;
+  var fifaId=FIFA_MATCH_IDS[gn];
+  if(!fifaId||!MATCH_90_SCORE[fifaId])return real;
+  if(!_bolaoMatchHadRealET(gn))return real; // sem gol depois do min 90 = nao teve prorrogacao de verdade
+  var m90=MATCH_90_SCORE[fifaId];
+  var meta=FIFA_MATCH_META[gn]||{};
+  if(!meta.homeId)return real;
+  var ck=_resolveMatchTeams(GAME_BY_ID[gn]);
+  var rev=ck.homeId&&meta.homeId&&ck.homeId!==meta.homeId;
+  return {a:rev?m90.b:m90.a,b:rev?m90.a:m90.b};
+}
 function bolaoCalcKOPickPts(pA,pB,rA,rB,useFullTable){
   if(pA===null||pA===undefined||pB===null||pB===undefined)return -1;
   if(rA===null||rA===undefined||rB===null||rB===undefined)return -1;
@@ -3347,7 +3389,7 @@ function bolaoCalcTotal(participantId){
       if(!acertouConfronto&&!temReopen)return;
       var activePick=temReopen?reopenPick:pick;
       var useFullTable=acertouConfronto&&!temReopen;
-      var _real90=real.ft;if(!_real90){var _mid=FIFA_MATCH_IDS[g.n];if(_mid&&MATCH_90_SCORE[_mid]){var _m90=MATCH_90_SCORE[_mid];var _meta=FIFA_MATCH_META[g.n]||{};if(_meta.homeId){var _ck=_resolveMatchTeams(GAME_BY_ID[g.n]);var _rev=_ck.homeId&&_meta.homeId&&_ck.homeId!==_meta.homeId;_real90={a:_rev?_m90.b:_m90.a,b:_rev?_m90.a:_m90.b};}}}if(!_real90)_real90=real;var scoreKO=bolaoCalcKOPickPts(activePick.a,activePick.b,_real90.a,_real90.b,useFullTable);
+      var _real90=_bolaoReal90(g.n,real);var scoreKO=bolaoCalcKOPickPts(activePick.a,activePick.b,_real90.a,_real90.b,useFullTable);
       if(scoreKO<0)return;
       var koBonus=0;
       if(real.a===real.b){var _ps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_ps){var _rw=_winnerOf(g.n);var _gb=GAME_BY_ID[g.n];_ps=_rw&&_gb?(_rw===_gb.a?'a':_rw===_gb.b?'b':null):null;}if(activePick.ko&&_ps&&activePick.ko===_ps)koBonus=5;}
@@ -3498,7 +3540,15 @@ function bolaoRenderDetail(pid){
       }
       var dActivePick=dHasReopen?dReopen:pick;
       var dUseFullTable=dAcertou&&!dHasReopen;
-      var _dreal90=real.ft||real;var dScoreKO=bolaoCalcKOPickPts(dActivePick.a,dActivePick.b,_dreal90.a,_dreal90.b,dUseFullTable);
+      // Fix 2026-07-06 (v20.28): faltava aqui o mesmo fallback via MATCH_90_SCORE que
+      // bolaoCalcTotal/bolaoRenderStats ja tinham (v20.20/v20.24) -- "real.ft" nunca existe
+      // nessa estrutura de dados (scores[g.n] e' sempre {a,b}, sem campo .ft), entao esse card
+      // sempre comparava contra o placar FINAL (incluindo prorrogacao/penaltis) em vez do
+      // placar de 90 minutos. Descoberto ao vivo: jogo #89 (Paraguai 0 x 1 França no final,
+      // mas 0x0 nos 90min) fazia TODO participante que acertou o confronto e apostou 0x0
+      // (o placar de 90min correto) aparecer com 0 pts nesse card, mesmo tendo acertado.
+      var _dreal90=_bolaoReal90(g.n,real);
+      var dScoreKO=bolaoCalcKOPickPts(dActivePick.a,dActivePick.b,_dreal90.a,_dreal90.b,dUseFullTable);
       var dKoBonus=0;
       if(real.a===real.b){var _dps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_dps){var _drw=_winnerOf(g.n);var _dgb=GAME_BY_ID[g.n];_dps=_drw&&_dgb?(_drw===_dgb.a?'a':_drw===_dgb.b?'b':null):null;}if(dActivePick.ko&&_dps&&dActivePick.ko===_dps)dKoBonus=5;}
       var dPhaseBonus=0;
@@ -3665,7 +3715,10 @@ function bolaoRenderPicksGrid(){
         if(!gAcertou&&!gTemReopen){gPts=-1;}else{
           var gActivePick=gTemReopen?gReopenPick:pick;
           var gUseFullTable=gAcertou&&!gTemReopen;
-          var _greal90=real.ft||real;gPts=bolaoCalcKOPickPts(gActivePick.a,gActivePick.b,_greal90.a,_greal90.b,gUseFullTable);
+          // Fix 2026-07-06 (v20.28): mesmo bug do MATCH_90_SCORE que faltava em bolaoRenderDetail
+          // (real.ft nunca existe -- sempre caia pro placar final em vez do de 90min).
+          var _greal90=_bolaoReal90(g.n,real);
+          gPts=bolaoCalcKOPickPts(gActivePick.a,gActivePick.b,_greal90.a,_greal90.b,gUseFullTable);
           if(real.a===real.b){var _gps=real.pen||(FIFA_MATCH_IDS[g.n]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[g.n]])||null;if(!_gps){var _grw=_winnerOf(g.n);var _ggb=GAME_BY_ID[g.n];_gps=_grw&&_ggb?(_grw===_ggb.a?'a':_grw===_ggb.b?'b':null):null;}if(gActivePick.ko&&_gps&&gActivePick.ko===_gps)gBonus+=5;}
           if(gAcertou){var gph=KO_GAME_PHASE_FRONTEND[g.n];gBonus+=(KO_PHASE_BONUS_FRONTEND[gph]||0);}
         }
@@ -4606,7 +4659,8 @@ function bolaoLoadEvolution(){
       try{var _rB=resolveTeam(g.b,gn);_rBN=_rB&&_rB.name?_rB.name:null;}catch(e){}
       _ps=_real.pen||(FIFA_MATCH_IDS[gn]&&MATCH_PEN_WINNER[FIFA_MATCH_IDS[gn]])||null;
       if(!_ps){try{var _rw=_winnerOf(gn);var _gb=GAME_BY_ID[gn];_ps=_rw&&_gb?(_rw===_gb.a?'a':_rw===_gb.b?'b':null):null;}catch(e){}}
-      _real90=_real.ft||_real;
+      // Fix 2026-07-06 (v20.28): mesmo bug do MATCH_90_SCORE (real.ft nunca existe).
+      _real90=_bolaoReal90(gn,_real);
       var _cph=KO_GAME_PHASE_FRONTEND[gn];_phaseBonus=KO_PHASE_BONUS_FRONTEND[_cph]||0;
     }
     ids.forEach(function(id){
@@ -4955,7 +5009,7 @@ function bolaoRenderStats(el){
       // estatisticas comparava com o placar FINAL (incluindo prorrogacao/penaltis) em vez do
       // placar de 90 minutos, dando pontuacao errada pra qualquer jogo de mata-mata que foi a
       // prorrogacao (descoberto: jogos #82 e #86, cada um com 90min != final).
-      var _real90=real.ft;if(!_real90){var _mid=FIFA_MATCH_IDS[g.n];if(_mid&&MATCH_90_SCORE[_mid]){var _m90=MATCH_90_SCORE[_mid];var _meta=FIFA_MATCH_META[g.n]||{};if(_meta.homeId){var _ck=_resolveMatchTeams(GAME_BY_ID[g.n]);var _rev=_ck.homeId&&_meta.homeId&&_ck.homeId!==_meta.homeId;_real90={a:_rev?_m90.b:_m90.a,b:_rev?_m90.a:_m90.b};}}}if(!_real90)_real90=real;
+      var _real90=_bolaoReal90(g.n,real);
       var scoreKO=bolaoCalcKOPickPts(activePick.a,activePick.b,_real90.a,_real90.b,useFullTable);
       if(scoreKO<0)return;
       var koBonus=0;
@@ -5146,7 +5200,9 @@ function computeBolaoStats(){
         activePk=hasReopen?reopenPk:origPk;
         if(!activePk||activePk.a===null||activePk.a===undefined)return;
         var useFullTable=acertou&&!hasReopen;
-        var _sc90=sc.ft||sc;pts=bolaoCalcKOPickPts(activePk.a,activePk.b,_sc90.a,_sc90.b,useFullTable);
+        // Fix 2026-07-06 (v20.28): mesmo bug do MATCH_90_SCORE (sc.ft nunca existe).
+        var _sc90=_bolaoReal90(g.n,sc);
+        pts=bolaoCalcKOPickPts(activePk.a,activePk.b,_sc90.a,_sc90.b,useFullTable);
       }else{
         if(!origPk||origPk.a===null||origPk.b===null)return;
         activePk=origPk;
