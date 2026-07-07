@@ -2310,7 +2310,12 @@ Object.keys(map).forEach(function(id){var s=map[id],na=parseInt(s.a,10),nb=parse
 if(!scores[id])scores[id]={};if(scores[id].a!==na||scores[id].b!==nb||(s.pen&&scores[id].pen!==s.pen)||(!s.pen&&scores[id].pen))changed=true;scores[id].a=na;scores[id].b=nb;if(s.pen)scores[id].pen=s.pen;else delete scores[id].pen;if(s.ft)scores[id].ft=s.ft;
 // Se o jogo ja foi marcado como encerrado pela calendar API, finaliza
 if(FIFA_MATCH_IDS[id]&&MATCH_ENDED[FIFA_MATCH_IDS[id]]&&!MATCH_FINALIZED[id]){MATCH_FINALIZED[id]=true;changed=true}});
-if(changed){_bolaoBracketCache=null;saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();setTimeout(checkAutoSnapshot,500)}return changed}
+if(changed){_bolaoBracketCache=null;saveState();renderGames(currentFilter);renderGroups();renderBracket();renderScorers();
+  // Fix 2026-07-07 (v20.31): mergeScores tambem nao redesenhava as telas do bolao.
+  try{if(typeof bolaoRenderRanking==='function')bolaoRenderRanking();}catch(_e1){}
+  try{var _sw4=document.getElementById('bolao-stats-wrap');if(_sw4&&typeof bolaoRenderStats==='function')bolaoRenderStats(_sw4);}catch(_e2){}
+  try{if(typeof bolaoRenderReopenSection==='function')bolaoRenderReopenSection();}catch(_e3){}
+  setTimeout(checkAutoSnapshot,500)}return changed}
 
 function _hide(ab){
   if(!ab||ab.style.display==='none')return;
@@ -2514,7 +2519,14 @@ function processTimeline(idMatch,gameId){
           scores[gameId].ft={a:_rev?_a90tl:_h90tl,b:_rev?_h90tl:_a90tl};
           saveFifaRaw();
           // Debounce: re-render único após todos os timelines carregarem
-          if(typeof window!=='undefined'){clearTimeout(window._et90RenderTimer);window._et90RenderTimer=setTimeout(function(){if(typeof bolaoRenderRanking==='function')bolaoRenderRanking();if(typeof renderBolaoStats==='function')renderBolaoStats();},400);}
+          if(typeof window!=='undefined'){clearTimeout(window._et90RenderTimer);window._et90RenderTimer=setTimeout(function(){
+            // Fix 2026-07-07 (v20.31): "renderBolaoStats" nunca existiu como funcao (nome
+            // errado -- a funcao real e "bolaoRenderStats" e precisa do elemento como
+            // parametro), entao esse redesenho NUNCA executava desde que foi escrito.
+            if(typeof bolaoRenderRanking==='function')bolaoRenderRanking();
+            try{var _swEt=document.getElementById('bolao-stats-wrap');if(_swEt&&typeof bolaoRenderStats==='function')bolaoRenderStats(_swEt);}catch(_eEt){}
+            try{if(typeof bolaoRenderReopenSection==='function')bolaoRenderReopenSection();}catch(_eEt2){}
+          },400);}
         }
       }
 
@@ -2714,6 +2726,15 @@ function processTimeline(idMatch,gameId){
       renderGroups();
       renderBracket();
       renderScorers();
+      // Fix 2026-07-07 (v20.31): quando o placar de um jogo mudava ao vivo, as telas do bolao
+      // (ranking, detalhe do participante, estatisticas, reabertura) NUNCA eram redesenhadas --
+      // só as abas Jogos/Grupos/Mata-Mata. Isso fazia o bolao mostrar pontos desatualizados
+      // (calculados com o placar antigo) ate a pessoa recarregar a pagina inteira ou trocar de
+      // aba. Descoberto ao vivo: jogo #93 corrigido sozinho (0x0 -> 0x1) mas o card de detalhe
+      // do participante continuou mostrando os pontos calculados com o placar errado.
+      try{if(typeof bolaoRenderRanking==='function')bolaoRenderRanking();}catch(_e1){}
+      try{var _sw3=document.getElementById('bolao-stats-wrap');if(_sw3&&typeof bolaoRenderStats==='function')bolaoRenderStats(_sw3);}catch(_e2){}
+      try{if(typeof bolaoRenderReopenSection==='function')bolaoRenderReopenSection();}catch(_e3){}
       _bolaoPushEvents(gameId);
     })
     .catch(function(e){console.warn('Timeline fetch failed:',e?e.message:'');

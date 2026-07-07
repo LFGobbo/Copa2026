@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-07 (v20.30 — Bug crítico: `fetchFifaScores`/`auditData` quebravam silenciosamente pra TODO o campeonato sempre que um jogo futuro do mata-mata (semifinal/final) aparecia sem os dois times definidos, travando placares em jogos com gol nos acréscimos)
+**Última atualização:** 2026-07-07 (v20.31 — Fix: telas do bolão — ranking, detalhe do participante, estatísticas, reabertura — nunca eram redesenhadas quando o placar mudava ao vivo, mostrando pontos desatualizados até a pessoa recarregar a página inteira)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -793,6 +793,48 @@ engolir o erro. **Causa raiz exata de por que a 1ª tentativa às vezes não com
 a mitigação por retry + no-store + log é robusta o suficiente na prática e foi validada com
 teste real ao vivo repetido (ver v20.18), mas se o log de warning aparecer no console de algum
 usuário no futuro, isso vai finalmente dar a pista que faltou aqui.
+
+### v20.31 — Telas do bolão nunca eram redesenhadas quando o placar mudava ao vivo (2026-07-07)
+
+Depois do fix v20.30, o usuário reportou: "ajustou no jogos, mas o bolão segue dando ponto
+errado" — o placar do jogo #93 (Portugal x Espanha) já aparecia certo (0x1) na aba Jogos, mas o
+card de detalhe do participante no ranking continuava mostrando os pontos calculados com o
+placar antigo (0x0), dando "2 pts" em vez do valor certo.
+
+**Investigação:** reproduzido ao vivo forçando `scores[93]` de volta pro valor errado, chamando
+`bolaoCalcTotal` (total = 314), depois corrigindo `scores[93]` pro valor certo SEM redesenhar
+nada — o total recalculado internamente já dava 316 (a função de cálculo em si estava correta),
+mas a TELA (`bolaoRenderRanking`) só atualiza quando é chamada explicitamente. Achada a causa:
+`mergeScores()` (a função chamada sempre que um placar novo chega do polling em lote) e o fim de
+`processTimeline()` (chamado quando um jogo individual é reprocessado) só redesenhavam
+`renderGames`/`renderGroups`/`renderBracket`/`renderScorers` — **nunca** as telas do bolão
+(`bolaoRenderRanking`, `bolaoRenderStats`, `bolaoRenderReopenSection`). Ou seja, mesmo com o
+placar interno (`scores[]`) 100% correto, a pontuação exibida no bolão ficava presa no valor de
+quando a tela foi carregada pela última vez, só se atualizando se a pessoa desse reload na
+página inteira ou saísse e voltasse na aba.
+
+Achado também, de bônus, um bug relacionado: dentro de `processTimeline`, já existia uma
+tentativa de redesenhar o bolão depois de corrigir `MATCH_90_SCORE` em jogos de prorrogação —
+mas chamava uma função chamada `renderBolaoStats()`, que **nunca existiu** (o nome certo é
+`bolaoRenderStats`, e ela precisa receber o elemento HTML como parâmetro). Como
+`typeof renderBolaoStats==='function'` sempre dá falso, esse redesenho nunca executou desde que
+foi escrito.
+
+**Fix:** adicionadas chamadas (protegidas com `try/catch` e checagem de função/elemento
+existente, pra nunca quebrar nada) a `bolaoRenderRanking()`, `bolaoRenderStats(el)` e
+`bolaoRenderReopenSection()` em 3 pontos: no final de `mergeScores` (quando `changed=true`), no
+final de `processTimeline` (sempre que o placar de um jogo específico muda), e corrigido o nome
+da função errada (`renderBolaoStats`→`bolaoRenderStats`) no trecho de correção de prorrogação.
+
+**Validado ao vivo:** reproduzido o cenário exato do usuário (participante "Luiz Felipe Gobbo",
+palpite 1×1 pro jogo #93) — forçando o placar errado e depois corrigindo com o redesenho
+automático (como o fix faz agora), o total do ranking passa corretamente de 314 para 316 pontos
+sem precisar de reload manual.
+
+Aplicado identicamente em `index.html` e `copa2026.html` (ambos 5537 linhas, byte-idênticos,
+confirmado via `Read` — o `bash` mostrou uma contagem de linhas desatualizada nessa mesma
+verificação, reforçando a lição já registrada antes: sempre confiar no `Read`, não no `bash`,
+pra conferir esse repositório específico sincronizado via OneDrive).
 
 ### v20.30 — Bug crítico: polling de placar ao vivo quebrava silenciosamente pro campeonato inteiro (2026-07-07)
 
