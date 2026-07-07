@@ -3067,7 +3067,12 @@ function _bolaoPullEventsOnceAttempt(){
   });
 }
 function _bolaoPullEventsOnce(){
-  _bolaoPullEventsOnceAttempt().catch(function(e){console.warn('_bolaoPullEventsOnce (1a tentativa) falhou:',e&&e.message);});
+  // Fix 2026-07-07: chamada disparada (perto da linha 2837) roda antes de BOLAO_WORKER
+  // ser atribuido (perto da linha 2958) -- var e' hoisted mas ainda 'undefined' nesse ponto
+  // do script, entao a 1a tentativa sempre batia em fetch('undefined/events') (404). Mesma
+  // classe do bug de hoisting do v20.14. setTimeout(...,0) adia pro proximo tick, depois que
+  // todo o script sincrono (incluindo a atribuicao de BOLAO_WORKER) ja rodou.
+  setTimeout(function(){_bolaoPullEventsOnceAttempt().catch(function(e){console.warn('_bolaoPullEventsOnce (1a tentativa) falhou:',e&&e.message);});},0);
   setTimeout(function(){_bolaoPullEventsOnceAttempt().catch(function(e){console.warn('_bolaoPullEventsOnce (2a tentativa) falhou:',e&&e.message);});},6000);
   setTimeout(function(){_bolaoPullEventsOnceAttempt().catch(function(e){console.warn('_bolaoPullEventsOnce (3a tentativa) falhou:',e&&e.message);});},16000);
 }
@@ -5537,7 +5542,14 @@ document.addEventListener('keydown', function(e){
     return;
   }
 });
-var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED'&&!_refreshing){_refreshing=true;window.location.reload()}})}
+var _refreshing=false;if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(function(reg){
+  // Fix 2026-07-07: sem isso, a checagem de SW novo so acontecia numa navegacao/reload --
+  // uma aba que ficava aberta nunca detectava deploy novo sozinha (causa raiz documentada
+  // do "preciso atualizar toda hora"). setInterval + visibilitychange forcam reg.update()
+  // periodicamente; o reload automatico via 'controllerchange' abaixo ja existia.
+  if(reg){setInterval(function(){reg.update()["catch"](function(){})},5*60*1000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)reg.update()["catch"](function(){})});}
+})["catch"](function(){});navigator.serviceWorker.addEventListener('controllerchange',function(){if(_refreshing)return;_refreshing=true;window.location.reload()});navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='SW_UPDATED'&&!_refreshing){_refreshing=true;window.location.reload()}})}
 </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-07 (v20.33 — Port do chaveamento completo pro Worker feito, PENDENTE DE DEPLOY E TESTE AO VIVO — ver seção v20.33. v20.32: checkup completo do projeto, .gitignore corrompido corrigido, log de erro adicionado no polling)
+**Última atualização:** 2026-07-07 (v20.34 — Fix do "preciso atualizar toda hora": SW navigate bypassa cache HTTP + checagem periódica de update + fix hoisting BOLAO_WORKER. v20.33: chaveamento no Worker.)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -701,6 +701,45 @@ Toda melhoria deve:
 ---
 
 ## 13. Version History
+
+### v20.34 — Fix "preciso atualizar toda hora" (reclamação recorrente de todos os usuários, 2026-07-07)
+
+**Contexto:** usuário reportou reclamação constante e recorrente de todos os participantes do
+bolão: o site fica mostrando dado desatualizado até dar refresh manual, às vezes mais de uma vez.
+Auditoria anterior (v20.32/checkup geral) não tinha identificado essa causa raiz porque foi feita
+só por leitura estática de código — a causa real só apareceu inspecionando a aba ao vivo no Chrome
+(headers HTTP reais, Cache Storage, Service Worker registration), conforme Regra de Ouro (§15).
+
+**Causa raiz 1 (principal) — GitHub Pages serve `index.html` e `sw.js` com `Cache-Control:
+max-age=600`:** confirmado via `fetch(location.href,{cache:'no-store'})` no console em produção —
+header real: `cache-control: max-age=600`. O `sw.js` fazia `fetch(e.request)` puro na estratégia
+"network-first" de navegação, sem bypassar esse cache HTTP do navegador — dentro da janela de 10
+min após um deploy, o navegador podia satisfazer o fetch com uma cópia local, sem nem tentar rede.
+Fix: `fetch(e.request,{cache:'reload'})` força ignorar o cache HTTP nas navegações. Cache name
+bumped `copa2026-v21` → `copa2026-v22` (arquivo `sw.js`).
+
+**Causa raiz 2 — nenhuma checagem periódica de Service Worker novo enquanto a aba fica aberta:**
+o registro (`navigator.serviceWorker.register`) só dispara checagem de update numa navegação/reload
+— uma aba que fica aberta sem recarregar nunca detecta deploy novo sozinha. Fix: `reg.update()`
+a cada 5 min (`setInterval`) e ao voltar o foco na aba (`visibilitychange`). O reload automático via
+`controllerchange` já existia (v-anterior) e continua sendo o gatilho final.
+
+**Bug secundário confirmado (não é a causa principal, mas achado real via Network tab ao vivo):**
+requisição `GET /Copa2026/undefined/events` retornando 404 em toda carga de página. Causa: mesma
+classe de bug de hoisting do v20.14 — `_bolaoPullEventsOnce()` é chamado (perto da linha 2837)
+antes de `BOLAO_WORKER` ser atribuído (perto da linha 2958); a 1ª tentativa sempre rodava com
+`BOLAO_WORKER===undefined`, virando `fetch('undefined/events')`. Só funcionava nas retentativas de
+6s/16s. Fix: primeira tentativa também via `setTimeout(...,0)`, adiando pro próximo tick (depois que
+todo o script síncrono, incluindo a atribuição de `BOLAO_WORKER`, já rodou).
+
+**Arquivos alterados:** `sw.js` (cache bump + fetch com `{cache:'reload'}` na navegação),
+`index.html`/`copa2026.html` (registro do SW com `reg.update()` periódico + fix hoisting em
+`_bolaoPullEventsOnce`). `bolao-worker.js` não foi tocado.
+
+**Validação até este registro:** sintaxe (`node --check`) ok nos 3 arquivos, balanço de chaves ok
+(2006/2006), funções críticas presentes, `index.html`/`copa2026.html` byte-idênticos (SHA-256
+igual). **Pendente:** validação visual em produção após deploy — checar se um deploy futuro some
+sem precisar de refresh manual, e se a requisição `undefined/events` não aparece mais no Network tab.
 
 ### v20.14 a v20.18 — Serie de incidentes reais: gols/cartões sumindo no celular (2026-07-03)
 

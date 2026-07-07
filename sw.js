@@ -1,4 +1,4 @@
-var C='copa2026-v21';
+var C='copa2026-v22';
 var STATIC=['bola_t.png','mascote1_t.png','mascote2_t.png','mascote3_t.png','logo_globo.png','logo_sportv.png','logo_cazetv.png','logo_sbt.png','logo_nsports.png','logo_globoplay.png','logo_getv.png'];
 var DATA=['players.json','photos.json'];
 
@@ -52,8 +52,13 @@ self.addEventListener('fetch',function(e){
   // da pagina, fazendo o codigo que espera JSON falhar de forma confusa ao tentar fazer parse.
   // Agora, chamadas de API que falham simplesmente propagam o erro de rede normalmente.
   if(e.request.mode==='navigate'){
+    // Fix 2026-07-07: GitHub Pages serve index.html com Cache-Control: max-age=600.
+    // fetch(e.request) puro respeitava esse cache HTTP do navegador, entao "network-first"
+    // podia devolver uma copia local de ate 10 min atras sem nem tentar a rede -- o usuario
+    // via a versao antiga mesmo apos um F5 dentro dessa janela. {cache:'reload'} forca o
+    // fetch a ignorar o cache HTTP e sempre buscar a versao atual do servidor.
     e.respondWith(
-      fetch(e.request).catch(function(){return caches.match('index.html');})
+      fetch(e.request,{cache:'reload'}).catch(function(){return caches.match('index.html');})
     );
     return;
   }
