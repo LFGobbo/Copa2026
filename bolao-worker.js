@@ -34,6 +34,247 @@ var BOLAO_FIRST = 6;
 var BOLAO_DEADLINE_MS = 7200000; // 2 horas antes do jogo (espelha BOLAO_TWO_H do frontend)
 var BOLAO_REOPEN_DEADLINE_MS = 300000; // 5 minutos antes do 1º jogo da fase (reabertura)
 
+// ── Bracket resolution (v20.33) ──
+// Port fiel da lógica de chaveamento do frontend (index.html: _resolveGroupOrder,
+// _groupStandings/_bolaoGroupStandings, _rankedThirds/_bolaoRankedThirds, Anexo C da FIFA,
+// _winnerOf/_bolaoWinnerOf, resolveTeam/_bolaoResolveTeam) para o Worker poder calcular
+// corretamente se cada participante "acertou o confronto" (acertouConfronto) num jogo de
+// mata-mata, e assim aplicar useFullTable/bônus de fase igual ao frontend (regra v20.22).
+// Fonte extraída e conferida linha a linha do index.html em 2026-07-07.
+var GROUPS = {"A":["África do Sul","Coreia do Sul","México","República Tcheca"],"B":["Bósnia","Canadá","Catar","Suíça"],"C":["Brasil","Escócia","Haiti","Marrocos"],"D":["Austrália","Estados Unidos","Paraguai","Turquia"],"E":["Alemanha","Costa do Marfim","Curaçao","Equador"],"F":["Holanda","Japão","Suécia","Tunísia"],"G":["Bélgica","Egito","Irã","Nova Zelândia"],"H":["Arábia Saudita","Cabo Verde","Espanha","Uruguai"],"I":["França","Iraque","Noruega","Senegal"],"J":["Argentina","Argélia","Áustria","Jordânia"],"K":["Colômbia","Portugal","RD Congo","Uzbequistão"],"L":["Croácia","Gana","Inglaterra","Panamá"]};
+var GROUP_NAMES = {"A":"Grupo A","B":"Grupo B","C":"Grupo C","D":"Grupo D","E":"Grupo E","F":"Grupo F","G":"Grupo G","H":"Grupo H","I":"Grupo I","J":"Grupo J","K":"Grupo K","L":"Grupo L"};
+var GROUP_ORDER = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+var FIFA_RANK={"Argentina":1,"Espanha":2,"França":3,"Inglaterra":4,"Portugal":5,"Brasil":6,"Marrocos":7,"Holanda":8,"Bélgica":9,"Alemanha":10,"Croácia":11,"Colômbia":13,"México":14,"Senegal":15,"Uruguai":16,"Estados Unidos":17,"Japão":18,"Suíça":19,"Irã":20,"Turquia":22,"Equador":23,"Áustria":24,"Coreia do Sul":25,"Austrália":27,"Argélia":28,"Egito":29,"Canadá":30,"Noruega":31,"Costa do Marfim":33,"Panamá":34,"Suécia":38,"República Tcheca":40,"Paraguai":41,"Escócia":42,"Tunísia":45,"RD Congo":46,"Uzbequistão":50,"Catar":56,"Iraque":57,"África do Sul":60,"Arábia Saudita":61,"Jordânia":63,"Bósnia":64,"Cabo Verde":67,"Gana":73,"Curaçao":82,"Haiti":83,"Nova Zelândia":85};
+
+// Espelha o array GAMES do frontend, mas só com os campos necessários pro chaveamento (n,a,b,f).
+// IMPORTANTE: manter sincronizado com GAMES do index.html caso os placeholders de chaveamento mudem.
+var BOLAO_GAMES_AB = [{"n":1,"a":"México","b":"África do Sul","f":"Grupo A","d":"11/06 Qui","t":"16:00"},{"n":2,"a":"Coreia do Sul","b":"República Tcheca","f":"Grupo A","d":"11/06 Qui","t":"23:00"},{"n":3,"a":"Canadá","b":"Bósnia","f":"Grupo B","d":"12/06 Sex","t":"16:00"},{"n":4,"a":"Estados Unidos","b":"Paraguai","f":"Grupo D","d":"12/06 Sex","t":"22:00"},{"n":5,"a":"Catar","b":"Suíça","f":"Grupo B","d":"13/06 Sáb","t":"16:00"},{"n":6,"a":"Brasil","b":"Marrocos","f":"Grupo C","d":"13/06 Sáb","t":"19:00"},{"n":7,"a":"Haiti","b":"Escócia","f":"Grupo C","d":"13/06 Sáb","t":"22:00"},{"n":8,"a":"Austrália","b":"Turquia","f":"Grupo D","d":"14/06 Dom","t":"01:00"},{"n":9,"a":"Alemanha","b":"Curaçao","f":"Grupo E","d":"14/06 Dom","t":"14:00"},{"n":10,"a":"Holanda","b":"Japão","f":"Grupo F","d":"14/06 Dom","t":"17:00"},{"n":11,"a":"Costa do Marfim","b":"Equador","f":"Grupo E","d":"14/06 Dom","t":"20:00"},{"n":12,"a":"Suécia","b":"Tunísia","f":"Grupo F","d":"14/06 Dom","t":"23:00"},{"n":13,"a":"Espanha","b":"Cabo Verde","f":"Grupo H","d":"15/06 Seg","t":"13:00"},{"n":14,"a":"Bélgica","b":"Egito","f":"Grupo G","d":"15/06 Seg","t":"16:00"},{"n":15,"a":"Arábia Saudita","b":"Uruguai","f":"Grupo H","d":"15/06 Seg","t":"19:00"},{"n":16,"a":"Irã","b":"Nova Zelândia","f":"Grupo G","d":"15/06 Seg","t":"22:00"},{"n":17,"a":"Argentina","b":"Argélia","f":"Grupo J","d":"16/06 Ter","t":"22:00"},{"n":18,"a":"França","b":"Senegal","f":"Grupo I","d":"16/06 Ter","t":"16:00"},{"n":19,"a":"Iraque","b":"Noruega","f":"Grupo I","d":"16/06 Ter","t":"19:00"},{"n":20,"a":"Áustria","b":"Jordânia","f":"Grupo J","d":"17/06 Qua","t":"01:00"},{"n":21,"a":"Portugal","b":"RD Congo","f":"Grupo K","d":"17/06 Qua","t":"14:00"},{"n":22,"a":"Inglaterra","b":"Croácia","f":"Grupo L","d":"17/06 Qua","t":"17:00"},{"n":23,"a":"Gana","b":"Panamá","f":"Grupo L","d":"17/06 Qua","t":"20:00"},{"n":24,"a":"Uzbequistão","b":"Colômbia","f":"Grupo K","d":"17/06 Qua","t":"23:00"},{"n":25,"a":"República Tcheca","b":"África do Sul","f":"Grupo A","d":"18/06 Qui","t":"13:00"},{"n":26,"a":"Suíça","b":"Bósnia","f":"Grupo B","d":"18/06 Qui","t":"16:00"},{"n":27,"a":"Canadá","b":"Catar","f":"Grupo B","d":"18/06 Qui","t":"19:00"},{"n":28,"a":"México","b":"Coreia do Sul","f":"Grupo A","d":"18/06 Qui","t":"22:00"},{"n":29,"a":"Turquia","b":"Paraguai","f":"Grupo D","d":"20/06 Sáb","t":"00:00"},{"n":30,"a":"Estados Unidos","b":"Austrália","f":"Grupo D","d":"19/06 Sex","t":"16:00"},{"n":31,"a":"Escócia","b":"Marrocos","f":"Grupo C","d":"19/06 Sex","t":"19:00"},{"n":32,"a":"Brasil","b":"Haiti","f":"Grupo C","d":"19/06 Sex","t":"21:30"},{"n":33,"a":"Holanda","b":"Suécia","f":"Grupo F","d":"20/06 Sáb","t":"14:00"},{"n":34,"a":"Alemanha","b":"Costa do Marfim","f":"Grupo E","d":"20/06 Sáb","t":"17:00"},{"n":35,"a":"Equador","b":"Curaçao","f":"Grupo E","d":"20/06 Sáb","t":"21:00"},{"n":36,"a":"Tunísia","b":"Japão","f":"Grupo F","d":"21/06 Dom","t":"01:00"},{"n":37,"a":"Espanha","b":"Arábia Saudita","f":"Grupo H","d":"21/06 Dom","t":"13:00"},{"n":38,"a":"Bélgica","b":"Irã","f":"Grupo G","d":"21/06 Dom","t":"16:00"},{"n":39,"a":"Uruguai","b":"Cabo Verde","f":"Grupo H","d":"21/06 Dom","t":"19:00"},{"n":40,"a":"Nova Zelândia","b":"Egito","f":"Grupo G","d":"21/06 Dom","t":"22:00"},{"n":41,"a":"Argentina","b":"Áustria","f":"Grupo J","d":"22/06 Seg","t":"14:00"},{"n":42,"a":"França","b":"Iraque","f":"Grupo I","d":"22/06 Seg","t":"18:00"},{"n":43,"a":"Noruega","b":"Senegal","f":"Grupo I","d":"22/06 Seg","t":"21:00"},{"n":44,"a":"Jordânia","b":"Argélia","f":"Grupo J","d":"23/06 Ter","t":"00:00"},{"n":45,"a":"Portugal","b":"Uzbequistão","f":"Grupo K","d":"23/06 Ter","t":"14:00"},{"n":46,"a":"Inglaterra","b":"Gana","f":"Grupo L","d":"23/06 Ter","t":"17:00"},{"n":47,"a":"Panamá","b":"Croácia","f":"Grupo L","d":"23/06 Ter","t":"20:00"},{"n":48,"a":"Colômbia","b":"RD Congo","f":"Grupo K","d":"23/06 Ter","t":"23:00"},{"n":50,"a":"Bósnia","b":"Catar","f":"Grupo B","d":"24/06 Qua","t":"16:00"},{"n":49,"a":"Suíça","b":"Canadá","f":"Grupo B","d":"24/06 Qua","t":"16:00"},{"n":52,"a":"Marrocos","b":"Haiti","f":"Grupo C","d":"24/06 Qua","t":"19:00"},{"n":51,"a":"Escócia","b":"Brasil","f":"Grupo C","d":"24/06 Qua","t":"19:00"},{"n":54,"a":"África do Sul","b":"Coreia do Sul","f":"Grupo A","d":"24/06 Qua","t":"22:00"},{"n":53,"a":"República Tcheca","b":"México","f":"Grupo A","d":"24/06 Qua","t":"22:00"},{"n":56,"a":"Curaçao","b":"Costa do Marfim","f":"Grupo E","d":"25/06 Qui","t":"17:00"},{"n":55,"a":"Equador","b":"Alemanha","f":"Grupo E","d":"25/06 Qui","t":"17:00"},{"n":58,"a":"Tunísia","b":"Holanda","f":"Grupo F","d":"25/06 Qui","t":"20:00"},{"n":57,"a":"Japão","b":"Suécia","f":"Grupo F","d":"25/06 Qui","t":"20:00"},{"n":60,"a":"Paraguai","b":"Austrália","f":"Grupo D","d":"25/06 Qui","t":"23:00"},{"n":59,"a":"Turquia","b":"Estados Unidos","f":"Grupo D","d":"25/06 Qui","t":"23:00"},{"n":62,"a":"Senegal","b":"Iraque","f":"Grupo I","d":"26/06 Sex","t":"16:00"},{"n":61,"a":"Noruega","b":"França","f":"Grupo I","d":"26/06 Sex","t":"16:00"},{"n":64,"a":"Uruguai","b":"Espanha","f":"Grupo H","d":"26/06 Sex","t":"21:00"},{"n":63,"a":"Cabo Verde","b":"Arábia Saudita","f":"Grupo H","d":"26/06 Sex","t":"21:00"},{"n":66,"a":"Nova Zelândia","b":"Bélgica","f":"Grupo G","d":"27/06 Sáb","t":"00:00"},{"n":65,"a":"Egito","b":"Irã","f":"Grupo G","d":"27/06 Sáb","t":"00:00"},{"n":68,"a":"Croácia","b":"Gana","f":"Grupo L","d":"27/06 Sáb","t":"18:00"},{"n":67,"a":"Panamá","b":"Inglaterra","f":"Grupo L","d":"27/06 Sáb","t":"18:00"},{"n":70,"a":"RD Congo","b":"Uzbequistão","f":"Grupo K","d":"27/06 Sáb","t":"20:30"},{"n":69,"a":"Colômbia","b":"Portugal","f":"Grupo K","d":"27/06 Sáb","t":"20:30"},{"n":72,"a":"Jordânia","b":"Argentina","f":"Grupo J","d":"27/06 Sáb","t":"23:00"},{"n":71,"a":"Argélia","b":"Áustria","f":"Grupo J","d":"27/06 Sáb","t":"23:00"},{"n":73,"a":"2° Grupo A","b":"2° Grupo B","f":"Rodada de 32","d":"28/06 Dom","t":"16:00"},{"n":76,"a":"1° Grupo C","b":"2° Grupo F","f":"Rodada de 32","d":"29/06 Seg","t":"14:00"},{"n":74,"a":"1° Grupo E","b":"0","f":"Rodada de 32","d":"29/06 Seg","t":"17:30"},{"n":75,"a":"1° Grupo F","b":"2° Grupo C","f":"Rodada de 32","d":"29/06 Seg","t":"22:00"},{"n":78,"a":"2° Grupo E","b":"2° Grupo I","f":"Rodada de 32","d":"30/06 Ter","t":"14:00"},{"n":77,"a":"1° Grupo I","b":"0","f":"Rodada de 32","d":"30/06 Ter","t":"18:00"},{"n":79,"a":"1° Grupo A","b":"0","f":"Rodada de 32","d":"30/06 Ter","t":"22:00"},{"n":80,"a":"1° Grupo L","b":"0","f":"Rodada de 32","d":"01/07 Qua","t":"13:00"},{"n":82,"a":"1° Grupo G","b":"0","f":"Rodada de 32","d":"01/07 Qua","t":"17:00"},{"n":81,"a":"1° Grupo D","b":"0","f":"Rodada de 32","d":"01/07 Qua","t":"21:00"},{"n":84,"a":"1° Grupo H","b":"2° Grupo J","f":"Rodada de 32","d":"02/07 Qui","t":"16:00"},{"n":83,"a":"2° Grupo K","b":"2° Grupo L","f":"Rodada de 32","d":"02/07 Qui","t":"20:00"},{"n":85,"a":"1° Grupo B","b":"0","f":"Rodada de 32","d":"03/07 Sex","t":"00:00"},{"n":88,"a":"2° Grupo D","b":"2° Grupo G","f":"Rodada de 32","d":"03/07 Sex","t":"15:00"},{"n":86,"a":"1° Grupo J","b":"2° Grupo H","f":"Rodada de 32","d":"03/07 Sex","t":"19:00"},{"n":87,"a":"1° Grupo K","b":"0","f":"Rodada de 32","d":"03/07 Sex","t":"22:30"},{"n":89,"a":"V. Jogo 74","b":"V. Jogo 77","f":"Oitavas de Final","d":"04/07 Sáb","t":"18:00"},{"n":90,"a":"V. Jogo 73","b":"V. Jogo 75","f":"Oitavas de Final","d":"04/07 Sáb","t":"14:00"},{"n":91,"a":"V. Jogo 76","b":"V. Jogo 78","f":"Oitavas de Final","d":"05/07 Dom","t":"17:00"},{"n":92,"a":"V. Jogo 79","b":"V. Jogo 80","f":"Oitavas de Final","d":"05/07 Dom","t":"21:00"},{"n":93,"a":"V. Jogo 83","b":"V. Jogo 84","f":"Oitavas de Final","d":"06/07 Seg","t":"16:00"},{"n":94,"a":"V. Jogo 81","b":"V. Jogo 82","f":"Oitavas de Final","d":"06/07 Seg","t":"21:00"},{"n":95,"a":"V. Jogo 86","b":"V. Jogo 88","f":"Oitavas de Final","d":"07/07 Ter","t":"13:00"},{"n":96,"a":"V. Jogo 85","b":"V. Jogo 87","f":"Oitavas de Final","d":"07/07 Ter","t":"17:00"},{"n":97,"a":"V. Jogo 89","b":"V. Jogo 90","f":"Quartas de Final","d":"09/07 Qui","t":"17:00"},{"n":98,"a":"V. Jogo 93","b":"V. Jogo 94","f":"Quartas de Final","d":"10/07 Sex","t":"16:00"},{"n":99,"a":"V. Jogo 91","b":"V. Jogo 92","f":"Quartas de Final","d":"11/07 Sáb","t":"18:00"},{"n":100,"a":"V. Jogo 95","b":"V. Jogo 96","f":"Quartas de Final","d":"11/07 Sáb","t":"22:00"},{"n":101,"a":"V. Jogo 97","b":"V. Jogo 98","f":"Semifinal","d":"14/07 Ter","t":"16:00"},{"n":102,"a":"V. Jogo 99","b":"V. Jogo 100","f":"Semifinal","d":"15/07 Qua","t":"16:00"},{"n":103,"a":"Perd. Jogo 101","b":"Perd. Jogo 102","f":"3º Lugar","d":"18/07 Sáb","t":"18:00"},{"n":104,"a":"V. Jogo 101","b":"V. Jogo 102","f":"Final","d":"19/07 Dom","t":"16:00"}];
+var GAME_BY_ID_AB = {};
+BOLAO_GAMES_AB.forEach(function (g) { GAME_BY_ID_AB[g.n] = g; });
+
+// Tiebreak em cascata: fase 0 = confronto direto, 1 = saldo/gols geral, 2 = fair play
+// (não implementado no Worker — sempre 0, mesma aproximação que o frontend usa na simulação
+// do bolão via _bolaoGroupStandings; só afeta o raríssimo caso de empate total até a fase 2),
+// 3 = ranking FIFA, 4 = alfabética.
+function bracketResolveGroupOrder(teams, pts, gf, ga, groupGames, getScore, getConduct) {
+  var withPts = teams.map(function (t) { return { team: t, pts: pts[t] }; });
+  withPts.sort(function (a, b) { return b.pts - a.pts; });
+  var blocks = [], i = 0;
+  while (i < withPts.length) {
+    var j = i + 1;
+    while (j < withPts.length && withPts[j].pts === withPts[i].pts) j++;
+    blocks.push(withPts.slice(i, j).map(function (x) { return x.team; }));
+    i = j;
+  }
+  var result = [];
+  function resolveBlock(block, phase) {
+    if (block.length <= 1) { if (block.length === 1) result.push(block[0]); return; }
+    var cmp;
+    if (phase === 0) {
+      var h2hPts = {}, h2hGf = {}, h2hGa = {};
+      block.forEach(function (t) { h2hPts[t] = 0; h2hGf[t] = 0; h2hGa[t] = 0; });
+      groupGames.forEach(function (g) {
+        if (block.indexOf(g.a) < 0 || block.indexOf(g.b) < 0) return;
+        var s = getScore(g.n); if (!s || s.a === undefined || s.b === undefined) return;
+        h2hGf[g.a] += s.a; h2hGa[g.a] += s.b; h2hGf[g.b] += s.b; h2hGa[g.b] += s.a;
+        if (s.a > s.b) h2hPts[g.a] += 3; else if (s.a < s.b) h2hPts[g.b] += 3; else { h2hPts[g.a]++; h2hPts[g.b]++; }
+      });
+      cmp = function (a, b) {
+        if (h2hPts[b] !== h2hPts[a]) return h2hPts[b] - h2hPts[a];
+        var sa = h2hGf[a] - h2hGa[a], sb = h2hGf[b] - h2hGa[b];
+        if (sb !== sa) return sb - sa;
+        if (h2hGf[b] !== h2hGf[a]) return h2hGf[b] - h2hGf[a];
+        return 0;
+      };
+    } else if (phase === 1) {
+      cmp = function (a, b) {
+        var sa = gf[a] - ga[a], sb = gf[b] - ga[b];
+        if (sb !== sa) return sb - sa;
+        if ((gf[b] || 0) !== (gf[a] || 0)) return (gf[b] || 0) - (gf[a] || 0);
+        return 0;
+      };
+    } else if (phase === 2) {
+      cmp = function (a, b) { return (getConduct(a) || 0) - (getConduct(b) || 0); };
+    } else if (phase === 3) {
+      cmp = function (a, b) { return (FIFA_RANK[a] || 999) - (FIFA_RANK[b] || 999); };
+    } else {
+      var sorted0 = block.slice().sort(); sorted0.forEach(function (t) { result.push(t); }); return;
+    }
+    var sorted = block.slice().sort(cmp);
+    var subBlocks = [], k = 0;
+    while (k < sorted.length) {
+      var l = k + 1;
+      while (l < sorted.length && cmp(sorted[k], sorted[l]) === 0) l++;
+      subBlocks.push(sorted.slice(k, l));
+      k = l;
+    }
+    subBlocks.forEach(function (sub) { resolveBlock(sub, phase + 1); });
+  }
+  blocks.forEach(function (b) { resolveBlock(b, 0); });
+  return result;
+}
+
+// Slots de 3os colocados / Anexo C da FIFA (copiado literalmente do index.html em 2026-07-07).
+var _THIRD_SLOTS = [74, 77, 79, 80, 81, 82, 85, 87];
+var _THIRD_SLOT_WINNER_GROUP = ['E', 'I', 'A', 'L', 'D', 'G', 'B', 'K'];
+var _ANNEXC_WINNER_SLOTS = ['1A', '1B', '1D', '1E', '1G', '1I', '1K', '1L'];
+var _ANNEXC_MATRIX={"EFGHIJKL":["3E","3J","3I","3F","3H","3G","3L","3K"],"DFGHIJKL":["3H","3G","3I","3D","3J","3F","3L","3K"],"DEGHIJKL":["3E","3J","3I","3D","3H","3G","3L","3K"],"DEFHIJKL":["3E","3J","3I","3D","3H","3F","3L","3K"],"DEFGIJKL":["3E","3G","3I","3D","3J","3F","3L","3K"],"DEFGHJKL":["3E","3G","3J","3D","3H","3F","3L","3K"],"DEFGHIKL":["3E","3G","3I","3D","3H","3F","3L","3K"],"DEFGHIJL":["3E","3G","3J","3D","3H","3F","3L","3I"],"DEFGHIJK":["3E","3G","3J","3D","3H","3F","3I","3K"],"CFGHIJKL":["3H","3G","3I","3C","3J","3F","3L","3K"],"CEGHIJKL":["3E","3J","3I","3C","3H","3G","3L","3K"],"CEFHIJKL":["3E","3J","3I","3C","3H","3F","3L","3K"],"CEFGIJKL":["3E","3G","3I","3C","3J","3F","3L","3K"],"CEFGHJKL":["3E","3G","3J","3C","3H","3F","3L","3K"],"CEFGHIKL":["3E","3G","3I","3C","3H","3F","3L","3K"],"CEFGHIJL":["3E","3G","3J","3C","3H","3F","3L","3I"],"CEFGHIJK":["3E","3G","3J","3C","3H","3F","3I","3K"],"CDGHIJKL":["3H","3G","3I","3C","3J","3D","3L","3K"],"CDFHIJKL":["3C","3J","3I","3D","3H","3F","3L","3K"],"CDFGIJKL":["3C","3G","3I","3D","3J","3F","3L","3K"],"CDFGHJKL":["3C","3G","3J","3D","3H","3F","3L","3K"],"CDFGHIKL":["3C","3G","3I","3D","3H","3F","3L","3K"],"CDFGHIJL":["3C","3G","3J","3D","3H","3F","3L","3I"],"CDFGHIJK":["3C","3G","3J","3D","3H","3F","3I","3K"],"CDEHIJKL":["3E","3J","3I","3C","3H","3D","3L","3K"],"CDEGIJKL":["3E","3G","3I","3C","3J","3D","3L","3K"],"CDEGHJKL":["3E","3G","3J","3C","3H","3D","3L","3K"],"CDEGHIKL":["3E","3G","3I","3C","3H","3D","3L","3K"],"CDEGHIJL":["3E","3G","3J","3C","3H","3D","3L","3I"],"CDEGHIJK":["3E","3G","3J","3C","3H","3D","3I","3K"],"CDEFIJKL":["3C","3J","3E","3D","3I","3F","3L","3K"],"CDEFHJKL":["3C","3J","3E","3D","3H","3F","3L","3K"],"CDEFHIKL":["3C","3E","3I","3D","3H","3F","3L","3K"],"CDEFHIJL":["3C","3J","3E","3D","3H","3F","3L","3I"],"CDEFHIJK":["3C","3J","3E","3D","3H","3F","3I","3K"],"CDEFGJKL":["3C","3G","3E","3D","3J","3F","3L","3K"],"CDEFGIKL":["3C","3G","3E","3D","3I","3F","3L","3K"],"CDEFGIJL":["3C","3G","3E","3D","3J","3F","3L","3I"],"CDEFGIJK":["3C","3G","3E","3D","3J","3F","3I","3K"],"CDEFGHKL":["3C","3G","3E","3D","3H","3F","3L","3K"],"CDEFGHJL":["3C","3G","3J","3D","3H","3F","3L","3E"],"CDEFGHJK":["3C","3G","3J","3D","3H","3F","3E","3K"],"CDEFGHIL":["3C","3G","3E","3D","3H","3F","3L","3I"],"CDEFGHIK":["3C","3G","3E","3D","3H","3F","3I","3K"],"CDEFGHIJ":["3C","3G","3J","3D","3H","3F","3E","3I"],"BFGHIJKL":["3H","3J","3B","3F","3I","3G","3L","3K"],"BEGHIJKL":["3E","3J","3I","3B","3H","3G","3L","3K"],"BEFHIJKL":["3E","3J","3B","3F","3I","3H","3L","3K"],"BEFGIJKL":["3E","3J","3B","3F","3I","3G","3L","3K"],"BEFGHJKL":["3E","3J","3B","3F","3H","3G","3L","3K"],"BEFGHIKL":["3E","3G","3B","3F","3I","3H","3L","3K"],"BEFGHIJL":["3E","3J","3B","3F","3H","3G","3L","3I"],"BEFGHIJK":["3E","3J","3B","3F","3H","3G","3I","3K"],"BDGHIJKL":["3H","3J","3B","3D","3I","3G","3L","3K"],"BDFHIJKL":["3H","3J","3B","3D","3I","3F","3L","3K"],"BDFGIJKL":["3I","3G","3B","3D","3J","3F","3L","3K"],"BDFGHJKL":["3H","3G","3B","3D","3J","3F","3L","3K"],"BDFGHIKL":["3H","3G","3B","3D","3I","3F","3L","3K"],"BDFGHIJL":["3H","3G","3B","3D","3J","3F","3L","3I"],"BDFGHIJK":["3H","3G","3B","3D","3J","3F","3I","3K"],"BDEHIJKL":["3E","3J","3B","3D","3I","3H","3L","3K"],"BDEGIJKL":["3E","3J","3B","3D","3I","3G","3L","3K"],"BDEGHJKL":["3E","3J","3B","3D","3H","3G","3L","3K"],"BDEGHIKL":["3E","3G","3B","3D","3I","3H","3L","3K"],"BDEGHIJL":["3E","3J","3B","3D","3H","3G","3L","3I"],"BDEGHIJK":["3E","3J","3B","3D","3H","3G","3I","3K"],"BDEFIJKL":["3E","3J","3B","3D","3I","3F","3L","3K"],"BDEFHJKL":["3E","3J","3B","3D","3H","3F","3L","3K"],"BDEFHIKL":["3E","3I","3B","3D","3H","3F","3L","3K"],"BDEFHIJL":["3E","3J","3B","3D","3H","3F","3L","3I"],"BDEFHIJK":["3E","3J","3B","3D","3H","3F","3I","3K"],"BDEFGJKL":["3E","3G","3B","3D","3J","3F","3L","3K"],"BDEFGIKL":["3E","3G","3B","3D","3I","3F","3L","3K"],"BDEFGIJL":["3E","3G","3B","3D","3J","3F","3L","3I"],"BDEFGIJK":["3E","3G","3B","3D","3J","3F","3I","3K"],"BDEFGHKL":["3E","3G","3B","3D","3H","3F","3L","3K"],"BDEFGHJL":["3H","3G","3B","3D","3J","3F","3L","3E"],"BDEFGHJK":["3H","3G","3B","3D","3J","3F","3E","3K"],"BDEFGHIL":["3E","3G","3B","3D","3H","3F","3L","3I"],"BDEFGHIK":["3E","3G","3B","3D","3H","3F","3I","3K"],"BDEFGHIJ":["3H","3G","3B","3D","3J","3F","3E","3I"],"BCGHIJKL":["3H","3J","3B","3C","3I","3G","3L","3K"],"BCFHIJKL":["3H","3J","3B","3C","3I","3F","3L","3K"],"BCFGIJKL":["3I","3G","3B","3C","3J","3F","3L","3K"],"BCFGHJKL":["3H","3G","3B","3C","3J","3F","3L","3K"],"BCFGHIKL":["3H","3G","3B","3C","3I","3F","3L","3K"],"BCFGHIJL":["3H","3G","3B","3C","3J","3F","3L","3I"],"BCFGHIJK":["3H","3G","3B","3C","3J","3F","3I","3K"],"BCEHIJKL":["3E","3J","3B","3C","3I","3H","3L","3K"],"BCEGIJKL":["3E","3J","3B","3C","3I","3G","3L","3K"],"BCEGHJKL":["3E","3J","3B","3C","3H","3G","3L","3K"],"BCEGHIKL":["3E","3G","3B","3C","3I","3H","3L","3K"],"BCEGHIJL":["3E","3J","3B","3C","3H","3G","3L","3I"],"BCEGHIJK":["3E","3J","3B","3C","3H","3G","3I","3K"],"BCEFIJKL":["3E","3J","3B","3C","3I","3F","3L","3K"],"BCEFHJKL":["3E","3J","3B","3C","3H","3F","3L","3K"],"BCEFHIKL":["3E","3I","3B","3C","3H","3F","3L","3K"],"BCEFHIJL":["3E","3J","3B","3C","3H","3F","3L","3I"],"BCEFHIJK":["3E","3J","3B","3C","3H","3F","3I","3K"],"BCEFGJKL":["3E","3G","3B","3C","3J","3F","3L","3K"],"BCEFGIKL":["3E","3G","3B","3C","3I","3F","3L","3K"],"BCEFGIJL":["3E","3G","3B","3C","3J","3F","3L","3I"],"BCEFGIJK":["3E","3G","3B","3C","3J","3F","3I","3K"],"BCEFGHKL":["3E","3G","3B","3C","3H","3F","3L","3K"],"BCEFGHJL":["3H","3G","3B","3C","3J","3F","3L","3E"],"BCEFGHJK":["3H","3G","3B","3C","3J","3F","3E","3K"],"BCEFGHIL":["3E","3G","3B","3C","3H","3F","3L","3I"],"BCEFGHIK":["3E","3G","3B","3C","3H","3F","3I","3K"],"BCEFGHIJ":["3H","3G","3B","3C","3J","3F","3E","3I"],"BCDHIJKL":["3H","3J","3B","3C","3I","3D","3L","3K"],"BCDGIJKL":["3I","3G","3B","3C","3J","3D","3L","3K"],"BCDGHJKL":["3H","3G","3B","3C","3J","3D","3L","3K"],"BCDGHIKL":["3H","3G","3B","3C","3I","3D","3L","3K"],"BCDGHIJL":["3H","3G","3B","3C","3J","3D","3L","3I"],"BCDGHIJK":["3H","3G","3B","3C","3J","3D","3I","3K"],"BCDFIJKL":["3C","3J","3B","3D","3I","3F","3L","3K"],"BCDFHJKL":["3C","3J","3B","3D","3H","3F","3L","3K"],"BCDFHIKL":["3C","3I","3B","3D","3H","3F","3L","3K"],"BCDFHIJL":["3C","3J","3B","3D","3H","3F","3L","3I"],"BCDFHIJK":["3C","3J","3B","3D","3H","3F","3I","3K"],"BCDFGJKL":["3C","3G","3B","3D","3J","3F","3L","3K"],"BCDFGIKL":["3C","3G","3B","3D","3I","3F","3L","3K"],"BCDFGIJL":["3C","3G","3B","3D","3J","3F","3L","3I"],"BCDFGIJK":["3C","3G","3B","3D","3J","3F","3I","3K"],"BCDFGHKL":["3C","3G","3B","3D","3H","3F","3L","3K"],"BCDFGHJL":["3C","3G","3B","3D","3H","3F","3L","3J"],"BCDFGHJK":["3H","3G","3B","3C","3J","3F","3D","3K"],"BCDFGHIL":["3C","3G","3B","3D","3H","3F","3L","3I"],"BCDFGHIK":["3C","3G","3B","3D","3H","3F","3I","3K"],"BCDFGHIJ":["3H","3G","3B","3C","3J","3F","3D","3I"],"BCDEIJKL":["3E","3J","3B","3C","3I","3D","3L","3K"],"BCDEHJKL":["3E","3J","3B","3C","3H","3D","3L","3K"],"BCDEHIKL":["3E","3I","3B","3C","3H","3D","3L","3K"],"BCDEHIJL":["3E","3J","3B","3C","3H","3D","3L","3I"],"BCDEHIJK":["3E","3J","3B","3C","3H","3D","3I","3K"],"BCDEGJKL":["3E","3G","3B","3C","3J","3D","3L","3K"],"BCDEGIKL":["3E","3G","3B","3C","3I","3D","3L","3K"],"BCDEGIJL":["3E","3G","3B","3C","3J","3D","3L","3I"],"BCDEGIJK":["3E","3G","3B","3C","3J","3D","3I","3K"],"BCDEGHKL":["3E","3G","3B","3C","3H","3D","3L","3K"],"BCDEGHJL":["3H","3G","3B","3C","3J","3D","3L","3E"],"BCDEGHJK":["3H","3G","3B","3C","3J","3D","3E","3K"],"BCDEGHIL":["3E","3G","3B","3C","3H","3D","3L","3I"],"BCDEGHIK":["3E","3G","3B","3C","3H","3D","3I","3K"],"BCDEGHIJ":["3H","3G","3B","3C","3J","3D","3E","3I"],"BCDEFJKL":["3C","3J","3B","3D","3E","3F","3L","3K"],"BCDEFIKL":["3C","3E","3B","3D","3I","3F","3L","3K"],"BCDEFIJL":["3C","3J","3B","3D","3E","3F","3L","3I"],"BCDEFIJK":["3C","3J","3B","3D","3E","3F","3I","3K"],"BCDEFHKL":["3C","3E","3B","3D","3H","3F","3L","3K"],"BCDEFHJL":["3C","3J","3B","3D","3H","3F","3L","3E"],"BCDEFHJK":["3C","3J","3B","3D","3H","3F","3E","3K"],"BCDEFHIL":["3C","3E","3B","3D","3H","3F","3L","3I"],"BCDEFHIK":["3C","3E","3B","3D","3H","3F","3I","3K"],"BCDEFHIJ":["3C","3J","3B","3D","3H","3F","3E","3I"],"BCDEFGKL":["3C","3G","3B","3D","3E","3F","3L","3K"],"BCDEFGJL":["3C","3G","3B","3D","3J","3F","3L","3E"],"BCDEFGJK":["3C","3G","3B","3D","3J","3F","3E","3K"],"BCDEFGIL":["3C","3G","3B","3D","3E","3F","3L","3I"],"BCDEFGIK":["3C","3G","3B","3D","3E","3F","3I","3K"],"BCDEFGIJ":["3C","3G","3B","3D","3J","3F","3E","3I"],"BCDEFGHL":["3C","3G","3B","3D","3H","3F","3L","3E"],"BCDEFGHK":["3C","3G","3B","3D","3H","3F","3E","3K"],"BCDEFGHJ":["3H","3G","3B","3C","3J","3F","3D","3E"],"BCDEFGHI":["3C","3G","3B","3D","3H","3F","3E","3I"],"AFGHIJKL":["3H","3J","3I","3F","3A","3G","3L","3K"],"AEGHIJKL":["3E","3J","3I","3A","3H","3G","3L","3K"],"AEFHIJKL":["3E","3J","3I","3F","3A","3H","3L","3K"],"AEFGIJKL":["3E","3J","3I","3F","3A","3G","3L","3K"],"AEFGHJKL":["3E","3G","3J","3F","3A","3H","3L","3K"],"AEFGHIKL":["3E","3G","3I","3F","3A","3H","3L","3K"],"AEFGHIJL":["3E","3G","3J","3F","3A","3H","3L","3I"],"AEFGHIJK":["3E","3G","3J","3F","3A","3H","3I","3K"],"ADGHIJKL":["3H","3J","3I","3D","3A","3G","3L","3K"],"ADFHIJKL":["3H","3J","3I","3D","3A","3F","3L","3K"],"ADFGIJKL":["3I","3G","3J","3D","3A","3F","3L","3K"],"ADFGHJKL":["3H","3G","3J","3D","3A","3F","3L","3K"],"ADFGHIKL":["3H","3G","3I","3D","3A","3F","3L","3K"],"ADFGHIJL":["3H","3G","3J","3D","3A","3F","3L","3I"],"ADFGHIJK":["3H","3G","3J","3D","3A","3F","3I","3K"],"ADEHIJKL":["3E","3J","3I","3D","3A","3H","3L","3K"],"ADEGIJKL":["3E","3J","3I","3D","3A","3G","3L","3K"],"ADEGHJKL":["3E","3G","3J","3D","3A","3H","3L","3K"],"ADEGHIKL":["3E","3G","3I","3D","3A","3H","3L","3K"],"ADEGHIJL":["3E","3G","3J","3D","3A","3H","3L","3I"],"ADEGHIJK":["3E","3G","3J","3D","3A","3H","3I","3K"],"ADEFIJKL":["3E","3J","3I","3D","3A","3F","3L","3K"],"ADEFHJKL":["3H","3J","3E","3D","3A","3F","3L","3K"],"ADEFHIKL":["3H","3E","3I","3D","3A","3F","3L","3K"],"ADEFHIJL":["3H","3J","3E","3D","3A","3F","3L","3I"],"ADEFHIJK":["3H","3J","3E","3D","3A","3F","3I","3K"],"ADEFGJKL":["3E","3G","3J","3D","3A","3F","3L","3K"],"ADEFGIKL":["3E","3G","3I","3D","3A","3F","3L","3K"],"ADEFGIJL":["3E","3G","3J","3D","3A","3F","3L","3I"],"ADEFGIJK":["3E","3G","3J","3D","3A","3F","3I","3K"],"ADEFGHKL":["3H","3G","3E","3D","3A","3F","3L","3K"],"ADEFGHJL":["3H","3G","3J","3D","3A","3F","3L","3E"],"ADEFGHJK":["3H","3G","3J","3D","3A","3F","3E","3K"],"ADEFGHIL":["3H","3G","3E","3D","3A","3F","3L","3I"],"ADEFGHIK":["3H","3G","3E","3D","3A","3F","3I","3K"],"ADEFGHIJ":["3H","3G","3J","3D","3A","3F","3E","3I"],"ACGHIJKL":["3H","3J","3I","3C","3A","3G","3L","3K"],"ACFHIJKL":["3H","3J","3I","3C","3A","3F","3L","3K"],"ACFGIJKL":["3I","3G","3J","3C","3A","3F","3L","3K"],"ACFGHJKL":["3H","3G","3J","3C","3A","3F","3L","3K"],"ACFGHIKL":["3H","3G","3I","3C","3A","3F","3L","3K"],"ACFGHIJL":["3H","3G","3J","3C","3A","3F","3L","3I"],"ACFGHIJK":["3H","3G","3J","3C","3A","3F","3I","3K"],"ACEHIJKL":["3E","3J","3I","3C","3A","3H","3L","3K"],"ACEGIJKL":["3E","3J","3I","3C","3A","3G","3L","3K"],"ACEGHJKL":["3E","3G","3J","3C","3A","3H","3L","3K"],"ACEGHIKL":["3E","3G","3I","3C","3A","3H","3L","3K"],"ACEGHIJL":["3E","3G","3J","3C","3A","3H","3L","3I"],"ACEGHIJK":["3E","3G","3J","3C","3A","3H","3I","3K"],"ACEFIJKL":["3E","3J","3I","3C","3A","3F","3L","3K"],"ACEFHJKL":["3H","3J","3E","3C","3A","3F","3L","3K"],"ACEFHIKL":["3H","3E","3I","3C","3A","3F","3L","3K"],"ACEFHIJL":["3H","3J","3E","3C","3A","3F","3L","3I"],"ACEFHIJK":["3H","3J","3E","3C","3A","3F","3I","3K"],"ACEFGJKL":["3E","3G","3J","3C","3A","3F","3L","3K"],"ACEFGIKL":["3E","3G","3I","3C","3A","3F","3L","3K"],"ACEFGIJL":["3E","3G","3J","3C","3A","3F","3L","3I"],"ACEFGIJK":["3E","3G","3J","3C","3A","3F","3I","3K"],"ACEFGHKL":["3H","3G","3E","3C","3A","3F","3L","3K"],"ACEFGHJL":["3H","3G","3J","3C","3A","3F","3L","3E"],"ACEFGHJK":["3H","3G","3J","3C","3A","3F","3E","3K"],"ACEFGHIL":["3H","3G","3E","3C","3A","3F","3L","3I"],"ACEFGHIK":["3H","3G","3E","3C","3A","3F","3I","3K"],"ACEFGHIJ":["3H","3G","3J","3C","3A","3F","3E","3I"],"ACDHIJKL":["3H","3J","3I","3C","3A","3D","3L","3K"],"ACDGIJKL":["3I","3G","3J","3C","3A","3D","3L","3K"],"ACDGHJKL":["3H","3G","3J","3C","3A","3D","3L","3K"],"ACDGHIKL":["3H","3G","3I","3C","3A","3D","3L","3K"],"ACDGHIJL":["3H","3G","3J","3C","3A","3D","3L","3I"],"ACDGHIJK":["3H","3G","3J","3C","3A","3D","3I","3K"],"ACDFIJKL":["3C","3J","3I","3D","3A","3F","3L","3K"],"ACDFHJKL":["3H","3J","3F","3C","3A","3D","3L","3K"],"ACDFHIKL":["3H","3F","3I","3C","3A","3D","3L","3K"],"ACDFHIJL":["3H","3J","3F","3C","3A","3D","3L","3I"],"ACDFHIJK":["3H","3J","3F","3C","3A","3D","3I","3K"],"ACDFGJKL":["3C","3G","3J","3D","3A","3F","3L","3K"],"ACDFGIKL":["3C","3G","3I","3D","3A","3F","3L","3K"],"ACDFGIJL":["3C","3G","3J","3D","3A","3F","3L","3I"],"ACDFGIJK":["3C","3G","3J","3D","3A","3F","3I","3K"],"ACDFGHKL":["3H","3G","3F","3C","3A","3D","3L","3K"],"ACDFGHJL":["3C","3G","3J","3D","3A","3F","3L","3H"],"ACDFGHJK":["3H","3G","3J","3C","3A","3F","3D","3K"],"ACDFGHIL":["3H","3G","3F","3C","3A","3D","3L","3I"],"ACDFGHIK":["3H","3G","3F","3C","3A","3D","3I","3K"],"ACDFGHIJ":["3H","3G","3J","3C","3A","3F","3D","3I"],"ACDEIJKL":["3E","3J","3I","3C","3A","3D","3L","3K"],"ACDEHJKL":["3H","3J","3E","3C","3A","3D","3L","3K"],"ACDEHIKL":["3H","3E","3I","3C","3A","3D","3L","3K"],"ACDEHIJL":["3H","3J","3E","3C","3A","3D","3L","3I"],"ACDEHIJK":["3H","3J","3E","3C","3A","3D","3I","3K"],"ACDEGJKL":["3E","3G","3J","3C","3A","3D","3L","3K"],"ACDEGIKL":["3E","3G","3I","3C","3A","3D","3L","3K"],"ACDEGIJL":["3E","3G","3J","3C","3A","3D","3L","3I"],"ACDEGIJK":["3E","3G","3J","3C","3A","3D","3I","3K"],"ACDEGHKL":["3H","3G","3E","3C","3A","3D","3L","3K"],"ACDEGHJL":["3H","3G","3J","3C","3A","3D","3L","3E"],"ACDEGHJK":["3H","3G","3J","3C","3A","3D","3E","3K"],"ACDEGHIL":["3H","3G","3E","3C","3A","3D","3L","3I"],"ACDEGHIK":["3H","3G","3E","3C","3A","3D","3I","3K"],"ACDEGHIJ":["3H","3G","3J","3C","3A","3D","3E","3I"],"ACDEFJKL":["3C","3J","3E","3D","3A","3F","3L","3K"],"ACDEFIKL":["3C","3E","3I","3D","3A","3F","3L","3K"],"ACDEFIJL":["3C","3J","3E","3D","3A","3F","3L","3I"],"ACDEFIJK":["3C","3J","3E","3D","3A","3F","3I","3K"],"ACDEFHKL":["3H","3E","3F","3C","3A","3D","3L","3K"],"ACDEFHJL":["3H","3J","3F","3C","3A","3D","3L","3E"],"ACDEFHJK":["3H","3J","3E","3C","3A","3F","3D","3K"],"ACDEFHIL":["3H","3E","3F","3C","3A","3D","3L","3I"],"ACDEFHIK":["3H","3E","3F","3C","3A","3D","3I","3K"],"ACDEFHIJ":["3H","3J","3E","3C","3A","3F","3D","3I"],"ACDEFGKL":["3C","3G","3E","3D","3A","3F","3L","3K"],"ACDEFGJL":["3C","3G","3J","3D","3A","3F","3L","3E"],"ACDEFGJK":["3C","3G","3J","3D","3A","3F","3E","3K"],"ACDEFGIL":["3C","3G","3E","3D","3A","3F","3L","3I"],"ACDEFGIK":["3C","3G","3E","3D","3A","3F","3I","3K"],"ACDEFGIJ":["3C","3G","3J","3D","3A","3F","3E","3I"],"ACDEFGHL":["3H","3G","3F","3C","3A","3D","3L","3E"],"ACDEFGHK":["3H","3G","3E","3C","3A","3F","3D","3K"],"ACDEFGHJ":["3H","3G","3J","3C","3A","3F","3D","3E"],"ACDEFGHI":["3H","3G","3E","3C","3A","3F","3D","3I"],"ABGHIJKL":["3H","3J","3B","3A","3I","3G","3L","3K"],"ABFHIJKL":["3H","3J","3B","3A","3I","3F","3L","3K"],"ABFGIJKL":["3I","3J","3B","3F","3A","3G","3L","3K"],"ABFGHJKL":["3H","3J","3B","3F","3A","3G","3L","3K"],"ABFGHIKL":["3H","3G","3B","3A","3I","3F","3L","3K"],"ABFGHIJL":["3H","3J","3B","3F","3A","3G","3L","3I"],"ABFGHIJK":["3H","3J","3B","3F","3A","3G","3I","3K"],"ABEHIJKL":["3E","3J","3B","3A","3I","3H","3L","3K"],"ABEGIJKL":["3E","3J","3B","3A","3I","3G","3L","3K"],"ABEGHJKL":["3E","3J","3B","3A","3H","3G","3L","3K"],"ABEGHIKL":["3E","3G","3B","3A","3I","3H","3L","3K"],"ABEGHIJL":["3E","3J","3B","3A","3H","3G","3L","3I"],"ABEGHIJK":["3E","3J","3B","3A","3H","3G","3I","3K"],"ABEFIJKL":["3E","3J","3B","3A","3I","3F","3L","3K"],"ABEFHJKL":["3E","3J","3B","3F","3A","3H","3L","3K"],"ABEFHIKL":["3E","3I","3B","3F","3A","3H","3L","3K"],"ABEFHIJL":["3E","3J","3B","3F","3A","3H","3L","3I"],"ABEFHIJK":["3E","3J","3B","3F","3A","3H","3I","3K"],"ABEFGJKL":["3E","3J","3B","3F","3A","3G","3L","3K"],"ABEFGIKL":["3E","3G","3B","3A","3I","3F","3L","3K"],"ABEFGIJL":["3E","3J","3B","3F","3A","3G","3L","3I"],"ABEFGIJK":["3E","3J","3B","3F","3A","3G","3I","3K"],"ABEFGHKL":["3E","3G","3B","3F","3A","3H","3L","3K"],"ABEFGHJL":["3H","3J","3B","3F","3A","3G","3L","3E"],"ABEFGHJK":["3H","3J","3B","3F","3A","3G","3E","3K"],"ABEFGHIL":["3E","3G","3B","3F","3A","3H","3L","3I"],"ABEFGHIK":["3E","3G","3B","3F","3A","3H","3I","3K"],"ABEFGHIJ":["3H","3J","3B","3F","3A","3G","3E","3I"],"ABDHIJKL":["3I","3J","3B","3D","3A","3H","3L","3K"],"ABDGIJKL":["3I","3J","3B","3D","3A","3G","3L","3K"],"ABDGHJKL":["3H","3J","3B","3D","3A","3G","3L","3K"],"ABDGHIKL":["3I","3G","3B","3D","3A","3H","3L","3K"],"ABDGHIJL":["3H","3J","3B","3D","3A","3G","3L","3I"],"ABDGHIJK":["3H","3J","3B","3D","3A","3G","3I","3K"],"ABDFIJKL":["3I","3J","3B","3D","3A","3F","3L","3K"],"ABDFHJKL":["3H","3J","3B","3D","3A","3F","3L","3K"],"ABDFHIKL":["3H","3I","3B","3D","3A","3F","3L","3K"],"ABDFHIJL":["3H","3J","3B","3D","3A","3F","3L","3I"],"ABDFHIJK":["3H","3J","3B","3D","3A","3F","3I","3K"],"ABDFGJKL":["3F","3J","3B","3D","3A","3G","3L","3K"],"ABDFGIKL":["3I","3G","3B","3D","3A","3F","3L","3K"],"ABDFGIJL":["3F","3J","3B","3D","3A","3G","3L","3I"],"ABDFGIJK":["3F","3J","3B","3D","3A","3G","3I","3K"],"ABDFGHKL":["3H","3G","3B","3D","3A","3F","3L","3K"],"ABDFGHJL":["3H","3G","3B","3D","3A","3F","3L","3J"],"ABDFGHJK":["3H","3G","3B","3D","3A","3F","3J","3K"],"ABDFGHIL":["3H","3G","3B","3D","3A","3F","3L","3I"],"ABDFGHIK":["3H","3G","3B","3D","3A","3F","3I","3K"],"ABDFGHIJ":["3H","3G","3B","3D","3A","3F","3I","3J"],"ABDEIJKL":["3E","3J","3B","3A","3I","3D","3L","3K"],"ABDEHJKL":["3E","3J","3B","3D","3A","3H","3L","3K"],"ABDEHIKL":["3E","3I","3B","3D","3A","3H","3L","3K"],"ABDEHIJL":["3E","3J","3B","3D","3A","3H","3L","3I"],"ABDEHIJK":["3E","3J","3B","3D","3A","3H","3I","3K"],"ABDEGJKL":["3E","3J","3B","3D","3A","3G","3L","3K"],"ABDEGIKL":["3E","3G","3B","3A","3I","3D","3L","3K"],"ABDEGIJL":["3E","3J","3B","3D","3A","3G","3L","3I"],"ABDEGIJK":["3E","3J","3B","3D","3A","3G","3I","3K"],"ABDEGHKL":["3E","3G","3B","3D","3A","3H","3L","3K"],"ABDEGHJL":["3H","3J","3B","3D","3A","3G","3L","3E"],"ABDEGHJK":["3H","3J","3B","3D","3A","3G","3E","3K"],"ABDEGHIL":["3E","3G","3B","3D","3A","3H","3L","3I"],"ABDEGHIK":["3E","3G","3B","3D","3A","3H","3I","3K"],"ABDEGHIJ":["3H","3J","3B","3D","3A","3G","3E","3I"],"ABDEFJKL":["3E","3J","3B","3D","3A","3F","3L","3K"],"ABDEFIKL":["3E","3I","3B","3D","3A","3F","3L","3K"],"ABDEFIJL":["3E","3J","3B","3D","3A","3F","3L","3I"],"ABDEFIJK":["3E","3J","3B","3D","3A","3F","3I","3K"],"ABDEFHKL":["3H","3E","3B","3D","3A","3F","3L","3K"],"ABDEFHJL":["3H","3J","3B","3D","3A","3F","3L","3E"],"ABDEFHJK":["3H","3J","3B","3D","3A","3F","3E","3K"],"ABDEFHIL":["3H","3E","3B","3D","3A","3F","3L","3I"],"ABDEFHIK":["3H","3E","3B","3D","3A","3F","3I","3K"],"ABDEFHIJ":["3H","3J","3B","3D","3A","3F","3E","3I"],"ABDEFGKL":["3E","3G","3B","3D","3A","3F","3L","3K"],"ABDEFGJL":["3E","3G","3B","3D","3A","3F","3L","3J"],"ABDEFGJK":["3E","3G","3B","3D","3A","3F","3J","3K"],"ABDEFGIL":["3E","3G","3B","3D","3A","3F","3L","3I"],"ABDEFGIK":["3E","3G","3B","3D","3A","3F","3I","3K"],"ABDEFGIJ":["3E","3G","3B","3D","3A","3F","3I","3J"],"ABDEFGHL":["3H","3G","3B","3D","3A","3F","3L","3E"],"ABDEFGHK":["3H","3G","3B","3D","3A","3F","3E","3K"],"ABDEFGHJ":["3H","3G","3B","3D","3A","3F","3E","3J"],"ABDEFGHI":["3H","3G","3B","3D","3A","3F","3E","3I"],"ABCHIJKL":["3I","3J","3B","3C","3A","3H","3L","3K"],"ABCGIJKL":["3I","3J","3B","3C","3A","3G","3L","3K"],"ABCGHJKL":["3H","3J","3B","3C","3A","3G","3L","3K"],"ABCGHIKL":["3I","3G","3B","3C","3A","3H","3L","3K"],"ABCGHIJL":["3H","3J","3B","3C","3A","3G","3L","3I"],"ABCGHIJK":["3H","3J","3B","3C","3A","3G","3I","3K"],"ABCFIJKL":["3I","3J","3B","3C","3A","3F","3L","3K"],"ABCFHJKL":["3H","3J","3B","3C","3A","3F","3L","3K"],"ABCFHIKL":["3H","3I","3B","3C","3A","3F","3L","3K"],"ABCFHIJL":["3H","3J","3B","3C","3A","3F","3L","3I"],"ABCFHIJK":["3H","3J","3B","3C","3A","3F","3I","3K"],"ABCFGJKL":["3C","3J","3B","3F","3A","3G","3L","3K"],"ABCFGIKL":["3I","3G","3B","3C","3A","3F","3L","3K"],"ABCFGIJL":["3C","3J","3B","3F","3A","3G","3L","3I"],"ABCFGIJK":["3C","3J","3B","3F","3A","3G","3I","3K"],"ABCFGHKL":["3H","3G","3B","3C","3A","3F","3L","3K"],"ABCFGHJL":["3H","3G","3B","3C","3A","3F","3L","3J"],"ABCFGHJK":["3H","3G","3B","3C","3A","3F","3J","3K"],"ABCFGHIL":["3H","3G","3B","3C","3A","3F","3L","3I"],"ABCFGHIK":["3H","3G","3B","3C","3A","3F","3I","3K"],"ABCFGHIJ":["3H","3G","3B","3C","3A","3F","3I","3J"],"ABCEIJKL":["3E","3J","3B","3A","3I","3C","3L","3K"],"ABCEHJKL":["3E","3J","3B","3C","3A","3H","3L","3K"],"ABCEHIKL":["3E","3I","3B","3C","3A","3H","3L","3K"],"ABCEHIJL":["3E","3J","3B","3C","3A","3H","3L","3I"],"ABCEHIJK":["3E","3J","3B","3C","3A","3H","3I","3K"],"ABCEGJKL":["3E","3J","3B","3C","3A","3G","3L","3K"],"ABCEGIKL":["3E","3G","3B","3A","3I","3C","3L","3K"],"ABCEGIJL":["3E","3J","3B","3C","3A","3G","3L","3I"],"ABCEGIJK":["3E","3J","3B","3C","3A","3G","3I","3K"],"ABCEGHKL":["3E","3G","3B","3C","3A","3H","3L","3K"],"ABCEGHJL":["3H","3J","3B","3C","3A","3G","3L","3E"],"ABCEGHJK":["3H","3J","3B","3C","3A","3G","3E","3K"],"ABCEGHIL":["3E","3G","3B","3C","3A","3H","3L","3I"],"ABCEGHIK":["3E","3G","3B","3C","3A","3H","3I","3K"],"ABCEGHIJ":["3H","3J","3B","3C","3A","3G","3E","3I"],"ABCEFJKL":["3E","3J","3B","3C","3A","3F","3L","3K"],"ABCEFIKL":["3E","3I","3B","3C","3A","3F","3L","3K"],"ABCEFIJL":["3E","3J","3B","3C","3A","3F","3L","3I"],"ABCEFIJK":["3E","3J","3B","3C","3A","3F","3I","3K"],"ABCEFHKL":["3H","3E","3B","3C","3A","3F","3L","3K"],"ABCEFHJL":["3H","3J","3B","3C","3A","3F","3L","3E"],"ABCEFHJK":["3H","3J","3B","3C","3A","3F","3E","3K"],"ABCEFHIL":["3H","3E","3B","3C","3A","3F","3L","3I"],"ABCEFHIK":["3H","3E","3B","3C","3A","3F","3I","3K"],"ABCEFHIJ":["3H","3J","3B","3C","3A","3F","3E","3I"],"ABCEFGKL":["3E","3G","3B","3C","3A","3F","3L","3K"],"ABCEFGJL":["3E","3G","3B","3C","3A","3F","3L","3J"],"ABCEFGJK":["3E","3G","3B","3C","3A","3F","3J","3K"],"ABCEFGIL":["3E","3G","3B","3C","3A","3F","3L","3I"],"ABCEFGIK":["3E","3G","3B","3C","3A","3F","3I","3K"],"ABCEFGIJ":["3E","3G","3B","3C","3A","3F","3I","3J"],"ABCEFGHL":["3H","3G","3B","3C","3A","3F","3L","3E"],"ABCEFGHK":["3H","3G","3B","3C","3A","3F","3E","3K"],"ABCEFGHJ":["3H","3G","3B","3C","3A","3F","3E","3J"],"ABCEFGHI":["3H","3G","3B","3C","3A","3F","3E","3I"],"ABCDIJKL":["3I","3J","3B","3C","3A","3D","3L","3K"],"ABCDHJKL":["3H","3J","3B","3C","3A","3D","3L","3K"],"ABCDHIKL":["3H","3I","3B","3C","3A","3D","3L","3K"],"ABCDHIJL":["3H","3J","3B","3C","3A","3D","3L","3I"],"ABCDHIJK":["3H","3J","3B","3C","3A","3D","3I","3K"],"ABCDGJKL":["3C","3J","3B","3D","3A","3G","3L","3K"],"ABCDGIKL":["3I","3G","3B","3C","3A","3D","3L","3K"],"ABCDGIJL":["3C","3J","3B","3D","3A","3G","3L","3I"],"ABCDGIJK":["3C","3J","3B","3D","3A","3G","3I","3K"],"ABCDGHKL":["3H","3G","3B","3C","3A","3D","3L","3K"],"ABCDGHJL":["3H","3G","3B","3C","3A","3D","3L","3J"],"ABCDGHJK":["3H","3G","3B","3C","3A","3D","3J","3K"],"ABCDGHIL":["3H","3G","3B","3C","3A","3D","3L","3I"],"ABCDGHIK":["3H","3G","3B","3C","3A","3D","3I","3K"],"ABCDGHIJ":["3H","3G","3B","3C","3A","3D","3I","3J"],"ABCDFJKL":["3C","3J","3B","3D","3A","3F","3L","3K"],"ABCDFIKL":["3C","3I","3B","3D","3A","3F","3L","3K"],"ABCDFIJL":["3C","3J","3B","3D","3A","3F","3L","3I"],"ABCDFIJK":["3C","3J","3B","3D","3A","3F","3I","3K"],"ABCDFHKL":["3H","3F","3B","3C","3A","3D","3L","3K"],"ABCDFHJL":["3C","3J","3B","3D","3A","3F","3L","3H"],"ABCDFHJK":["3H","3J","3B","3C","3A","3F","3D","3K"],"ABCDFHIL":["3H","3F","3B","3C","3A","3D","3L","3I"],"ABCDFHIK":["3H","3F","3B","3C","3A","3D","3I","3K"],"ABCDFHIJ":["3H","3J","3B","3C","3A","3F","3D","3I"],"ABCDFGKL":["3C","3G","3B","3D","3A","3F","3L","3K"],"ABCDFGJL":["3C","3G","3B","3D","3A","3F","3L","3J"],"ABCDFGJK":["3C","3G","3B","3D","3A","3F","3J","3K"],"ABCDFGIL":["3C","3G","3B","3D","3A","3F","3L","3I"],"ABCDFGIK":["3C","3G","3B","3D","3A","3F","3I","3K"],"ABCDFGIJ":["3C","3G","3B","3D","3A","3F","3I","3J"],"ABCDFGHL":["3C","3G","3B","3D","3A","3F","3L","3H"],"ABCDFGHK":["3H","3G","3B","3C","3A","3F","3D","3K"],"ABCDFGHJ":["3H","3G","3B","3C","3A","3F","3D","3J"],"ABCDFGHI":["3H","3G","3B","3C","3A","3F","3D","3I"],"ABCDEJKL":["3E","3J","3B","3C","3A","3D","3L","3K"],"ABCDEIKL":["3E","3I","3B","3C","3A","3D","3L","3K"],"ABCDEIJL":["3E","3J","3B","3C","3A","3D","3L","3I"],"ABCDEIJK":["3E","3J","3B","3C","3A","3D","3I","3K"],"ABCDEHKL":["3H","3E","3B","3C","3A","3D","3L","3K"],"ABCDEHJL":["3H","3J","3B","3C","3A","3D","3L","3E"],"ABCDEHJK":["3H","3J","3B","3C","3A","3D","3E","3K"],"ABCDEHIL":["3H","3E","3B","3C","3A","3D","3L","3I"],"ABCDEHIK":["3H","3E","3B","3C","3A","3D","3I","3K"],"ABCDEHIJ":["3H","3J","3B","3C","3A","3D","3E","3I"],"ABCDEGKL":["3E","3G","3B","3C","3A","3D","3L","3K"],"ABCDEGJL":["3E","3G","3B","3C","3A","3D","3L","3J"],"ABCDEGJK":["3E","3G","3B","3C","3A","3D","3J","3K"],"ABCDEGIL":["3E","3G","3B","3C","3A","3D","3L","3I"],"ABCDEGIK":["3E","3G","3B","3C","3A","3D","3I","3K"],"ABCDEGIJ":["3E","3G","3B","3C","3A","3D","3I","3J"],"ABCDEGHL":["3H","3G","3B","3C","3A","3D","3L","3E"],"ABCDEGHK":["3H","3G","3B","3C","3A","3D","3E","3K"],"ABCDEGHJ":["3H","3G","3B","3C","3A","3D","3E","3J"],"ABCDEGHI":["3H","3G","3B","3C","3A","3D","3E","3I"],"ABCDEFKL":["3C","3E","3B","3D","3A","3F","3L","3K"],"ABCDEFJL":["3C","3J","3B","3D","3A","3F","3L","3E"],"ABCDEFJK":["3C","3J","3B","3D","3A","3F","3E","3K"],"ABCDEFIL":["3C","3E","3B","3D","3A","3F","3L","3I"],"ABCDEFIK":["3C","3E","3B","3D","3A","3F","3I","3K"],"ABCDEFIJ":["3C","3J","3B","3D","3A","3F","3E","3I"],"ABCDEFHL":["3H","3F","3B","3C","3A","3D","3L","3E"],"ABCDEFHK":["3H","3E","3B","3C","3A","3F","3D","3K"],"ABCDEFHJ":["3H","3J","3B","3C","3A","3F","3D","3E"],"ABCDEFHI":["3H","3E","3B","3C","3A","3F","3D","3I"],"ABCDEFGL":["3C","3G","3B","3D","3A","3F","3L","3E"],"ABCDEFGK":["3C","3G","3B","3D","3A","3F","3E","3K"],"ABCDEFGJ":["3C","3G","3B","3D","3A","3F","3E","3J"],"ABCDEFGI":["3C","3G","3B","3D","3A","3F","3E","3I"],"ABCDEFGH":["3H","3G","3B","3C","3A","3F","3D","3E"]};
+
+function bracketResolveThirdPlaceSlot(thirdsList, gameNum) {
+  if (!thirdsList || thirdsList.length < 8) return null;
+  var slotIdx = _THIRD_SLOTS.indexOf(gameNum);
+  if (slotIdx < 0) return null;
+  var qualifyingGroups = thirdsList.map(function (t) { return t.group; }).slice().sort().join('');
+  var assignments = _ANNEXC_MATRIX[qualifyingGroups];
+  if (!assignments) return thirdsList[slotIdx] ? thirdsList[slotIdx].team : null;
+  var winnerSlotKey = '1' + _THIRD_SLOT_WINNER_GROUP[slotIdx];
+  var winnerSlotIdx = _ANNEXC_WINNER_SLOTS.indexOf(winnerSlotKey);
+  if (winnerSlotIdx < 0) return null;
+  var assignedGroup = assignments[winnerSlotIdx].charAt(1);
+  var match = thirdsList.filter(function (t) { return t.group === assignedGroup; });
+  return match.length ? match[0].team : null;
+}
+
+// winnerOf/loserOf: retornam o placeholder cru (ex. "V. Jogo 89"), igual ao _winnerOf do frontend --
+// a resolução final do nome real acontece em bracketResolveTeam, recursivamente.
+function bracketWinnerOf(gameNum, getScore, getKOSide) {
+  var g = GAME_BY_ID_AB[gameNum]; if (!g) return null;
+  var s = getScore(gameNum); if (!s || s.a === undefined || s.b === undefined) return null;
+  if (s.a > s.b) return g.a;
+  if (s.b > s.a) return g.b;
+  var side = getKOSide ? getKOSide(gameNum) : null;
+  if (side === 'a') return g.a;
+  if (side === 'b') return g.b;
+  return null;
+}
+function bracketLoserOf(gameNum, getScore, getKOSide) {
+  var g = GAME_BY_ID_AB[gameNum]; if (!g) return null;
+  var s = getScore(gameNum); if (!s || s.a === undefined || s.b === undefined) return null;
+  if (s.a > s.b) return g.b;
+  if (s.b > s.a) return g.a;
+  var side = getKOSide ? getKOSide(gameNum) : null;
+  if (side === 'a') return g.b;
+  if (side === 'b') return g.a;
+  return null;
+}
+
+// Cria um "contexto" de chaveamento (classificação de grupo + 3os colocados + vencedor/perdedor
+// + resolução de placeholder) a partir de uma função getScore(gn) e opcionalmente getKOSide(gn).
+// Usado tanto para o chaveamento REAL (com placares reais) quanto para o SIMULADO
+// (com os palpites de um participante, com fallback pro placar real quando não há palpite).
+function makeBracketContext(getScore, getKOSide) {
+  var gsCache = {}, thirdsCache = null;
+  function groupStandings(letter) {
+    if (Object.prototype.hasOwnProperty.call(gsCache, letter)) return gsCache[letter];
+    var teams = GROUPS[letter] || [], pts = {}, gp = {}, gf = {}, ga = {};
+    teams.forEach(function (t) { pts[t] = 0; gp[t] = 0; gf[t] = 0; ga[t] = 0; });
+    var groupGames = BOLAO_GAMES_AB.filter(function (g) { return g.f === GROUP_NAMES[letter]; });
+    groupGames.forEach(function (g) {
+      var s = getScore(g.n);
+      if (s && s.a !== undefined && s.b !== undefined) {
+        gp[g.a]++; gp[g.b]++; gf[g.a] += s.a; ga[g.a] += s.b; gf[g.b] += s.b; ga[g.b] += s.a;
+        if (s.a > s.b) pts[g.a] += 3; else if (s.a < s.b) pts[g.b] += 3; else { pts[g.a]++; pts[g.b]++; }
+      }
+    });
+    var anyPlayed = teams.some(function (t) { return gp[t] > 0; });
+    if (!anyPlayed) { gsCache[letter] = null; return null; }
+    var finished = groupGames.every(function (g) { var s = getScore(g.n); return s && s.a !== undefined && s.b !== undefined; });
+    var sorted = bracketResolveGroupOrder(teams, pts, gf, ga, groupGames, getScore, function () { return 0; });
+    var st = { teams: sorted, pts: pts, gf: gf, ga: ga, gp: gp, finished: finished };
+    gsCache[letter] = st; return st;
+  }
+  function rankedThirds() {
+    if (thirdsCache) return thirdsCache;
+    var thirds = [];
+    GROUP_ORDER.forEach(function (letter) {
+      var st = groupStandings(letter); if (!st || st.teams.length < 3) return;
+      var t = st.teams[2]; var p = st.pts[t] || 0, gf = st.gf[t] || 0, ga = st.ga[t] || 0;
+      thirds.push({ team: t, group: letter, pts: p, sg: gf - ga, gf: gf, gp: st.gp[t] || 0, finished: st.finished });
+    });
+    thirds.sort(function (a, b) {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      if (b.sg !== a.sg) return b.sg - a.sg;
+      if (b.gf !== a.gf) return b.gf - a.gf;
+      if ((FIFA_RANK[a.team] || 999) !== (FIFA_RANK[b.team] || 999)) return (FIFA_RANK[a.team] || 999) - (FIFA_RANK[b.team] || 999);
+      return a.team.localeCompare(b.team);
+    });
+    thirdsCache = thirds.slice(0, 8);
+    return thirdsCache;
+  }
+  var ctx = {
+    groupStandings: groupStandings,
+    rankedThirds: rankedThirds,
+    winnerOf: function (gn) { return bracketWinnerOf(gn, getScore, getKOSide); },
+    loserOf: function (gn) { return bracketLoserOf(gn, getScore, getKOSide); }
+  };
+  return ctx;
+}
+
+// Resolve um placeholder ("1° Grupo X", "V. Jogo N", "Perd. Jogo N", "0") para o nome real do
+// time dentro de um contexto de chaveamento (ctx = makeBracketContext(...)). Retorna null se
+// ainda não é possível resolver (jogo/grupo não terminado).
+function bracketResolveTeam(placeholder, gameNum, ctx, depth) {
+  depth = depth || 0;
+  if (depth > 12) return null;
+  if (!placeholder || placeholder === '') return null;
+
+  var mGrp = placeholder.match(/^(\d+)°\s+Grupo\s+([A-L])$/);
+  if (mGrp) {
+    var pos = parseInt(mGrp[1], 10) - 1, letter = mGrp[2];
+    var st = ctx.groupStandings(letter);
+    if (st && st.teams.length > pos) return st.teams[pos];
+    return null;
+  }
+
+  var mV = placeholder.match(/^V\.\s*Jogo\s+(\d+)$/);
+  if (mV) {
+    var vn = parseInt(mV[1], 10);
+    var w = ctx.winnerOf(vn);
+    if (!w) return null;
+    if (w === '0' || /°\s*Grupo|V\.\s*Jogo|Perd\./.test(w)) return bracketResolveTeam(w, vn, ctx, depth + 1);
+    return w;
+  }
+
+  var mP = placeholder.match(/^Perd\.\s*Jogo\s+(\d+)$/);
+  if (mP) {
+    var pn = parseInt(mP[1], 10);
+    var pg = GAME_BY_ID_AB[pn]; if (!pg) return null;
+    var winner = ctx.winnerOf(pn); if (!winner) return null;
+    var rA = bracketResolveTeam(pg.a, pn, ctx, depth + 1), rB = bracketResolveTeam(pg.b, pn, ctx, depth + 1);
+    if (winner === rA) return rB;
+    if (winner === rB) return rA;
+    if (winner === pg.a) return rB;
+    if (winner === pg.b) return rA;
+    return null;
+  }
+
+  if (placeholder === '0') {
+    var thirds = ctx.rankedThirds();
+    if (thirds.length === 8) {
+      var resolved = bracketResolveThirdPlaceSlot(thirds, gameNum);
+      if (resolved) return resolved;
+    }
+    var slotIdx = _THIRD_SLOTS.indexOf(gameNum);
+    if (slotIdx >= 0 && thirds[slotIdx]) return thirds[slotIdx].team;
+    return null;
+  }
+
+  return placeholder; // nome literal, já resolvido (ex. "Brasil")
+}
+
+// Compara o confronto REAL de um jogo de mata-mata com o confronto SIMULADO a partir dos
+// palpites de um participante (via bracketResolveTeam nos dois lados, real x simulado).
+// Retorna true só quando os dois times de AMBOS os lados batem (ordem não importa).
+function bracketAcertouConfronto(gameNum, realCtx, simCtx) {
+  var g = GAME_BY_ID_AB[gameNum]; if (!g) return false;
+  var realA = bracketResolveTeam(g.a, gameNum, realCtx);
+  var realB = bracketResolveTeam(g.b, gameNum, realCtx);
+  var simA = bracketResolveTeam(g.a, gameNum, simCtx);
+  var simB = bracketResolveTeam(g.b, gameNum, simCtx);
+  if (!realA || !realB || !simA || !simB) return false;
+  return (realA === simA && realB === simB) || (realA === simB && realB === simA);
+}
+
 // ── Mata-mata: mapeamento fase → jogos e jogo → fase ──
 var KO_PHASE_GAMES = {
   r32:   [73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88],
@@ -928,11 +1169,44 @@ async function handle(req) {
 
             // 4. Calcular pontuacao por participante (grupos + KO com picks_reopen)
             var KO_PHASE_BONUS = {r32:5,r16:10,qf:15,sf:20,'3rd':20,final:30};
+
+            // Contexto de chaveamento REAL (placares reais, com _r90 = ft||real para jogos com prorrogacao).
+            // Construido uma unica vez e compartilhado por todos os participantes.
+            function realGetScore(gn) {
+              var r = realScores[gn];
+              if (!r || r.a === undefined || r.b === undefined) return null;
+              return r.ft || r;
+            }
+            function realGetKOSide(gn) {
+              var r = realScores[gn];
+              return (r && r.penWinner) ? r.penWinner : null;
+            }
+            var realCtx = makeBracketContext(realGetScore, realGetKOSide);
+
             var rows = snapParticipants.map(function(part) {
               var myPicks = picksByPid[part.id] || {};
               var myReopen = reopenByPid[part.id] || {};
               var total = 0, exactCount = 0, resultCount = 0;
               var confirmTs = part.confirmed_at ? new Date(part.confirmed_at).getTime() : null;
+
+              // Contexto de chaveamento SIMULADO: usa o palpite do participante para jogos a partir
+              // de BOLAO_FIRST (reopen tem prioridade sobre o palpite original); antes disso, ou sem
+              // palpite algum, cai no placar real (igual ao _bolaoGetScore do frontend).
+              function simGetScore(gn) {
+                if (gn < BOLAO_FIRST) return realGetScore(gn);
+                var rp = myReopen[gn];
+                if (rp && rp.goals_a !== null && rp.goals_a !== undefined) return { a: rp.goals_a, b: rp.goals_b };
+                var p = myPicks[gn];
+                if (p && p.goals_a !== null && p.goals_a !== undefined) return { a: p.goals_a, b: p.goals_b };
+                return realGetScore(gn);
+              }
+              function simGetKOSide(gn) {
+                var rp = myReopen[gn];
+                if (rp && rp.ko_pick) return rp.ko_pick;
+                return realGetKOSide(gn);
+              }
+              var simCtx = makeBracketContext(simGetScore, simGetKOSide);
+
               Object.keys(realScores).forEach(function(gn) {
                 var gnNum = parseInt(gn, 10);
                 var dl = bolaoDeadline(gnNum);
@@ -942,19 +1216,18 @@ async function handle(req) {
                 var isKO = !!KO_GAME_PHASE[gnNum];
                 var pts;
                 if (isKO) {
-                  // KO: reopen tem prioridade; sem reopen usa pick original com tabela cheia.
-                  // LIMITACAO CONHECIDA (Bug 3): o worker nao tem como calcular acertouConfronto
-                  // (verificar se o usuario previu os times corretos para o confronto) sem replicar
-                  // toda a logica de resolucao de bracket do frontend. Por isso, useFullTable=!hasReopen
-                  // em vez de useFullTable=acertouConfrunto&&!hasReopen. O snapshot pode sobrestimar
-                  // pontos KO para usuarios com confronto errado. O ranking ao vivo (frontend) e correto.
+                  // KO: reopen tem prioridade; sem reopen usa pick original.
+                  // acertouConfronto: os dois times do confronto (resolvidos via bracket) batem com a
+                  // simulacao a partir dos palpites do participante -- so entao vale tabela cheia e bonus
+                  // de fase, igual a regra final do frontend (v20.22): useFullTable = acertouConfronto && !hasReopen.
                   var reopenPick = myReopen[gnNum];
                   var hasReopen = reopenPick && reopenPick.goals_a !== null && reopenPick.goals_a !== undefined;
                   var activePick = hasReopen ? reopenPick : pick;
                   if (!activePick || activePick.goals_a === null || activePick.goals_a === undefined) return;
-                  var useFullTable = !hasReopen;
+                  var acertouConfronto = bracketAcertouConfronto(gnNum, realCtx, simCtx);
+                  var useFullTable = acertouConfronto && !hasReopen;
                   var _r90 = real.ft || real; pts = calcKOPts(activePick.goals_a, activePick.goals_b, _r90.a, _r90.b, useFullTable);
-                  if (pts >= 0 && useFullTable) total += (KO_PHASE_BONUS[KO_GAME_PHASE[gnNum]] || 0);
+                  if (pts >= 0 && acertouConfronto) total += (KO_PHASE_BONUS[KO_GAME_PHASE[gnNum]] || 0);
                   // +5 se acertou ko_pick nos pênaltis (real.a===real.b = placar final empatado = pênaltis)
                   if (pts >= 0 && real.a === real.b && activePick.ko_pick && real.penWinner) {
                     if (activePick.ko_pick === real.penWinner) { total += 5; }

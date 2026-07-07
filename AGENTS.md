@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-07 (v20.31 — Fix: telas do bolão — ranking, detalhe do participante, estatísticas, reabertura — nunca eram redesenhadas quando o placar mudava ao vivo, mostrando pontos desatualizados até a pessoa recarregar a página inteira)
+**Última atualização:** 2026-07-07 (v20.33 — Port do chaveamento completo pro Worker feito, PENDENTE DE DEPLOY E TESTE AO VIVO — ver seção v20.33. v20.32: checkup completo do projeto, .gitignore corrompido corrigido, log de erro adicionado no polling)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -793,6 +793,170 @@ engolir o erro. **Causa raiz exata de por que a 1ª tentativa às vezes não com
 a mitigação por retry + no-store + log é robusta o suficiente na prática e foi validada com
 teste real ao vivo repetido (ver v20.18), mas se o log de warning aparecer no console de algum
 usuário no futuro, isso vai finalmente dar a pista que faltou aqui.
+
+### v20.33 — Port do chaveamento completo pro Worker (acertouConfronto) — PENDENTE DE DEPLOY E TESTE AO VIVO (2026-07-07)
+
+**Contexto:** o v20.32 identificou que `bolao-worker.js` (tarefa `task=snapshot`, usada só pelo
+gráfico de Evolução) tinha um bug conhecido e assumido no próprio código ("LIMITACAO CONHECIDA
+(Bug 3)"): `useFullTable = !hasReopen` em vez de `useFullTable = acertouConfronto && !hasReopen`,
+porque o Worker não tinha como calcular se o participante acertou o confronto (os dois times
+certos) sem replicar toda a lógica de chaveamento do frontend (classificação de grupo com
+desempates, 8 melhores terceiros, Anexo C da FIFA, resolução recursiva de placeholder). O
+usuário pediu explicitamente a correção completa em vez de só mitigar o sintoma (ver decisão
+registrada abaixo).
+
+**O que foi feito:** portadas para `bolao-worker.js` as constantes `GROUPS`, `GROUP_NAMES`,
+`GROUP_ORDER`, `FIFA_RANK`, `BOLAO_GAMES_AB` (com os placeholders `a`/`b` de cada um dos 104
+jogos) e a matriz `_ANNEXC_MATRIX` do Anexo C — copiadas literalmente do `index.html`. E as
+funções `bracketResolveGroupOrder`, `bracketResolveThirdPlaceSlot`, `bracketWinnerOf`,
+`bracketLoserOf`, `bracketResolveTeam` e `makeBracketContext(getScore, getKOSide)` (um "contexto"
+de chaveamento genérico e parametrizável, reaproveitado tanto pro chaveamento REAL — com placares
+reais — quanto pro SIMULADO — com os palpites de cada participante, com fallback pro placar real
+quando não há palpite, igual ao `_bolaoGetScore` do frontend). `bracketAcertouConfronto(gameNum,
+realCtx, simCtx)` resolve os dois lados do confronto nos dois contextos e compara. O cálculo de
+pontos KO no `task=snapshot` agora usa `useFullTable = acertouConfronto && !hasReopen` e o bônus
+de fase é aplicado com base em `acertouConfronto` — igual à regra final do frontend (v20.22).
+
+**Duas limitações conhecidas, aceitas deliberadamente pelo usuário:**
+
+1. **Desempate de fair play (cartões) não implementado no Worker.** A função `getConduct`
+   passada pro `makeBracketContext` sempre retorna `0` — o Worker não busca `game_events` (tabela
+   que tem os cartões) pra montar isso. Isso só afeta o caso raríssimo de dois times empatados em
+   pontos, saldo de gols E gols marcados dentro do mesmo grupo (a fase 2 do desempate em cascata
+   `_resolveGroupOrder`/`bracketResolveGroupOrder` só é alcançada nesse cenário). **Se o projeto
+   for reaproveitado numa Copa futura e esse desempate específico chegar a decisão real numa fase
+   de grupos**, será preciso: buscar `game_events?select=game_n,cards` via `supaFetch` dentro do
+   bloco `task=snapshot`, montar um mapa `game_n -> {home:[...], away:[...]}` e passar uma função
+   `getConduct(team)` de verdade pro `makeBracketContext` (mesmo padrão do `cond` em
+   `_groupStandings` do frontend, linhas ~1648-1659 do `index.html`). Sem isso, num empate triplo
+   raro o Worker pode calcular uma classificação de grupo diferente da do site (que já implementa
+   o desempate certo) — e por consequência um `acertouConfronto` errado só nesse cenário
+   específico.
+
+2. **Não foi validado rodando ao vivo com dados reais até o momento deste registro.** O código foi
+   revisado linha por linha via leitura direta do arquivo (sem os problemas de cache do bash nessa
+   pasta), mas o Worker publicado no Cloudflare **ainda está com a versão antiga/buggada** — as
+   mudanças só existem no arquivo local `bolao-worker.js`, não deployadas. Testei a conectividade
+   e uma chamada de baseline em `GET /cron?task=snapshot` (com o `CRON_SECRET` do
+   `CREDENCIAIS_COPA2026.md`) e o Worker ainda antigo respondeu
+   `{"snapshot":"32 participants, round=94, 92 scored games"}` — isso é o comportamento ANTIGO,
+   só serviu de baseline de conectividade, não confirma a lógica nova.
+
+**Próximos passos, nesta ordem, antes de considerar o Bug 3 resolvido de verdade:**
+1. Rodar `.\deploy-worker.ps1` pra publicar o `bolao-worker.js` atualizado no Cloudflare.
+2. Chamar `GET /cron?secret=<CRON_SECRET>&task=snapshot` de novo e comparar a pontuação de pelo
+   menos 1-2 participantes que já erraram algum confronto de mata-mata contra o valor mostrado no
+   site (ranking ao vivo do frontend, que já está correto) — devem bater agora.
+3. Só depois disso, atualizar o rótulo de versão (`#app-build-tag`, hoje travado em "v20.26" desde
+   a v20.32 — pendência à parte) e marcar esta entrada como validada.
+
+**Atualização 2026-07-07 (limpeza de arquivos):** removidos da raiz do repositório 32 arquivos
+obsoletos/redundantes e a pasta `backup_bloco1/` (que continha a anon key do Supabase exposta em
+código antigo não usado em produção — isso resolve a pendência de segurança listada no
+`CREDENCIAIS_COPA2026.md`). Removidos: backups locais stale (`index.html.backup`,
+`copa2026.html.backup`, `bolao-worker.js.backup`), arquivos temporários/log (`temp_g98.txt`,
+`deploy_log.txt`), scripts de deploy/git redundantes (o fluxo oficial é só `deploy-worker.ps1` +
+`git push` manual — commit-frontend-bugs.ps1, compare_times.ps1, deploy-node.js, deploy.bat,
+diagnose-worker.ps1, fix-and-deploy.ps1, git-push.bat, git-push.ps1, sync.ps1, Iniciar Copa.bat),
+migrations SQL já aplicadas no Supabase (create_live_scores.sql, live_scores_game_n.sql,
+heitor_bonus.sql, game_events.sql, supabase-additions.sql, supabase-migration.sql,
+supabase-reopen.sql, supabase-rls-fix.sql, supabase-rls-fix-2.sql, supabase-security-fix.sql) e
+relatórios de auditoria pontuais de sessões passadas (AUDIT_BUGS.md, LEVANTAMENTO_TECNICO.md,
+RECOVERY.md, RELATORIO_BLOCO1.md, RELATORIO_VARREDURA.md, UX_AUDIT_MOBILE.md,
+UX_REAVALIACAO_CRITICA.md) — cujo conteúdo relevante já está consolidado neste `AGENTS.md`.
+**Mantidos deliberadamente**: `backups/` (backups reais de dados do Supabase gerados pelo
+`backup-supabase.ps1` — não é lixo, é a rede de segurança da seção 16) e `UX_ROADMAP_9_10.md`
+(roadmap estratégico de UX mobile ainda não implementado, não é histórico de bug). **Pendência**:
+esses arquivos ainda estão rastreados pelo Git — falta rodar `git add -A` + `git commit` +
+`git push` pra remover do histórico de commits futuros (o conteúdo antigo continua acessível via
+`git log` se precisar recuperar algo).
+
+**Atualização 2026-07-07 (mesmo dia):** deploy feito via `.\deploy-worker.ps1` (sucesso confirmado
+pelo usuário: "[OK] copa2026-bolao deployado com sucesso!"). `task=snapshot` rodado de novo após o
+deploy, sem erros (32 participantes, round=94, 92 jogos pontuados — mesma forma da resposta antes
+e depois, o que é esperado, já que essa mensagem é só um resumo agregado). **Validação manual feita
+pelo usuário em 3 navegadores diferentes, comparando a aba Evolução com o ranking principal do
+site — resultado "parece certo".** Consideramos o Bug 3 (acertouConfronto no Worker) RESOLVIDO.
+Segue pendente apenas o item 1 (fair play/cartões no bracket do Worker — ver Task #13 do backlog)
+e o bump do rótulo de versão (`#app-build-tag`).
+
+### v20.32 — Checkup completo do projeto (pedido explícito do usuário, 2026-07-07)
+
+Depois de uma sequência de bugs reais encontrados no mesmo dia (v20.28 a v20.31), o usuário
+pediu uma auditoria "bem a fundo" em todo o projeto, "nos mínimos detalhes", "sem deixar passar
+nada". Checklist executado:
+
+**1. Varredura por padrões de bug já conhecidos:** buscado em todo o código por
+`m.Home`/`m.Away` sem guarda (mesmo padrão do v20.30) — só restavam os 2 já corrigidos, mais um
+terceiro (`fetchCalendar`) que já tinha a guarda correta desde antes. Buscado por chamadas
+`typeof X==='function'` pra achar outras funções com nome errado (mesmo padrão do bug
+`renderBolaoStats` do v20.31) — nenhuma outra encontrada. Adicionado `console.warn` no
+`catch()` de `fetchFifaScores` (antes retornava `null` 100% silenciosamente — foi exatamente
+esse silêncio que escondeu o bug do v20.30 por semanas; agora fica rastro no console F12).
+Descoberto de brinde: a função de auto-auditoria do próprio site (`auditData`, roda sozinha
+3s depois de carregar a página) tinha o MESMO bug do v20.30 (crash com jogos futuros sem
+confronto definido) — ela vinha mostrando "⚠ Erro de rede" nas últimas semanas, mas não era
+erro de rede nenhum, era esse bug. Corrigida junto.
+
+**2. Varredura placar vs gols em todos os jogos encerrados:** re-executada depois dos fixes de
+hoje, cruzando com o calendário AO VIVO da própria FIFA (não só o cache local) — **94 jogos
+checados, 0 divergências**. Os jogos #89 e #93 (corrigidos hoje) agora batem certinho.
+
+**3. Auditoria de pontuação de todos os 32 participantes:** rodado `bolaoCalcTotal` pra cada um
+— nenhum total inválido (NaN), nenhum negativo, nenhuma exceção. Também checado: nenhum nome de
+participante duplicado, nenhum participante confirmado com zero palpites e zero bônus (o caso
+do Heitor, já resolvido, não se repetiu).
+
+**4. Consistência `index.html` vs `copa2026.html`:** confirmado hash SHA-256 idêntico entre os
+dois arquivos (não só contagem de linhas, que o `bash` mostra errado nessa pasta por causa do
+cache do OneDrive). Nesse processo, achado que a correção do `console.warn` (item 1) tinha sido
+aplicada só no `index.html` — corrigido, replicado no `copa2026.html`.
+
+**5. `bolao-worker.js` vs regras atuais do frontend — BUG CONFIRMADO, AINDA NÃO CORRIGIDO:**
+o Worker tem uma rotina (`task=snapshot`, disparada automaticamente pelo cron externo via
+`/cron?task=all` ou `task=snapshot`) que recalcula a pontuação de mata-mata do zero, mas usando
+a regra ANTIGA (`useFullTable=!hasReopen`, sem checar se o participante acertou o confronto) e
+sem nenhum dos fixes de placar de 90min feitos hoje (`real.ft||real` sem fallback via
+`MATCH_90_SCORE`). Isso já era um gap conhecido e documentado desde v20.22 ("o snapshot pode
+sobrestimar pontos"), mas na investigação de hoje foi confirmado que:
+- O ranking AO VIVO (o que todo mundo vê no dia a dia) usa exclusivamente o cálculo do
+  frontend, que está correto — **não afetado**.
+- O que ESTÁ em risco é a tabela `ranking_snapshots` (usada só pela aba "Evolução" — gráfico de
+  posição/pontos ao longo do campeonato). O Worker roda esse cálculo errado automaticamente via
+  cron, e como grava com `on_conflict=participant_id,round` (upsert), ele pode SOBRESCREVER os
+  dados corretos que o próprio site já tinha enviado (via `POST /snapshot`, que usa o cálculo
+  correto do frontend) com os dados errados do Worker, para a mesma rodada, dependendo da ordem
+  de execução.
+- **Não corrigido nesta rodada** — mexer no Worker exige um redeploy separado (Cloudflare, via
+  `deploy-worker.ps1`/API token), com um perfil de risco diferente de um `git push` no site
+  estático. Recomendado ao usuário decidir entre: (a) portar a lógica de resolução de bracket
+  pro Worker (trabalho maior), ou (b) mais simples e de menor risco — desativar o cálculo
+  server-side (`task=snapshot`) já que o frontend já envia os dados corretos via
+  `checkAutoSnapshot`, eliminando a fonte do bug em vez de corrigi-la.
+
+**6. Segurança:** RLS já confirmado ativo em sessão anterior, nenhuma mudança nas policies do
+Supabase nesta sessão. Achado e corrigido: o arquivo `.gitignore` tinha uma linha corrompida —
+`backup_bloco1/` estava salvo com bytes nulos intercalados entre cada caractere (bug clássico de
+ferramenta gravando em UTF-16 num arquivo que devia ser texto simples), fazendo a regra de
+exclusão NUNCA funcionar de verdade. Reescrito o arquivo inteiro, limpo. Achado também que
+`backup_bloco1/players.json` ainda está rastreado pelo git (não é segredo — é o roster público
+de jogadores — mas é inconsistente com a decisão de remover essa pasta inteira do
+versionamento; requer `git rm --cached backup_bloco1/players.json` pra finalizar a limpeza).
+
+**7. Status do git/deploy:** o `bash` sandbox deu erro de lock (`.git/index.lock`) ao tentar
+`git fetch` — o mesmo problema já documentado antes que impede rodar comandos de escrita do git
+por aqui nessa pasta específica (sincronizada via OneDrive). **Não foi possível confirmar com
+certeza, por esta via, se os commits de hoje (v20.30/v20.31) já estão no GitHub** — pedido ao
+usuário rodar `git status`/`git log --oneline -5` no PowerShell local pra confirmar.
+
+**Resumo de prioridade pro usuário:**
+- 🔴 Worker com bug de pontuação nas evoluções (item 5) — afeta só o gráfico de evolução, não o
+  ranking principal, mas pode sobrescrever dado bom com dado ruim periodicamente. Decisão
+  pendente do usuário sobre como tratar.
+- 🟡 `.gitignore` corrompido (corrigido) + `players.json` remanescente em `backup_bloco1/`
+  (cosmético, não é segredo, mas fica pra terminar a limpeza).
+- 🟢 Todo o resto (placar, pontuação, consistência entre arquivos, integridade dos
+  participantes) auditado e sem problemas encontrados.
 
 ### v20.31 — Telas do bolão nunca eram redesenhadas quando o placar mudava ao vivo (2026-07-07)
 
