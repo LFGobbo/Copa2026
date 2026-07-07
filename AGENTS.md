@@ -1,6 +1,6 @@
 # Copa do Mundo 2026 — Documentação do Projeto
 
-**Última atualização:** 2026-07-06 (v20.29 — Consolidação: função única `_bolaoReal90` pra achar o placar de 90min, com verificação real de gol pós-90min — corrige um dado corrompido da própria FIFA que fez o v20.28 usar um placar errado)
+**Última atualização:** 2026-07-07 (v20.30 — Bug crítico: `fetchFifaScores`/`auditData` quebravam silenciosamente pra TODO o campeonato sempre que um jogo futuro do mata-mata (semifinal/final) aparecia sem os dois times definidos, travando placares em jogos com gol nos acréscimos)
 **Repositório:** `github.com/LFGobbo/Copa2026`
 **Deploy:** https://lfgobbo.github.io/Copa2026/
 **Tecnologia:** HTML puro + CSS + JavaScript (zero build tools, sem Node.js)
@@ -793,6 +793,72 @@ engolir o erro. **Causa raiz exata de por que a 1ª tentativa às vezes não com
 a mitigação por retry + no-store + log é robusta o suficiente na prática e foi validada com
 teste real ao vivo repetido (ver v20.18), mas se o log de warning aparecer no console de algum
 usuário no futuro, isso vai finalmente dar a pista que faltou aqui.
+
+### v20.30 — Bug crítico: polling de placar ao vivo quebrava silenciosamente pro campeonato inteiro (2026-07-07)
+
+Usuário reportou novo card inconsistente: "Portugal vs Espanha 🔓 tabela reduzida · Palpite:
+1×1 → 0×0 · 2 pts" e destacou (com print da aba Jogos) que o gol de Mikel Merino (Espanha,
+90+1') aparecia listado na timeline do jogo, mas o placar mostrado continuava "0 × 0". Pedido
+explícito do usuário: investigar a fundo, sem supor nada, sem perder dado, sem estragar o site.
+
+**Varredura preventiva (leitura, sem gravar nada):** antes de mexer em qualquer coisa, rodada
+uma checagem em TODOS os 89 jogos de mata-mata/grupo já encerrados, comparando o placar salvo
+(`scores[gn]`) contra a contagem de gols reconstruída a partir do cache de eventos
+(`goals[gn]`). Resultado: **apenas o jogo #93** (Portugal x Espanha, Oitavas) divergia — não era
+um problema generalizado, era um caso isolado.
+
+**Causa raiz (achada consultando a timeline oficial da FIFA, `api.fifa.com/api/v3/timelines/
+400021529`, e o endpoint de calendário):** o jogo terminou Portugal 0 x 1 Espanha (gol aos
+90+1', fim aos 99', sem prorrogação — confirmado que o placar real e atual da própria FIFA já é
+0x1). O placar salvo no app (`scores[93]`) nunca foi atualizado pra refletir esse gol. Ao
+reproduzir manualmente a função `fetchFifaScores()` (responsável por buscar o placar de todos os
+jogos numa run só, usada no polling automático a cada 10-60s), ela retornava **`null`** —
+silenciosamente, porque o `.catch()` no final da promise engole qualquer erro. Removendo o catch
+pra investigar, o erro real apareceu: `TypeError: Cannot read properties of null (reading
+'Abbreviation')`.
+
+Isso acontece porque o calendário da FIFA já inclui os jogos futuros do mata-mata que ainda não
+têm os dois times definidos (semifinais, 3º lugar, final — 5 jogos, confirmados com
+`Home: null, Away: null` até as quartas terminarem). O código fazia `m.Home.Abbreviation`
+direto, sem checar se `m.Home` existe — e como um `forEach` não tem recuperação por item, um
+erro em QUALQUER jogo (mesmo um que não tem nada a ver com o #93) **derruba o processamento de
+TODOS os outros jogos daquela chamada**, e a função inteira retorna `null` sem avisar nada no
+console pro usuário. Ou seja: esse bug existe (e vem quebrando o polling ao vivo silenciosamente)
+desde que o PRIMEIRO jogo futuro sem confronto definido apareceu no calendário da FIFA — bem no
+início do mata-mata, semanas atrás. A maioria dos jogos não foi afetada visivelmente porque o
+app tem caminhos alternativos de atualização de placar (cache compartilhado de eventos,
+processamento de timeline individual por partida ao vivo) que não dependem dessa função — mas
+qualquer gol que dependesse especificamente desse polling em lote pra ser capturado (como um gol
+nos acréscimos, perto do fim de um jogo que não estava sendo processado individualmente no
+momento) corria o risco de ficar preso, como aconteceu aqui.
+
+O mesmo padrão de bug (sem guarda pra `m.Home`/`m.Away` nulos) também existia em `auditData()`
+(a função de auto-auditoria do próprio app, que compara o placar salvo contra a FIFA — ela também
+vinha quebrando silenciosamente, o que é irônico já que deveria ter pego esse tipo de
+divergência).
+
+**Fix:** adicionado `if(!m.Home||!m.Away)return;` logo no início do `forEach` em
+`fetchFifaScores()` e em `auditData()`, pulando apenas o jogo malformado em vez de abortar o
+processamento de todos os outros. `fetchCalendar()` (uma terceira função que também itera
+`d.Results`) já tinha essa guarda corretamente.
+
+**Validado ao vivo:** reproduzida a versão corrigida da função em memória no Chrome — antes,
+`fetchFifaScores()` retornava `null` (mapa vazio, 0 jogos); depois do fix, retorna um mapa com
+94 jogos, incluindo `game93: {a:0, b:1}` — o placar real e correto. Checado também o cache do
+Worker (`/scores`) e confirmado que ele NÃO tinha um registro salvo (errado ou não) pro jogo #93
+— ou seja, não há dado server-side pra corrigir; o problema era 100% no polling client-side, e se
+autocorrige assim que o código novo rodar (a função `mergeScores` já sobrescreve `scores[gn]`
+sem condição nenhuma, ao contrário do bug de v20.23 — não precisa de bump de `DATA_VERSION`
+dessa vez).
+
+Aplicado identicamente em `index.html` e `copa2026.html` (ambos 5515 linhas, byte-idênticos).
+
+**Pendente/recomendação:** dado que esse bug ficou invisível por semanas (silenciado pelo
+`.catch(function(){return null})`), vale considerar no futuro logar esses erros no console
+(`console.warn`) em vez de engolir silenciosamente — várias funções desse arquivo já fazem
+isso (ver padrão em `_bolaoPullEventsOnceAttempt`, comentário da v20.16/20.17), mas
+`fetchFifaScores` e `auditData` ainda não. Não alterado nessa rodada pra não aumentar o escopo
+da mudança logo antes de confirmar que o fix principal está estável.
 
 ### v20.29 — CORREÇÃO DO v20.28: MATCH_90_SCORE estava com dado corrompido pro jogo #89 (2026-07-06)
 

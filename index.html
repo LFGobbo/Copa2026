@@ -2265,7 +2265,17 @@ function fetchFifaScores(t){var ac=new AbortController(),to=setTimeout(function(
 return fetch(FIFA_URL,{cache:"no-store",signal:ac.signal}).then(function(r){clearTimeout(to);return r.json()}).then(function(d){
 if(d&&d.Results)FIFA_CALENDAR_RAW={ts:Date.now(),data:d};saveFifaRaw();
 var map={};if(!d||!d.Results)return map;
-d.Results.forEach(function(m){var h=FIFA_TEAM_MAP[m.Home.Abbreviation],a=FIFA_TEAM_MAP[m.Away.Abbreviation],hs=m.HomeTeamScore,as=m.AwayTeamScore;
+d.Results.forEach(function(m){
+// Fix 2026-07-07 (v20.30): jogos futuros do mata-mata cujo confronto ainda nao foi decidido
+// (ex: semifinal/final antes das quartas terminarem) vem da FIFA com Home/Away=null. Sem essa
+// guarda, m.Home.Abbreviation jogava um TypeError nao tratado que abortava o forEach INTEIRO
+// (o catch() no fim da promise engolia o erro e retornava null pra funcao inteira) -- ou seja,
+// TODO polling ao vivo via essa funcao vinha falhando silenciosamente desde que o primeiro jogo
+// futuro sem confronto definido apareceu no calendario da FIFA (inicio do mata-mata). Descoberto
+// ao vivo: jogo #93 (Portugal 0x1 Espanha, gol nos acrescimos) ficou com placar errado (0x0)
+// porque o poll que deveria ter capturado o gol final nunca completou.
+if(!m.Home||!m.Away)return;
+var h=FIFA_TEAM_MAP[m.Home.Abbreviation],a=FIFA_TEAM_MAP[m.Away.Abbreviation],hs=m.HomeTeamScore,as=m.AwayTeamScore;
 if(!FIFA_MAP_READY&&m.Home&&m.Home.Abbreviation&&m.Home.IdTeam)FIFA_TEAM_IDS[m.Home.Abbreviation]=m.Home.IdTeam;
 if(!FIFA_MAP_READY&&m.Away&&m.Away.Abbreviation&&m.Away.IdTeam)FIFA_TEAM_IDS[m.Away.Abbreviation]=m.Away.IdTeam;
 if(h&&a&&m.IdMatch){for(var i=0;i<GAMES.length;i++){var g=GAMES[i];
@@ -2319,6 +2329,9 @@ function auditData(){
       if(!d||!d.Results){ab.className='audit-badge err';ab.textContent='⚠';ab.title='Erro ao conectar na FIFA';_hide(ab);return}
       var ok=0,bad=0,divs=[];
       d.Results.forEach(function(m){
+        // Fix 2026-07-07 (v20.30): mesma guarda de fetchFifaScores -- jogos futuros do
+        // mata-mata ainda sem confronto definido vem com Home/Away=null.
+        if(!m.Home||!m.Away)return;
         var h=FIFA_TEAM_MAP[m.Home.Abbreviation],a=FIFA_TEAM_MAP[m.Away.Abbreviation];
         if(!h||!a||m.HomeTeamScore===null||m.AwayTeamScore===null)return;
         for(var i=0;i<GAMES.length;i++){
