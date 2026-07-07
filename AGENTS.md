@@ -741,6 +741,25 @@ todo o script síncrono, incluindo a atribuição de `BOLAO_WORKER`, já rodou).
 igual). **Pendente:** validação visual em produção após deploy — checar se um deploy futuro some
 sem precisar de refresh manual, e se a requisição `undefined/events` não aparece mais no Network tab.
 
+**Descoberta ao vivo (2026-07-07):** a sessão de login do bolão (`_bolaoToken`) **não é
+persistida em lugar nenhum** — é só uma variável em memória, nunca salva em `localStorage`. Toda
+vez que a página recarrega, o usuário perde o login do bolão (mesmo tendo acabado de logar). Isso
+tinha um efeito colateral: o guard `if(saved==='bolao'&&!_bolaoToken)saved='jogos';` (linha ~2890)
+jogava o usuário de volta pra "Jogos" sempre que ele estava na aba do bolão e recarregava, já que
+nunca havia token depois de um reload. Confirmado ao vivo no Chrome: aba "Grupos" sobrevivia a um
+reload real, aba "Bolão" não (o hash na URL mudava sozinho de `#bolao` pra `#jogos`).
+
+**Corrigido (só a parte da aba):** removido o guard `!_bolaoToken` da restauração de aba — a aba
+"Bolão" agora é restaurada normalmente no reload, igual as demais. Como `#bolao-logged-area` já
+começa escondido por padrão e só aparece após login bem-sucedido (linha ~4208), a aba renderiza
+corretamente a tela de login quando não há sessão — não há necessidade de esconder a aba inteira
+só porque o usuário não está logado.
+
+**Deliberadamente NÃO corrigido — decisão explícita do usuário (2026-07-07):** persistir a sessão
+(token) em `localStorage` pra sobreviver a um reload. Usuário pediu para manter o comportamento
+atual (precisa logar de novo a cada reload) — só a parte da aba foi resolvida. Não mexer na
+persistência de sessão sem pedido explícito.
+
 ### v20.14 a v20.18 — Serie de incidentes reais: gols/cartões sumindo no celular (2026-07-03)
 
 **Contexto:** depois do v20.13 (fix do backfill N+1), o usuário reportou que o problema original —

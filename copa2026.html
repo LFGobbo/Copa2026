@@ -2887,7 +2887,11 @@ setTimeout(function(){
   try{
     var saved=window.location.hash.replace('#','')||localStorage.getItem('copa2026_tab');
     if(saved==='hoje')saved='jogos';
-    if(saved==='bolao'&&!_bolaoToken)saved='jogos';
+    // Fix 2026-07-07 (v20.34): antes, ficar sem token (o que acontece em TODO reload, ja
+    // que a sessao do bolao nao e' persistida -- decisao deliberada, ver AGENTS.md) jogava o
+    // usuario de volta pra "jogos" mesmo que ele estivesse na aba do bolao. A aba do bolao ja
+    // tem sua propria tela de login (#bolao-logged-area comeca escondida), entao nao ha razao
+    // pra abandonar a aba -- so restaurar normalmente e deixar a tela de login aparecer.
     if(saved&&VALID_TABS.indexOf(saved)>=0){if(saved==='diagnostico'){switchTab('diagnostico')}else{var nb=document.querySelector('.nav-btn[data-tab="'+saved+'"]');if(nb){navClick.call(nb)}else{var tb=document.querySelector('.tab[data-tab="'+saved+'"]');if(tb)tb.click()}}}
   }catch(e){}
 },0);
