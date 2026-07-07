@@ -2782,3 +2782,110 @@ reconcileScores();
 **Impacto:** Quando scores mudam: 1 render (antes: 2). Quando nada muda: 0 renders (antes: 1). Dados sempre atualizados no único render que ocorre.
 
 **Segurança verificada:** `scores[]` só é mutado por `mergeScores`, `processTimeline` e funções de console — todas já disparam seus próprios renders. Bolão não toca `scores[]`. Abas mata-mata, jogos e bolão investigadas antes da implementação. `copa2026.html` sincronizado. JS válido. Chaves balanceadas.
+
+## 21. Auditoria profunda 2026-07-07 — achados pendentes e decisões do usuário
+
+Auditoria completa (index.html em 4 blocos, bolao-worker.js, arquivos periféricos, git) feita
+nesta sessão. Itens já corrigidos estão registrados em v20.34. Abaixo, itens **levantados e
+NÃO corrigidos**, com a decisão explícita do usuário sobre cada um.
+
+### Segurança — decisão do usuário: documentar, NÃO mexer por enquanto
+
+Usuário está ciente e não está preocupado no momento (contexto: chaves foram deixadas visíveis
+deliberadamente para o agente conseguir trabalhar/testar sem travas). Revisitar se o projeto virar
+mais público ou se o usuário pedir.
+
+1. **`deploy-worker.ps1` com 6 segredos reais em texto puro, commitados**: `SUPABASE_KEY`
+   (service_role), `JWT_SECRET`, `ADMIN_KEY`, `ADMIN_HASH`, `CRON_SECRET`, `TURNSTILE_SEC`. Se o
+   repo for público, tecnicamente comprometidos. Ação recomendada (não executada): mover pra
+   arquivo gitignored + rotacionar chaves.
+2. **`POST /snapshot` sem checar se `participant_id` do corpo é do dono do token** — qualquer
+   participante logado pode em tese forjar pontuação de outro na tabela `ranking_snapshots` (só
+   afeta o gráfico de Evolução, não o ranking ao vivo).
+3. **Hash de senha sem salt por usuário + `JWT_SECRET` reciclado como pepper de senha/assinatura
+   JWT/hash de admin** — um segredo vazado compromete os três mecanismos ao mesmo tempo. JWT não é
+   HMAC de verdade (SHA-256 concatenado, risco teórico de length-extension).
+
+### Rate limiting em /login + "esqueci a senha" — decisão do usuário: documentar para o futuro
+
+Usuário entendeu o risco (força bruta contra `/login`, sem limite de tentativas hoje) e decidiu
+não atacar agora — fica pro backlog de melhorias futuras do projeto, mesma categoria da questão de
+desempate (seção acima).
+
+4. **Sem rate limit em `/login`** — endpoint aceita tentativas ilimitadas de senha sem atraso ou
+   bloqueio. Risco prático baixo (bolão privado, ~32 participantes), mas exposto publicamente na
+   internet. Correção: contar tentativas por IP/nome numa janela de tempo e recusar depois de N
+   erros.
+4b. **Não existe fluxo de "esqueci minha senha"** — hoje, se um participante esquece a senha, não
+   há como recuperar/resetar sozinho (só via admin, `_bAdm` ou reset manual no Supabase). Feature
+   nova a implementar no futuro: endpoint de reset (ex: por e-mail, se algum dia coletarmos e-mail
+   dos participantes — hoje só temos nome+senha, sem canal de contato pra verificar identidade;
+   precisa decidir o mecanismo de verificação antes de implementar).
+
+### Desempate de grupos — decisão do usuário: documentar para reaproveitamento futuro do projeto
+
+Fase de grupos deste torneio já passou — não faz sentido corrigir agora. Se o projeto for
+reaproveitado numa Copa futura, atacar isso no início (antes da fase de grupos), não depois.
+
+8. **Texto da interface (linha ~2159) promete um 7º critério de desempate** ("edição anterior do
+   ranking") **que não existe no código** — `_resolveGroupOrder` (~linha 1620) cai direto em
+   `block.slice().sort()` (ordenação alfabética simples) depois do 6º critério (ranking FIFA). Ou
+   corrigir o texto da interface, ou implementar o critério de fato.
+9. **Três implementações independentes de ordenação de grupo** que podem divergir em empates
+   cíclicos de 3 times: `renderGroups()` (tabela visível, comparator par-a-par com
+   `localeCompare`), `_resolveGroupOrder()`/`_groupStandings()` (usada pelo bracket, a "correta"),
+   e `renderThirdPlaced()` (pula H2H, tem sua própria lógica). Risco real: a tabela mostrada pro
+   usuário pode não bater com o que o chaveamento realmente usa como 1º/2º/3º do grupo. Consolidar
+   em uma função única antes da próxima fase de grupos.
+
+### Ainda em aberto, sem decisão do usuário (não classificados acima)
+
+5. `POST /picks` faz 2 requisições Supabase por jogo salvo (até ~200 numa chamada só) — risco de
+   estourar limite de 50 subrequests do Cloudflare, mesma classe de bug já corrigida em
+   `task=fifa` mas não replicada aqui.
+6. `computeBolaoStats()` aplica fórmula de pontuação de fase de grupos a jogos de mata-mata,
+   ignorando resolução de confronto/reabertura/bônus de fase — contamina toda a aba Estatísticas
+   (rankings de exatos/sequências/zebra, evolução).
+7. `bolaoStatsCompare()` usa fórmula própria (`exact*10+result*2`) divergente do cálculo oficial.
+   `_bolaoStatsCache` só é invalidado por função de teste de console — aba Estatísticas congela no
+   primeiro cálculo da sessão.
+10. `generate_annex_c.js` gera 100% de combinações inválidas (bug: não marca grupos como usados).
+    Não usado em produção (dados reais vêm de `third_place_matrix_2026.json`), mas continua
+    quebrado no repo.
+11. `CRON_SECRET` trafega via query string (exposição em logs de acesso).
+12. Worker devolve mensagens de erro cruas do Postgres/Supabase pro cliente.
+13. `<style>` duplicado sem fechar (linhas 17-20) e bloco `tab-bolao-estatisticas` duplicado com
+    IDs repetidos (linhas ~745-750 e ~889-894) — HTML tecnicamente inválido, tolerado pelo
+    navegador.
+14. `PHASE_THRESHOLD.final` no Worker (102) diverge do valor documentado (103).
+15. Fallback offline do Service Worker nunca funciona (`index.html` não é precacheado em `STATIC`).
+16. `manifest.json` sem ícones maskable/orientation/lang/id.
+
+## 22. Plano de ataque — próxima sessão (2026-07-08)
+
+Autorizado pelo usuário a atacar tudo abaixo (tudo que NÃO está nas seções "decisão do usuário:
+documentar para o futuro" da seção 21 — esses ficam de fora: segurança de segredos/hash/JWT,
+rate limit + esqueci senha, e a questão de desempate de grupos). Ordem sugerida, maior impacto
+visível primeiro:
+
+1. **`computeBolaoStats()` usa fórmula errada pra jogos de mata-mata** (item 6, seção 21) —
+   contamina toda a aba Estatísticas (rankings de exatos/sequências/zebra, evolução). Maior
+   impacto visível pros usuários hoje.
+2. **`bolaoStatsCompare()` com fórmula própria divergente + `_bolaoStatsCache` nunca invalidado**
+   (item 7, seção 21) — mesma aba, congelamento de dados.
+3. **`POST /picks` com N×2 requisições Supabase por chamada** (item 5, seção 21) — risco de
+   estourar limite de subrequests do Cloudflare; replicar o batching já usado em `task=fifa`.
+4. **Erros crus do Postgres/Supabase vazando pro cliente** (item 12) — trocar por mensagem
+   genérica + log interno.
+5. **`CRON_SECRET` em query string** (item 11) — mover pra header.
+6. **`PHASE_THRESHOLD.final` divergente da doc** (item 14) — confirmar qual valor é o correto
+   (código ou doc) e alinhar os dois.
+7. **HTML inválido**: `<style>` duplicado sem fechar + bloco `tab-bolao-estatisticas` duplicado
+   com IDs repetidos (item 13) — limpeza de markup morto.
+8. **`generate_annex_c.js` quebrado** (item 10) — corrigir o algoritmo ou remover do repo (não
+   está em uso em produção).
+9. **Fallback offline do Service Worker nunca funciona** (item 15) — precachear `index.html`/`./`.
+10. **`manifest.json` incompleto** (item 16) — ícones maskable, orientation, lang, id.
+
+Cada item deve seguir o protocolo da seção 19 (reproduzir, causa raiz, correção mínima, testar,
+sincronizar `index.html`/`copa2026.html`, validar) antes de marcar como resolvido.
