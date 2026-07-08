@@ -30,24 +30,44 @@ function combinations(arr, k) {
 // Gera todas as 495 combinacoes
 const allCombos = combinations(GROUP_ORDER, 8);
 
-// Para cada combinacao, determina a atribuicao correta
-// Algoritmo: simula o processo FIFA - para cada slot na ordem,
-// encontra o melhor 3o elegivel que ainda nao foi alocado
+// Para cada combinacao, determina UMA atribuicao valida (sem duplicata, completa).
+// Algoritmo: backtracking (busca com retrocesso) sobre os 8 slots, na ordem de SLOT_ORDER.
+// IMPORTANTE: isto garante que existe pelo menos 1 grupo distinto por slot, mas NAO garante
+// que a escolha bate com a atribuicao real da FIFA em casos onde existe mais de uma atribuicao
+// valida possivel -- a fonte de verdade para producao continua sendo third_place_matrix_2026.json
+// (extraido e validado manualmente da FIFA/Wikipedia/ESPN, ver seu _meta). Este script e' so
+// um gerador auxiliar, nunca usado pelo app em producao.
+//
+// Fix 2026-07-08 (v1, escolha gulosa pura): faltava remover do pool os grupos ja atribuidos a
+// slots anteriores -- o mesmo grupo podia (e quase sempre acabava) sendo atribuido a mais de um
+// slot na mesma combinacao (495/495 combinacoes com "duplicata interna").
+// Fix 2026-07-08 (v2, backtracking): a v1 (greedy simples, sem retrocesso) corrigiu a duplicata
+// mas ainda falhava em ~28/495 combinacoes -- a escolha gulosa alfabetica num slot podia esgotar
+// a unica opcao elegivel de um slot posterior, sem chance de corrigir depois. Testado ao vivo:
+// com backtracking completo, as 495 combinacoes passam a gerar atribuicao valida.
 function assignSlots(qualifyingGroups) {
-  const assigned = {};
   const qSet = new Set(qualifyingGroups);
-  
-  for (const gn of SLOT_ORDER) {
+  const assigned = {};
+  const used = new Set();
+
+  function backtrack(slotIdx) {
+    if (slotIdx >= SLOT_ORDER.length) return true; // todos os slots atribuidos com sucesso
+    const gn = SLOT_ORDER[slotIdx];
     const slot = SLOTS[gn];
-    // Grupos elegiveis para este slot que estao entre os qualificados
-    const eligible = slot.eligible.filter(g => qSet.has(g));
-    // O melhor 3o elegivel = o primeiro na ordem alfabetica (simplificado)
-    // Na pratica, a FIFA usa ranking por pontos, mas para a matriz
-    // de combinacoes, a ordenacao e por grupo (A-L), nao por pontos
-    // Porque a tabela pre-determina qual combinacao de grupos produz
-    // qual atribuicao, independente de pontos.
-    assigned[gn] = eligible.sort()[0];
+    const eligible = slot.eligible.filter(g => qSet.has(g) && !used.has(g)).sort();
+    for (const candidate of eligible) {
+      assigned[gn] = candidate;
+      used.add(candidate);
+      if (backtrack(slotIdx + 1)) return true; // achou solucao completa, propaga sucesso
+      // Retrocede: desfaz esta escolha e tenta o proximo candidato
+      used.delete(candidate);
+      delete assigned[gn];
+    }
+    return false; // nenhum candidato deste slot leva a uma solucao completa
   }
+
+  const ok = backtrack(0);
+  if (!ok) return {}; // nao deveria acontecer para combinacoes validas de 8 grupos elegiveis
   return assigned;
 }
 
@@ -87,6 +107,14 @@ for (const key of keys) {
   if (uniqueVal.size !== 8) { valid = false; console.log('ERRO: duplicata interna', key, val); }
 }
 console.log('Valores validos:', valid);
+
+// Fix 2026-07-08: antes, o script seguia e escrevia annex_c_data.js mesmo com "Valores
+// validos: false" -- sem guarda bloqueante, um erro no algoritmo (como o de duplicata
+// interna corrigido acima) gerava um arquivo de saida inteiro invalido, silenciosamente.
+if (!valid || keys.length !== 495 || unique.size !== 495) {
+  console.error('Validacao falhou -- annex_c_data.js NAO foi gerado. Corrija o algoritmo antes de tentar de novo.');
+  process.exit(1);
+}
 
 // Gerar saida JS compacta
 // Formato: objeto com chave string (8 letras), valor string (8 indices hex)

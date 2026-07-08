@@ -491,7 +491,13 @@ KO_PHASE_GAMES = {
 #### Auto-abertura via Worker (Cron)
 
 ```javascript
-PHASE_THRESHOLD = { r32: 72, r16: 88, qf: 96, sf: 100, '3rd': 102, final: 103 }
+PHASE_THRESHOLD = { r32: 72, r16: 88, qf: 96, sf: 100, '3rd': 102, final: 102 }
+// final e 3rd usam o mesmo threshold (102): os dois confrontos ficam conhecidos ao mesmo tempo
+// assim que as duas semifinais terminam (jogos 101 e 102) -- os finalistas são os vencedores
+// de 101/102, e os times do 3º lugar são os perdedores dos mesmos dois jogos. Não faz sentido
+// a final depender da conclusão do jogo de 3º lugar (103), por isso NÃO é final:103.
+// Corrigido 2026-07-08: divergência encontrada em auditoria (doc dizia final:103, código
+// sempre teve final:102 — o código estava certo, só a documentação estava desatualizada).
 // Quando completed >= threshold → abre a próxima fase via upsert em phase_reopen
 ```
 
@@ -2849,9 +2855,16 @@ reaproveitado numa Copa futura, atacar isso no início (antes da fase de grupos)
 7. `bolaoStatsCompare()` usa fórmula própria (`exact*10+result*2`) divergente do cálculo oficial.
    `_bolaoStatsCache` só é invalidado por função de teste de console — aba Estatísticas congela no
    primeiro cálculo da sessão.
-10. `generate_annex_c.js` gera 100% de combinações inválidas (bug: não marca grupos como usados).
-    Não usado em produção (dados reais vêm de `third_place_matrix_2026.json`), mas continua
-    quebrado no repo.
+10. `generate_annex_c.js` gerava 100% de combinações inválidas (bug: não marcava grupos como
+    usados). **Parcialmente corrigido em 2026-07-08**: adicionado `used`-set (exclui grupos já
+    atribuídos a slots anteriores) + guard que impede escrever `annex_c_data.js` se a validação
+    falhar. Testado ao vivo (`node generate_annex_c.js`): ainda falha em ~28 das 495 combinações
+    (a escolha gulosa alfabética esgota opções elegíveis pra um slot mais tarde — precisaria de
+    matching bipartido/backtracking de verdade, não greedy). Decisão: não vale o esforço de
+    reescrever o algoritmo, já que este script **não é usado em produção** (dado real vem de
+    `third_place_matrix_2026.json`, já validado manualmente) — o guard garante que, se alguém
+    rodar o script achando que gera dado válido, ele nunca mais escreve um arquivo corrompido
+    silenciosamente.
 11. `CRON_SECRET` trafega via query string (exposição em logs de acesso).
 12. Worker devolve mensagens de erro cruas do Postgres/Supabase pro cliente.
 13. `<style>` duplicado sem fechar (linhas 17-20) e bloco `tab-bolao-estatisticas` duplicado com
@@ -2889,3 +2902,21 @@ visível primeiro:
 
 Cada item deve seguir o protocolo da seção 19 (reproduzir, causa raiz, correção mínima, testar,
 sincronizar `index.html`/`copa2026.html`, validar) antes de marcar como resolvido.
+
+## 23. Novo modo de corrupção encontrado — arquivo ficando MAIS CURTO (2026-07-08)
+
+Além dos dois modos já documentados na seção 19.12/19.14 (Edit tool truncando ao reescrever
+arquivo inteiro, e redirecionamento de shell truncando silenciosamente), encontrado um terceiro
+modo nesta sessão: **editar um arquivo pequeno (`manifest.json`, ~500 bytes) removendo conteúdo
+(deixando o arquivo mais curto que antes) fez sobrarem bytes nulos (`\x00`) no final do arquivo**,
+depois do JSON válido — o editor sobrescreveu só os primeiros N bytes sem truncar o restante do
+arquivo antigo. `python3 -m json.tool` acusou `Extra data: line 18 column 1` — sintoma direto
+desse lixo remanescente.
+
+**Isso reforça a regra prática da seção 19.14**: mesmo em arquivos pequenos nesta pasta
+sincronizada com OneDrive, prefira sempre `cp` (que trunca o destino no tamanho exato da fonte)
+para qualquer edição que possa reduzir o tamanho do arquivo — não confiar que uma edição in-place
+"pequena" seja imune ao problema só por não ser um arquivo grande como `index.html`/`AGENTS.md`.
+Verificação recomendada após qualquer edição, mesmo em arquivo pequeno: `wc -c` do arquivo final
+deve bater com o esperado, e/ou validar formato (`json.tool`, `node --check`) antes de confiar que
+a edição funcionou.

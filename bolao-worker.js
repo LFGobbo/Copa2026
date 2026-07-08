@@ -432,6 +432,8 @@ async function handle(req) {
       if (!body.picks || !body.picks.length) return error('picks obrigatorio');
       var rejected = [];
       var now = Date.now();
+      var validPicks = [];
+      var historyBatch = [];
       for (var i = 0; i < body.picks.length; i++) {
         var pick = body.picks[i];
         var dl = bolaoDeadline(pick.game_n);
@@ -444,9 +446,17 @@ async function handle(req) {
         if (isNaN(ga) || isNaN(gb) || ga < 0 || gb < 0) { rejected.push(pick.game_n); continue; }
         var isKOPick = !!(BOLAO_GAME_BY_ID[pick.game_n] && BOLAO_GAME_BY_ID[pick.game_n].f && BOLAO_GAME_BY_ID[pick.game_n].f.indexOf('Grupo') !== 0);
         if (isKOPick && pick.ko_pick && pick.ko_pick !== 'a' && pick.ko_pick !== 'b') { rejected.push(pick.game_n); continue; }
-        // Bug 4a: upsert atômico (on_conflict) — elimina janela de perda entre DELETE e INSERT
-        await supaFetch('picks?on_conflict=participant_id,game_n', 'POST', { participant_id: user.sub, game_n: pick.game_n, goals_a: ga, goals_b: gb, ko_pick: pick.ko_pick || null }, { 'Prefer': 'resolution=merge-duplicates' });
-        await supaFetch('pick_history', 'POST', { participant_id: user.sub, game_n: pick.game_n, goals_a: pick.goals_a, goals_b: pick.goals_b, ko_pick: pick.ko_pick || null });
+        validPicks.push({ participant_id: user.sub, game_n: pick.game_n, goals_a: ga, goals_b: gb, ko_pick: pick.ko_pick || null });
+        historyBatch.push({ participant_id: user.sub, game_n: pick.game_n, goals_a: pick.goals_a, goals_b: pick.goals_b, ko_pick: pick.ko_pick || null });
+      }
+      // Fix 2026-07-08: antes, 1 POST 'picks' + 1 POST 'pick_history' POR JOGO (ate ~200
+      // subrequests numa unica chamada com os 104 jogos) -- mesma classe de bug ja corrigida
+      // em task=fifa (batching, ver bloco "Bug: Limite de 50 subrequests CF"). Agora e' no
+      // maximo 1 POST em lote por tabela, independente da quantidade de jogos enviados.
+      // Bug 4a (upsert atomico via on_conflict) preservado, so aplicado ao lote inteiro.
+      if (validPicks.length) {
+        await supaFetch('picks?on_conflict=participant_id,game_n', 'POST', validPicks, { 'Prefer': 'resolution=merge-duplicates' });
+        await supaFetch('pick_history', 'POST', historyBatch);
       }
       if (rejected.length === body.picks.length) {
         return error('Prazo encerrado ou jogo invalido para todos os palpites enviados: ' + rejected.join(','), 403);
@@ -848,7 +858,8 @@ async function handle(req) {
         return json({ scores: scoresData, count: scoresData.length });
       } catch (e) {
         // Tabela pode não existir ainda — retorna array vazio em vez de 500
-        return json({ scores: [], count: 0, warning: 'live_scores indisponivel: ' + e.message });
+        console.error('GET /scores falhou:', e.message);
+        return json({ scores: [], count: 0, warning: 'live_scores indisponivel' });
       }
     }
 
@@ -862,7 +873,8 @@ async function handle(req) {
         var evData = (await supaFetch('game_events?select=game_n,goals,cards,updated_at')) || [];
         return json({ events: evData, count: evData.length });
       } catch (e) {
-        return json({ events: [], count: 0, warning: 'game_events indisponivel: ' + e.message });
+        console.error('GET /events falhou:', e.message);
+        return json({ events: [], count: 0, warning: 'game_events indisponivel' });
       }
     }
 
@@ -914,7 +926,8 @@ async function handle(req) {
         await supaFetch('game_events?on_conflict=game_n', 'POST', evRowsToWrite, { 'Prefer': 'resolution=merge-duplicates' });
         return json({ ok: true });
       } catch (e) {
-        return json({ ok: false, error: e.message }, 500);
+        console.error('POST /events falhou:', e.message);
+        return json({ ok: false, error: 'Erro ao salvar evento' }, 500);
       }
     }
 
@@ -945,7 +958,8 @@ async function handle(req) {
         await supaFetch('game_events?on_conflict=game_n', 'POST', bulkRowsToWrite, { 'Prefer': 'resolution=merge-duplicates' });
         return json({ ok: true, count: bulkRowsToWrite.length });
       } catch (e) {
-        return json({ ok: false, error: e.message }, 500);
+        console.error('POST /events/bulk falhou:', e.message);
+        return json({ ok: false, error: 'Erro ao salvar eventos' }, 500);
       }
     }
 
@@ -954,7 +968,10 @@ async function handle(req) {
       // Usa CRON_SECRET em vez de ADMIN_KEY para isolar permissoes.
       // Fallback para ADMIN_KEY se CRON_SECRET ainda nao estiver configurado.
       var expectedCronSecret = (typeof CRON_SECRET !== 'undefined' && CRON_SECRET) ? CRON_SECRET : ADMIN_KEY;
-      var cronSecret = url.searchParams.get('secret') || '';
+      // Fix 2026-07-08: aceita tambem via header (evita o secret aparecer em URL completa
+      // nos logs de acesso do Cloudflare/qualquer proxy intermediario). Query string mantida
+      // como fallback pra nao quebrar chamadas manuais/scripts antigos que ainda usam ?secret=.
+      var cronSecret = req.headers.get('X-Cron-Secret') || url.searchParams.get('secret') || '';
       if (cronSecret !== expectedCronSecret) return error('Cron secret invalido', 403);
 
       var task = url.searchParams.get('task') || '';
@@ -1303,6 +1320,10 @@ async function handle(req) {
 
         return json({ ok: true, message: 'Copa2026 Bolao — API do Worker. Rotas: GET /ranking, POST /register, POST /login, GET|POST /picks, GET /mypicks, POST /special-picks, PATCH /confirm, PATCH /admin/unlock, PATCH /admin/confirm, DELETE /reset, GET /health, GET /cron, GET /reopen-status, POST /picks-reopen, PATCH /admin/phase-reopen' });
   } catch (e) {
-    return json({ error: 'Internal: ' + e.message }, 500);
+    // Fix 2026-07-08: mensagem crua do erro (que pode incluir detalhes de schema/policy do
+    // Postgres via supaFetch) vazava direto pro cliente publico. Log fica so no lado do
+    // Worker (visivel via 'wrangler tail'/dashboard Cloudflare); resposta ao cliente e' generica.
+    console.error('Erro interno nao tratado:', e && e.message, e && e.stack);
+    return json({ error: 'Erro interno do servidor' }, 500);
   }
 }

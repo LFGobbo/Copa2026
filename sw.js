@@ -1,11 +1,16 @@
-var C='copa2026-v22';
+var C='copa2026-v23';
 var STATIC=['bola_t.png','mascote1_t.png','mascote2_t.png','mascote3_t.png','logo_globo.png','logo_sportv.png','logo_cazetv.png','logo_sbt.png','logo_nsports.png','logo_globoplay.png','logo_getv.png'];
 var DATA=['players.json','photos.json'];
 
 // Install: prÃ©-cachear assets estÃ¡ticos
 self.addEventListener('install',function(e){
   e.waitUntil(
-    caches.open(C).then(function(c){return c.addAll(STATIC);}).then(function(){return self.skipWaiting();})
+    // Fix 2026-07-08: 'index.html' nunca era precacheado, entao o fallback offline em
+    // caches.match('index.html') (na estrategia de navegacao abaixo) nunca encontrava nada --
+    // ficando sem efeito nenhum se o usuario abrisse o app sem internet. Adicionado ao
+    // precache junto com os demais assets estaticos (so serve de fallback; a navegacao normal
+    // sempre tenta rede primeiro via {cache:'reload'}).
+    caches.open(C).then(function(c){return c.addAll(STATIC.concat(['index.html']));}).then(function(){return self.skipWaiting();})
   );
 });
 
