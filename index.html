@@ -1204,7 +1204,11 @@ function renderGames(filter){
   if(past.length)parts.push('<div class="past-link" onclick="scrollToPast()">\u2B07 Ir para jogos anteriores</div>');
   if(todayGames.length)parts.push('<div class="section-header section-today">\uD83D\uDCC5 HOJE</div>'+todayGames.map(function(g){return renderGameCard(g)}).join(""));
   if(upcoming.length)parts.push('<div class="section-header section-upcoming">\u23F3 PR\u00D3XIMOS</div>'+upcoming.map(function(g){return renderGameCard(g)}).join(""));
-  if(past.length)parts.push('<div id="section-past" class="section-header section-past">\u2705 ANTERIORES<button class="expand-all-btn" onclick="expandAllPast()">Expandir todos</button></div>'+past.map(function(g){return renderGameCard(g)}).join(""));
+  // Fix 2026-07-08: pedido do usuario -- na secao ANTERIORES, mostrar o jogo mais recente
+  // primeiro (perto de PROXIMOS/AO VIVO) e o mais antigo por ultimo, ao contrario da ordem
+  // cronologica ascendente usada nas demais secoes. .slice() evita mutar o array 'past'
+  // original (usado por outras leituras nesta mesma funcao/render).
+  if(past.length)parts.push('<div id="section-past" class="section-header section-past">\u2705 ANTERIORES<button class="expand-all-btn" onclick="expandAllPast()">Expandir todos</button></div>'+past.slice().reverse().map(function(g){return renderGameCard(g)}).join(""));
   dynRender(el,parts.length?parts.join(""):_emptyState('\u26BD','Nenhum jogo encontrado','N\u00E3o h\u00E1 partidas programadas para esta data.'));
 }
 function toggleGameCard(el){
