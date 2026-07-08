@@ -2948,3 +2948,75 @@ considerar resolvido.
 **Reforço da lição da seção 23**: `node --check` (ou qualquer validação síncrona logo após uma
 edição) não é garantia suficiente nessa pasta — sempre validar rodando o arquivo de verdade
 (quando for um script executável) antes de confiar que uma edição "pegou".
+
+---
+
+## 25. Correção de dados de transmissão (campo "br" em GAMES) — 2026-07-08
+
+Usuário relatou que a transmissão não bate para alguns jogos. Investigação confirmou que o campo
+`br` de cada jogo em `GAMES` é **hardcoded manualmente uma vez, antes do torneio** — não é
+derivado de nenhuma lógica. Isso é estruturalmente frágil porque a escolha real de quais jogos a
+Globo transmite **não é uma lista fixa**: é um "draft" ao vivo feito rodada a rodada entre Globo e
+CazéTV (CazéTV tem direitos de exclusividade de TODOS os 104 jogos no YouTube; Globo comprou um
+pacote de 52 jogos e escolhe quais quer mostrar rodada a rodada — CazéTV escolhe primeiro nas
+rodadas 1 e 3 da fase de grupos, Globo escolhe primeiro na rodada 2 e em todo o mata-mata; SBT +
+N Sports sublicenciam 32 jogos a partir das escolhas da Globo). Fonte: Máquina do Esporte
+(https://maquinadoesporte.com.br/copa-mundo-2026/saiba-como-cazetv-globo-e-sbt-definem-os-jogos-que-transmitirao-na-copa-do-mundo-2026/).
+
+**Correção aplicada** (via 3 sub-agentes de pesquisa cobrindo jogos 1-48, 49-88 e 89-104,
+cruzando CNN Brasil, Lance!, Terra/Estadão, Band, Máquina do Esporte por jogo específico):
+30 dos 104 jogos tinham o campo `br` incorreto e foram corrigidos — jogos:
+18, 26, 29, 30, 36, 37, 39, 41, 42, 43, 44, 56, 63, 65, 69, 71, 72, 74, 76, 78, 79, 82, 84, 86,
+88, 91, 93, 95, 96, 97. Editado via parse/reserialize do JSON de `GAMES` (não string-replace
+manual), com `node --check` no JS extraído e verificação de que os outros 74 jogos permaneceram
+byte-idênticos.
+
+**Não corrigido (documentar para o futuro, não inventar dado sem fonte)**:
+- Jogos #57, #64, #67, #73, #75, #77, #80, #81, #83, #85, #87, #89, #98, #100: fontes
+  divergentes, não encontradas, ou mapeamento incerto entre número do jogo e confronto real
+  (ex.: #89 tem uma fonte que parece descrever na verdade o jogo #90, dado o horário de
+  transmissão citado não bater com o horário real de #89 no array — não apliquei por segurança).
+- Jogos #101-104 (Semifinal, 3º Lugar, Final): há indício (não 100% confirmado por fonte
+  específica por jogo) de que falta o canal **N Sports** na lista, que hoje só tem Globo ·
+  SporTV · CazéTV · SBT · Globoplay · Ge TV. Não apliquei por falta de fonte direta por jogo,
+  mas vale reconfirmar mais perto da data (semis são 14-15/07).
+- **N Sports estava com o logo já mapeado no código (`broadcastBadge()`, linha ~986,
+  `'N Sports':'logo_nsports.png'`) mas nunca era usado em nenhum dos 104 jogos antes desta
+  correção** — agora aparece nos jogos #26, #39 e #41.
+- Dois jogos (#56, #63) usam o canal "SporTV2", que não tem entrada no mapa de logos de
+  `broadcastBadge()` — aparecem como badge de texto simples (sem logo), o que é o comportamento
+  de fallback esperado do código, não um bug.
+
+**Causa raiz de por que isso vai continuar acontecendo**: como a escolha da Globo é decidida ao
+vivo rodada a rodada (e no mata-mata, fase a fase), qualquer snapshot fixo do campo `br` vai
+divergir da realidade assim que a Globo anunciar as escolhas de uma nova rodada — a menos que o
+processo de atualização dos dados dos jogos (hoje manual) passe a reconferir esse campo a cada
+rodada usando uma fonte como CNN Brasil/Lance!/ge.globo.com. Não implementei automação para isso
+nesta sessão — ficaria como sugestão futura se o app for reutilizado.
+
+### 25.1 Correção adicional + validação cruzada (mesmo dia)
+
+Usuário pediu para validar contra a fonte mais confiável possível. Confirmado: a **FIFA não
+publica** mapeamento jogo-a-jogo de qual emissora brasileira passa cada partida (isso é
+sublicenciamento doméstico, fora do escopo do site oficial da FIFA) — a fonte mais autorizada
+possível é o anúncio direto de Globo/CazéTV/Lance! por rodada/fase, que é o que já vinha sendo
+usado.
+
+Encontrei e apliquei **mais 1 correção** usando a tabela primária do Lance! para as Oitavas de
+Final (https://www.lance.com.br/copa-do-mundo/cazetv-globo-e-sbt-veja-a-divisao-de-jogos-das-oitavas-de-final-da-copa.html,
+publicada 04/07/2026): jogo **#90 (Canadá x Marrocos, sáb 04/07 14h)** estava só "CazéTV",
+correto é `CazéTV · Globo · SBT`. Essa tabela também **confirmou como corretos** (sem alteração
+necessária) os jogos #89, #92 e #94 (só CazéTV mesmo) e os 5 já corrigidos #91, #93, #95, #96.
+
+Outra validação cruzada: uma fonte agregada (Terra) afirmou que a Globo transmite **exatamente 8
+dos 16 jogos da Rodada de 32** — bate exatamente com os 8 jogos já corrigidos nessa fase (#74,
+76, 78, 79, 82, 84, 86, 88), confirmando que os outros 8 (#73, 75, 77, 80, 81, 83, 85, 87) estão
+corretos como CazéTV-exclusivo e não precisam de mudança.
+
+**Total de correções nesta sessão: 31 jogos** (30 da primeira rodada + #90).
+
+**Ainda sem fonte específica por jogo (não alterado)**: #57, #64, #67, #98, #100, e a dúvida sobre
+N Sports faltando em #101-104 (Semi/3º/Final). Recomendo reconfirmar #98 e #100 (Quartas de
+Final) em 1-2 dias — a divisão de canais das Quartas ainda não tinha uma tabela pública
+específica por jogo no momento desta pesquisa (09-11/07), só confirmação geral de que CazéTV
+transmite todas.
