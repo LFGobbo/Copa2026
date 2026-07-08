@@ -2920,3 +2920,31 @@ para qualquer edição que possa reduzir o tamanho do arquivo — não confiar q
 Verificação recomendada após qualquer edição, mesmo em arquivo pequeno: `wc -c` do arquivo final
 deve bater com o esperado, e/ou validar formato (`json.tool`, `node --check`) antes de confiar que
 a edição funcionou.
+
+## 24. generate_annex_c.js — correção 100% completa (2026-07-08, sessão seguinte à v20.35)
+
+Usuário pediu para não deixar o item 8 (v20.35) pela metade. Trocado o algoritmo de escolha
+gulosa (greedy alfabético) por busca com backtracking real: tenta o candidato elegível mais
+"preferido" (ordem alfabética) em cada slot, e se um slot posterior ficar sem opção, desfaz a
+última escolha e tenta a próxima candidata, recursivamente. Testado ao vivo (`node
+generate_annex_c.js`): **495/495 combinações válidas** (antes: ~467/495 com o greedy simples).
+
+**Ressalva importante, mantida no comentário do próprio código**: isso garante uma atribuição
+*válida* (sem duplicata, completa) para as 495 combinações — não garante que bate com a
+atribuição real e oficial da FIFA nos casos em que existe mais de uma atribuição válida
+matematicamente possível. A fonte de verdade para produção continua sendo
+`third_place_matrix_2026.json` (extraído e validado manualmente da FIFA/Wikipedia/ESPN); este
+script nunca foi e não é usado pelo app.
+
+**Incidente durante a correção**: o arquivo `generate_annex_c.js` no disco (pasta sincronizada)
+foi encontrado truncado no meio de uma string (121 linhas em vez de 143, cortando exatamente na
+concatenação de `js +=`) — mesma classe de corrupção da seção 19.12/19.14/23, mas desta vez
+`node --check` **não pegou o erro antes** de eu rodar o script (o `node --check` foi executado
+antes da truncagem se manifestar de fato no disco — sintoma de sync assíncrono do OneDrive, não
+de um comando específico que falhou). Recuperado reescrevendo o arquivo inteiro via `/tmp` + `cp`,
+testado com sucesso tanto em `/tmp` quanto rodando de dentro da própria pasta do projeto antes de
+considerar resolvido.
+
+**Reforço da lição da seção 23**: `node --check` (ou qualquer validação síncrona logo após uma
+edição) não é garantia suficiente nessa pasta — sempre validar rodando o arquivo de verdade
+(quando for um script executável) antes de confiar que uma edição "pegou".
