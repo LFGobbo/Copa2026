@@ -3020,3 +3020,42 @@ N Sports faltando em #101-104 (Semi/3º/Final). Recomendo reconfirmar #98 e #100
 Final) em 1-2 dias — a divisão de canais das Quartas ainda não tinha uma tabela pública
 específica por jogo no momento desta pesquisa (09-11/07), só confirmação geral de que CazéTV
 transmite todas.
+
+---
+
+## 26. Bug real: pontuação do mata-mata presa em placar de 90min congelado prematuramente — 2026-07-15
+
+Usuário relatou: "as estatísticas estão demorando para atualizar. Temos um jogo ao vivo agora e
+está pontuando ainda no 0x0" (na prática, o jogo #102 Inglaterra x Argentina, semifinal).
+
+**Confirmado ao vivo via console**: o jogo estava no minuto 87 (tempo normal, `MATCH_EXTRA_TIME`
+falso), placar real ao vivo em 1x1 (Argentina empatou), mas `scores[102].ft` já estava congelado
+em `{a:1,b:0}` — um placar de "90 minutos" capturado ANTES do jogo sequer chegar aos 90 minutos.
+
+**Causa raiz**: `processTimeline()` tem um bloco (comentário "Sempre seta MATCH_90_SCORE para
+jogos KO — previne needsEtFix de retriggerar") que reconstrói e CONGELA `MATCH_90_SCORE` na
+primeira vez que roda para um jogo do mata-mata, usando só os eventos de gol que a timeline já
+tinha até aquele momento — mesmo que o jogo ainda esteja no tempo normal. Esse valor então grava
+`scores[gn].ft` (quando `MATCH_EXTRA_TIME` estava true no momento exato dessa gravação — ainda
+não determinei o gatilho exato que fez `MATCH_EXTRA_TIME` ficar true momentaneamente pra esse
+jogo, possivelmente um dado transiente/impreciso da API da FIFA).
+
+O problema real está em `_bolaoReal90(gn,real)`: ela tinha `if(real.ft)return real.ft;` **sem**
+checar se o jogo teve prorrogação de verdade — diferente do caminho via `MATCH_90_SCORE`, que já
+tinha essa proteção (`_bolaoMatchHadRealET(gn)`). Ou seja, uma vez que `.ft` fosse gravado (mesmo
+errado/prematuro), toda pontuação provisória do mata-mata pra aquele jogo ficava presa nesse
+valor, ignorando o placar ao vivo real.
+
+**Fix aplicado**: `if(real.ft&&_bolaoMatchHadRealET(gn))return real.ft;` — agora `.ft` só é
+confiável se realmente houve gol depois do minuto 90 (mesmo critério já usado no outro caminho).
+Testado ao vivo via console antes de aplicar: com o fix, `_bolaoReal90(102,...)` passou a
+retornar o placar real ao vivo (1x1) em vez do congelado (1x0).
+
+**Não corrigido nesta sessão (risco maior, fora do escopo do fix pontual)**: o mecanismo de
+`processTimeline` que congela `MATCH_90_SCORE` na primeira chamada (`!MATCH_90_SCORE[idMatch]`)
+continua podendo capturar um valor incompleto/prematuro se rodar no meio do jogo — hoje isso só
+não afeta a pontuação por causa do gate novo em `_bolaoReal90`, mas se esse jogo realmente for à
+prorrogação depois, o `MATCH_90_SCORE` usado pode estar errado (baseado em um snapshot antigo, não
+recalculado). Recomendo revisar esse "congela na primeira vez" para recalcular continuamente
+enquanto o jogo não passar do minuto 90 — não fiz essa mudança agora por ser mais arriscada e sem
+tempo de validar todos os efeitos colaterais em cima de um jogo ao vivo de verdade.

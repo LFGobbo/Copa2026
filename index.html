@@ -3350,7 +3350,13 @@ function _bolaoMatchHadRealET(gn){
 }
 function _bolaoReal90(gn,real){
   if(!real||real.a===undefined||real.b===undefined)return real;
-  if(real.ft)return real.ft;
+  // Fix 2026-07-15: real.ft podia ficar congelado com um placar prematuro (capturado pelo
+  // processTimeline ANTES do jogo chegar aos 90min -- ver processTimeline, bloco "sempre
+  // seta MATCH_90_SCORE") e, sem essa checagem, era usado direto mesmo com o jogo ainda no
+  // tempo normal. Descoberto ao vivo: jogo #102 (Inglaterra x Argentina) com scores[102].ft
+  // congelado em 1x0 no minuto 87 (sem prorrogacao), enquanto o placar real ao vivo ja
+  // estava em 1x1 -- pontuacao provisoria do mata-mata ficava presa no placar antigo.
+  if(real.ft&&_bolaoMatchHadRealET(gn))return real.ft;
   var fifaId=FIFA_MATCH_IDS[gn];
   if(!fifaId||!MATCH_90_SCORE[fifaId])return real;
   if(!_bolaoMatchHadRealET(gn))return real; // sem gol depois do min 90 = nao teve prorrogacao de verdade
