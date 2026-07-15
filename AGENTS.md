@@ -3059,3 +3059,31 @@ prorrogação depois, o `MATCH_90_SCORE` usado pode estar errado (baseado em um 
 recalculado). Recomendo revisar esse "congela na primeira vez" para recalcular continuamente
 enquanto o jogo não passar do minuto 90 — não fiz essa mudança agora por ser mais arriscada e sem
 tempo de validar todos os efeitos colaterais em cima de um jogo ao vivo de verdade.
+
+---
+
+## 27. Bug real: placeholder "Perd. Jogo N" (3º lugar) nunca resolvia recursivamente — 2026-07-15
+
+Usuário reportou print do card de reabertura do jogo #103 (3º Lugar) mostrando "V. Jogo 97 vs
+V. Jogo 99" em vez dos nomes reais dos times.
+
+**Confirmado ao vivo via console**: `_loserOf(101)` devolvia `"V. Jogo 97"` — a string placeholder
+crua (`g.a`/`g.b` do jogo 101), não o nome do time. Isso porque `_loserOf`/`_winnerOf` sempre
+devolveram os placeholders originais quando o jogo cujo perdedor/vencedor se busca tem, ele
+próprio, lados ainda não resolvidos (o que é sempre o caso pra semifinais, cujos `g.a`/`g.b` no
+array `GAMES` são "V. Jogo 97"/"V. Jogo 98" etc.).
+
+O branch `"V. Jogo N"` de `_resolveTeamFn` (linha ~1786) já tratava isso corretamente: depois de
+chamar `_winnerOf`, checava se o resultado ainda era um placeholder (`/°\s*Grupo|V\.\s*Jogo|Perd\./`)
+e, se fosse, chamava `resolveTeam()` de novo recursivamente. O branch `"Perd. Jogo N"` (usado só
+pelo jogo #103, disputa de 3º lugar) **não tinha essa mesma recursão** — pegava o que `_loserOf`
+devolvia e tratava como nome final, direto.
+
+**Fix aplicado**: mesma checagem/recursão do branch `V. Jogo N`, agora também no branch `Perd.
+Jogo N`. Testado ao vivo via console antes de aplicar: `resolveTeam('Perd. Jogo 101',103).name`
+passou de `"V. Jogo 97"` pra `"França"`, e `resolveTeam('Perd. Jogo 102',103).name` passou de
+`"V. Jogo 99"` pra `"Inglaterra"` (as duas seleções eliminadas nas semifinais).
+
+Já checei: `_bolaoResolveTeam` (a versão usada pra simular o palpite do participante, não a real)
+já fazia a recursão corretamente pro caso "Perd." — não precisou de fix. `_loserOf` só é chamado
+nesse único lugar no arquivo inteiro, então não há outro ponto afetado pelo mesmo bug.

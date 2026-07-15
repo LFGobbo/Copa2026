@@ -1807,7 +1807,15 @@ function _resolveTeamFn(placeholder,gameNum){
   if(mP){
     var pn=parseInt(mP[1],10);
     var l=_loserOf(pn);
-    if(l)return{name:l,flag:flag(l),pending:false};
+    if(l){
+      // Fix 2026-07-15: _loserOf devolve g.a/g.b crus, que podem ser eles mesmos
+      // placeholders nao resolvidos (ex: semifinal cujos lados sao "V. Jogo 97"/
+      // "V. Jogo 98") -- faltava a mesma resolucao recursiva que o branch "V. Jogo N"
+      // acima ja tem. Descoberto ao vivo: jogo #103 (3o lugar) mostrava "V. Jogo 97 vs
+      // V. Jogo 99" em vez de Franca x Inglaterra (as duas perdedoras das semifinais).
+      if(l==='0'||/°\s*Grupo|V\.\s*Jogo|Perd\./.test(l)){var _lr=resolveTeam(l,pn);return{name:_lr.name,flag:_lr.flag,pending:_lr.pending};}
+      return{name:l,flag:flag(l),pending:false};
+    }
     return{name:placeholder,flag:'',pending:true};
   }
 
