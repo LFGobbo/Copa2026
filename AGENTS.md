@@ -3087,3 +3087,51 @@ passou de `"V. Jogo 97"` pra `"França"`, e `resolveTeam('Perd. Jogo 102',103).n
 Já checei: `_bolaoResolveTeam` (a versão usada pra simular o palpite do participante, não a real)
 já fazia a recursão corretamente pro caso "Perd." — não precisou de fix. `_loserOf` só é chamado
 nesse único lugar no arquivo inteiro, então não há outro ponto afetado pelo mesmo bug.
+
+## 28. Bug real: banner de reabertura presa em "Rodada de 32 em breve" após o fim do torneio — 2026-07-20
+
+Usuário relatou, após a final: "Está dizendo reabertura da rodada 32 em breve" — reabertura já
+tinha acontecido em 30/06, torneio inteiro encerrado (jogo #104 já disputado).
+
+**Evidência ao vivo**: fetch direto em `GET /reopen-status` (via console, já que curl pro Worker
+é bloqueado pelo proxy do sandbox) mostrou as 6 fases (`r32,r16,qf,sf,final,3rd`) TODAS com
+`"open":true` no banco — o campo `open` na tabela `phase_reopen` nunca é setado pra `false` por
+nenhuma ação de admin; só o `deadline` é o que efetivamente fecha a fase (quando já passou).
+
+Isso nunca deu problema durante o torneio porque sempre havia alguma fase realmente aberta
+(`_bolaoOpenPhases` não-vazio), e o branch "fase ABERTA" de `bolaoUpdateReopenBanner()` (linha
+~4361) tem prioridade sobre o branch "fase FECHADA com abertura agendada" (linha ~4380). Só
+quando TODAS as fases ficam com deadline vencido (fim do torneio) é que o segundo branch executa.
+
+Nesse branch, `ph2=closedPhases[0]` — a primeira chave do objeto `_bolaoClosedPhases`, que
+preserva ordem de inserção = ordem em que a API devolve as fases = ordem em que cada uma foi
+aberta historicamente (`r32` primeiro, por ter sido reaberta em 30/06). O código então usava
+`info2.open_at = p.opened_at` (30/06/2026, um timestamp **do passado**) como se fosse um horário
+de abertura **futura**, calculando `tillOpen = openAt - now` (valor bem negativo) e mesmo assim
+caindo no texto `'Em breve!'` — daí o banner fixo "Reabertura da Rodada de 32 em breve".
+
+Efeito colateral pior, também confirmado no código (não só cosmético): como `tillOpen<=0` desde a
+primeira chamada, o branch antigo entrava direto no `else if(tillOpen<=0){ _bolaoFetch(...).then(
+...) }`, que reconstruía o EXATO mesmo estado (banco não mudou) e chamava
+`bolaoUpdateReopenBanner()` de novo dentro do `.then` — um loop de refetch contínuo em
+`/reopen-status` sem nenhum backoff, rodando pra sempre enquanto a aba do Bolão ficasse aberta.
+
+**Fix aplicado** em `bolaoUpdateReopenBanner()`: se `tillOpen` for `null` ou `<=0` (ou seja, não
+há nenhuma abertura futura real conhecida — real ou estimada), o banner é escondido
+(`display='none'`) em vez de mostrar "em breve" com um horário que já passou há semanas. Pra não
+perder a capacidade de detectar uma reabertura nova sem precisar recarregar a página, o refetch
+contínuo foi trocado por uma rechecagem espaçada (a cada 5 minutos, com uma flag
+`window._bolaoRecheckScheduled` pra nunca ter mais de uma agendada por vez).
+
+**Validado**: simulação em Node com o payload REAL do `/reopen-status` (buscado ao vivo em
+20/07/2026) confirmou que, com o fix, `_bolaoOpenPhases` fica vazio, `ph2` continua sendo `r32`
+(não tinha como evitar isso sem mudar a estrutura de dados), mas `tillOpen` calculado é
+`-1775754295ms` (bem negativo) → banner corretamente escondido. Não foi possível re-testar
+visualmente ao vivo no Chrome nesta sessão porque a extensão Claude in Chrome estava desconectada
+no momento do fix; validação ficou restrita à simulação de lógica com dados reais da API +
+`node --check` de sintaxe. Recomendo confirmar visualmente na próxima sessão com o Chrome
+disponível, abrindo a aba Bolão e checando que o banner de reabertura não aparece mais.
+
+Pendência criada por esse bug, mas ainda não resolvida: nada — o `phase_reopen.open` continuar
+sempre `true` no banco é uma escolha de design existente (o `deadline` é o que manda), não algo
+que precisou mudar pra esse fix funcionar.

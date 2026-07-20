@@ -4383,6 +4383,33 @@ function bolaoUpdateReopenBanner(){
     if(!openAt){var _estOA=_phaseEstimatedOpenAt(ph2);if(_estOA)openAt=_estOA.getTime();}
     var _openAtIsEst=!(info2&&info2.open_at);
     var now2=Date.now();var tillOpen=openAt?openAt-now2:null;
+    // Fix 2026-07-20: open_at pode ser um horario HISTORICO (fase ja foi aberta e fechada
+    // antes, ex: torneio encerrado). Nesse caso nao ha proxima abertura real agendada --
+    // exibir "em breve" contando a partir de um horario no passado e um bug real (relatado
+    // apos a final: banner ficava preso mostrando "Reabertura da Rodada de 32 em breve").
+    // Se nao ha countdown futuro valido, so esconde o banner (nada para reabrir).
+    if(tillOpen===null||tillOpen<=0){
+      banner.style.display='none';
+      // Rechecagem espacada (5 min, nao a cada 1s) so para pegar uma reabertura nova
+      // sem precisar recarregar a pagina -- evita o loop de refetch continuo do bug antigo.
+      if(!window._bolaoRecheckScheduled){
+        window._bolaoRecheckScheduled=true;
+        setTimeout(function(){
+          window._bolaoRecheckScheduled=false;
+          _bolaoFetch('/reopen-status').then(function(d){
+            _bolaoOpenPhases={};_bolaoClosedPhases={};
+            (d.phases||[]).forEach(function(p){
+              var _dl=p.deadline?new Date(p.deadline).getTime():null;
+              if(p.open&&(!_dl||_dl>Date.now()))_bolaoOpenPhases[p.phase_name]={deadline:p.deadline,game_ns:p.game_ns};
+              else _bolaoClosedPhases[p.phase_name]={open_at:p.opened_at||p.deadline};
+            });
+            bolaoUpdateReopenBanner();bolaoRenderReopenSection();
+            Object.keys(_bolaoOpenPhases).forEach(function(ph){bolaoShowReopenPopup(ph);});
+          }).catch(function(){});
+        },300000);
+      }
+      return;
+    }
     banner.style.display='block';
     inner.style.background='linear-gradient(135deg,rgba(80,80,200,.14),rgba(60,60,150,.08))';
     inner.style.border='2px solid rgba(150,150,255,.35)';
@@ -4390,20 +4417,8 @@ function bolaoUpdateReopenBanner(){
     if(titleEl){titleEl.style.color='rgba(180,180,255,.9)';titleEl.textContent='Reabertura da '+_bolaoPhaseLabel(ph2)+' em breve';}
     if(subEl)subEl.textContent='Os palpites do mata-mata vão abrir em:';
     if(countLabel){countLabel.textContent=_openAtIsEst?'Abre aprox. em':'Abre em';countLabel.style.color='rgba(180,180,255,.55)';}
-    if(countEl){countEl.style.color='rgba(180,180,255,.9)';countEl.textContent=tillOpen!==null&&tillOpen>0?_bolaoFmtCountdown(tillOpen):'Em breve!';}
-    if(tillOpen!==null&&tillOpen>0){setTimeout(bolaoUpdateReopenBanner,1000);}
-    else if(tillOpen!==null&&tillOpen<=0){
-      _bolaoFetch('/reopen-status').then(function(d){
-        _bolaoOpenPhases={};_bolaoClosedPhases={};
-        (d.phases||[]).forEach(function(p){
-          var _dl=p.deadline?new Date(p.deadline).getTime():null;
-          if(p.open&&(!_dl||_dl>Date.now()))_bolaoOpenPhases[p.phase_name]={deadline:p.deadline,game_ns:p.game_ns};
-          else _bolaoClosedPhases[p.phase_name]={open_at:p.opened_at||p.deadline};
-        });
-        bolaoUpdateReopenBanner();bolaoRenderReopenSection();
-        Object.keys(_bolaoOpenPhases).forEach(function(ph){bolaoShowReopenPopup(ph);});
-      }).catch(function(){});
-    }
+    if(countEl){countEl.style.color='rgba(180,180,255,.9)';countEl.textContent=_bolaoFmtCountdown(tillOpen);}
+    setTimeout(bolaoUpdateReopenBanner,1000);
     return;
   }
 
