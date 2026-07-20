@@ -3135,3 +3135,103 @@ disponível, abrindo a aba Bolão e checando que o banner de reabertura não apa
 Pendência criada por esse bug, mas ainda não resolvida: nada — o `phase_reopen.open` continuar
 sempre `true` no banco é uma escolha de design existente (o `deadline` é o que manda), não algo
 que precisou mudar pra esse fix funcionar.
+
+## 29. Bug real: pontos de campeão (palpite especial) nunca eram computados — 2026-07-20
+
+Usuário relatou, junto do bug #28: "Os pontos de artilheiro e Campeão não foram computados."
+
+**Causa raiz (confirmada por leitura de dados reais, não suposição)**: `GAME_BY_ID[104].a` e
+`.b` (jogo da Final) são, e permanecem PARA SEMPRE, os placeholders originais do chaveamento —
+`"V. Jogo 101"` e `"V. Jogo 102"` — confirmado direto no array `GAMES` embutido no HTML (o app
+nunca sobrescreve esses campos com o nome real do time, a resolução é sempre feita em tempo de
+exibição via `resolveTeam()`). Só que `_bolaoFinalChampion(){return _winnerOf(BOLAO_FINAL)}`
+devolvia o resultado de `_winnerOf(104)` **sem passar por `resolveTeam`** — ou seja, devolvia
+literalmente a string `"V. Jogo 101"` ou `"V. Jogo 102"` (qual dos dois lados venceu), nunca o
+nome real do campeão. Como `sp.champion` é o texto que o participante digitou (ex: "França"),
+a comparação `sp.champion===champion` NUNCA podia ser verdadeira — bug sistemático, 100% dos
+casos, não uma condição de borda.
+
+**Validado com simulação funcional em Node** (não só leitura de código): recriei a cadeia real
+de resolução (semifinais 101/102 decididas por placar/pênaltis → final 104 decidida) usando as
+funções `_winnerOf`/`resolveTeam`/`_resolveTeamFn` copiadas literalmente do arquivo. Resultado:
+`_bolaoFinalChampion()` ANTES do fix devolvia `"V. Jogo 101"` (comparação com `"França"` = falso);
+DEPOIS do fix devolve `"França"` (comparação = verdadeiro). Script salvo só localmente na sessão,
+não faz parte do repo.
+
+**Segundo bug encontrado no mesmo ponto** (relacionado, também corrigido): mesmo resolvendo o
+nome corretamente, a comparação usava `===` estrito (`sp.champion===champion`), sensível a
+acento/maiúscula — diferente da comparação de artilheiro, que já usava a função local
+`matchName`/`_mn`/`_matchName` (normaliza acentos e caixa). Dado que os valores de `special_picks`
+são texto livre digitado por cada participante (confirmado nos dados reais: "Kylian Mbappé" vs
+"Kylian Mbappe" pra artilheiro), o mesmo tipo de inconsistência podia acontecer pro campeão.
+
+**Fix aplicado** (4 pontos, todos no `index.html`/`copa2026.html`):
+1. `_bolaoFinalChampion()` agora chama `resolveTeam(w,BOLAO_FINAL)` e devolve `.name` (só se não
+   `.pending`), em vez do placeholder cru.
+2. Linha ~3502 (cálculo do total): `sp.champion===champion` → `matchName(sp.champion,champion)`.
+3. Linha ~3706 (badge "✅ Acertou!" no card do participante): `sp.champion===_champ` →
+   `_mn(sp.champion,_champ)`.
+4. Linha ~5130 (quebra de pontos por fase, seção "Especiais"): `sp.champion===_champion` →
+   `_matchName(sp.champion,_champion)`.
+
+Todos os 3 pontos de comparação já tinham a função de matching tolerante a acento/caixa definida
+localmente (usada pro artilheiro) — só reaproveitei, não criei nada novo.
+
+**Não verificado ainda**: não consegui confirmar visualmente no Chrome ao vivo (extensão Claude
+in Chrome desconectada nesta sessão) se, com os dados reais do torneio, os participantes que
+acertaram o campeão agora aparecem com +50 pts. Recomendo abrir o perfil de um participante que
+palpitou o campeão certo (ex.: conferir com o usuário quem apostou no time campeão real) e
+confirmar visualmente na próxima sessão com o Chrome disponível.
+
+## 30. Bump de versão do Service Worker — 2026-07-20
+
+Usuário relatou "geral reclamando ainda de que a página não atualiza. Principalmente mobile."
+
+Revisei o mecanismo existente (`sw.js` + registro em `index.html`/`copa2026.html`): navegação já
+usa network-first com `{cache:'reload'}` (ignora cache HTTP do GitHub Pages), há checagem de
+atualização do SW a cada 5 min + em `visibilitychange`, e reload automático via `controllerchange`
+e mensagem `SW_UPDATED`. Não encontrei bug nesse mecanismo — parece correto na leitura de código.
+
+**Não consegui confirmar nem descartar a causa real da reclamação** sem teste em dispositivo
+mobile de verdade (Chrome desconectado nesta sessão) — pode ser comportamento de PWA/Safari iOS
+(throttling de timers em background é conhecido), conexão instável fazendo cair no fallback
+offline (`caches.match('index.html')`, que fica com uma cópia antiga), ou outra causa que não dá
+pra ver só lendo o código. Não quero alegar ter corrigido um bug que não consegui reproduzir.
+
+**Ação de baixo risco aplicada**: bump de `sw.js` de `copa2026-v23` para `copa2026-v24` — força
+limpeza de cache e um ciclo `install`/`activate` novo pra todo mundo no próximo `reg.update()`
+bem-sucedido (dentro de até 5 min, ou na próxima vez que a aba voltar ao foco). Prática padrão
+após mudanças nos arquivos estáticos, mas não é garantidamente a causa raiz da reclamação.
+
+**Recomendação pra próxima sessão**: pedir pra 1-2 pessoas que reclamaram informarem
+navegador/aparelho exato (ex: "iPhone, Safari" ou "Android, Chrome") e o que exatamente fica
+desatualizado (o placar? o ranking? a página toda?) — sem isso, qualquer fix seria chute.
+
+## 31. Nova feature: animação de pódio final do bolão — 2026-07-20
+
+Pedido do usuário: "Depois que finalizar tudo, colocar uma animação sei lá aparecendo o pódio do
+bolão."
+
+**Implementado** em `index.html`/`copa2026.html`:
+- `bolaoTournamentFinished()`: true só quando o jogo #104 (Final) já aconteceu (`gameIsPast`).
+- `_bolaoPodiumRows()`: mesmo cálculo e mesmo critério de ordenação/desempate (total → exatos →
+  resultados → bônus) já usado em `bolaoRenderRanking()` — copiado, não reinventado, pra garantir
+  que o pódio bate exatamente com o ranking oficial.
+- `bolaoShowPodium(force)`: overlay full-screen com confete (CSS, 40 elementos com posição/atraso
+  aleatórios), 3 barras de pódio (2º-1º-3º, layout olímpico clássico) reveladas em sequência
+  (350ms/1100ms/2000ms) com pontos e nome de cada um dos 3 primeiros. Sem `force`, só aparece uma
+  vez por navegador (`localStorage.copa2026_podium_shown_v1`) e só se o torneio já terminou;
+  disparado automaticamente ao carregar o ranking com sucesso (`bolaoLoadRanking`).
+- Botão "🏆 Ver pódio" (`#bolao-podium-btn`) no título do Ranking geral, escondido por padrão,
+  visível só quando o torneio terminou — permite qualquer participante reabrir a animação a
+  qualquer momento (`bolaoShowPodium(true)`, ignora o "só uma vez").
+
+**Validado**: `node --check` na sintaxe extraída; simulação funcional em Node do `_bolaoPodiumRows`
+com 5 participantes sintéticos incluindo empates propositais em total e em exatos, confirmando que
+a ordem final e o critério de desempate reproduzem exatamente a lógica do ranking oficial.
+
+**Não verificado**: a animação/CSS em si (confete, transições, layout responsivo) não foi vista
+rodando de verdade num navegador — Chrome estava desconectado nesta sessão. Recomendo fortemente
+abrir a aba Bolão na próxima sessão com Chrome disponível, achar o botão "Ver pódio" e confirmar
+visualmente que o efeito aparece corretamente (desktop e mobile) antes de considerar essa feature
+101% pronta.

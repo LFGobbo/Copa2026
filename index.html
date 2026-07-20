@@ -694,6 +694,27 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .reopen-cancel-btn{background:none;border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.3);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;width:100%;margin-top:1px;transition:all .15s}
 .reopen-cancel-btn:hover{color:rgba(255,255,255,.55)}
 @media(max-width:600px){.reopen-grid{grid-template-columns:1fr}}
+
+/* Podio final do bolao */
+@keyframes bolaoConfettiFall{0%{transform:translateY(-30px) rotate(0deg);opacity:1}100%{transform:translateY(480px) rotate(340deg);opacity:0}}
+@keyframes bolaoPodiumGoldGlow{0%,100%{box-shadow:0 0 18px 3px rgba(255,223,0,.3)}50%{box-shadow:0 0 34px 8px rgba(255,223,0,.55)}}
+@keyframes bolaoPodiumTitleIn{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}
+.bolao-podium-overlay{position:fixed;inset:0;background:radial-gradient(circle at 50% 20%,rgba(40,30,80,.95),rgba(0,0,0,.94));z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow:hidden}
+.bolao-podium-confetti{position:absolute;top:-20px;width:8px;height:14px;border-radius:2px;animation:bolaoConfettiFall linear infinite;pointer-events:none}
+.bolao-podium-title{font-size:clamp(20px,5vw,32px);font-weight:900;color:var(--gold);text-align:center;margin-bottom:6px;animation:bolaoPodiumTitleIn .6s cubic-bezier(.34,1.56,.64,1);text-shadow:0 2px 20px rgba(255,223,0,.4)}
+.bolao-podium-sub{font-size:13px;color:rgba(255,255,255,.6);text-align:center;margin-bottom:28px}
+.bolao-podium-bars{display:flex;align-items:flex-end;justify-content:center;gap:clamp(8px,2vw,20px);position:relative;z-index:1;width:100%;max-width:480px}
+.bolao-podium-bar{display:flex;flex-direction:column;align-items:center;flex:1;opacity:0;transform:translateY(50px) scale(.85);transition:all .55s cubic-bezier(.34,1.56,.64,1)}
+.bolao-podium-bar.show{opacity:1;transform:translateY(0) scale(1)}
+.bolao-podium-medal{font-size:clamp(26px,6vw,40px);margin-bottom:6px}
+.bolao-podium-name{font-size:clamp(11px,2.2vw,14px);font-weight:700;color:var(--text);text-align:center;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px}
+.bolao-podium-pts{font-size:clamp(13px,2.6vw,17px);font-weight:900;color:var(--gold);margin-bottom:8px}
+.bolao-podium-step{width:100%;border-radius:var(--radius-sm) var(--radius-sm) 0 0;display:flex;align-items:center;justify-content:center;font-size:clamp(18px,4vw,28px);font-weight:900;color:rgba(0,0,0,.55)}
+.bolao-podium-bar[data-pos="1"] .bolao-podium-step{height:120px;background:linear-gradient(180deg,#ffe873,var(--gold));animation:bolaoPodiumGoldGlow 2s ease-in-out infinite}
+.bolao-podium-bar[data-pos="2"] .bolao-podium-step{height:86px;background:linear-gradient(180deg,#e2e2ea,#b8b8c8)}
+.bolao-podium-bar[data-pos="3"] .bolao-podium-step{height:60px;background:linear-gradient(180deg,#e8a26a,#c17a3f)}
+.bolao-podium-close{margin-top:32px;background:var(--gold);color:#000;border:none;border-radius:var(--radius-sm);padding:12px 28px;font-size:15px;font-weight:900;cursor:pointer}
+@media(max-width:420px){.bolao-podium-name{max-width:80px}}
 </style>
 </head>
 <body>
@@ -870,7 +891,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     </div>
   </div>
   <div class="bolao-section">
-    <div class="bolao-section-title">Ranking geral</div>
+    <div class="bolao-section-title">Ranking geral <button id="bolao-podium-btn" onclick="bolaoShowPodium(true)" style="display:none;margin-left:8px;background:var(--gold);color:#000;border:none;border-radius:var(--radius-sm);padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;vertical-align:middle">&#127942; Ver p&oacute;dio</button></div>
     <table class="bolao-rank-table">
       <thead><tr>
         <th>#</th><th>Participante</th><th>Especiais</th><th>Exatos</th><th>Jogos</th><th>Pontos</th>
@@ -3122,7 +3143,7 @@ function _bolaoBackfillPushEvents(){
   }catch(e){}
 }
 function _bolaoDeadline(gameN){var g=GAME_BY_ID[gameN];if(!g)return null;var gd=gameUTC(g);return gd?new Date(gd.getTime()-BOLAO_TWO_H):null}
-function _bolaoFinalChampion(){return _winnerOf(BOLAO_FINAL)}
+function _bolaoFinalChampion(){var w=_winnerOf(BOLAO_FINAL);if(!w)return null;var r=resolveTeam(w,BOLAO_FINAL);return (r&&!r.pending)?r.name:null;}
 function _bolaoTopScorer(){
   var m={};Object.keys(goals||{}).forEach(function(gid){Object.keys(goals[gid]).forEach(function(t){goals[gid][t].forEach(function(gl){if(gl.type==='own')return;if(!m[gl.pname])m[gl.pname]=0;m[gl.pname]++})})});
   var sorted=Object.entries(m).sort(function(a,b){return b[1]-a[1]});if(!sorted.length)return null;
@@ -3499,7 +3520,7 @@ function bolaoCalcTotal(participantId){
   var _finalGameObj=GAMES.find(function(g){return g.n===BOLAO_FINAL;});
   var finalDone=_finalGameObj&&gameIsPast(_finalGameObj);
   var matchName=function(a,b){if(!a||!b)return false;var na=a.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g,'');var nb=b.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g,'');return na===nb};
-  if(sp&&sp.champion&&champion&&sp.champion===champion){total+=50;bonusCount++;}
+  if(sp&&sp.champion&&champion&&matchName(sp.champion,champion)){total+=50;bonusCount++;}
   // Artilheiro só pontua DEPOIS que a final (J104) terminar
   if(finalDone&&sp&&sp.top_scorer&&topScorer){
     if(topScorer.exact&&matchName(sp.top_scorer,topScorer.name)){total+=20;bonusCount++;}
@@ -3573,6 +3594,59 @@ function bolaoRenderRanking(){
         +'<tr class="bolao-detail" id="bolao-detail-'+r.id+'"><td colspan="6"><div class="bolao-detail-inner">'+bolaoRenderDetail(r.id)+'</div></td></tr>';
     }).join('');
   }
+
+  var _pbtn=document.getElementById('bolao-podium-btn');
+  if(_pbtn)_pbtn.style.display=(bolaoTournamentFinished()&&rows.length>=3)?'inline-block':'none';
+}
+// ─── Podio final do bolao ──────────────────────────────
+function bolaoTournamentFinished(){
+  var g=GAMES.find(function(x){return x.n===BOLAO_FINAL;});
+  return !!(g&&gameIsPast(g));
+}
+function _bolaoPodiumRows(){
+  var ids=Object.keys(_bolaoParticipants);
+  var rows=ids.map(function(id){var r=bolaoCalcTotal(id);return{id:id,name:_bolaoParticipants[id],total:r.total,exactCount:r.exactCount,resultCount:r.resultCount,bonusCount:r.bonusCount};});
+  rows.sort(function(a,b){if(b.total!==a.total)return b.total-a.total;if(b.exactCount!==a.exactCount)return b.exactCount-a.exactCount;if(b.resultCount!==a.resultCount)return b.resultCount-a.resultCount;if(b.bonusCount!==a.bonusCount)return b.bonusCount-a.bonusCount;return 0});
+  return rows;
+}
+function bolaoPodiumBarHtml(row,pos){
+  if(!row)return '<div class="bolao-podium-bar" data-pos="'+pos+'"></div>';
+  var medal=pos===1?'&#129351;':pos===2?'&#129352;':'&#129353;';
+  return '<div class="bolao-podium-bar" data-pos="'+pos+'">'
+    +'<div class="bolao-podium-medal">'+medal+'</div>'
+    +'<div class="bolao-podium-name">'+esc(row.name)+'</div>'
+    +'<div class="bolao-podium-pts">'+row.total+' pts</div>'
+    +'<div class="bolao-podium-step">'+pos+'&#186;</div>'
+    +'</div>';
+}
+function bolaoShowPodium(force){
+  if(!bolaoTournamentFinished())return;
+  if(!force){try{if(localStorage.getItem('copa2026_podium_shown_v1'))return;}catch(e){}}
+  var rows=_bolaoPodiumRows();
+  if(rows.length<3)return;
+  try{localStorage.setItem('copa2026_podium_shown_v1','1');}catch(e){}
+  var colors=['#ffdf00','#00c853','#448aff','#ff9100','#ff1744'];
+  var confetti='';
+  for(var i=0;i<40;i++){
+    var left=Math.random()*100,delay=Math.random()*2.5,dur=2.5+Math.random()*2,c=colors[i%colors.length];
+    confetti+='<span class="bolao-podium-confetti" style="left:'+left+'%;background:'+c+';animation-delay:'+delay+'s;animation-duration:'+dur+'s"></span>';
+  }
+  var overlay=document.createElement('div');
+  overlay.className='bolao-podium-overlay';
+  overlay.innerHTML=confetti
+    +'<div class="bolao-podium-title">&#127942; P&Oacute;DIO FINAL DO BOL&Atilde;O!</div>'
+    +'<div class="bolao-podium-sub">Copa do Mundo 2026 &mdash; parab&eacute;ns aos campe&otilde;es</div>'
+    +'<div class="bolao-podium-bars">'
+    +bolaoPodiumBarHtml(rows[1],2)
+    +bolaoPodiumBarHtml(rows[0],1)
+    +bolaoPodiumBarHtml(rows[2],3)
+    +'</div>'
+    +'<button class="bolao-podium-close" onclick="this.closest(\'.bolao-podium-overlay\').remove()">Fechar</button>';
+  document.body.appendChild(overlay);
+  var byPos={};overlay.querySelectorAll('.bolao-podium-bar').forEach(function(b){byPos[b.getAttribute('data-pos')]=b;});
+  setTimeout(function(){if(byPos['3'])byPos['3'].classList.add('show')},350);
+  setTimeout(function(){if(byPos['2'])byPos['2'].classList.add('show')},1100);
+  setTimeout(function(){if(byPos['1'])byPos['1'].classList.add('show')},2000);
 }
 function bolaoToggleDetail(id){var el=document.getElementById('bolao-detail-'+id);if(el)el.classList.toggle('open')}
 function bolaoRenderDetail(pid){
@@ -3703,7 +3777,7 @@ function bolaoRenderDetail(pid){
       +'<div style="display:flex;flex-direction:column;gap:8px;font-size:12px;padding:4px 0">'
             +(sp.champion?(function(){
         if(!_fDone)return '<span style="display:flex;align-items:center;gap:4px">🏆 Campeão: <strong>'+esc(sp.champion)+'</strong> <span style="background:rgba(255,193,7,.18);color:#ffc107;border:1px solid rgba(255,193,7,.4);border-radius:10px;font-size:10px;padding:1px 7px;font-weight:600">⏳ PENDENTE</span></span>';
-        if(_champ&&sp.champion===_champ)return '<span style="display:flex;align-items:center;gap:4px">🏆 Campeão: <strong>'+esc(sp.champion)+'</strong> <span style="background:rgba(76,175,80,.2);color:#81c784;border:1px solid rgba(76,175,80,.4);border-radius:10px;font-size:10px;padding:1px 7px;font-weight:700">✅ Acertou! +50 pts</span></span>';
+        if(_champ&&_mn(sp.champion,_champ))return '<span style="display:flex;align-items:center;gap:4px">🏆 Campeão: <strong>'+esc(sp.champion)+'</strong> <span style="background:rgba(76,175,80,.2);color:#81c784;border:1px solid rgba(76,175,80,.4);border-radius:10px;font-size:10px;padding:1px 7px;font-weight:700">✅ Acertou! +50 pts</span></span>';
         return '<span style="display:flex;align-items:center;gap:4px">🏆 Campeão: <strong>'+esc(sp.champion)+'</strong> <span style="background:rgba(244,67,54,.15);color:#ef9a9a;border:1px solid rgba(244,67,54,.3);border-radius:10px;font-size:10px;padding:1px 7px;font-weight:600">❌ Não acertou</span></span>';
       })():'')
       +_scorerHtml
@@ -4168,6 +4242,7 @@ async function bolaoLoadRanking(){
     _bolaoAllPicksReopen={};(data.picksReopen||[]).forEach(function(p){if(!_bolaoAllPicksReopen[p.participant_id])_bolaoAllPicksReopen[p.participant_id]={};_bolaoAllPicksReopen[p.participant_id][p.game_n]={a:p.goals_a,b:p.goals_b,ko:p.ko_pick};});
     _rankingCachedAt=Date.now();
     bolaoRenderRanking();
+    bolaoShowPodium();
     try{localStorage.setItem('copa2026_ranking_cache',JSON.stringify({ts:Date.now(),participants:_bolaoParticipants,confirmedStatus:_bolaoConfirmedStatus,confirmedAt:_bolaoConfirmedAt,picks:_bolaoAllPicks,specials:_bolaoAllSpecials,pickCounts:_bolaoPickCounts,picksReopen:_bolaoAllPicksReopen}))}catch(e){}
   }catch(e){
     if(!_triedCache){
@@ -5127,7 +5202,7 @@ function bolaoRenderStats(el){
   var _finalDone=_finalGameObj&&gameIsPast(_finalGameObj);
   var _matchName=function(a,b){if(!a||!b)return false;var na=a.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g,'');var nb=b.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g,'');return na===nb};
   phasePts.especiais=0;
-  if(sp&&sp.champion&&_champion&&sp.champion===_champion)phasePts.especiais+=50;
+  if(sp&&sp.champion&&_champion&&_matchName(sp.champion,_champion))phasePts.especiais+=50;
   if(_finalDone&&sp&&sp.top_scorer&&_topScorer){
     if(_topScorer.exact&&_matchName(sp.top_scorer,_topScorer.name))phasePts.especiais+=20;
     else if(!_topScorer.exact&&_topScorer.tied&&_topScorer.tied.some(function(t){return _matchName(sp.top_scorer,t)}))phasePts.especiais+=10;
