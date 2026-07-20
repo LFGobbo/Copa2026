@@ -3235,3 +3235,34 @@ rodando de verdade num navegador — Chrome estava desconectado nesta sessão. R
 abrir a aba Bolão na próxima sessão com Chrome disponível, achar o botão "Ver pódio" e confirmar
 visualmente que o efeito aparece corretamente (desktop e mobile) antes de considerar essa feature
 101% pronta.
+
+## 32. Verificação ao vivo pós-deploy (commit 0ce5c21) — 2026-07-20
+
+Chrome reconectou e o usuário fez o push (`16d6a67..0ce5c21`). Testei os 3 itens ao vivo no site
+publicado (`lfgobbo.github.io/Copa2026`), não só lendo código:
+
+- **Banner de reabertura (item 28)**: confirmado, `#bolao-reopen-banner` está com `display:none`.
+  Antes do deploy, o mesmo teste (mesmo navegador, mesma sessão) mostrava "Reabertura da Rodada
+  de 32 em breve / Em breve!" — capturei screenshot do bug ainda ao vivo antes do push, e do fix
+  funcionando depois. Bug real, fix real, confirmado nas duas pontas.
+- **Bônus de campeão (item 29)**: confirmado. Dados reais: campeã de verdade = **Espanha** (1x0
+  na prorrogação, 0x0 nos 90min), artilheiro de verdade = **Kylian Mbappé**. Só 4 dos 32
+  participantes apostaram em Espanha. Ranking ao vivo agora mostra **Larissa da Costa Avello em
+  1º com 425 pts** (Espanha + Mbappé, os dois palpites especiais corretos) — antes do fix ela
+  aparecia em 4º com 375 pts (só o bônus de artilheiro, sem o de campeão). **O fix muda quem
+  está em 1º lugar** (antes: Guilherme Stock, 409 pts). Aviso já dado ao usuário antes do
+  anúncio de qualquer resultado oficial.
+- **Pódio (item 31)**: confirmado rodando de verdade — confete, revelação em 3 passos, botão
+  "Ver pódio" funcionando pra reabrir. Valores exibidos batem exatamente com o ranking oficial.
+- **Cache do Service Worker**: `caches.keys()` no site ao vivo devolve `copa2026-v24` — bump
+  propagado.
+- **Viewport mobile**: tentei confirmar visualmente em 390×844 nesta sessão, mas o
+  `resize_window` numa aba nova não aplicou de verdade o viewport (mesma limitação de sessões
+  anteriores, ver seção sobre isso) — `window.innerWidth` ficou em 1536. Não deu pra confirmar
+  visualmente o layout mobile do pódio/banner desta vez; a lógica é a mesma independente de
+  viewport, só o CSS `@media` muda, mas fica como pendência de verificação visual mobile.
+
+Nota de correção própria: no rascunho de "resumo da Copa" que passei pro usuário antes desse
+deploy, calculei errado o total corrigido da Larissa (disse 445, o valor real confirmado ao vivo é
+425) — dupliquei o bônus de artilheiro (+20) que já estava incluso no total antigo, somando de
+novo por engano. Corrigido ao reportar o resultado real.
