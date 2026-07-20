@@ -3731,10 +3731,10 @@ function renderResumoBolao(){
 function bolaoShowPodium(force){
   if(!bolaoTournamentFinished())return;
   if(document.querySelector('.bolao-podium-overlay'))return;
-  if(!force){try{if(localStorage.getItem('copa2026_podium_shown_v1'))return;}catch(e){}}
+  // Fix 2026-07-20: usuario pediu pra animacao aparecer sempre que abrir a aba Bolao (refresh ou
+  // navegando de volta pra ela), nao so uma vez por navegador -- removido o gate de localStorage.
   var rows=_bolaoPodiumRows();
   if(rows.length<3)return;
-  try{localStorage.setItem('copa2026_podium_shown_v1','1');}catch(e){}
   var colors=['#ffdf00','#00c853','#448aff','#ff9100','#ff1744'];
   var confetti='';
   for(var i=0;i<40;i++){
@@ -4326,7 +4326,7 @@ async function bolaoLoadMyData(){
 }
 async function bolaoLoadRanking(){
   if(_rankingCachedAt&&Date.now()-_rankingCachedAt<30000&&Object.keys(_bolaoParticipants).length){
-    bolaoRenderRanking();return;
+    bolaoRenderRanking();bolaoShowPodium();return;
   }
   // Mostra cache do localStorage imediatamente (qualquer idade), depois atualiza em background
   var _triedCache=false;
