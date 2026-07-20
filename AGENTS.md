@@ -3266,3 +3266,63 @@ Nota de correção própria: no rascunho de "resumo da Copa" que passei pro usu�
 deploy, calculei errado o total corrigido da Larissa (disse 445, o valor real confirmado ao vivo é
 425) — dupliquei o bônus de artilheiro (+20) que já estava incluso no total antigo, somando de
 novo por engano. Corrigido ao reportar o resultado real.
+
+## 33. Pedido pós-deploy: aba padrão, pódio não terminava, nova aba Resumo — 2026-07-20
+
+Usuário confirmou o pódio corrigido e pediu 4 coisas: (1) aba padrão ao abrir devia ser "Jogos",
+com o agradecimento lá; (2) ao abrir "Bolão", deixar a animação do pódio completar (relatou que
+"aqui fechou antes de finalizar"); (3) nova aba "Resumo da Copa" com curiosidades/recordes reais
+da Copa + o resumo do bolão abaixo.
+
+**Item 1 — aba padrão**: o HTML estático já tinha "Jogos" como `active` por padrão — o problema
+real é que `localStorage.getItem('copa2026_tab')` restaura a última aba visitada, e a maioria dos
+participantes tinha 'bolao' salvo (de quando usavam a aba toda hora durante o torneio). Fix: se
+não há hash explícito na URL, `saved==='bolao'` e o torneio já terminou (`bolaoTournamentFinished()`),
+força `saved='jogos'`. Link direto tipo `#bolao` continua funcionando normal. Adicionado banner de
+agradecimento (`#jogos-thanks-banner`) na aba Jogos, escondido por padrão, mostrado via JS só
+quando o torneio termina.
+
+**Item 2 — pódio "fechava antes de terminar"**: não confirmei a causa exata (não reproduzi o bug
+ao vivo, só ouvi o relato), mas as duas causas mais plausíveis são: (a) o botão "Fechar" já ficava
+clicável desde o início, então bastava um clique de impaciência pra cortar a revelação de 2s; ou
+(b) um segundo `bolaoShowPodium(true)` (via botão "Ver pódio") criando um overlay novo por cima de
+um que ainda estava rodando (auto-disparado ao carregar o ranking), parecendo um "fechamento"
+confuso. Fix pras duas: `bolaoShowPodium()` agora recusa abrir um novo overlay se já existir um na
+tela (`document.querySelector('.bolao-podium-overlay')`), e o botão "Fechar" fica com
+`visibility:hidden` até a revelação completa (2650ms) terminar de verdade — impossível fechar
+antes disso.
+
+**Item 3 — aba "Resumo da Copa"**: nova aba (`#tab-resumo`, id `resumo` em `VALID_TABS`/`MAIS_TABS`,
+aparece no menu "Mais" e no topo, ambos escondidos até o torneio terminar). Duas seções:
+
+- Curiosidades da Copa (dados REAIS, extraídos ao vivo do próprio site via console — não
+  inventados): 308 gols em 104 jogos (2,96/jogo); artilheiro Mbappé (10 gols); maior goleada
+  Alemanha 7×1 Curaçao; jogo com mais gols foi a disputa de 3º lugar, Inglaterra 6×4 França (hat-
+  trick de Bukayo Saka); 23 jogos do mata-mata decididos nos 90min, 5 na prorrogação, 4 nos
+  pênaltis; gol mais rápido Matías Galarza aos 2' (Turquia 0×1 Paraguai); mais tardio Youri
+  Tielemans aos 120+5' (Bélgica 3×2 Senegal); 296 cartões (282 amarelos, 14 vermelhos), jogo com
+  mais cartões Canadá×Marrocos (12 amarelos); 4 hat-tricks (Messi, Jonathan David, Dembélé, Saka);
+  campeã Espanha 1×0 sobre a Argentina na prorrogação. Conteúdo estático (fatos de um torneio já
+  encerrado, não mudam).
+- Resumo do Bolão (dinâmico, `renderResumoBolao()`): reaproveita `_bolaoPodiumRows()` (mesma
+  função do pódio) pro top 3, e calcula % de participantes que acertaram campeão/artilheiro real
+  reaproveitando `_bolaoFinalChampion()`/`_bolaoTopScorer()`/`_bolaoAllSpecials` — nada novo
+  inventado, só reuso do que já existia e já foi validado.
+
+**Validado**: `node --check` na sintaxe extraída, diff revisado linha a linha antes de aplicar,
+contagem de `<div>`/`</div>` comparada antes/depois (mesmo delta, sem desbalanceamento novo).
+**Não validado ao vivo nesta sessão** — só depois do próximo push. Ficou pendente confirmar
+visualmente: a aba Resumo renderizando certo, o banner de agradecimento aparecendo na aba Jogos,
+e a real causa do pódio "fechando antes" (aplicei os dois fixes mais plausíveis, mas sem
+reprodução direta do bug relatado).
+
+**Correção no mesmo pedido, antes de deployar**: usuário viu a primeira versão da aba Resumo
+(ainda sem deploy) e apontou, corretamente, que eu tinha reaproveitado o título
+`.bstats-section-title` (label pequena cinza com linha embaixo) — exatamente o mesmo visual seco
+da aba Estatísticas, o que ele explicitamente não queria ("cuidado pra não fazer trabalho porco").
+Refiz o visual: título grande em dourado com "🏆 RESUMO DA COPA 2026", card hero da campeã (borda
+dourada, fundo em gradiente), 5 cards de recorde com borda superior colorida (uma cor por
+categoria: ouro/azul/vermelho/verde/laranja, não tudo cinza igual), e o recap do bolão usando as
+mesmas cores de medalha (ouro/prata/bronze) do próprio pódio animado, em vez de linhas cinzas
+planas. Os dados/números continuam os mesmos (já verificados ao vivo antes) — só o invólucro
+visual mudou.

@@ -729,6 +729,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 </div>
 <div class="tabs" role="tablist">
   <div class="tab" data-tab="bolao" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🎯</span><span class="tab-label">Bolão</span></div>
+  <div class="tab" data-tab="resumo" id="tab-btn-resumo" style="display:none" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">🎉</span><span class="tab-label">Resumo</span></div>
   <!-- Hoje merged into Jogos (v19.16) -->
   <div class="tab active" data-tab="jogos" role="tab" aria-selected="true" tabindex="0"><span class="tab-icon">⚽</span><span class="tab-label">Jogos</span></div>
   <div class="tab" data-tab="grupos" role="tab" aria-selected="false" tabindex="-1"><span class="tab-icon">📋</span><span class="tab-label">Grupos</span></div>
@@ -740,6 +741,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 </div>
 <div class="countdown-bar" id="countdown-bar"><span class="countdown-label">&#9201; Próximos</span><span class="countdown-sep-v"></span><span class="countdown-time" id="countdown-display">--:--:--</span><span class="countdown-sep-v"></span><div class="countdown-events" id="countdown-events"></div><span class="countdown-next" id="countdown-next" style="display:none"></span><span class="countdown-status" id="countdown-status" style="display:none"></span><button class="refresh-btn" id="refresh-btn" title="Atualizar placares">&#10227;</button><span class="audit-badge" id="audit-badge" title="Integridade dos dados" style="display:none"></span></div>
 <div class="content active" id="tab-jogos">
+  <div id="jogos-thanks-banner" style="display:none;background:linear-gradient(135deg,rgba(255,223,0,.14),rgba(0,200,83,.08));border:2px solid var(--gold);border-radius:var(--radius);padding:var(--sp-md);margin-bottom:var(--sp-md);text-align:center">
+    <div style="font-size:var(--fs-lg);font-weight:900;color:var(--gold);margin-bottom:6px">&#127942; Copa encerrada!</div>
+    <div style="font-size:13px;color:var(--text);line-height:1.6">Valeu a todo mundo que acompanhou os 104 jogos e apostou no bol&atilde;o com a gente. Foi uma Copa e tanto! O p&oacute;dio final do bol&atilde;o e as curiosidades da Copa est&atilde;o na aba <strong style="color:var(--gold)">Resumo</strong> (menu Mais). At&eacute; a pr&oacute;xima! &#9917;</div>
+  </div>
   <div class="filters" id="filter-bar"></div>
   <div id="hero-live" style="display:none"></div>
   <div id="games-list" class="dyn-content"><div class="skeleton-card"><div class="s-score"><div class="skeleton s-line" style="width:40px;height:28px"></div><div class="skeleton s-line" style="width:20px;height:28px"></div><div class="skeleton s-line" style="width:40px;height:28px"></div></div><div class="skeleton s-line"></div><div class="skeleton s-line" style="width:40%"></div></div><div class="skeleton-card"><div class="s-score"><div class="skeleton s-line" style="width:40px;height:28px"></div><div class="skeleton s-line" style="width:20px;height:28px"></div><div class="skeleton s-line" style="width:40px;height:28px"></div></div><div class="skeleton s-line"></div><div class="skeleton s-line" style="width:40%"></div></div><div class="skeleton-card"><div class="s-score"><div class="skeleton s-line" style="width:40px;height:28px"></div><div class="skeleton s-line" style="width:20px;height:28px"></div><div class="skeleton s-line" style="width:40px;height:28px"></div></div><div class="skeleton s-line"></div><div class="skeleton s-line" style="width:40%"></div></div></div>
@@ -908,6 +913,55 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     </div>
   </div>
 </div>
+<div class="content" id="tab-resumo">
+  <div style="text-align:center;padding:16px 0 6px">
+    <div style="font-size:clamp(24px,5vw,34px);font-weight:900;color:var(--gold);text-shadow:0 2px 20px rgba(255,223,0,.35)">&#127942; RESUMO DA COPA 2026</div>
+    <div style="font-size:13px;color:var(--muted);margin-top:6px">104 jogos &middot; 48 sele&ccedil;&otilde;es &middot; 32 dias de futebol</div>
+  </div>
+  <div style="background:linear-gradient(135deg,rgba(255,223,0,.18),rgba(255,193,7,.06));border:2px solid var(--gold);border-radius:var(--radius);padding:20px;text-align:center;margin:16px 0 20px">
+    <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Campe&atilde; do mundo</div>
+    <div style="font-size:clamp(26px,6vw,38px);font-weight:900;color:var(--gold)">Espanha</div>
+    <div style="font-size:13px;color:var(--text);margin-top:8px">1&times;0 sobre a Argentina, decidido na prorroga&ccedil;&atilde;o (0&times;0 nos 90 min)</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">
+    <div style="background:var(--card);border-top:3px solid var(--gold);border-radius:0 0 var(--radius-sm) var(--radius-sm);padding:14px;text-align:center">
+      <div style="font-size:26px;margin-bottom:4px">&#9917;</div>
+      <div style="font-size:22px;font-weight:900;color:var(--gold)">308</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">gols (2,96 por jogo)</div>
+    </div>
+    <div style="background:var(--card);border-top:3px solid var(--blue);border-radius:0 0 var(--radius-sm) var(--radius-sm);padding:14px;text-align:center">
+      <div style="font-size:26px;margin-bottom:4px">&#128095;</div>
+      <div style="font-size:22px;font-weight:900;color:var(--blue)">Mbapp&eacute;</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">artilheiro, 10 gols</div>
+    </div>
+    <div style="background:var(--card);border-top:3px solid var(--red);border-radius:0 0 var(--radius-sm) var(--radius-sm);padding:14px;text-align:center">
+      <div style="font-size:26px;margin-bottom:4px">&#128165;</div>
+      <div style="font-size:22px;font-weight:900;color:var(--red)">7&times;1</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">maior goleada: Alemanha x Cura&ccedil;ao</div>
+    </div>
+    <div style="background:var(--card);border-top:3px solid var(--green);border-radius:0 0 var(--radius-sm) var(--radius-sm);padding:14px;text-align:center">
+      <div style="font-size:26px;margin-bottom:4px">&#129327;</div>
+      <div style="font-size:22px;font-weight:900;color:var(--green)">4</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">jogos decididos nos p&ecirc;naltis</div>
+    </div>
+    <div style="background:var(--card);border-top:3px solid var(--orange);border-radius:0 0 var(--radius-sm) var(--radius-sm);padding:14px;text-align:center">
+      <div style="font-size:26px;margin-bottom:4px">&#128220;</div>
+      <div style="font-size:22px;font-weight:900;color:var(--orange)">296</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">cart&otilde;es (282 amarelos, 14 vermelhos)</div>
+    </div>
+  </div>
+  <div style="background:var(--card);border-radius:var(--radius);padding:16px 18px;font-size:13px;line-height:1.9;color:var(--text)">
+    <div style="font-weight:700;color:var(--gold);margin-bottom:8px">Mais curiosidades</div>
+    <div>&#127775; A disputa de 3&ordm; lugar foi o jogo com mais gols da Copa: <strong>Inglaterra 6&times;4 Fran&ccedil;a</strong>, com hat-trick de Bukayo Saka.</div>
+    <div>&#9203; Gol mais r&aacute;pido: Mat&iacute;as Galarza aos 2&#39; (Turquia 0&times;1 Paraguai). Mais tardio: Youri Tielemans aos 120+5&#39; (B&eacute;lgica 3&times;2 Senegal).</div>
+    <div>&#127917; 4 hat-tricks na Copa: Lionel Messi, Jonathan David, Ousmane Dembélé e Bukayo Saka.</div>
+    <div>&#128200; Dos 32 jogos do mata-mata, 23 fecharam nos 90 minutos, 5 foram &agrave; prorroga&ccedil;&atilde;o e 4 aos p&ecirc;naltis.</div>
+  </div>
+  <div style="text-align:center;margin:32px 0 16px">
+    <div style="font-size:clamp(20px,4.5vw,28px);font-weight:900;color:var(--gold)">&#127881; RESUMO DO BOL&Atilde;O</div>
+  </div>
+  <div id="resumo-bolao-content"><div style="text-align:center;color:var(--muted);padding:16px">Carregando dados do bol&atilde;o...</div></div>
+</div>
 <div class="content" id="tab-diagnostico">
   <h3 style="color:var(--gold);margin:0 0 12px;font-size:16px">Diagnóstico — API FIFA</h3>
   <div id="diag-fifa-map" style="margin-bottom:12px;font-size:13px;line-height:1.6"></div>
@@ -925,6 +979,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 <!-- Mais menu overlay -->
 <div class="mais-overlay" id="mais-overlay" style="display:none" onclick="maisClose()">
   <div class="mais-menu" onclick="event.stopPropagation()">
+    <div class="mais-item" data-tab="resumo" id="mais-item-resumo" style="display:none" onclick="navClick.call(this)" role="button" tabindex="-1">🎉 Resumo da Copa</div>
     <div class="mais-item" data-tab="artilheiros" onclick="navClick.call(this)" role="button" tabindex="0">👟 Artilheiros</div>
     <div class="mais-item" data-tab="convocados" onclick="navClick.call(this)" role="button" tabindex="-1">👕 Convocados</div>
     <div class="mais-item" data-tab="bolao-estatisticas" onclick="navClick.call(this)" role="button" tabindex="-1">📈 Estatísticas</div>
@@ -1093,7 +1148,7 @@ setTimeout(function(){
 },200);
 // Startup reconcile: apos restaurar dados e mapas FIFA, corrige placares stale
 setTimeout(function(){if(typeof reconcileScores==='function')reconcileScores()},2500);
-var MAIS_TABS=['artilheiros','convocados','bolao-estatisticas','regras'];
+var MAIS_TABS=['resumo','artilheiros','convocados','bolao-estatisticas','regras'];
 function switchTab(tab){
   window.scrollTo(0,0);
   try{localStorage.setItem('copa2026_tab',tab)}catch(e){}
@@ -1116,6 +1171,7 @@ function switchTab(tab){
   if(tab==="bolao-estatisticas")renderBolaoStats();
   if(tab==="convocados"){if(!FIFA_MAP_READY)initFifaMaps();renderSquads();if(_rsTimer)clearTimeout(_rsTimer);if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100){_rsTimer=setTimeout(function(){renderSquads();if(Object.keys(FIFA_PHOTO_BY_TEAM_NUM).length<100)_rsTimer=setTimeout(renderSquads,4000)},2000)}}
   if(tab==="diagnostico")renderDiagnostico();
+  if(tab==="resumo")renderResumoBolao();
 }
 function tabClick(){switchTab(this.dataset.tab)}
 function navClick(){maisClose();switchTab(this.dataset.tab)}
@@ -2924,11 +2980,24 @@ var REPLACED_PLAYERS={
   "Cho Wi-je":"Substituiu Cho Yu-min (fratura no p\u00e9)",
   "Herman Johansson":"Substituiu Emil Holm (les\u00e3o muscular)"
 };
-var VALID_TABS=['jogos','grupos','mata-mata','artilheiros','convocados','regras','bolao-estatisticas','bolao','diagnostico'];
+var VALID_TABS=['jogos','grupos','mata-mata','artilheiros','convocados','regras','bolao-estatisticas','bolao','resumo','diagnostico'];
 setTimeout(function(){
   try{
     var saved=window.location.hash.replace('#','')||localStorage.getItem('copa2026_tab');
     if(saved==='hoje')saved='jogos';
+    // Fix 2026-07-20: pos-torneio, nao redirecionar automaticamente pra Bolao so por causa do
+    // localStorage de visita anterior (a maioria dos participantes tinha 'bolao' salvo de quando
+    // usavam a aba toda hora) -- cai em Jogos por padrao (com a msg de agradecimento), deixando
+    // o usuario entrar no Bolao manualmente pra ver o podio. So aplica sem hash explicito na URL
+    // (link direto tipo #bolao continua funcionando normalmente).
+    if(!window.location.hash&&saved==='bolao'&&typeof bolaoTournamentFinished==='function'&&bolaoTournamentFinished()){saved='jogos';}
+    // Fix 2026-07-20: mostra a aba Resumo (topo + menu Mais) e o banner de agradecimento na aba
+    // Jogos so depois que o torneio de fato terminou.
+    if(typeof bolaoTournamentFinished==='function'&&bolaoTournamentFinished()){
+      var _rbtn=document.getElementById('tab-btn-resumo');if(_rbtn)_rbtn.style.display='';
+      var _rmi=document.getElementById('mais-item-resumo');if(_rmi)_rmi.style.display='';
+      var _jtb=document.getElementById('jogos-thanks-banner');if(_jtb)_jtb.style.display='block';
+    }
     // Fix 2026-07-07 (v20.34): antes, ficar sem token (o que acontece em TODO reload, ja
     // que a sessao do bolao nao e' persistida -- decisao deliberada, ver AGENTS.md) jogava o
     // usuario de volta pra "jogos" mesmo que ele estivesse na aba do bolao. A aba do bolao ja
@@ -3619,8 +3688,49 @@ function bolaoPodiumBarHtml(row,pos){
     +'<div class="bolao-podium-step">'+pos+'&#186;</div>'
     +'</div>';
 }
+function renderResumoBolao(){
+  var el=document.getElementById('resumo-bolao-content');
+  if(!el)return;
+  if(!Object.keys(_bolaoParticipants||{}).length){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px">Carregando dados do bol\u00e3o...</div>';
+    bolaoLoadRanking().then(function(){renderResumoBolao();}).catch(function(){
+      el.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px">N\u00e3o foi poss\u00edvel carregar os dados do bol\u00e3o.</div>';
+    });
+    return;
+  }
+  function _rbNorm(a){return a?String(a).toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,''):'';}
+  var rows=_bolaoPodiumRows();
+  var medalBg=['linear-gradient(135deg,rgba(255,223,0,.18),rgba(255,193,7,.06))','linear-gradient(135deg,rgba(200,200,220,.16),rgba(150,150,170,.06))','linear-gradient(135deg,rgba(210,150,95,.18),rgba(160,105,60,.07))'];
+  var medalBorder=['var(--gold)','rgba(210,210,225,.65)','rgba(210,150,95,.65)'];
+  var medalIcon=['&#129351;','&#129352;','&#129353;'];
+  var podiumHtml=rows.slice(0,3).map(function(r,i){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;background:'+medalBg[i]+';border:2px solid '+medalBorder[i]+';border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:8px">'
+      +'<span style="font-size:14px"><span style="font-size:20px;margin-right:8px">'+medalIcon[i]+'</span><strong>'+esc(r.name)+'</strong></span>'
+      +'<span style="color:var(--gold);font-weight:900;font-size:16px">'+r.total+' pts</span></div>';
+  }).join('');
+  var champ=_bolaoFinalChampion(),champN=_rbNorm(champ);
+  var scorer=_bolaoTopScorer();
+  var champCount={},scorerCount={},total=0;
+  Object.keys(_bolaoParticipants).forEach(function(id){
+    total++;
+    var sp=_bolaoAllSpecials[id]||{};
+    var c1=_rbNorm(sp.champion),s1=_rbNorm(sp.top_scorer);
+    if(c1)champCount[c1]=(champCount[c1]||0)+1;
+    if(s1)scorerCount[s1]=(scorerCount[s1]||0)+1;
+  });
+  var champHits=champN?(champCount[champN]||0):0;
+  var scorerHits=(scorer&&scorer.exact)?(scorerCount[_rbNorm(scorer.name)]||0):0;
+  var champPct=total?Math.round(champHits/total*100):0;
+  var scorerPct=total?Math.round(scorerHits/total*100):0;
+  el.innerHTML=podiumHtml
+    +'<div style="background:var(--card);border-radius:var(--radius);padding:16px 18px;margin-top:14px;font-size:13px;line-height:1.9;color:var(--text)">'
+    +'<div>&#127942; S\u00f3 <strong>'+champHits+' de '+total+'</strong> ('+champPct+'%) apostaram na campe\u00e3 de verdade'+(champ?(' ('+esc(champ)+')'):'')+'.</div>'
+    +'<div>&#9917; <strong>'+scorerHits+' de '+total+'</strong> ('+scorerPct+'%) acertaram o artilheiro'+(scorer&&scorer.name?(' ('+esc(scorer.name)+')'):'')+'.</div>'
+    +'</div>';
+}
 function bolaoShowPodium(force){
   if(!bolaoTournamentFinished())return;
+  if(document.querySelector('.bolao-podium-overlay'))return;
   if(!force){try{if(localStorage.getItem('copa2026_podium_shown_v1'))return;}catch(e){}}
   var rows=_bolaoPodiumRows();
   if(rows.length<3)return;
@@ -3641,12 +3751,16 @@ function bolaoShowPodium(force){
     +bolaoPodiumBarHtml(rows[0],1)
     +bolaoPodiumBarHtml(rows[2],3)
     +'</div>'
-    +'<button class="bolao-podium-close" onclick="this.closest(\'.bolao-podium-overlay\').remove()">Fechar</button>';
+    +'<button class="bolao-podium-close" id="bolao-podium-close-btn" style="visibility:hidden" onclick="this.closest(\'.bolao-podium-overlay\').remove()">Fechar</button>';
   document.body.appendChild(overlay);
   var byPos={};overlay.querySelectorAll('.bolao-podium-bar').forEach(function(b){byPos[b.getAttribute('data-pos')]=b;});
   setTimeout(function(){if(byPos['3'])byPos['3'].classList.add('show')},350);
   setTimeout(function(){if(byPos['2'])byPos['2'].classList.add('show')},1100);
   setTimeout(function(){if(byPos['1'])byPos['1'].classList.add('show')},2000);
+  // Fix 2026-07-20: usuario relatou que a animacao fechava antes de terminar -- o botao Fechar
+  // so fica visivel/clicavel depois que a revelacao completa (3o->2o->1o) de fato terminou,
+  // forcando a animacao inteira a rodar antes de dar pra dispensar o podio.
+  setTimeout(function(){var _cb=document.getElementById('bolao-podium-close-btn');if(_cb)_cb.style.visibility='visible'},2650);
 }
 function bolaoToggleDetail(id){var el=document.getElementById('bolao-detail-'+id);if(el)el.classList.toggle('open')}
 function bolaoRenderDetail(pid){
