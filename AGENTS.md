@@ -3326,3 +3326,17 @@ categoria: ouro/azul/vermelho/verde/laranja, não tudo cinza igual), e o recap d
 mesmas cores de medalha (ouro/prata/bronze) do próprio pódio animado, em vez de linhas cinzas
 planas. Os dados/números continuam os mesmos (já verificados ao vivo antes) — só o invólucro
 visual mudou.
+
+**Confirmado ao vivo (commit 9e90b53)**: aba padrão agora é Jogos com o banner de agradecimento
+visível; aba "Resumo" aparece no menu (topo desktop + "Mais" mobile) com o visual novo — testado
+com screenshot real, pódio recap mostrando Larissa 425/Guilherme 409/Felipe 377 e "4 de 32 (13%)
+acertaram a campeã" / "16 de 32 (50%) acertaram o artilheiro", batendo exatamente com os números
+calculados ao vivo antes do deploy.
+
+**Pedido seguinte**: usuário pediu pra animação do pódio aparecer toda vez que entrar na aba
+Bolão (não só uma vez por navegador, como estava). Fix: removido o gate de
+`localStorage.copa2026_podium_shown_v1`; `bolaoShowPodium()` agora dispara tanto no fetch novo
+quanto no caminho de cache de 30s dentro de `bolaoLoadRanking()` — mantém só a checagem de "já tem
+overlay aberto na tela" pra nunca duplicar. Commit `315aecb`, confirmado ao vivo: recarreguei
+`#bolao` do zero e o pódio disparou de novo automaticamente (screenshot capturado a meio da
+revelação, 2º e 3º já visíveis).
