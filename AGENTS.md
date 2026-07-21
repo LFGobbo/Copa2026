@@ -3340,3 +3340,43 @@ quanto no caminho de cache de 30s dentro de `bolaoLoadRanking()` — mantém só
 overlay aberto na tela" pra nunca duplicar. Commit `315aecb`, confirmado ao vivo: recarreguei
 `#bolao` do zero e o pódio disparou de novo automaticamente (screenshot capturado a meio da
 revelação, 2º e 3º já visíveis).
+
+## 34. Desligando o que ainda gastava requisição à toa (alerta de 90% do limite do Cloudflare) — 2026-07-20
+
+Usuário recebeu alerta do Cloudflare: conta a 90% do limite diário de requisições de
+Workers/Pages Functions, e perguntou se ainda estávamos fazendo requisições.
+
+**Achado real**: `.github/workflows/cron-bolao.yml` roda `*/5 * * * *` (a cada 5 min, 288x/dia,
+pra sempre) chamando `GET /cron?task=all` no Worker. Esse endpoint faz, por chamada: 1 fetch no
+calendário da FIFA (task `fifa`), potencialmente 1 fetch de timeline por jogo pendente de placar
+de 90min, 1 upsert em `live_scores`, e a task `snapshot` sozinha faz mais ~4 requisições
+(live_scores, participantes confirmados, picks paginado, picks_reopen) pra recalcular o ranking
+inteiro do zero — e a task `auto-reopen` faz MAIS um fetch na FIFA + 1 leitura no Supabase. Tudo
+isso rodando sem parar, buscando dados de um torneio cujo resultado final (Jogo 104, Espanha
+campeã) não muda mais. Também achei que o próprio Worker tem
+`addEventListener('scheduled', ...)` (linha 16) chamando essa mesma rota — ou seja, se existir um
+Cron Trigger nativo do Cloudflare configurado no painel (fora do que dá pra ver no código, já que
+não usam `wrangler.toml`), ele dispararia isso também, e o comentário original do código também
+menciona a possibilidade de um job externo no cron-job.org.
+
+**Fix aplicado**:
+1. `.github/workflows/cron-bolao.yml`: removido o gatilho `schedule`, mantido só
+   `workflow_dispatch` (disparo manual). Isso já para os 288 disparos/dia vindos do GitHub.
+2. `bolao-worker.js`: nova flag `TORNEIO_ENCERRADO=true` dentro do handler `/cron`, curto-
+   circuitando as tasks `fifa`, `snapshot` e `auto-reopen` (as caras, que buscam/recalculam dados
+   que não mudam mais) — isso funciona como segurança extra contra qualquer agendador externo que
+   eu não consigo ver/desligar por aqui (Cron Trigger nativo do Cloudflare, cron-job.org).
+   **Deliberadamente mantive a task `keepalive` rodando** (1 ping barato no Supabase): sem ela, o
+   projeto no Supabase free tier pode pausar por inatividade, e aí a aba Resumo/Bolão — que ainda
+   depende de dados ao vivo do Supabase via `/ranking` — para de funcionar pra quem visitar o site
+   no futuro. Reverter é só trocar `TORNEIO_ENCERRADO` pra `false` (útil se este Worker for
+   reaproveitado num torneio futuro).
+
+**Pendente, fora do meu alcance por aqui**: o usuário precisa (a) rodar `deploy-worker.ps1` pra
+publicar essa mudança no Worker (esse repo não faz deploy automático do Worker via git push —
+só do `index.html`/`copa2026.html` via GitHub Pages), e (b) checar manualmente no painel do
+Cloudflare (Workers & Pages → copa2026-bolao → Triggers → Cron Triggers) e numa eventual conta no
+cron-job.org se existe algum agendador ainda configurado apontando pra esse Worker, já que não
+tenho visibilidade nem acesso a nenhum dos dois dashboards a partir daqui. Não tenho como
+confirmar com números reais se isso foi de fato a causa do alerta de 90% — só que é uma fonte de
+desperdício real e concreta que agora está cortada.

@@ -974,6 +974,18 @@ async function handle(req) {
       var cronSecret = req.headers.get('X-Cron-Secret') || url.searchParams.get('secret') || '';
       if (cronSecret !== expectedCronSecret) return error('Cron secret invalido', 403);
 
+      // Fix 2026-07-20: torneio encerrado (Final = Jogo 104 ja disputado, resultado nao muda
+      // mais). Buscar calendario/timeline da FIFA e recalcular o snapshot do ranking inteiro
+      // (tasks fifa/snapshot) e trabalho pesado e inutil pra sempre a partir de agora -- essas
+      // duas tasks curto-circuitam mais abaixo, mesmo que o Cron Trigger nativo do Cloudflare ou
+      // um job externo (cron-job.org) ainda disparem essa rota por engano. O "keepalive" (1 ping
+      // barato no Supabase) continua rodando de propósito: sem ele o projeto do Supabase pode
+      // pausar por inatividade no free tier, e aí a aba Resumo/Bolão (que ainda depende de dados
+      // ao vivo do Supabase) para de funcionar pra quem visitar o site no futuro. Reverter os
+      // curto-circuitos (por ex. pra reaproveitar este Worker num torneio futuro) e so trocar
+      // TORNEIO_ENCERRADO pra false.
+      var TORNEIO_ENCERRADO = true;
+
       var task = url.searchParams.get('task') || '';
       var results = {};
       // Mapa game_key -> game_n para jogos de grupo (72 jogos). Compartilhado por task=fifa e task=snapshot.
@@ -1003,7 +1015,7 @@ async function handle(req) {
       }
 
       // fifa: buscar scores da FIFA e armazenar no Supabase
-      if (task === 'fifa' || task === 'all') {
+      if (!TORNEIO_ENCERRADO && (task === 'fifa' || task === 'all')) {
         try {
           var fresp = await fetch('https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&count=200');
           var fdata = await fresp.json();
@@ -1096,7 +1108,7 @@ async function handle(req) {
       }
 
       // snapshot: calcular ranking real com placares da FIFA (live_scores no Supabase)
-      if (task === 'snapshot' || task === 'all') {
+      if (!TORNEIO_ENCERRADO && (task === 'snapshot' || task === 'all')) {
         try {
           // Funcao de pontuacao grupos: identica ao bolaoCalcPickPts do frontend
           function calcPts(pA,pB,rA,rB){
@@ -1278,7 +1290,10 @@ async function handle(req) {
 
       // auto-reopen: abre fases automaticamente baseado em partidas concluídas pela FIFA
       // Thresholds: r32 após 72 grupos, r16 após 88, qf após 96, sf após 100, 3rd+final após 102
-      if (task === 'auto-reopen' || task === 'all') {
+      // Fix 2026-07-20: todas as fases já estão abertas pra sempre (torneio encerrado) — essa
+      // task já virou um no-op de qualquer forma (o loop pula toda fase com open=true), mas
+      // continuava gastando 1 fetch na FIFA + 1 leitura no Supabase por ciclo à toa.
+      if (!TORNEIO_ENCERRADO && (task === 'auto-reopen' || task === 'all')) {
         try {
           // Contar partidas concluídas diretamente da API da FIFA — não depende do
           // mapeamento game_n em live_scores (mais frágil nas fases de mata-mata, onde

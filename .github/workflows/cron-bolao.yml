@@ -1,8 +1,11 @@
 name: Cron Bolão
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
+  # Fix 2026-07-20: torneio encerrado (Final = Jogo 104 já disputado). O agendamento de */5min
+  # rodava 24h/dia pra sempre, disparando /cron?task=all (busca calendário da FIFA + recalcula
+  # snapshot do ranking inteiro) mesmo sem nenhum dado novo pra sincronizar — contribuindo pra um
+  # alerta de 90% do limite diário de requisições do Cloudflare. Agendamento removido; mantido só
+  # workflow_dispatch (disparo manual), caso precise rodar de novo por algum motivo pontual.
   workflow_dispatch:
 
 jobs:
