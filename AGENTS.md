@@ -3380,3 +3380,36 @@ cron-job.org se existe algum agendador ainda configurado apontando pra esse Work
 tenho visibilidade nem acesso a nenhum dos dois dashboards a partir daqui. Não tenho como
 confirmar com números reais se isso foi de fato a causa do alerta de 90% — só que é uma fonte de
 desperdício real e concreta que agora está cortada.
+
+## 35. Causa real do tráfego periódico de 5 em 5 min — não era cron-job.org, era o próprio site — 2026-07-21
+
+Depois do fix do item 34, o usuário conferiu o painel do Cloudflare de novo (30min e 1h) e ainda
+via um padrão bem regular de ~5 em 5 minutos, batendo quase só no Supabase (pouquíssimas chamadas
+à FIFA). GitHub Actions já estava confirmado desativado no branch remoto. Fomos checar
+cron-job.org e o dashboard do Cloudflare diretamente pelo Chrome — nenhum dos dois tinha sessão
+logada nesse navegador (não dava pra confirmar nem descartar por lá sem o usuário logar, o que eu
+não faço por política).
+
+**Causa real, achada sem precisar de nenhum dashboard**: o próprio fix do item 28 (banner de
+reabertura) — a "rechecagem espaçada de 5 min" que substituiu o loop de refetch contínuo — nunca
+tinha uma condição de parada. Enquanto qualquer pessoa deixasse uma aba do Bolão aberta, o
+`setTimeout(...,300000)` dentro de `bolaoUpdateReopenBanner()` ficava se reagendando pra sempre, a
+cada 5 minutos, chamando `/reopen-status` (que consulta o Supabase) — combinando perfeitamente com
+o padrão observado (só Supabase, sem FIFA, de 5 em 5 min, continuando mesmo horas depois do
+deploy). Isso explica também por que o usuário "não lembrava" de ter criado nada no cron-job.org:
+nunca teve nada lá, o "cron" era o próprio navegador de quem tinha aba aberta.
+
+**Fix aplicado**: adicionado `if(bolaoTournamentFinished())return;` logo no início do bloco de
+rechecagem — se o torneio já terminou, não existe reabertura futura possível (nenhuma fase nunca
+mais vai abrir), então a função simplesmente não reagenda mais nada. Sem essa condição de parada,
+qualquer aba aberta continuaria gerando 1 requisição a cada 5 minutos indefinidamente, para
+sempre, mesmo daqui a meses.
+
+**Lição**: ao trocar o loop de refetch contínuo (bug real) por uma rechecagem "mais espaçada" no
+item 28, criei uma versão mais branda do mesmo problema — reduzi a frequência mas não dei uma
+condição de parada de verdade. Deveria ter perguntado "e se isso nunca mais precisar rodar?" na
+hora, não só "como faço isso rodar menos".
+
+**Validado**: `node --check` na sintaxe extraída, diff conferido, hash dos dois arquivos batendo.
+Não verificado ao vivo ainda (precisa do próximo push + esperar alguns ciclos de 5min pra
+confirmar no painel do Cloudflare que o padrão realmente para).

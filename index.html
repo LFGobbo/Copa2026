@@ -4579,6 +4579,12 @@ function bolaoUpdateReopenBanner(){
     // Se nao ha countdown futuro valido, so esconde o banner (nada para reabrir).
     if(tillOpen===null||tillOpen<=0){
       banner.style.display='none';
+      // Fix 2026-07-21: essa rechecagem nunca devia rodar pra sempre -- se o torneio ja
+      // terminou, NAO EXISTE reabertura futura possivel (nada mais vai abrir de novo), entao
+      // reagendar a cada 5min so gera trafego infinito e inutil pro Worker/Supabase enquanto
+      // qualquer aba do Bolao ficar aberta (achado ao vivo: 1 requisicao a cada 5min, pra
+      // sempre, por aba aberta -- nao era cron-job.org nem Cron Trigger, era isso aqui).
+      if(bolaoTournamentFinished())return;
       // Rechecagem espacada (5 min, nao a cada 1s) so para pegar uma reabertura nova
       // sem precisar recarregar a pagina -- evita o loop de refetch continuo do bug antigo.
       if(!window._bolaoRecheckScheduled){
